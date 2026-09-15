@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package context;
+
+import "google/protobuf/empty.proto";
+import "com/simulator112/incident/incident_context.proto";
+
+option java_package = "com.simulator112.context.grpc.contract";
+option java_multiple_files = true;
+
+message PersonInfo {
+  string phone = 1;
+  string contact_phone = 2;
+  string last_name = 3;
+  string first_name = 4;
+  string middle_name = 5;
+  string address = 6;
+  string additional_info = 7;
+}
+
+enum DialogProgressStatus {
+  DIALOG_PROGRESS_STATUS_UNSPECIFIED = 0;
+  IDLE = 1;
+  IN_CALL = 2;
+  DISCONNECTED = 3;
+  COMPLETED = 4;
+}
+
+message DialogProgress {
+  string context_id = 1;
+  string active_dialup_id = 2;
+  DialogProgressStatus status = 3;
+}
+
+enum SpeakerType {
+  USER = 0;
+  LLM = 1;
+}
+
+message Phrase {
+  SpeakerType speaker = 1;
+  string text = 2;
+}
+
+message DialogContext {
+  repeated Phrase transcript = 1;
+}
+
+enum SolutionContextStatus {
+  SOLUTION_CONTEXT_STATUS_UNSPECIFIED = 0;
+  ACTIVE = 1;
+  CLOSED_DUPLICATE = 2;
+}
+
+message SolutionContext {
+  PersonInfo applicant = 1;
+  PersonInfo victim = 2;
+  map<string, string> additional_info = 3;
+  string incident_type = 4;
+  string dialup_id = 5;
+  string parent_id = 6;
+  string duplicate_of_id = 7;
+  string revision_id = 8;
+  string card_id = 9;
+  string previous_revision_id = 10;
+  int64 version = 11;
+  SolutionContextStatus status = 12;
+  string created_at = 13;
+  // Distinguishes an explicit empty replacement from an omitted map in a revision.
+  optional bool additional_info_provided = 14;
+}
+
+message FullContext {
+  string uuid = 1;
+  string user_id = 2;
+  incident.IncidentContext incident_context = 3;
+  DialogContext dialog_context = 4;
+  SolutionContext solution_context = 5;
+  incident.LevelContext level_context = 6;
+  repeated SolutionContext solution_context_revisions = 7;
+}
+
+service ContextManagerService {
+  rpc GetIncidentContext(GetIncidentContextRequest) returns (incident.IncidentContext);
+  rpc AppendDialogContext(AppendDialogContextRequest) returns (google.protobuf.Empty);
+  rpc AppendSolutionContext(AppendSolutionContextRequest) returns (google.protobuf.Empty);
+  rpc GetFullContext(GetFullContextRequest) returns (FullContext);
+  rpc GetNextDialup(GetNextDialupRequest) returns (incident.DialupContext);
+  rpc GetDialup(GetDialupRequest) returns (incident.DialupContext);
+  rpc GetDialogProgress(GetDialogProgressRequest) returns (DialogProgress);
+  rpc StartDialup(StartDialupRequest) returns (DialogProgress);
+  rpc CompleteDialup(CompleteDialupRequest) returns (DialogProgress);
+  rpc DisconnectDialup(DisconnectDialupRequest) returns (DialogProgress);
+}
+
+message GetIncidentContextRequest {
+  string uuid = 1;
+}
+
+message AppendDialogContextRequest {
+  string uuid = 1;
+  DialogContext dialog_context = 2;
+}
+
+message AppendSolutionContextRequest {
+  string uuid = 1;
+  SolutionContext solution_context = 2;
+}
+
+message GetFullContextRequest {
+  string uuid = 1;
+}
+
+message GetNextDialupRequest {
+  string uuid = 1;
+  string current_dialup_id = 2;
+}
+
+message GetDialupRequest {
+  string context_id = 1;
+  string dialup_id = 2;
+}
+
+message GetDialogProgressRequest {
+  string context_id = 1;
+}
+
+message StartDialupRequest {
+  string context_id = 1;
+  string dialup_id = 2;
+}
+
+message CompleteDialupRequest {
+  string context_id = 1;
+  string dialup_id = 2;
+}
+
+message DisconnectDialupRequest {
+  string context_id = 1;
+  string dialup_id = 2;
+}
