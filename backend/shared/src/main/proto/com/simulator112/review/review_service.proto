@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package simulator112.review;
+
+import "com/simulator112/context/context_service.proto";
+
+option java_package = "com.simulator112.review.grpc.contract";
+option java_multiple_files = true;
+
+service ReviewService {
+  rpc sendOnReview(SendOnReviewRequest) returns (ReviewStatusResponse);
+  rpc getReview(GetReviewRequest) returns (ReviewStatusResponse);
+}
+
+message SendOnReviewRequest {
+  context.FullContext context = 1;
+}
+
+message GetReviewRequest {
+  string uuid = 1;
+}
+
+message ReviewStatusResponse {
+  ReviewStatus status = 1;
+}
+
+enum ReviewStatus {
+  CREATED = 0;
+  FILLED = 1;
+  IN_REVIEW = 2;
+  DIALOG = 3;
+  DONE = 4;
+}
