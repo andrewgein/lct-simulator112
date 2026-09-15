@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package incident;
+
+option java_package = "com.simulator112.incident.grpc.contract";
+option java_multiple_files = true;
+
+message LevelContext {
+  string id = 1;
+  string title = 2;
+  repeated IncidentContext incidents = 3;
+  Difficulty difficulty = 4;
+}
+
+message IncidentContext {
+  string id = 1;
+  string title = 2;
+  Address address = 3;
+  DispatcherCriteria dispatcher_criteria = 4;
+  repeated StageContext stages = 5;
+}
+
+message StageContext {
+  string id = 1;
+  string title = 2;
+  int32 position = 3;
+  repeated DialupContext dialups = 4;
+  Applicant victim = 5;
+  repeated IncidentAdditionalInfo additional_info = 6;
+  string description = 7;
+  IncidentTypeInfo type = 8;
+}
+
+message DialupContext {
+  string id = 1;
+  int32 position = 2;
+  DialupDetails dialup_details = 3;
+  Applicant applicant = 4;
+}
+
+message IncidentTypeInfo {
+  string id = 1;
+  string type_id = 2;
+  ServiceType service_type = 3;
+  string type_name = 4;
+}
+
+message IncidentAdditionalInfo {
+  string id = 1;
+  string additional_info_id = 2;
+  string field_code = 3;
+  string field_name = 4;
+  FieldType field_type = 5;
+  bool required = 6;
+  string field_value = 7;
+}
+
+message Address {
+  string city = 1;
+  string street = 2;
+  string house = 3;
+  string building = 4;
+  string apartment = 5;
+  int32 floor = 6;
+}
+
+message Applicant {
+  string first_name = 1;
+  string last_name = 2;
+  string middle_name = 3;
+  int32 age = 4;
+  string phone = 5;
+  EmotionalState emotional_state = 6;
+  string contact_phone = 7;
+  string address = 8;
+  string additional_info = 9;
+}
+
+message DialupDetails {
+  Gender gender = 1;
+  repeated string known_facts = 2;
+  repeated string hidden_facts = 3;
+  string ai_context = 4;
+  string emotional_state = 5;
+}
+
+message DispatcherCriteria {
+  repeated string required_questions = 1;
+  repeated string expected_actions = 2;
+  repeated string critical_mistakes = 3;
+}
+
+enum IncidentType {
+  FIRE = 0;
+  MEDICAL_EMERGENCY = 1;
+  TRAFFIC_ACCIDENT = 2;
+  CRIME = 3;
+  GAS_LEAK = 4;
+  ACCIDENT = 5;
+  OTHER = 6;
+}
+
+enum ServiceType {
+  SERVICE_TYPE_UNSPECIFIED = 0;
+  FIRE_SERVICE = 1;
+  POLICE_SERVICE = 2;
+  AMBULANCE_SERVICE = 3;
+  GAS_SERVICE = 4;
+  ANTI_TERROR_SERVICE = 5;
+}
+
+enum FieldType {
+  FIELD_TYPE_UNSPECIFIED = 0;
+  TEXT = 1;
+  TEXTAREA = 2;
+  NUMBER = 3;
+  BOOLEAN = 4;
+}
+
+enum Difficulty {
+  EASY = 0;
+  NORMAL = 1;
+  HARD = 2;
+}
+
+enum EmotionalState {
+  CALM = 0;
+  WORRIED = 1;
+  PANICKED = 2;
+  AGGRESSIVE = 3;
+  CONFUSED = 4;
+}
+
+enum Gender {
+  MAN = 0;
+  WOMEN = 1;
+}
