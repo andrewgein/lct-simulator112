@@ -1,0 +1,16 @@
+---
+/** @typedef {import("../../contract/Incident").DispatcherCriteria} DispatcherCriteria */
+/** @type {{ criteria?: Partial<DispatcherCriteria> }} */
+const { criteria = {} } = Astro.props;
+/** @param {string[] | undefined} items */
+const lines = (items) => (items || []).join("\n");
+---
+<section class="wa-stack wa-gap-m">
+  <h2 class="wa-heading-xl">Критерии оценки</h2>
+  <wa-textarea name="requiredQuestions" label="Обязательные вопросы (один на строку)" rows="5" value={lines(criteria.requiredQuestions)} required>
+  </wa-textarea>
+  <wa-textarea name="expectedActions" label="Ожидаемые действия (одно на строку)" rows="5" value={lines(criteria.expectedActions)} required>
+  </wa-textarea>
+  <wa-textarea name="criticalMistakes" label="Критические ошибки (одна на строку)" rows="5" value={lines(criteria.criticalMistakes)}>
+  </wa-textarea>
+</section>

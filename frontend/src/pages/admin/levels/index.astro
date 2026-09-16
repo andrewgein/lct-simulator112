@@ -1,0 +1,67 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { apiCall } from "../../../services/ApiClient";
+import { DifficultyOptions } from "../../../features/incident/contract/Difficulty";
+
+export const prerender = false;
+let levels = [];
+let error = null;
+try {
+  const response = await apiCall("/api/v1/admin/incident/levels", "GET", undefined, Astro.cookies.get("accessToken")?.value);
+  if (!response.ok) throw new Error();
+  levels = await response.json();
+} catch {
+  error = "Не удалось загрузить уровни";
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Управление уровнями">
+    <wa-button href="/admin/levels/new" variant="brand">Новый уровень</wa-button>
+  </MainHeader>
+  <div class="wa-stack wa-gap-l">
+    {!error && !levels.length && (
+      <wa-callout>Уровней пока нет. Создайте первый уровень.</wa-callout>
+    )}
+    {levels.map((level) => (
+      <wa-card>
+        <div class="wa-cluster wa-justify-content-space-between">
+          <div class="wa-stack wa-gap-xs">
+            <strong>{level.title}</strong>
+            <span>
+              {DifficultyOptions.find((item) => item.value === level.difficulty)?.label} / Происшествий: {level.incidents?.length || 0}
+            </span>
+          </div>
+          <div class="wa-cluster">
+            <wa-button href={`/admin/levels/${level.id}`} appearance="outlined" aria-label={`Редактировать уровень: ${level.title}`}>
+              <wa-icon name="pen"></wa-icon>
+            </wa-button>
+            <wa-button class="delete-level" data-id={level.id} appearance="outlined" variant="danger" aria-label={`Удалить уровень: ${level.title}`}>
+              <wa-icon name="trash"></wa-icon>
+            </wa-button>
+          </div>
+        </div>
+      </wa-card>
+    ))}
+  </div>
+</Page>
+
+<script>
+  document.querySelectorAll('.delete-level').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!confirm('Удалить уровень без возможности восстановления?')) return;
+      button.loading = true;
+      try {
+        const response = await fetch(`/api/v1/admin/incident/levels/${button.dataset.id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error();
+        window.location.reload();
+      } catch {
+        alert('Не удалось удалить уровень');
+        button.loading = false;
+      }
+    });
+  });
+</script>

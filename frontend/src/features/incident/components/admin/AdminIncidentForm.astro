@@ -1,0 +1,82 @@
+---
+import AdminIncidentMainCard from "./AdminIncidentMainCard.astro";
+import AdminIncidentAddressCard from "./AdminIncidentAddressCard.astro";
+import AdminIncidentCriteriaCard from "./AdminIncidentCriteriaCard.astro";
+import AdminIncidentStagesCard from "./AdminIncidentStagesCard.astro";
+
+/** @typedef {import("../../contract/Incident").Incident} Incident */
+/** @typedef {import("../../contract/Incident").IncidentRequest} IncidentRequest */
+/** @type {{ incident?: Partial<Incident & IncidentRequest>, mode?: "create" | "edit" }} */
+const { incident = {}, mode = "create" } = Astro.props;
+const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
+---
+<form id="incident-form" class="wa-stack wa-gap-l" data-mode={mode}>
+  <input type="hidden" name="id" value={incident.id || ""} />
+  <p id="form-error" class="form-error" hidden>
+  </p>
+  <div class="wa-stack wa-gap-3xl">
+    <AdminIncidentMainCard {incident} />
+    <AdminIncidentAddressCard address={incident.address} {dadataApiKey} />
+    <AdminIncidentStagesCard stages={incident.stages} />
+    <AdminIncidentCriteriaCard criteria={incident.criteria} />
+  </div>
+</form>
+<script>
+  /** @typedef {import("../../contract/Incident").IncidentRequest} IncidentRequest */
+
+  const form = document.querySelector('#incident-form');
+  const error = document.querySelector('#form-error');
+  const submitButton = document.querySelector('[type="submit"][form="incident-form"]');
+  const splitLines = (value) => value.split('\n').map((item) => item.trim()).filter(Boolean);
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    error.hidden = true;
+    const data = Object.fromEntries(new FormData(form));
+    /** @type {IncidentRequest} */
+    const payload = {
+      title: data.title,
+      address: {
+        city: data['address.city'],
+        street: data['address.street'],
+        house: data['address.house'],
+        building: data['address.building'] || null,
+        apartment: data['address.apartment'] || null,
+        floor: Number(data['address.floor'])
+      },
+      criteria: {
+        requiredQuestions: splitLines(data.requiredQuestions),
+        expectedActions: splitLines(data.expectedActions),
+        criticalMistakes: splitLines(data.criticalMistakes)
+      }
+    };
+    const url = form.dataset.mode === 'create' ? '/api/v1/admin/incident' : `/api/v1/admin/incident/${data.id}`;
+    const method = form.dataset.mode === 'create' ? 'POST' : 'PATCH';
+    if (submitButton.loading) return;
+    submitButton.loading = true;
+    try {
+      form.validateIncidentStructure();
+      const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.detail || 'Не удалось сохранить сценарий');
+      }
+      const savedIncident = await response.json();
+      if (form.dataset.mode === 'create') {
+        form.dataset.mode = 'edit';
+        form.querySelector('[name="id"]').value = savedIncident.id;
+        window.history.replaceState({}, '', `/admin/incidents/${savedIncident.id}`);
+      }
+      await form.saveIncidentStructure(savedIncident.id);
+      window.location.href = '/admin/incidents';
+    } catch (err) {
+      error.textContent = err.message;
+      error.hidden = false;
+    } finally {
+      submitButton.loading = false;
+    }
+  });
+</script>
+<style>
+  .form-error { color: var(--wa-color-danger-60); margin: 0; }
+</style>

@@ -1,0 +1,26 @@
+---
+/** @typedef {import("../../contract/Incident").Incident} Incident */
+/** @type {{ incident: Incident }} */
+const { incident } = Astro.props;
+---
+
+<wa-card>
+  <div class="wa-split wa-align-items-center">
+    <div class="wa-stack wa-gap-2xs">
+      <strong class="wa-heading-l">
+        {incident.title}
+      </strong>
+      {incident.stages?.[0]?.type?.typeName}
+    </div>
+    <div class="wa-cluster">
+      <slot name="actions">
+        <wa-button href={`/admin/incidents/${incident.id}`} appearance="outlined">
+          <wa-icon name="pen"></wa-icon>
+        </wa-button>
+        <wa-button class="delete-incident" data-id={incident.id} appearance="outlined" variant="danger">
+          <wa-icon name="trash"></wa-icon>
+        </wa-button>
+      </slot>
+    </div>
+  </div>
+</wa-card>

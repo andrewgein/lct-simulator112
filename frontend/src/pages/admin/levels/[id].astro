@@ -1,0 +1,38 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminLevelForm from "../../../features/level/components/admin/AdminLevelForm.astro";
+import { getIncidentLibrary } from "../../../features/incident/api/AdminIncidentApi";
+import { apiCall } from "../../../services/ApiClient";
+
+export const prerender = false;
+const token = Astro.cookies.get("accessToken")?.value;
+let level;
+let incidents = [];
+let error = null;
+try {
+  const [response, library] = await Promise.all([
+    apiCall(`/api/v1/admin/incident/levels/${encodeURIComponent(Astro.params.id)}`, "GET", undefined, token),
+    getIncidentLibrary(token)
+  ]);
+  if (!response.ok) throw new Error("Не удалось загрузить уровень");
+  level = await response.json();
+  incidents = library;
+} catch {
+  error = "Не удалось загрузить уровень или библиотеку происшествий";
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Редактирование уровня">
+    <div class="wa-cluster">
+      <wa-button href="/admin/levels" appearance="outlined">Отмена</wa-button>
+      <wa-button type="submit" form="level-form" variant="success">Сохранить</wa-button>
+    </div>
+  </MainHeader>
+  {!error && (
+    <AdminLevelForm {level} {incidents} />
+  )}
+</Page>

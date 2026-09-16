@@ -1,0 +1,50 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminIncidentCard from "../../../features/incident/components/admin/AdminIncidentCard.astro";
+import { getIncidentLibrary } from "../../../features/incident/api/AdminIncidentApi";
+
+export const prerender = false;
+let incidents = [];
+let error = null;
+try {
+  incidents = await getIncidentLibrary(Astro.cookies.get("accessToken")?.value);
+} catch {
+  error = "Не удалось загрузить сценарии";
+}
+---
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Сценарии происшествий">
+    <wa-button href="/admin/incidents/new" variant="brand" appearance="accent">
+      <wa-icon name="plus" slot="start">
+      </wa-icon>
+      Новый сценарий
+    </wa-button>
+  </MainHeader>
+  {incidents.length ? (
+    <div class="wa-stack wa-gap-s">
+      {incidents.map((incident) => (
+        <AdminIncidentCard {incident} />
+      ))}
+    </div>
+  ) : (
+    <wa-callout variant="neutral">
+      Сценариев пока нет. Создайте первый сценарий.
+    </wa-callout>
+  )}
+</Page>
+<script>
+  document.querySelectorAll('.delete-incident').forEach((button) =>
+    button.addEventListener('click', async () => {
+      if (!confirm('Удалить сценарий без возможности восстановления?')) {
+        return;
+      }
+      const response = await fetch(`/api/v1/admin/incident/${button.dataset.id}`, { method: 'DELETE' });
+      if (response.ok) {
+        window.location.reload();
+      }
+      else alert('Не удалось удалить сценарий');
+  }));
+</script>
