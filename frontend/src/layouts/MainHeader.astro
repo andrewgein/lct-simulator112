@@ -1,0 +1,15 @@
+---
+interface Props {
+  title: string
+  id?: string
+}
+
+const { title, id } = Astro.props;
+---
+<div class="wa-split wa-align-items-center">
+  <h1 id={id} class="wa-heading-2xl">
+    {title}
+  </h1>
+  <slot />
+</div>
+

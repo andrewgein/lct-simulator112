@@ -1,0 +1,31 @@
+---
+import AuthInputGroup from "./AuthInputGroup.astro";
+const error = Astro.url.searchParams.get("error");
+const success = Astro.url.searchParams.has("success");
+---
+<wa-card style="width: 100%; max-width: 30rem" class="card-header">
+  <h2 slot="header">Регистрация</h2>
+  <form method="POST" action="/api/v1/auth/register">
+    <div class="wa-stack">
+      <AuthInputGroup />
+      <wa-button type="submit" variant="brand">Зарегистрироваться</wa-button>
+      <div class="wa-cluster wa-gap-xs"> 
+        Или <a href="/login" class="wa-link">войти</a> 
+      </div>
+
+      { success && (
+      <wa-callout class="wa-success">
+        <wa-icon slot="icon" name="circle-check"></wa-icon>
+        <strong>Мы направили письмо на указанную почту. Для завершения регистрации необходимо перейти по ссылке из письма</strong>
+      </wa-callout>
+
+      )}
+      { error && (
+      <wa-callout class="wa-danger">
+        <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+        <strong>{error}</strong>
+      </wa-callout>)}
+
+    </div>
+  </form>
+</wa-card>

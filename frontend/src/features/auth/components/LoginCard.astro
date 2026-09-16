@@ -1,0 +1,21 @@
+---
+import AuthInputGroup from "./AuthInputGroup.astro";
+const error = Astro.url.searchParams.get("error");
+---
+<wa-card style="width: 100%; max-width: 30rem" class="card-header">
+  <h2 slot="header">Вход</h2>
+  <form method="POST" action="/api/v1/auth/login">
+    <div class="wa-stack">
+      <AuthInputGroup />
+      <wa-button type="submit" variant="brand">Войти</wa-button>
+      <div class="wa-cluster wa-gap-xs"> 
+        Или <a href="/register" class="wa-link">зарегистрироваться</a> 
+      </div>
+      { error && (
+      <wa-callout class="wa-danger">
+        <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+        <strong>{error}</strong>
+      </wa-callout>)}
+    </div>
+  </form>
+</wa-card>

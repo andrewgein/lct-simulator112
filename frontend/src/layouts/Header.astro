@@ -1,0 +1,47 @@
+---
+import LogoutButton from "../features/auth/components/LogoutButton.astro";
+
+const role = Astro.cookies.get("role")?.value;
+const isAdmin = role === "ADMIN";
+const pathname = Astro.url.pathname;
+const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
+---
+
+<header slot="header">
+  <div class="header-layout">
+    <a class="header-brand" href="/" aria-label="На главную">
+      <img src="/assets/simulator-logo.svg" alt="" />
+    </a>
+    <div class="wa-split">
+    <div class="wa-cluster">
+      <div class="wa-cluster">
+        <wa-button class:list={{ 'header-nav-active': isActive('/') }}
+                   appearance="plain" variant="neutral" href="/"
+                   aria-current={isActive('/') ? 'page' : undefined}>
+          Уровни
+        </wa-button>
+      </div>
+      {isAdmin && (
+        <div class="wa-cluster">
+          <wa-divider orientation="vertical" />
+            <wa-button class:list={{ 'header-nav-active': isActive('/admin/incidents') }}
+              appearance="plain" variant="brand" href="/admin/incidents"
+              aria-current={isActive('/admin/incidents') ? 'page' : undefined}>
+                Управление сценариями </wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/admin/levels') }}
+                       appearance="plain" variant="brand" href="/admin/levels"
+                       aria-current={isActive('/admin/levels') ? 'page' : undefined}>
+              Управление уровнями </wa-button>
+        </div>
+      )}
+    </div>
+      <div class="wa-cluster">
+        <wa-button class:list={{ 'header-nav-active': isActive('/profile') }} appearance="plain" variant="neutral" href="/profile" aria-current={isActive('/profile') ? 'page' : undefined}>
+          Профиль
+        </wa-button>
+        <LogoutButton />
+      </div>
+    </div>
+  </div>
+</header>
+
