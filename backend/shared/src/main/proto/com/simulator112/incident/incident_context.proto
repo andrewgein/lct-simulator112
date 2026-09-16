@@ -36,6 +36,7 @@ message DialupContext {
   int32 position = 2;
   DialupDetails dialup_details = 3;
   Applicant applicant = 4;
+  Applicant victim = 5;
 }
 
 message IncidentTypeInfo {

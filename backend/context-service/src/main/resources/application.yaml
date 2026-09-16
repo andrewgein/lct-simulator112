@@ -1,0 +1,30 @@
+server:
+  port: 8084
+spring:
+  application:
+    name: context-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/context}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  flyway:
+    enabled: true
+  grpc:
+    server:
+      port: 9090
+    client:
+      channel:
+        incident-service:
+          target: ${INCIDENT_SERVICE_GRPC_TARGET:static://localhost:9091}
+        review-service:
+          target: ${REVIEW_SERVICE_GRPC_TARGET:static://localhost:9092}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
