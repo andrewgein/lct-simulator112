@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "skills": {
+    "astro": {
+      "source": "astrolicious/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/astro/SKILL.md",
+      "computedHash": "ebefe26b231d32379c14e41a46c2de7b4b0184543bedab7febdabe4fb21fba4e"
+    },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "89496d5dd00f4810205f351759594fc2742bf8eea85a2f2b2d1de59f4bd91576"
+    },
+    "webawesome": {
+      "source": "./node_modules/@awesome.me/webawesome/dist/skills/webawesome",
+      "sourceType": "local",
+      "computedHash": "032d4071623aeab7710aea523d3a71a62fde0452b9fc3fd5748ed78194d6e91f"
+    },
+    "webawesome-design": {
+      "source": "./node_modules/@awesome.me/webawesome/dist/skills/webawesome-design",
+      "sourceType": "local",
+      "computedHash": "e01dbf4deaa2e091acc116d0bcb5f5852324174cba0ffc8f45fac3b24415d206"
+    }
+  }
+}
