@@ -1,0 +1,28 @@
+---
+const error = Astro.url.searchParams.get("error");
+---
+<wa-card style="width: 100%; max-width: 30rem" class="card-header">
+  <h2 slot="header">
+    Создание профиля
+  </h2>
+  <form method="POST" action="/api/v1/profile">
+    <div class="wa-stack">
+      <wa-input name="name" label="Имя" required>
+      </wa-input>
+      <wa-input name="surname" label="Фамилия" required>
+      </wa-input>
+      <wa-button type="submit" variant="success">
+        Сохранить профиль
+      </wa-button>
+      {error && (
+        <wa-callout class="wa-danger">
+          <wa-icon slot="icon" name="circle-exclamation">
+          </wa-icon>
+          <strong>
+            {error}
+          </strong>
+        </wa-callout>
+      )}
+    </div>
+  </form>
+</wa-card>

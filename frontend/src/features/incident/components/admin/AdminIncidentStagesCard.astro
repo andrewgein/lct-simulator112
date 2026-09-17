@@ -1,0 +1,44 @@
+---
+import IncidentStagesEditor from "./IncidentStagesEditor.jsx";
+
+/** @typedef {import("../../contract/Incident").IncidentStage} IncidentStage */
+/** @type {{ stages?: IncidentStage[] }} */
+const { stages = [] } = Astro.props;
+---
+<IncidentStagesEditor initialStages={stages} client:load />
+<style is:global>
+  #incident-form .hint { margin: var(--wa-space-2xs) 0 0; color: var(--wa-color-text-quiet); }
+  #incident-stages .stage { position: relative; padding: var(--wa-space-m); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: var(--wa-border-radius-l); }
+  #incident-stages .stage-content { padding-block: var(--wa-space-l); }
+  #incident-stages .stage-top { flex-wrap: nowrap; }
+  #incident-stages .stage-title { flex: 1 1 20rem; }
+  #incident-stages .stage-arrow { position: absolute; z-index: 1; inset-inline-start: 50%; transform: translateX(-50%); }
+  #incident-stages .stage-arrow-up { inset-block-start: var(--wa-space-2xs); }
+  #incident-stages .stage-arrow-down { inset-block-end: var(--wa-space-2xs); }
+  #incident-form .add-stage-card { display: grid; height: 5rem; border: var(--wa-border-width-s) dashed var(--wa-color-surface-border); text-align: center; place-items: center; }
+  #incident-form .add-stage-card::part(body) { width: 100%; height: 100%; padding: 0; }
+  #incident-form .add-stage-card wa-button { width: 100%; height: 100%; }
+  #incident-form .add-stage-card wa-button::part(button) { width: 100%; height: 100%; }
+  #incident-stages .dialups { --dialup-card-height: 12rem; align-items: stretch; }
+  #incident-stages .dialup, #incident-stages .add-dialup-card { flex: 1 1 15rem; width: 100%; max-width: 22rem; height: var(--dialup-card-height); box-sizing: border-box; }
+  #incident-stages .add-dialup-card { display: grid; border: var(--wa-border-width-s) dashed var(--wa-color-surface-border); place-items: center; }
+  #incident-stages .add-dialup-card::part(body) { width: 100%; height: 100%; padding: 0; }
+  #incident-stages .add-dialup-card wa-button { width: 100%; height: 100%; }
+  #incident-stages .add-dialup-card wa-button::part(button) { width: 100%; height: 100%; }
+  #incident-stages .dialup-summary { position: relative; height: 100%; box-sizing: border-box; }
+  #incident-stages .dialup-content { padding-inline: var(--wa-space-l); }
+  #incident-stages .card-arrow { position: absolute; z-index: 1; inset-block-start: 50%; transform: translateY(-50%); }
+  #incident-stages .card-arrow-left { inset-inline-start: var(--wa-space-2xs); }
+  #incident-stages .card-arrow-right { inset-inline-end: var(--wa-space-2xs); }
+  #incident-stages .dialup-meta { color: var(--wa-color-text-quiet); }
+  #incident-stages .dialup-error { color: var(--wa-color-danger-60); margin: 0; }
+  #incident-stages .dialog-section { flex: 1 1 0; min-inline-size: 0; }
+  #incident-stages .dialog-divider-desktop { align-self: stretch; height: auto; }
+  #incident-stages .dialog-divider-mobile { display: none; }
+  #incident-stages .dialup-basics { --min-column-size: 12rem; }
+  @media (max-width: 70rem) {
+    #incident-stages .dialog-section { flex-basis: 100%; }
+    #incident-stages .dialog-divider-desktop { display: none; }
+    #incident-stages .dialog-divider-mobile { display: block; flex-basis: 100%; }
+  }
+</style>

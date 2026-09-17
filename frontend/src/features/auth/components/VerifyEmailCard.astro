@@ -1,0 +1,51 @@
+---
+import { verifyEmail } from '../api/AuthApi.js';
+export const prerender = false;
+
+let status = "pending";
+let message = "";
+let token = Astro.url.searchParams.get("token");
+
+if (!token) {
+  status = "error";
+  message = "Недействительная ссылка";
+} else {
+  const verificationResponse = await verifyEmail(token);
+  if (!verificationResponse.ok) {
+    status = "error";
+    message = "Не удалось подтвердить email";
+  } else {
+    const verificationData = await verificationResponse.json();
+    message = verificationData.message;
+    if (verificationData.status != 200) {
+      status = "error";
+    } else {
+      status = "success";
+    }
+  }
+}
+---
+<wa-card style="width: 100%; max-width: 30rem" class="card-header">
+
+  <h2 slot="header">Подтверждение Email</h2>
+  <div class="wa-stack">
+
+    {status == "success" && (
+    <wa-callout class="wa-success">
+      <wa-icon slot="icon" name="circle-check"></wa-icon>
+      <strong>{message}</strong>
+    </wa-callout>
+    <a href="/login">Вернуться на страницу входа</a>
+    )}
+
+    {status == "error" && (
+    <wa-callout class="wa-danger">
+      <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+      <strong>{message}</strong>
+    </wa-callout>
+    <a href="/register">Вернуться на страницу регистрации</a>
+    )}
+
+  </div>
+
+</wa-card>

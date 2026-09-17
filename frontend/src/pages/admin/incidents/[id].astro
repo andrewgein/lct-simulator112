@@ -1,0 +1,35 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminIncidentForm from "../../../features/incident/components/admin/AdminIncidentForm.astro";
+import { getFullIncidentById } from "../../../features/incident/api/AdminIncidentApi";
+
+export const prerender = false;
+let incident = null;
+let error = null;
+try {
+  const response = await getFullIncidentById(Astro.params.id, Astro.locals.accessToken);
+  if (!response.ok) {
+    error = "Не удалось загрузить сценарии";
+  } else {
+    incident = await response.json();
+  }
+} catch (err) {
+  error = "Не удалось загрузить сценарий";
+  console.error(err);
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Редактирование сценария">
+    <div class="wa-cluster">
+      <wa-button href="/admin/incidents" appearance="outlined" variant="neutral">Отмена</wa-button>
+      <wa-button type="submit" form="incident-form" appearance="accent" variant="success">Сохранить</wa-button>
+    </div>
+  </MainHeader>
+  {incident && (
+    <AdminIncidentForm {incident} mode="edit" />
+  )}
+</Page>

@@ -1,0 +1,10 @@
+---
+/** @typedef {import("../../contract/Incident").Incident} Incident */
+/** @type {{ incident?: Partial<Incident> }} */
+const { incident = {} } = Astro.props;
+---
+<section class="wa-stack wa-gap-m">
+  <h2 class="wa-heading-xl">Основное</h2>
+  <wa-input name="title" label="Название" value={incident.title || ""} required>
+  </wa-input>
+</section>

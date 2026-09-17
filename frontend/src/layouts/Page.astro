@@ -1,0 +1,91 @@
+---
+import '@awesome.me/webawesome/dist/styles/webawesome.css';
+import '@awesome.me/webawesome/dist/components/page/page.js';
+import '@awesome.me/webawesome/dist/components/button/button.js';
+import '@awesome.me/webawesome/dist/components/input/input.js';
+import '@awesome.me/webawesome/dist/components/number-input/number-input.js';
+import '@awesome.me/webawesome/dist/components/card/card.js';
+import '@awesome.me/webawesome/dist/components/callout/callout.js';
+import '@awesome.me/webawesome/dist/components/badge/badge.js';
+import '@awesome.me/webawesome/dist/components/icon/icon.js';
+import '@awesome.me/webawesome/dist/components/tab-group/tab-group.js';
+import '@awesome.me/webawesome/dist/components/tab/tab.js';
+import '@awesome.me/webawesome/dist/components/divider/divider.js';
+import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
+import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
+import '@awesome.me/webawesome/dist/components/checkbox-group/checkbox-group.js';
+import '@awesome.me/webawesome/dist/components/select/select.js';
+import '@awesome.me/webawesome/dist/components/option/option.js';
+import '@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js';
+import '@awesome.me/webawesome/dist/components/progress-ring/progress-ring.js';
+import '@awesome.me/webawesome/dist/components/details/details.js';
+import '@awesome.me/webawesome/dist/components/dialog/dialog.js';
+import '@awesome.me/webawesome/dist/components/rating/rating.js';
+import '@awesome.me/webawesome/dist/components/avatar/avatar.js';
+import '@awesome.me/webawesome/dist/components/scroller/scroller.js';
+import '../styles/style.css';
+import ErrorMessage from './ErrorMessage.astro';
+
+interface Props {
+  error?: string
+}
+const { error = null } = Astro.props;
+---
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Учебный смулятор</title>
+</head>
+<body>
+  <wa-page>
+        {Astro.slots.has('header') ? (
+          <div slot="header" style="display: contents;"><slot name="header" /></div>
+        ) : null}
+
+        {Astro.slots.has('main-header') ? (
+          <div slot="main-header" class="main-header-slot"><slot name="main-header" /></div>
+        ) : null}
+
+        {Astro.slots.has('footer') ? (
+          <div slot="footer" style="display: contents;"><slot name="footer" /></div>
+        ) : null}
+    <main>
+      <slot />
+    </main>
+    {error && (
+      <ErrorMessage message={error} />
+    )}
+  </wa-page>
+  <script>
+    import '@awesome.me/astro-lit/dsd-polyfill.js';
+    import '@awesome.me/astro-lit/hydration-support.js';
+    import '@awesome.me/webawesome/dist/components/page/page.js';
+    import '@awesome.me/webawesome/dist/components/button/button.js';
+    import '@awesome.me/webawesome/dist/components/input/input.js';
+    import '@awesome.me/webawesome/dist/components/number-input/number-input.js';
+    import '@awesome.me/webawesome/dist/components/card/card.js';
+    import '@awesome.me/webawesome/dist/components/callout/callout.js';
+    import '@awesome.me/webawesome/dist/components/badge/badge.js';
+    import '@awesome.me/webawesome/dist/components/icon/icon.js';
+    import '@awesome.me/webawesome/dist/components/tab-group/tab-group.js';
+    import '@awesome.me/webawesome/dist/components/tab/tab.js';
+    import '@awesome.me/webawesome/dist/components/divider/divider.js';
+		import '@awesome.me/webawesome/dist/components/textarea/textarea.js';
+		import '@awesome.me/webawesome/dist/components/checkbox/checkbox.js';
+    import '@awesome.me/webawesome/dist/components/checkbox-group/checkbox-group.js';
+    import '@awesome.me/webawesome/dist/components/select/select.js';
+    import '@awesome.me/webawesome/dist/components/option/option.js';
+    import '@awesome.me/webawesome/dist/components/progress-bar/progress-bar.js';
+    import '@awesome.me/webawesome/dist/components/progress-ring/progress-ring.js';
+    import '@awesome.me/webawesome/dist/components/details/details.js';
+    import '@awesome.me/webawesome/dist/components/dialog/dialog.js';
+    import '@awesome.me/webawesome/dist/components/rating/rating.js';
+    import '@awesome.me/webawesome/dist/components/avatar/avatar.js';
+    import '@awesome.me/webawesome/dist/components/scroller/scroller.js';
+  </script>    
+</body>
+</html>
+

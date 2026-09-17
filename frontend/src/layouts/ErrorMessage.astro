@@ -1,0 +1,13 @@
+---
+interface Props {
+  message: string;
+}
+
+const { message = "" } = Astro.props;
+---
+
+<wa-callout class="error-message" variant="danger">
+  <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
+  <strong>Ошибка</strong><br />
+  {message}
+</wa-callout>

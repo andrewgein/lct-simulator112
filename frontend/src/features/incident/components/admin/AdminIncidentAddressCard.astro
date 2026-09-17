@@ -1,0 +1,49 @@
+---
+import AddressField from "../../../../layouts/AddressField.jsx";
+
+/** @typedef {import("../../contract/Incident").IncidentAddress} IncidentAddress */
+/** @type {{ address?: Partial<IncidentAddress>, dadataApiKey?: string }} */
+const { address = {}, dadataApiKey = "" } = Astro.props;
+const fullAddress = [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(", ");
+---
+<section id="incident-address-section" class="wa-stack wa-gap-m">
+  <h2 class="wa-heading-xl">Адрес</h2>
+  <AddressField id="incident-main-address" label="Полный адрес" value={fullAddress} {dadataApiKey} client:load />
+  <div class="wa-grid">
+    <wa-input name="address.city" label="Город" value={address.city || ""} required>
+    </wa-input>
+    <wa-input name="address.street" label="Улица" value={address.street || ""} required>
+    </wa-input>
+    <wa-input name="address.house" label="Дом" value={address.house || ""} required>
+    </wa-input>
+    <wa-input name="address.building" label="Корпус" value={address.building || ""}>
+    </wa-input>
+    <wa-input name="address.apartment" label="Квартира" value={address.apartment || ""}>
+    </wa-input>
+    <wa-number-input name="address.floor" label="Этаж" min="0" value={address.floor ?? 0}>
+    </wa-number-input>
+  </div>
+</section>
+<script>
+  const section = document.querySelector("#incident-address-section");
+  const mainAddress = section?.querySelector("#incident-main-address");
+  const fields = Object.fromEntries(["city", "street", "house", "building", "apartment"].map((field) => [field, section?.querySelector(`[name="address.${field}"]`)]));
+  const formatAddress = () => [fields.city.value, fields.street.value, fields.house.value && `д. ${fields.house.value}`, fields.building.value && `корп. ${fields.building.value}`, fields.apartment.value && `кв. ${fields.apartment.value}`].filter(Boolean).join(", ");
+  const publishAddress = (value) => window.dispatchEvent(new CustomEvent("incident-address-change", { detail: value }));
+
+  mainAddress?.addEventListener("address-input", (event) => publishAddress(event.detail.value));
+  mainAddress?.addEventListener("address-selected", (event) => {
+    const data = event.detail.suggestion.data || {};
+    fields.city.value = data.city || data.settlement || "";
+    fields.street.value = data.street || "";
+    fields.house.value = data.house || "";
+    fields.building.value = data.block || "";
+    fields.apartment.value = data.flat || "";
+  });
+  Object.values(fields).forEach((field) => field?.addEventListener("input", () => {
+    const input = mainAddress.querySelector("input");
+    input.value = formatAddress();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }));
+  publishAddress(mainAddress?.querySelector("input")?.value || "");
+</script>

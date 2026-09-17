@@ -1,0 +1,84 @@
+---
+import Page from "../../layouts/Page.astro";
+import { getReview } from "../../features/review/api/ReviewApi";
+import Header from "../../layouts/Header.astro";
+import MainHeader from "../../layouts/MainHeader.astro";
+
+const accessToken = Astro.cookies.get("accessToken").value;
+const { context } = Astro.params;
+const reviewResponse = await getReview(context, accessToken);
+const review = await reviewResponse.json();
+
+const groupedIncidents = review.criterionResults.reduce((acc, current) => {
+  const key = current.incidentId ? `incident:${current.incidentId}` : `legacy:${current.criterionName}`;
+  if (!acc[key]) {
+    acc[key] = {
+      label: current.incidentOrder ? `Инцидент ${current.incidentOrder}` : current.criterionName,
+      criteria: {},
+    };
+  }
+  if (!acc[key].criteria[current.criterionName]) {
+    acc[key].criteria[current.criterionName] = [];
+  }
+  acc[key].criteria[current.criterionName].push(current);
+  return acc;
+}, {});
+
+const totalScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.score, 0);
+const maxTotalScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+const percentage = maxTotalScore > 0 ? Math.round((totalScore / maxTotalScore) * 100) : 0;
+
+export const prerender = false;
+---
+
+<Page>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Результат" />
+  <div class="review-sections wa-stack wa-gap-2xl">
+    <section class="wa-stack wa-gap-l" aria-labelledby="summary-heading">
+      <h2 id="summary-heading" class="wa-heading-xl">Общая информация</h2>
+      <div>
+        <span><strong>Статус:</strong> {review.reviewStatus}</span>
+      </div>
+      <span><strong>Общий балл:</strong> {totalScore} из {maxTotalScore} ({percentage}%)</span>
+      <wa-progress-bar value={percentage} label="Процент выполнения"></wa-progress-bar>
+    </section>
+    <wa-divider></wa-divider>
+    <section class="wa-stack wa-gap-l" aria-labelledby="criteria-heading">
+      <h2 id="criteria-heading" class="wa-heading-xl">Детализация по критериям</h2>
+      {Object.values(groupedIncidents).map((incident, incidentIndex) => {
+        const items = Object.values(incident.criteria).flat();
+        const incidentScore = items.reduce((sum, criterion) => sum + criterion.score, 0);
+        const incidentMaxScore = items.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+        return (
+          <>
+            <wa-card appearance="filled-outlined">
+              <div class="wa-stack">
+                <strong class="wa-heading-m">{incident.label} {incidentScore} / {incidentMaxScore}</strong>
+                {Object.entries(incident.criteria).map(([criterionName, criterionItems]) => {
+                  const criterionScore = criterionItems.reduce((sum, criterion) => sum + criterion.score, 0);
+                  const criterionMaxScore = criterionItems.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+                  return (
+                    <wa-details>
+                      <div slot="summary">
+                        <span><strong>{criterionName}</strong> {criterionScore} / {criterionMaxScore}</span>
+                      </div>
+                      <ul>
+                        {criterionItems.map((item) => (
+                          <li>
+                            <span>{item.feedback} {item.score}/{item.maxScore}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </wa-details>
+                  );
+                })}
+              </div>
+            </wa-card>
+            {incidentIndex < Object.keys(groupedIncidents).length - 1 && <wa-divider></wa-divider>}
+          </>
+        );
+      })}
+    </section>
+  </div>
+</Page>
