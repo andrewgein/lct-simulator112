@@ -1,0 +1,20 @@
+{
+  "emotions": {
+    "calm": {
+      "ref_audio": "calm.wav"
+    },
+    "worried": {
+      "ref_audio": "worried.wav"
+    },
+    "panicked": {
+      "ref_audio": "panicked.wav"
+    },
+    "aggressive": {
+      "ref_audio": "aggressive.wav",
+      "ref_text": "Алло, я уже объясняю: нам срочно нужна помощь! Человек лежит на земле, а помощь ещё не приехала. Я назову адрес, только скажите, что мне сейчас нужно делать!"
+    },
+    "confused": {
+      "ref_audio": "confused.wav"
+    }
+  }
+}
