@@ -1,9 +1,6 @@
 package com.simulator112.incident.model.entity;
 
-import java.util.UUID;
-
-import com.simulator112.incident.model.enums.FieldType;
-
+import com.simulator112.incident.model.enums.RoutingResultKind;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -21,36 +18,36 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "additional_info")
-public class AdditionalInfoEntity {
+@Table(name = "routing_rules")
+public class RoutingRuleEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "type_id", nullable = false)
-    private TypeEntity type;
+    @JoinColumn(name = "classifier_entry_id", nullable = false)
+    private ClassifierEntryEntity classifierEntry;
 
-    @Column(name = "field_code", nullable = false)
-    private String fieldCode; 
-
-    @Column(name = "field_name", nullable = false)
-    private String fieldName;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "routing_variant_id", nullable = false)
+    private RoutingVariantEntity variant;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "field_type", nullable = false)
-    private FieldType fieldType;
+    @Column(name = "result_kind", nullable = false)
+    private RoutingResultKind resultKind;
 
-    @Column(name = "required", nullable = false)
-    private boolean required;
+    @Column(name = "target_type_name", columnDefinition = "text")
+    private String targetTypeName;
 
-    @Column(name = "position", nullable = false)
-    private Integer position;
+    @Column(name = "raw_value", nullable = false, columnDefinition = "text")
+    private String rawValue;
 }

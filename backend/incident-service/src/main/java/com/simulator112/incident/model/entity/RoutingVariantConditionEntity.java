@@ -1,9 +1,10 @@
 package com.simulator112.incident.model.entity;
 
-import java.util.UUID;
-
+import com.simulator112.incident.model.enums.RoutingConditionOperator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,28 +18,35 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "type_instructions")
-public class TypeInstructionEntity {
+@Table(name = "routing_variant_conditions")
+public class RoutingVariantConditionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "type_id", nullable = false)
-    private TypeEntity type;
+    @JoinColumn(name = "routing_variant_id", nullable = false)
+    private RoutingVariantEntity routingVariant;
 
-    @Column(nullable = false, name = "instructions", columnDefinition = "TEXT")
-    private String instructions;
+    @Column(name = "fact_code", nullable = false)
+    private String factCode;
 
-    @Column(name = "position", nullable = false)
-    private Integer position; // порядок в массиве
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RoutingConditionOperator operator;
 
-    
+    @Column(name = "expected_value")
+    private String expectedValue;
+
+    @Column(nullable = false)
+    private Integer position;
 }
