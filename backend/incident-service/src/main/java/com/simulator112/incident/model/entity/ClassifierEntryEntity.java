@@ -18,6 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +62,9 @@ public class ClassifierEntryEntity {
     @Column(name = "feature_3_name", columnDefinition = "text")
     private String feature3Name;
 
+    @Column(name = "statistical_group", columnDefinition = "text")
+    private String statisticalGroup;
+
     @Column(name = "additional_features", columnDefinition = "text")
     private String additionalFeatures;
 
@@ -82,6 +86,7 @@ public class ClassifierEntryEntity {
             joinColumns = @JoinColumn(name = "classifier_entry_id"),
             inverseJoinColumns = @JoinColumn(name = "dispatch_service_id")
     )
+    @BatchSize(size = 100)
     @Builder.Default
     private List<DispatchServiceEntity> primaryServices = new ArrayList<>();
 

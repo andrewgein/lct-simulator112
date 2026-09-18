@@ -4,7 +4,6 @@ import com.simulator112.incident.grpc.contract.Address;
 import com.simulator112.incident.grpc.contract.Applicant;
 import com.simulator112.incident.grpc.contract.Difficulty;
 import com.simulator112.incident.grpc.contract.DispatcherCriteria;
-import com.simulator112.incident.grpc.contract.IncidentAdditionalInfo;
 import com.simulator112.incident.grpc.contract.IncidentContext;
 import com.simulator112.incident.grpc.contract.DialupDetails;
 import com.simulator112.incident.grpc.contract.IncidentTypeInfo;
@@ -39,11 +38,9 @@ public class GrpcIncidentMapper {
                         .setId(stage.getId().toString())
                         .setTitle(nullToEmpty(stage.getTitle()))
                         .setPosition(stage.getPosition())
-                        .setType(toIncidentType(stage.getType()))
+                        .setType(toIncidentType(stage.getClassifierEntry()))
                         .setDescription(nullToEmpty(stage.getDescription()))
                         .setVictim(toApplicant(stage.getVictim()))
-                        .addAllAdditionalInfo(stage.getAdditionalInfo().stream().map(value -> toAdditionalInfo(
-                                value.getId(), value.getAdditionalInfo(), value.getFieldValue())).toList())
                         .addAllDialups(stage.getDialups().stream().map(this::toDialupContext).toList())
                         .build()).toList())
                 .build();
@@ -118,26 +115,12 @@ public class GrpcIncidentMapper {
                 .build();
     }
 
-    private IncidentTypeInfo toIncidentType(com.simulator112.incident.model.entity.TypeEntity type) {
+    private IncidentTypeInfo toIncidentType(com.simulator112.incident.model.entity.ClassifierEntryEntity entry) {
         return IncidentTypeInfo.newBuilder()
-                .setId(type.getId().toString())
-                .setTypeId(type.getTypeId())
-                .setServiceType(com.simulator112.incident.grpc.contract.ServiceType.valueOf(type.getServiceType().name()))
-                .setTypeName(type.getTypeName())
-                .build();
-    }
-
-    private IncidentAdditionalInfo toAdditionalInfo(java.util.UUID id,
-                                                     com.simulator112.incident.model.entity.AdditionalInfoEntity field,
-                                                     String value) {
-        return IncidentAdditionalInfo.newBuilder()
-                .setId(id.toString())
-                .setAdditionalInfoId(field.getId().toString())
-                .setFieldCode(field.getFieldCode())
-                .setFieldName(field.getFieldName())
-                .setFieldType(com.simulator112.incident.grpc.contract.FieldType.valueOf(field.getFieldType().name()))
-                .setRequired(field.isRequired())
-                .setFieldValue(nullToEmpty(value))
+                .setId(entry.getId().toString())
+                .setTypeId(entry.getCode())
+                .setServiceType(com.simulator112.incident.grpc.contract.ServiceType.SERVICE_TYPE_UNSPECIFIED)
+                .setTypeName(entry.getFinalName())
                 .build();
     }
 

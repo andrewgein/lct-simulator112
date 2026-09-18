@@ -1,6 +1,6 @@
 package com.simulator112.incident.controller.admin;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.simulator112.incident.dto.request.CreateIncidentRequest;
 import com.simulator112.incident.dto.request.UpdateIncidentRequest;
-import com.simulator112.incident.dto.view.ClassifierTypeView;
+import com.simulator112.incident.dto.view.ClassifierCategoryView;
 import com.simulator112.incident.dto.view.IncidentFullView;
 import com.simulator112.incident.service.ClassifierService;
 import com.simulator112.incident.service.admin.IncidentAdminService;
@@ -63,7 +63,7 @@ public class IncidentAdminController {
     }
 
     @GetMapping("/classifier")
-    public Map<String, Map<String, ClassifierTypeView>> getClassifier() {
+    public List<ClassifierCategoryView> getClassifier() {
 
         return classifierService.getClassifier();
     }

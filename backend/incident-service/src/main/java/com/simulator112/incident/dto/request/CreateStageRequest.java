@@ -2,11 +2,9 @@ package com.simulator112.incident.dto.request;
 
 import com.simulator112.incident.dto.request.embeddable.VictimRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
-
-import java.util.List;
-import java.util.UUID;
 
 public record CreateStageRequest(
     String title,
@@ -15,16 +13,12 @@ public record CreateStageRequest(
     @PositiveOrZero
     Integer position,
 
-    @NotNull
-    UUID typeId,
+    @NotBlank
+    String classifierCode,
 
     String description,
 
     @Valid
-    VictimRequest victim,
-
-    @NotNull
-    @Valid
-    List<IncidentAdditionalInfoRequest> additionalInfo
+    VictimRequest victim
 ) {
 }

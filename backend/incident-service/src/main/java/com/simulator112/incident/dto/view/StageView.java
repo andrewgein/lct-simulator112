@@ -9,10 +9,9 @@ public record StageView(
     UUID id,
     String title,
     Integer position,
-    TypeView type,
+    ClassifierEntryView classifierEntry,
     String description,
     ApplicantView victim,
-    List<IncidentAdditionalInfoView> additionalInfo,
     List<DialupView> dialups
 ) {
 }

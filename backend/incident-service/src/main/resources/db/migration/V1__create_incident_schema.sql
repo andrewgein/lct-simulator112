@@ -17,6 +17,7 @@ CREATE TABLE classifier_entries (
     feature_2_name TEXT,
     feature_3_code VARCHAR(50),
     feature_3_name TEXT,
+    statistical_group TEXT,
     additional_features TEXT,
     final_name TEXT NOT NULL,
     ekp_35_name TEXT,

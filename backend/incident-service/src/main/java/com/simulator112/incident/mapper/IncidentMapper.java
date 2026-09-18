@@ -6,7 +6,6 @@ import com.simulator112.incident.dto.view.DialupView;
 import com.simulator112.incident.dto.view.IncidentFullView;
 import com.simulator112.incident.dto.view.IncidentPreView;
 import com.simulator112.incident.dto.view.StageView;
-import com.simulator112.incident.dto.view.TypeView;
 import com.simulator112.incident.mapper.embeddable.AddressMapper;
 import com.simulator112.incident.mapper.embeddable.ApplicantMapper;
 import com.simulator112.incident.mapper.embeddable.DialupDetailsMapper;
@@ -14,7 +13,6 @@ import com.simulator112.incident.mapper.embeddable.DispatcherCriteriaMapper;
 import com.simulator112.incident.model.entity.DialupEntity;
 import com.simulator112.incident.model.entity.IncidentEntity;
 import com.simulator112.incident.model.entity.StageEntity;
-import com.simulator112.incident.model.entity.TypeEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +24,7 @@ public class IncidentMapper {
     private final ApplicantMapper applicantMapper;
     private final DialupDetailsMapper dialupDetailsMapper;
     private final DispatcherCriteriaMapper dispatcherCriteriaMapper;
+    private final ClassifierMapper classifierMapper;
 
     public IncidentEntity toEntity(CreateIncidentRequest request) {
         IncidentEntity entity = new IncidentEntity();
@@ -63,15 +62,9 @@ public class IncidentMapper {
                 stage.getId(),
                 stage.getTitle(),
                 stage.getPosition(),
-                toTypeView(stage.getType()),
+                classifierMapper.toEntryView(stage.getClassifierEntry()),
                 stage.getDescription(),
                 stage.getVictim() == null ? null : applicantMapper.toView(stage.getVictim()),
-                stage.getAdditionalInfo().stream().map(value -> {
-                    var field = value.getAdditionalInfo();
-                    return new com.simulator112.incident.dto.view.IncidentAdditionalInfoView(
-                            value.getId(), field.getId(), field.getFieldCode(), field.getFieldName(),
-                            field.getFieldType(), field.isRequired(), value.getFieldValue());
-                }).toList(),
                 stage.getDialups().stream().map(this::toDialupView).toList()
         );
     }
@@ -83,10 +76,6 @@ public class IncidentMapper {
                 dialup.getApplicant() == null ? null : applicantMapper.toView(dialup.getApplicant()),
                 dialupDetailsMapper.toView(dialup.getDialupDetails())
         );
-    }
-
-    private TypeView toTypeView(TypeEntity type) {
-        return new TypeView(type.getId(), type.getServiceType(), type.getTypeId(), type.getTypeName());
     }
 
     public IncidentPreView toPreView(IncidentEntity entity) {
