@@ -1,0 +1,104 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+
+            #Auth service
+            - id: auth-service-getrole
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/users/*/role
+              filters:
+                - name: JwtAuthFilter
+
+            - id: auth-service
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/auth/**
+
+            #User service — управление профилем
+            - id: user-service
+              uri: ${USER_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/profile/**
+              filters:
+                - name: JwtAuthFilter
+
+            # Dialog service - authenticated WebSocket control and audio streams
+            - id: dialog-service
+              uri: ${DIALOG_SERVICE_URL:ws://localhost:8083}
+              predicates:
+                - Path=/api/v1/dialog/**
+              filters:
+                - name: JwtAuthFilter
+
+            #Context manager - управление контекстом диалога
+            - id: context-manager
+              uri: ${CONTEXT_MANGER_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/v1/context/**
+              filters:
+                - name: JwtAuthFilter
+
+
+            #Review service - оценка результата
+            - id: review-service
+              uri: ${REVIEW_SERVICE_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/v1/review/**
+              filters:
+                - name: JwtAuthFilter
+
+            #Admin constructors — authenticated administrators only
+            - id: incident-service-admin
+              uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/admin/incident/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
+            #Incedent service - хранилище происшествий (уровней)
+            - id: incident-service
+              uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/incident/**
+              filters:
+                - name: JwtAuthFilter
+
+
+          httpclient:
+            websocket:
+              max-frame-payload-length: 1048576
+
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY_PATH}
+
+logging:
+  level:
+    '[org.springframework.cloud.gateway]': INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
