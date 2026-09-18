@@ -22,7 +22,7 @@ class UserDialogProcessingNode:
 
     def get_input_queue(self):
         return self.input_queue
-    
+
     def get_output_queue(self):
         return self.output_queue
 
@@ -41,10 +41,10 @@ class UserDialogProcessingNode:
                 break
 
         self.worker_thread.join(timeout=5.0)
-    
+
     def _event_handler(self, event):
         pass
-    
+
     def __process_new_event(self, stop_event: threading.Event):
         while not stop_event.is_set():
             try:

@@ -32,4 +32,3 @@ class SSTNode(UserDialogProcessingNode):
     def get_final_text(self) -> str:
         text = json.loads(self.recognizer.FinalResult())
         return text["text"]
-
