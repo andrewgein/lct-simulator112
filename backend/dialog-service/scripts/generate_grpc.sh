@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 PROTO_ROOT="../shared/src/main/proto"
 
-./venv/bin/python -m grpc_tools.protoc \
+python3 -m grpc_tools.protoc \
   -I"$PROTO_ROOT" \
   --python_out=app/grpc \
   --pyi_out=app/grpc \
