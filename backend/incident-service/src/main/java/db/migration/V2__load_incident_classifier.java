@@ -149,23 +149,24 @@ public class V2__load_incident_classifier extends BaseJavaMigration {
         Map<String, UUID> ids = new HashMap<>();
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO routing_variants (
-                    id, dispatch_service_id, source_column,
+                    id, dispatch_service_id, routing_target, source_column,
                     header_level_1, header_level_2, header_level_3,
                     priority, position
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """)) {
             for (var variant : classifier.routingVariants()) {
                 UUID id = UUID.randomUUID();
                 ids.put(variant.sourceColumn(), id);
                 statement.setObject(1, id);
                 statement.setObject(2, requireId(serviceIds, variant.serviceCode(), "служба"));
-                statement.setString(3, variant.sourceColumn());
-                statement.setString(4, emptyToNull(variant.headerLevel1()));
-                statement.setString(5, emptyToNull(variant.headerLevel2()));
-                statement.setString(6, emptyToNull(variant.headerLevel3()));
-                statement.setInt(7, variant.priority());
-                statement.setInt(8, variant.position());
+                statement.setString(3, variant.routingTarget());
+                statement.setString(4, variant.sourceColumn());
+                statement.setString(5, emptyToNull(variant.headerLevel1()));
+                statement.setString(6, emptyToNull(variant.headerLevel2()));
+                statement.setString(7, emptyToNull(variant.headerLevel3()));
+                statement.setInt(8, variant.priority());
+                statement.setInt(9, variant.position());
                 statement.addBatch();
             }
             statement.executeBatch();

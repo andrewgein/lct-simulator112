@@ -117,19 +117,30 @@ public class IncidentClassifierWorkbookReader {
         List<RoutingVariantData> variants = new ArrayList<>();
         for (int column = FIRST_ROUTING_COLUMN; column <= LAST_ROUTING_COLUMN; column++) {
             String sourceColumn = columnName(column);
+            String headerLevel1 = value(sheet, HEADER_LEVEL_1, column, formatter, evaluator, mergedRegions);
+            String headerLevel2 = value(sheet, HEADER_LEVEL_2, column, formatter, evaluator, mergedRegions);
+            String headerLevel3 = value(sheet, HEADER_LEVEL_3, column, formatter, evaluator, mergedRegions);
             List<ConditionData> conditions = conditions(sourceColumn);
             variants.add(new RoutingVariantData(
                     serviceCode(column),
                     sourceColumn,
-                    value(sheet, HEADER_LEVEL_1, column, formatter, evaluator, mergedRegions),
-                    value(sheet, HEADER_LEVEL_2, column, formatter, evaluator, mergedRegions),
-                    value(sheet, HEADER_LEVEL_3, column, formatter, evaluator, mergedRegions),
+                    routingTarget(headerLevel1, headerLevel2, headerLevel3),
+                    headerLevel1,
+                    headerLevel2,
+                    headerLevel3,
                     conditions.isEmpty() ? 0 : 100,
                     column - FIRST_ROUTING_COLUMN,
                     conditions
             ));
         }
         return variants;
+    }
+
+    private String routingTarget(String headerLevel1, String headerLevel2, String headerLevel3) {
+        if (!headerLevel2.isBlank() && !headerLevel2.equalsIgnoreCase(headerLevel3)) {
+            return headerLevel2;
+        }
+        return headerLevel1;
     }
 
     private ParsedEntries readEntries(
@@ -480,6 +491,7 @@ public class IncidentClassifierWorkbookReader {
     public record RoutingVariantData(
             String serviceCode,
             String sourceColumn,
+            String routingTarget,
             String headerLevel1,
             String headerLevel2,
             String headerLevel3,

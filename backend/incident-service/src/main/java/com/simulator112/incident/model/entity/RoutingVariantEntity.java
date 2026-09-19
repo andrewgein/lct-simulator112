@@ -39,6 +39,9 @@ public class RoutingVariantEntity {
     @JoinColumn(name = "dispatch_service_id", nullable = false)
     private DispatchServiceEntity dispatchService;
 
+    @Column(name = "routing_target", nullable = false, columnDefinition = "text")
+    private String routingTarget;
+
     @Column(name = "source_column", nullable = false, unique = true, length = 3)
     private String sourceColumn;
 

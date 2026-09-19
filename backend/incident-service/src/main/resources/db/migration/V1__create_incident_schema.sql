@@ -45,6 +45,7 @@ CREATE TABLE classifier_entry_primary_services (
 CREATE TABLE routing_variants (
     id UUID PRIMARY KEY,
     dispatch_service_id UUID NOT NULL REFERENCES dispatch_services (id) ON DELETE CASCADE,
+    routing_target TEXT NOT NULL,
     source_column VARCHAR(3) NOT NULL,
     header_level_1 TEXT,
     header_level_2 TEXT,

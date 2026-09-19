@@ -33,6 +33,10 @@ class IncidentClassifierWorkbookReaderTest {
                 assertThat(rule.sourceColumn()).isEqualTo("N");
                 assertThat(rule.targetTypeName()).isEqualTo("пожар: мусор");
             });
+            assertThat(classifier.routingVariants()).anySatisfy(variant -> {
+                assertThat(variant.sourceColumn()).isEqualTo("N");
+                assertThat(variant.routingTarget()).isEqualTo("Служба 101");
+            });
         }
     }
 }
