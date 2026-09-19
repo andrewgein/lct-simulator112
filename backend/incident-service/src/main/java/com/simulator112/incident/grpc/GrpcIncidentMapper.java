@@ -6,18 +6,22 @@ import com.simulator112.incident.grpc.contract.Difficulty;
 import com.simulator112.incident.grpc.contract.DispatcherCriteria;
 import com.simulator112.incident.grpc.contract.IncidentContext;
 import com.simulator112.incident.grpc.contract.DialupDetails;
-import com.simulator112.incident.grpc.contract.IncidentTypeInfo;
 import com.simulator112.incident.grpc.contract.LevelContext;
 import com.simulator112.incident.grpc.contract.StageContext;
 import com.simulator112.incident.grpc.contract.DialupContext;
+import com.simulator112.incident.grpc.classifier.GrpcClassifierMapper;
 import com.simulator112.incident.model.entity.IncidentEntity;
 import com.simulator112.incident.model.entity.LevelEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class GrpcIncidentMapper {
+
+    private final GrpcClassifierMapper grpcClassifierMapper;
 
     public LevelContext toLevelContext(LevelEntity entity) {
         return LevelContext.newBuilder()
@@ -38,7 +42,7 @@ public class GrpcIncidentMapper {
                         .setId(stage.getId().toString())
                         .setTitle(nullToEmpty(stage.getTitle()))
                         .setPosition(stage.getPosition())
-                        .setType(toIncidentType(stage.getClassifierEntry()))
+                        .setClassifierEntry(grpcClassifierMapper.toClassifierEntry(stage.getClassifierEntry()))
                         .setDescription(nullToEmpty(stage.getDescription()))
                         .setVictim(toApplicant(stage.getVictim()))
                         .addAllDialups(stage.getDialups().stream().map(this::toDialupContext).toList())
@@ -112,15 +116,6 @@ public class GrpcIncidentMapper {
                 .addAllRequiredQuestions(nullToEmptyList(criteria.getRequiredQuestions()))
                 .addAllExpectedActions(nullToEmptyList(criteria.getExpectedActions()))
                 .addAllCriticalMistakes(nullToEmptyList(criteria.getCriticalMistakes()))
-                .build();
-    }
-
-    private IncidentTypeInfo toIncidentType(com.simulator112.incident.model.entity.ClassifierEntryEntity entry) {
-        return IncidentTypeInfo.newBuilder()
-                .setId(entry.getId().toString())
-                .setTypeId(entry.getCode())
-                .setServiceType(com.simulator112.incident.grpc.contract.ServiceType.SERVICE_TYPE_UNSPECIFIED)
-                .setTypeName(entry.getFinalName())
                 .build();
     }
 
