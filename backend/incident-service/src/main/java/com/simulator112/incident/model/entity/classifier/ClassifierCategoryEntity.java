@@ -1,4 +1,4 @@
-package com.simulator112.incident.model.entity;
+package com.simulator112.incident.model.entity.classifier;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -14,6 +14,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,8 +26,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "dispatch_services")
-public class DispatchServiceEntity {
+@Table(name = "classifier_categories")
+public class ClassifierCategoryEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -38,13 +39,17 @@ public class DispatchServiceEntity {
     @Column(nullable = false)
     private String name;
 
-    @OneToMany(mappedBy = "dispatchService", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("position ASC")
-    @Builder.Default
-    private List<RoutingVariantEntity> routingVariants = new ArrayList<>();
+    @Column(nullable = false, unique = true)
+    private Integer position;
 
-    public void addRoutingVariant(RoutingVariantEntity routingVariant) {
-        routingVariants.add(routingVariant);
-        routingVariant.setDispatchService(this);
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("position ASC")
+    @BatchSize(size = 50)
+    @Builder.Default
+    private List<ClassifierEntryEntity> entries = new ArrayList<>();
+
+    public void addEntry(ClassifierEntryEntity entry) {
+        entries.add(entry);
+        entry.setCategory(this);
     }
 }

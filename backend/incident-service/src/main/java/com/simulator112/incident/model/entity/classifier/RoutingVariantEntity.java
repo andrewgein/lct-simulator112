@@ -1,4 +1,4 @@
-package com.simulator112.incident.model.entity;
+package com.simulator112.incident.model.entity.classifier;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

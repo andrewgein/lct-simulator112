@@ -1,8 +1,8 @@
-package com.simulator112.incident.service;
+package com.simulator112.incident.service.classifier;
 
-import com.simulator112.incident.model.entity.RoutingVariantConditionEntity;
-import com.simulator112.incident.model.entity.RoutingVariantEntity;
-import com.simulator112.incident.model.enums.RoutingConditionOperator;
+import com.simulator112.incident.model.entity.classifier.RoutingVariantConditionEntity;
+import com.simulator112.incident.model.entity.classifier.RoutingVariantEntity;
+import com.simulator112.incident.model.enums.classifier.RoutingConditionOperator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

@@ -1,6 +1,6 @@
-package com.simulator112.incident.model.entity;
+package com.simulator112.incident.model.entity.classifier;
 
-import com.simulator112.incident.model.enums.RoutingResultKind;
+import com.simulator112.incident.model.enums.classifier.RoutingConditionOperator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -26,28 +26,27 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "routing_rules")
-public class RoutingRuleEntity {
+@Table(name = "routing_variant_conditions")
+public class RoutingVariantConditionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "classifier_entry_id", nullable = false)
-    private ClassifierEntryEntity classifierEntry;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "routing_variant_id", nullable = false)
-    private RoutingVariantEntity variant;
+    private RoutingVariantEntity routingVariant;
+
+    @Column(name = "fact_code", nullable = false)
+    private String factCode;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "result_kind", nullable = false)
-    private RoutingResultKind resultKind;
+    @Column(nullable = false)
+    private RoutingConditionOperator operator;
 
-    @Column(name = "target_type_name", columnDefinition = "text")
-    private String targetTypeName;
+    @Column(name = "expected_value")
+    private String expectedValue;
 
-    @Column(name = "raw_value", nullable = false, columnDefinition = "text")
-    private String rawValue;
+    @Column(nullable = false)
+    private Integer position;
 }

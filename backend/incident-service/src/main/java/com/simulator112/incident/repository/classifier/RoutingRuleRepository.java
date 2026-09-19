@@ -1,6 +1,6 @@
-package com.simulator112.incident.repository;
+package com.simulator112.incident.repository.classifier;
 
-import com.simulator112.incident.model.entity.RoutingRuleEntity;
+import com.simulator112.incident.model.entity.classifier.RoutingRuleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

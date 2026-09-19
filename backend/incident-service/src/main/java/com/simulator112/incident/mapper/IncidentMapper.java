@@ -6,6 +6,7 @@ import com.simulator112.incident.dto.view.DialupView;
 import com.simulator112.incident.dto.view.IncidentFullView;
 import com.simulator112.incident.dto.view.IncidentPreView;
 import com.simulator112.incident.dto.view.StageView;
+import com.simulator112.incident.mapper.classifier.ClassifierMapper;
 import com.simulator112.incident.mapper.embeddable.AddressMapper;
 import com.simulator112.incident.mapper.embeddable.ApplicantMapper;
 import com.simulator112.incident.mapper.embeddable.DialupDetailsMapper;

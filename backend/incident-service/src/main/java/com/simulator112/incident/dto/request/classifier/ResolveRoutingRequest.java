@@ -1,4 +1,4 @@
-package com.simulator112.incident.dto.request;
+package com.simulator112.incident.dto.request.classifier;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

@@ -1,4 +1,4 @@
-package com.simulator112.incident.model.enums;
+package com.simulator112.incident.model.enums.classifier;
 
 public enum RoutingResultKind {
     SEND_CARD,

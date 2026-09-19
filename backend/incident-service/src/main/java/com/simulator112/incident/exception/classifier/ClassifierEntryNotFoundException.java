@@ -1,4 +1,4 @@
-package com.simulator112.incident.exception;
+package com.simulator112.incident.exception.classifier;
 
 public class ClassifierEntryNotFoundException extends RuntimeException {
 

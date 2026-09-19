@@ -1,4 +1,4 @@
-package com.simulator112.incident.dto.view;
+package com.simulator112.incident.dto.view.classifier;
 
 import java.util.List;
 import java.util.UUID;

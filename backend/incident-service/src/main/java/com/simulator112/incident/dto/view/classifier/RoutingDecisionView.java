@@ -1,6 +1,6 @@
-package com.simulator112.incident.dto.view;
+package com.simulator112.incident.dto.view.classifier;
 
-import com.simulator112.incident.model.enums.RoutingResultKind;
+import com.simulator112.incident.model.enums.classifier.RoutingResultKind;
 
 public record RoutingDecisionView(
         DispatchServiceView service,

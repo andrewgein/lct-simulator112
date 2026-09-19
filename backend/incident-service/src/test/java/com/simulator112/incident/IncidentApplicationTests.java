@@ -1,14 +1,18 @@
 package com.simulator112.incident;
 
-import com.simulator112.incident.dto.request.ResolveRoutingRequest;
-import com.simulator112.incident.model.enums.RoutingResultKind;
-import com.simulator112.incident.service.RoutingService;
+import com.simulator112.incident.dto.request.classifier.ResolveRoutingRequest;
+import com.simulator112.incident.grpc.IncidentGrpcServiceImpl;
+import com.simulator112.incident.grpc.contract.RoutingResult;
+import com.simulator112.incident.model.enums.classifier.RoutingResultKind;
+import com.simulator112.incident.service.classifier.RoutingService;
+import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,6 +24,9 @@ class IncidentApplicationTests {
 
 	@Autowired
 	private RoutingService routingService;
+
+	@Autowired
+	private IncidentGrpcServiceImpl incidentGrpcService;
 
 	@Test
 	void contextLoads() {
@@ -64,6 +71,43 @@ class IncidentApplicationTests {
 			assertThat(decision.service().code()).isEqualTo("MOSGAZ");
 			assertThat(decision.resultKind()).isEqualTo(RoutingResultKind.SERVICE_TYPE);
 			assertThat(decision.targetTypeName()).isEqualTo("пожар");
+		});
+	}
+
+	@Test
+	void resolvesRoutingThroughGrpc() {
+		var request = com.simulator112.incident.grpc.contract.ResolveRoutingRequest.newBuilder()
+				.setClassifierCode("1010101")
+				.putFacts("ACCESS_STATUS", "AVAILABLE")
+				.putFacts("VICTIM_STATUS", "PRESENT")
+				.putFacts("GASIFICATION", "TRUE")
+				.build();
+		AtomicReference<RoutingResult> response = new AtomicReference<>();
+		AtomicReference<Throwable> error = new AtomicReference<>();
+
+		incidentGrpcService.resolveRouting(request, new StreamObserver<>() {
+			@Override
+			public void onNext(RoutingResult value) {
+				response.set(value);
+			}
+
+			@Override
+			public void onError(Throwable throwable) {
+				error.set(throwable);
+			}
+
+			@Override
+			public void onCompleted() {
+			}
+		});
+
+		assertThat(error.get()).isNull();
+		assertThat(response.get()).isNotNull();
+		assertThat(response.get().getClassifierCode()).isEqualTo("1010101");
+		assertThat(response.get().getDecisionsList()).isNotEmpty();
+		assertThat(response.get().getDecisionsList()).anySatisfy(decision -> {
+			assertThat(decision.getService().getCode()).isEqualTo("MCHS");
+			assertThat(decision.getRoutingTarget()).isEqualTo("Служба 101");
 		});
 	}
 

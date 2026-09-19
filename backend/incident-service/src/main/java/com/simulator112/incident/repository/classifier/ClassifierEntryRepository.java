@@ -1,6 +1,6 @@
-package com.simulator112.incident.repository;
+package com.simulator112.incident.repository.classifier;
 
-import com.simulator112.incident.model.entity.ClassifierEntryEntity;
+import com.simulator112.incident.model.entity.classifier.ClassifierEntryEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

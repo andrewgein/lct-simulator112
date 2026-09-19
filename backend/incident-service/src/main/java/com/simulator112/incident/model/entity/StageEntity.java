@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.simulator112.incident.model.embeddable.Applicant;
+import com.simulator112.incident.model.entity.classifier.ClassifierEntryEntity;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;

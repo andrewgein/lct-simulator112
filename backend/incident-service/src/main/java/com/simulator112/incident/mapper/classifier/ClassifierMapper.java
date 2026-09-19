@@ -1,10 +1,10 @@
-package com.simulator112.incident.mapper;
+package com.simulator112.incident.mapper.classifier;
 
-import com.simulator112.incident.dto.view.ClassifierCategoryView;
-import com.simulator112.incident.dto.view.ClassifierEntryView;
-import com.simulator112.incident.dto.view.DispatchServiceView;
-import com.simulator112.incident.model.entity.ClassifierCategoryEntity;
-import com.simulator112.incident.model.entity.ClassifierEntryEntity;
+import com.simulator112.incident.dto.view.classifier.ClassifierCategoryView;
+import com.simulator112.incident.dto.view.classifier.ClassifierEntryView;
+import com.simulator112.incident.dto.view.classifier.DispatchServiceView;
+import com.simulator112.incident.model.entity.classifier.ClassifierCategoryEntity;
+import com.simulator112.incident.model.entity.classifier.ClassifierEntryEntity;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -1,8 +1,8 @@
-package com.simulator112.incident.service;
+package com.simulator112.incident.service.classifier;
 
-import com.simulator112.incident.dto.view.ClassifierCategoryView;
-import com.simulator112.incident.mapper.ClassifierMapper;
-import com.simulator112.incident.repository.ClassifierCategoryRepository;
+import com.simulator112.incident.dto.view.classifier.ClassifierCategoryView;
+import com.simulator112.incident.mapper.classifier.ClassifierMapper;
+import com.simulator112.incident.repository.classifier.ClassifierCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,4 +1,4 @@
-package com.simulator112.incident.controller;
+package com.simulator112.incident.controller.classifier;
 
 import java.util.List;
 
@@ -9,30 +9,30 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.simulator112.incident.dto.request.ResolveRoutingRequest;
-import com.simulator112.incident.dto.view.ClassifierCategoryView;
-import com.simulator112.incident.dto.view.RoutingResultView;
-import com.simulator112.incident.service.ClassifierService;
-import com.simulator112.incident.service.RoutingService;
+import com.simulator112.incident.dto.request.classifier.ResolveRoutingRequest;
+import com.simulator112.incident.dto.view.classifier.ClassifierCategoryView;
+import com.simulator112.incident.dto.view.classifier.RoutingResultView;
+import com.simulator112.incident.service.classifier.ClassifierService;
+import com.simulator112.incident.service.classifier.RoutingService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/incident")
+@RequestMapping("/api/v1/incident/classifier")
 @RequiredArgsConstructor
-public class IncidentController {
+public class ClassifierController {
 
     private final ClassifierService classifierService;
     private final RoutingService routingService;
 
-    @GetMapping("/classifier")
+    @GetMapping
     public List<ClassifierCategoryView> getClassifier() {
 
         return classifierService.getClassifier();
     }
 
-    @PostMapping("/classifier/{classifierCode}/routing")
+    @PostMapping("/{classifierCode}/routing")
     public RoutingResultView resolveRouting(
             @PathVariable String classifierCode,
             @Valid @RequestBody ResolveRoutingRequest request
