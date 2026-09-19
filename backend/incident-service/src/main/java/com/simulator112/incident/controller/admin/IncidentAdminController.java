@@ -1,6 +1,5 @@
 package com.simulator112.incident.controller.admin;
 
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -16,9 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.simulator112.incident.dto.request.CreateIncidentRequest;
 import com.simulator112.incident.dto.request.UpdateIncidentRequest;
-import com.simulator112.incident.dto.view.ClassifierTypeView;
 import com.simulator112.incident.dto.view.IncidentFullView;
-import com.simulator112.incident.service.ClassifierService;
 import com.simulator112.incident.service.admin.IncidentAdminService;
 
 import jakarta.validation.Valid;
@@ -30,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 public class IncidentAdminController {
 
     private final IncidentAdminService incidentAdminService;
-    private final ClassifierService classifierService;
 
     @GetMapping
     public Page<IncidentFullView> getAllIncidents(Pageable pageable) {
@@ -62,9 +58,4 @@ public class IncidentAdminController {
         incidentAdminService.deleteIncident(incidentId);
     }
 
-    @GetMapping("/classifier")
-    public Map<String, Map<String, ClassifierTypeView>> getClassifier() {
-
-        return classifierService.getClassifier();
-    }
 }

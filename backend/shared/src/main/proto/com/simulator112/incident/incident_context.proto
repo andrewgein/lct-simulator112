@@ -26,9 +26,8 @@ message StageContext {
   int32 position = 3;
   repeated DialupContext dialups = 4;
   Applicant victim = 5;
-  repeated IncidentAdditionalInfo additional_info = 6;
-  string description = 7;
-  IncidentTypeInfo type = 8;
+  string description = 6;
+  ClassifierEntry classifier_entry = 7;
 }
 
 message DialupContext {
@@ -39,21 +38,17 @@ message DialupContext {
   Applicant victim = 5;
 }
 
-message IncidentTypeInfo {
+message ClassifierEntry {
   string id = 1;
-  string type_id = 2;
-  ServiceType service_type = 3;
-  string type_name = 4;
+  string code = 2;
+  string name = 3;
+  repeated DispatchService primary_services = 4;
 }
 
-message IncidentAdditionalInfo {
+message DispatchService {
   string id = 1;
-  string additional_info_id = 2;
-  string field_code = 3;
-  string field_name = 4;
-  FieldType field_type = 5;
-  bool required = 6;
-  string field_value = 7;
+  string code = 2;
+  string name = 3;
 }
 
 message Address {
@@ -89,33 +84,6 @@ message DispatcherCriteria {
   repeated string required_questions = 1;
   repeated string expected_actions = 2;
   repeated string critical_mistakes = 3;
-}
-
-enum IncidentType {
-  FIRE = 0;
-  MEDICAL_EMERGENCY = 1;
-  TRAFFIC_ACCIDENT = 2;
-  CRIME = 3;
-  GAS_LEAK = 4;
-  ACCIDENT = 5;
-  OTHER = 6;
-}
-
-enum ServiceType {
-  SERVICE_TYPE_UNSPECIFIED = 0;
-  FIRE_SERVICE = 1;
-  POLICE_SERVICE = 2;
-  AMBULANCE_SERVICE = 3;
-  GAS_SERVICE = 4;
-  ANTI_TERROR_SERVICE = 5;
-}
-
-enum FieldType {
-  FIELD_TYPE_UNSPECIFIED = 0;
-  TEXT = 1;
-  TEXTAREA = 2;
-  NUMBER = 3;
-  BOOLEAN = 4;
 }
 
 enum Difficulty {

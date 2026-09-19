@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.simulator112.incident.model.embeddable.Applicant;
+import com.simulator112.incident.model.entity.classifier.ClassifierEntryEntity;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
@@ -49,8 +50,8 @@ public class StageEntity {
     private String title;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "type_id", nullable = false)
-    private TypeEntity type;
+    @JoinColumn(name = "classifier_entry_id", nullable = false)
+    private ClassifierEntryEntity classifierEntry;
 
     @Column(columnDefinition = "text")
     private String description;
@@ -69,18 +70,9 @@ public class StageEntity {
     private Applicant victim;
 
     @OneToMany(mappedBy = "stage", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<StageAdditionalInfoEntity> additionalInfo = new ArrayList<>();
-
-    @OneToMany(mappedBy = "stage", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     @Builder.Default
     private List<DialupEntity> dialups = new ArrayList<>();
-
-    public void addAdditionalInfo(StageAdditionalInfoEntity value) {
-        additionalInfo.add(value);
-        value.setStage(this);
-    }
 
     public void addDialup(DialupEntity dialup) {
         dialups.add(dialup);
