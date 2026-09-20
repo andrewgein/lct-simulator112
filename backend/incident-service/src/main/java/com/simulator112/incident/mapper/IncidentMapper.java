@@ -1,12 +1,12 @@
 package com.simulator112.incident.mapper;
 
+import com.simulator112.incident.client.classifier.ClassifierClient;
 import com.simulator112.incident.dto.request.CreateIncidentRequest;
 import com.simulator112.incident.dto.request.UpdateIncidentRequest;
 import com.simulator112.incident.dto.view.DialupView;
 import com.simulator112.incident.dto.view.IncidentFullView;
 import com.simulator112.incident.dto.view.IncidentPreView;
 import com.simulator112.incident.dto.view.StageView;
-import com.simulator112.incident.mapper.classifier.ClassifierMapper;
 import com.simulator112.incident.mapper.embeddable.AddressMapper;
 import com.simulator112.incident.mapper.embeddable.ApplicantMapper;
 import com.simulator112.incident.mapper.embeddable.DialupDetailsMapper;
@@ -25,7 +25,7 @@ public class IncidentMapper {
     private final ApplicantMapper applicantMapper;
     private final DialupDetailsMapper dialupDetailsMapper;
     private final DispatcherCriteriaMapper dispatcherCriteriaMapper;
-    private final ClassifierMapper classifierMapper;
+    private final ClassifierClient classifierClient;
 
     public IncidentEntity toEntity(CreateIncidentRequest request) {
         IncidentEntity entity = new IncidentEntity();
@@ -63,7 +63,7 @@ public class IncidentMapper {
                 stage.getId(),
                 stage.getTitle(),
                 stage.getPosition(),
-                classifierMapper.toEntryView(stage.getClassifierEntry()),
+                classifierClient.getEntry(stage.getClassifierCode()),
                 stage.getDescription(),
                 stage.getVictim() == null ? null : applicantMapper.toView(stage.getVictim()),
                 stage.getDialups().stream().map(this::toDialupView).toList()

@@ -1,6 +1,6 @@
 # Incident Service
 
-`incident-service` хранит учебные происшествия, уровни, этапы вызовов и диалапы, а также полный классификатор происшествий и правила маршрутизации карточек по службам.
+`incident-service` хранит учебные происшествия, уровни, этапы вызовов и диалапы. Классификатор и маршрутизация принадлежат отдельному `classifier-service`.
 
 Сервис предоставляет REST API для frontend и административной части, а также gRPC API для взаимодействия с другими микросервисами.
 
@@ -192,159 +192,18 @@ message GetIncidentContextRequest {
 
 Каждый `StageContext` содержит `ClassifierEntry` с кодом, названием и основными службами.
 
-## Классификатор
+## Интеграция с классификатором
 
-### Назначение
+Этап хранит стабильный `classifierCode`, но не содержит внешнего ключа в другую базу данных. При создании или изменении этапа `incident-service` проверяет код через gRPC `classifier-service`. При формировании REST- и gRPC-представлений сведения классификатора также запрашиваются через gRPC.
 
-Классификатор определяет:
-
-- категории происшествий;
-- признаки происшествия;
-- итоговый тип происшествия;
-- основные службы;
-- маршрутные каналы внутри служб;
-- условия выбора варианта;
-- действие для каждой службы.
-
-Основные сущности:
+Настройки клиента:
 
 ```text
-ClassifierCategoryEntity
-ClassifierEntryEntity
-DispatchServiceEntity
-RoutingVariantEntity
-RoutingVariantConditionEntity
-RoutingRuleEntity
+CLASSIFIER_GRPC_HOST (по умолчанию localhost)
+CLASSIFIER_GRPC_PORT (по умолчанию 9093)
 ```
 
-### REST эндпоинты классификатора
-
-| Метод | Endpoint | Описание |
-|---|---|---|
-| `GET` | `/api/v1/incident/classifier` | Получить классификатор с категориями, типами и основными службами |
-| `POST` | `/api/v1/incident/classifier/{classifierCode}/routing` | Рассчитать маршрутизацию по коду классификатора и фактам карточки |
-| `GET` | `/api/v1/admin/incident/classifier` | Получить классификатор для административного интерфейса |
-
-### Расчёт маршрутизации
-
-Пример запроса:
-
-```http
-POST /api/v1/incident/classifier/1010101/routing
-Content-Type: application/json
-```
-
-```json
-{
-  "facts": {
-    "ACCESS_STATUS": "AVAILABLE",
-    "OFFENSE_STATUS": "PRESENT",
-    "VICTIM_STATUS": "PRESENT",
-    "GASIFICATION": "TRUE",
-    "THREAT_TO_PEOPLE": "TRUE"
-  }
-}
-```
-
-Пример ответа:
-
-```json
-{
-  "classifierCode": "1010101",
-  "incidentTypeName": "пожар: мусор",
-  "facts": {
-    "ACCESS_STATUS": "AVAILABLE",
-    "VICTIM_STATUS": "PRESENT"
-  },
-  "decisions": [
-    {
-      "service": {
-        "id": "00000000-0000-0000-0000-000000000000",
-        "code": "MCHS",
-        "name": "Классификатор МЧС"
-      },
-      "routingTarget": "Служба 101",
-      "matchedVariant": "Служба 101 (признак НД - НЕТ ДОСТУПА не выбран)",
-      "resultKind": "SERVICE_TYPE",
-      "targetTypeName": "пожар: мусор"
-    }
-  ]
-}
-```
-
-Правила группируются по службе и маршрутному каналу. Для каждой группы выбирается одно подходящее правило. Сначала учитывается `priority`, затем позиция колонки в исходном XLSX.
-
-Отсутствующее значение и значение `UNKNOWN` не считаются отрицательным ответом. Например, условие `NOT_EQUALS` не срабатывает, пока фактическое значение неизвестно.
-
-Поддерживаемые операторы условий:
-
-```text
-EQUALS
-NOT_EQUALS
-IN
-NOT_IN
-EXISTS
-NOT_EXISTS
-```
-
-Виды результата маршрутизации:
-
-| Значение | Описание |
-|---|---|
-| `SEND_CARD` | Передать стандартную карточку 112 |
-| `SERVICE_TYPE` | Передать карточку с внутренним типом происшествия службы |
-| `NO_RESPONSE` | Служба не реагирует |
-| `INFORMATION_ONLY` | Только проинформировать службу |
-| `RAW` | Использовать ненормализованное значение правила |
-
-### Факты маршрутизации
-
-В текущей версии классификатора используются следующие коды фактов:
-
-```text
-ACCESS_STATUS
-THREAT_TO_PEOPLE
-CASUALTY_STATUS
-OFFENSE_STATUS
-VICTIM_STATUS
-GASIFICATION
-MEDICAL_HELP_REQUIRED
-EVACUATION_REQUIRED
-LARGE_GROUP_OR_OD
-TRAFFIC_BLOCKED
-LOCATION_KIND
-ROAD_USER_KIND
-COMMUNICATION_FACILITY
-CONSTRUCTION_SITE
-LISTED_OBJECT
-POLYGON_EVENT
-LOCATION
-```
-
-Коды и значения передаются строками. Сервис нормализует регистр и пробелы перед расчётом.
-
-### gRPC ResolveRouting
-
-```protobuf
-rpc ResolveRouting(ResolveRoutingRequest) returns (RoutingResult);
-```
-
-```protobuf
-message ResolveRoutingRequest {
-  string classifier_code = 1;
-  map<string, string> facts = 2;
-}
-```
-
-`RoutingResult` содержит код и название типа происшествия, нормализованные факты и список решений по службам.
-
-gRPC ошибки:
-
-| Код | Причина |
-|---|---|
-| `INVALID_ARGUMENT` | Не передан код классификатора или переданы некорректные данные |
-| `NOT_FOUND` | Запись классификатора не найдена |
-| `INTERNAL` | Внутренняя ошибка расчёта |
+REST endpoints `/api/v1/classifier/**` и `/api/v1/admin/classifier/**` обслуживает `classifier-service`; API Gateway сохраняет прежние внешние URL.
 
 ## Служебные endpoints
 
@@ -355,20 +214,4 @@ gRPC ошибки:
 | `GET` | `/v3/api-docs` | OpenAPI описание |
 | `GET` | `/swagger-ui.html` | Swagger UI |
 
-## Структура пакетов классификатора
-
-```text
-controller/classifier
-controller/admin/classifier
-dto/request/classifier
-dto/view/classifier
-exception/classifier
-grpc/classifier
-mapper/classifier
-model/entity/classifier
-model/enums/classifier
-repository/classifier
-service/classifier
-```
-
-Код обычных инцидентов остаётся в исходных пакетах. Код классификатора и маршрутизации изолирован в подпакетах `classifier`.
+Реализация классификатора находится в `backend/classifier-service`.

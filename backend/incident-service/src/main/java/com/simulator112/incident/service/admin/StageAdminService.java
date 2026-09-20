@@ -1,17 +1,15 @@
 package com.simulator112.incident.service.admin;
 
+import com.simulator112.incident.client.classifier.ClassifierClient;
 import com.simulator112.incident.dto.request.CreateStageRequest;
 import com.simulator112.incident.dto.request.UpdateStageRequest;
 import com.simulator112.incident.dto.view.StageView;
-import com.simulator112.incident.exception.classifier.ClassifierEntryNotFoundException;
 import com.simulator112.incident.exception.IncidentNotFoundException;
 import com.simulator112.incident.exception.ResourceNotFoundException;
 import com.simulator112.incident.mapper.IncidentMapper;
 import com.simulator112.incident.mapper.embeddable.ApplicantMapper;
-import com.simulator112.incident.model.entity.classifier.ClassifierEntryEntity;
 import com.simulator112.incident.model.entity.IncidentEntity;
 import com.simulator112.incident.model.entity.StageEntity;
-import com.simulator112.incident.repository.classifier.ClassifierEntryRepository;
 import com.simulator112.incident.repository.IncidentRepository;
 import com.simulator112.incident.repository.StageRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +24,7 @@ public class StageAdminService {
 
     private final StageRepository stageRepository;
     private final IncidentRepository incidentRepository;
-    private final ClassifierEntryRepository classifierEntryRepository;
+    private final ClassifierClient classifierClient;
     private final IncidentMapper incidentMapper;
     private final ApplicantMapper applicantMapper;
 
@@ -34,11 +32,11 @@ public class StageAdminService {
     public StageView createStage(UUID incidentId, CreateStageRequest request) {
         IncidentEntity incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new IncidentNotFoundException(incidentId));
-        ClassifierEntryEntity classifierEntry = getClassifierEntry(request.classifierCode());
+        validateClassifierCode(request.classifierCode());
         StageEntity stage = StageEntity.builder()
                 .title(request.title())
                 .position(request.position())
-                .classifierEntry(classifierEntry)
+                .classifierCode(request.classifierCode())
                 .description(request.description())
                 .victim(request.victim() == null ? null : applicantMapper.toEntity(request.victim()))
                 .build();
@@ -56,7 +54,8 @@ public class StageAdminService {
             stage.setPosition(request.position());
         }
         if (request.classifierCode() != null) {
-            stage.setClassifierEntry(getClassifierEntry(request.classifierCode()));
+            validateClassifierCode(request.classifierCode());
+            stage.setClassifierCode(request.classifierCode());
         }
         if (request.description() != null) {
             stage.setDescription(request.description());
@@ -73,9 +72,8 @@ public class StageAdminService {
         stage.getIncident().removeStage(stage);
     }
 
-    private ClassifierEntryEntity getClassifierEntry(String code) {
-        return classifierEntryRepository.findByCode(code)
-                .orElseThrow(() -> new ClassifierEntryNotFoundException(code));
+    private void validateClassifierCode(String code) {
+        classifierClient.getEntry(code);
     }
 
     private StageEntity getStage(UUID id) {

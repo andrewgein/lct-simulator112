@@ -1,5 +1,6 @@
 package com.simulator112.incident.grpc;
 
+import com.simulator112.incident.client.classifier.ClassifierClient;
 import com.simulator112.incident.grpc.contract.Address;
 import com.simulator112.incident.grpc.contract.Applicant;
 import com.simulator112.incident.grpc.contract.Difficulty;
@@ -22,6 +23,7 @@ import java.util.List;
 public class GrpcIncidentMapper {
 
     private final GrpcClassifierMapper grpcClassifierMapper;
+    private final ClassifierClient classifierClient;
 
     public LevelContext toLevelContext(LevelEntity entity) {
         return LevelContext.newBuilder()
@@ -42,7 +44,8 @@ public class GrpcIncidentMapper {
                         .setId(stage.getId().toString())
                         .setTitle(nullToEmpty(stage.getTitle()))
                         .setPosition(stage.getPosition())
-                        .setClassifierEntry(grpcClassifierMapper.toClassifierEntry(stage.getClassifierEntry()))
+                        .setClassifierEntry(grpcClassifierMapper.toClassifierEntry(
+                                classifierClient.getEntry(stage.getClassifierCode())))
                         .setDescription(nullToEmpty(stage.getDescription()))
                         .setVictim(toApplicant(stage.getVictim()))
                         .addAllDialups(stage.getDialups().stream().map(this::toDialupContext).toList())

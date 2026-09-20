@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 import com.simulator112.incident.model.embeddable.Applicant;
-import com.simulator112.incident.model.entity.classifier.ClassifierEntryEntity;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
@@ -49,9 +48,8 @@ public class StageEntity {
 
     private String title;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "classifier_entry_id", nullable = false)
-    private ClassifierEntryEntity classifierEntry;
+    @Column(name = "classifier_code", nullable = false, length = 50)
+    private String classifierCode;
 
     @Column(columnDefinition = "text")
     private String description;

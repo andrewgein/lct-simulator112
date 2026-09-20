@@ -20,6 +20,11 @@ spring:
 grpc:
   server:
     port: 9091
+
+classifier:
+  grpc:
+    host: ${CLASSIFIER_GRPC_HOST:localhost}
+    port: ${CLASSIFIER_GRPC_PORT:9093}
     
 management:
   endpoints:
