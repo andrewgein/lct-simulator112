@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package classifier;
+
+option java_package = "com.simulator112.classifier.grpc.contract";
+option java_multiple_files = true;
+
+message DispatchService {
+  string id = 1;
+  string code = 2;
+  string name = 3;
+}
+
+message ClassifierEntry {
+  string id = 1;
+  string code = 2;
+  string category_code = 3;
+  string category_name = 4;
+  optional string feature_1_code = 5;
+  optional string feature_1_name = 6;
+  optional string feature_2_code = 7;
+  optional string feature_2_name = 8;
+  optional string feature_3_code = 9;
+  optional string feature_3_name = 10;
+  optional string statistical_group = 11;
+  optional string additional_features = 12;
+  string final_name = 13;
+  optional string ekp_35_name = 14;
+  repeated DispatchService primary_services = 15;
+}
+
+enum RoutingResultKind {
+  ROUTING_RESULT_KIND_UNSPECIFIED = 0;
+  SEND_CARD = 1;
+  SERVICE_TYPE = 2;
+  NO_RESPONSE = 3;
+  INFORMATION_ONLY = 4;
+  RAW = 5;
+}
+
+message RoutingDecision {
+  DispatchService service = 1;
+  string routing_target = 2;
+  optional string matched_variant = 3;
+  RoutingResultKind result_kind = 4;
+  optional string target_type_name = 5;
+}
+
+message RoutingResult {
+  string classifier_code = 1;
+  string incident_type_name = 2;
+  map<string, string> facts = 3;
+  repeated RoutingDecision decisions = 4;
+}
