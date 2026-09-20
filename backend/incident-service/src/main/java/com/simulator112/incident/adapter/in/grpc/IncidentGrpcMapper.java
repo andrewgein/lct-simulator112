@@ -1,0 +1,189 @@
+package com.simulator112.incident.adapter.in.grpc;
+
+import com.simulator112.incident.domain.common.CallScenario;
+import com.simulator112.incident.domain.common.Incident;
+import com.simulator112.incident.domain.common.IncidentStage;
+import com.simulator112.incident.domain.common.Person;
+import com.simulator112.incident.domain.dds.DdsIncident;
+import com.simulator112.incident.domain.dds.DdsStage;
+import com.simulator112.incident.domain.system112.System112Incident;
+import com.simulator112.incident.domain.system112.System112Stage;
+import com.simulator112.incident.grpc.contract.IncidentContext;
+import org.springframework.stereotype.Component;
+
+@Component
+public class IncidentGrpcMapper {
+    public IncidentContext toProto(Incident incident) {
+        IncidentContext.Builder builder = IncidentContext.newBuilder()
+                .setId(incident.id().toString())
+                .setTitle(incident.title())
+                .setAddress(toProto(incident.address()))
+                .setDifficulty(toProto(incident.difficulty()))
+                .setTargetType(toProto(incident.targetType()));
+
+        if (incident instanceof System112Incident system112) {
+            builder.addAllStages(system112.stages().stream().map(this::toProto).toList());
+            builder.setCriteria(criteria(system112.criteria().requiredQuestions(),
+                    system112.criteria().expectedActions(), system112.criteria().criticalMistakes()));
+        } else if (incident instanceof DdsIncident dds) {
+            builder.addAllStages(dds.stages().stream().map(this::toProto).toList());
+            builder.setCriteria(criteria(dds.criteria().requiredQuestions(),
+                    dds.criteria().expectedActions(), dds.criteria().criticalMistakes()));
+            builder.setPreparedCardTemplate(toProto(dds.preparedCardTemplate()));
+            builder.setInitialAssignment(toProto(dds.initialAssignment()));
+            builder.setDdsInitialStageId(dds.initialStageId().toString());
+            builder.addAllDdsStageTransitions(dds.transitions().stream()
+                    .map(transition -> com.simulator112.incident.grpc.contract.DdsStageTransition.newBuilder()
+                            .setStageId(transition.stageId().toString())
+                            .setSuccessStageId(string(transition.successStageId()))
+                            .setFailureStageId(string(transition.failureStageId()))
+                            .build())
+                    .toList());
+        }
+        return builder.build();
+    }
+
+    private com.simulator112.incident.grpc.contract.IncidentStage toProto(System112Stage stage) {
+        return toProtoBase(stage)
+                .setSystem112(com.simulator112.incident.grpc.contract.System112StageDetails.newBuilder()
+                        .setClassifierCode(string(stage.classifierCode()))
+                        .setVictim(toProto(stage.victim()))
+                        .setPosition(stage.position()))
+                .build();
+    }
+
+    private com.simulator112.incident.grpc.contract.IncidentStage toProto(DdsStage stage) {
+        return toProtoBase(stage)
+                .setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
+                        .setType(toProto(stage.type()))
+                        .setTimeLimitSeconds(stage.timeLimitSeconds()))
+                .build();
+    }
+
+    private com.simulator112.incident.grpc.contract.IncidentStage.Builder toProtoBase(IncidentStage stage) {
+        return com.simulator112.incident.grpc.contract.IncidentStage.newBuilder()
+                .setId(string(stage.id()))
+                .setTitle(string(stage.title()))
+                .setDescription(string(stage.description()))
+                .addAllCalls(stage.calls().stream().map(this::toProto).toList());
+    }
+
+    private com.simulator112.incident.grpc.contract.DdsStageType toProto(
+            com.simulator112.incident.domain.dds.DdsStageType value) {
+        return switch (value) {
+            case ASSIGN_BRIGADE -> com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_ASSIGN_BRIGADE;
+            case WAIT_FOR_BRIGADE_STATUS_CHANGE ->
+                    com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_WAIT_FOR_BRIGADE_STATUS_CHANGE;
+            case CALL_BRIGADE_FOR_STATUS ->
+                    com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_CALL_BRIGADE_FOR_STATUS;
+            case REQUEST_ADDITIONAL_SERVICE ->
+                    com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_REQUEST_ADDITIONAL_SERVICE;
+            case COMPLETE_INCIDENT ->
+                    com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_COMPLETE_INCIDENT;
+        };
+    }
+
+    private com.simulator112.incident.grpc.contract.CallScenario toProto(CallScenario call) {
+        return com.simulator112.incident.grpc.contract.CallScenario.newBuilder()
+                .setId(string(call.id()))
+                .setPosition(call.position())
+                .setDirection(switch (call.direction()) {
+                    case INBOUND -> com.simulator112.incident.grpc.contract.CallDirection.CALL_DIRECTION_INBOUND;
+                    case OUTBOUND -> com.simulator112.incident.grpc.contract.CallDirection.CALL_DIRECTION_OUTBOUND;
+                })
+                .setCounterparty(switch (call.counterparty()) {
+                    case CALLER -> com.simulator112.incident.grpc.contract.CounterpartyType.COUNTERPARTY_TYPE_CALLER;
+                    case BRIGADE -> com.simulator112.incident.grpc.contract.CounterpartyType.COUNTERPARTY_TYPE_BRIGADE;
+                })
+                .setPerson(toProto(call.person()))
+                .setGender(toProto(call.gender()))
+                .addAllKnownFacts(call.knownFacts())
+                .addAllHiddenFacts(call.hiddenFacts())
+                .setAiContext(string(call.aiContext()))
+                .setEmotionalState(string(call.emotionalState()))
+                .build();
+    }
+
+    private com.simulator112.incident.grpc.contract.PreparedCardTemplate toProto(
+            com.simulator112.incident.domain.dds.PreparedCardTemplate value) {
+        return com.simulator112.incident.grpc.contract.PreparedCardTemplate.newBuilder()
+                .setClassifierCode(value.classifierCode()).setApplicant(toProto(value.applicant()))
+                .setVictim(toProto(value.victim())).putAllAdditionalInfo(value.additionalInfo()).build();
+    }
+
+    private com.simulator112.incident.grpc.contract.InitialAssignment toProto(
+            com.simulator112.incident.domain.dds.InitialAssignment value) {
+        return com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
+                .setEmergencyService(toProto(value.emergencyService()))
+                .setClassifierCode(string(value.classifierCode())).setInstructions(string(value.instructions())).build();
+    }
+
+    private com.simulator112.incident.grpc.contract.Criteria criteria(
+            java.util.List<String> questions, java.util.List<String> actions, java.util.List<String> mistakes) {
+        return com.simulator112.incident.grpc.contract.Criteria.newBuilder()
+                .addAllRequiredQuestions(questions).addAllExpectedActions(actions)
+                .addAllCriticalMistakes(mistakes).build();
+    }
+
+    private com.simulator112.incident.grpc.contract.Address toProto(
+            com.simulator112.incident.domain.common.Address value) {
+        var builder = com.simulator112.incident.grpc.contract.Address.newBuilder()
+                .setCity(string(value.city())).setStreet(string(value.street())).setHouse(string(value.house()))
+                .setBuilding(string(value.building())).setApartment(string(value.apartment()));
+        if (value.floor() != null) builder.setFloor(value.floor());
+        return builder.build();
+    }
+
+    private com.simulator112.incident.grpc.contract.Person toProto(Person value) {
+        if (value == null) return com.simulator112.incident.grpc.contract.Person.getDefaultInstance();
+        var builder = com.simulator112.incident.grpc.contract.Person.newBuilder()
+                .setFirstName(string(value.firstName())).setLastName(string(value.lastName()))
+                .setMiddleName(string(value.middleName())).setPhone(string(value.phone()))
+                .setContactPhone(string(value.contactPhone())).setAddress(string(value.address()))
+                .setAdditionalInfo(string(value.additionalInfo()));
+        if (value.age() != null) builder.setAge(value.age());
+        return builder.build();
+    }
+
+    private com.simulator112.incident.grpc.contract.Difficulty toProto(
+            com.simulator112.incident.domain.common.Difficulty value) {
+        return switch (value) {
+            case EASY -> com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_EASY;
+            case NORMAL -> com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_NORMAL;
+            case HARD -> com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_HARD;
+        };
+    }
+
+    private com.simulator112.incident.grpc.contract.IncidentTargetType toProto(
+            com.simulator112.incident.domain.common.IncidentTargetType value) {
+        return switch (value) {
+            case SYSTEM_112 ->
+                    com.simulator112.incident.grpc.contract.IncidentTargetType.INCIDENT_TARGET_TYPE_SYSTEM_112;
+            case DDS -> com.simulator112.incident.grpc.contract.IncidentTargetType.INCIDENT_TARGET_TYPE_DDS;
+        };
+    }
+
+    private com.simulator112.incident.grpc.contract.Gender toProto(
+            com.simulator112.incident.domain.common.Gender value) {
+        if (value == null) return com.simulator112.incident.grpc.contract.Gender.GENDER_UNSPECIFIED;
+        return switch (value) {
+            case MAN -> com.simulator112.incident.grpc.contract.Gender.GENDER_MAN;
+            case WOMEN -> com.simulator112.incident.grpc.contract.Gender.GENDER_WOMEN;
+        };
+    }
+
+    private com.simulator112.common.grpc.contract.DdsService toProto(
+            com.simulator112.incident.domain.common.EmergencyService value) {
+        return switch (value) {
+            case FIRE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_FIRE;
+            case POLICE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_POLICE;
+            case AMBULANCE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_AMBULANCE;
+            case GAS -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_GAS;
+            case ANTI_TERROR -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_ANTI_TERROR;
+        };
+    }
+
+    private String string(Object value) {
+        return value == null ? "" : value.toString();
+    }
+}

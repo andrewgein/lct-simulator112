@@ -28,13 +28,13 @@ final class UserProfileGrpcMapper {
         };
     }
 
-    private static com.simulator112.profile.grpc.contract.DdsService toProto(DdsService service) {
+    private static com.simulator112.common.grpc.contract.DdsService toProto(DdsService service) {
         return switch (service) {
-            case FIRE -> com.simulator112.profile.grpc.contract.DdsService.DDS_SERVICE_FIRE;
-            case POLICE -> com.simulator112.profile.grpc.contract.DdsService.DDS_SERVICE_POLICE;
-            case AMBULANCE -> com.simulator112.profile.grpc.contract.DdsService.DDS_SERVICE_AMBULANCE;
-            case GAS -> com.simulator112.profile.grpc.contract.DdsService.DDS_SERVICE_GAS;
-            case ANTI_TERROR -> com.simulator112.profile.grpc.contract.DdsService.DDS_SERVICE_ANTI_TERROR;
+            case FIRE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_FIRE;
+            case POLICE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_POLICE;
+            case AMBULANCE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_AMBULANCE;
+            case GAS -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_GAS;
+            case ANTI_TERROR -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_ANTI_TERROR;
         };
     }
 }

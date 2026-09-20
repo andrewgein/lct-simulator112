@@ -1,115 +1,63 @@
-CREATE TABLE classifier_categories (
-    id UUID PRIMARY KEY,
-    code VARCHAR(50) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    position INTEGER NOT NULL,
-    CONSTRAINT uk_classifier_categories_code UNIQUE (code),
-    CONSTRAINT uk_classifier_categories_position UNIQUE (position)
-);
-
-CREATE TABLE classifier_entries (
-    id UUID PRIMARY KEY,
-    category_id UUID NOT NULL REFERENCES classifier_categories (id) ON DELETE CASCADE,
-    code VARCHAR(50) NOT NULL,
-    feature_1_code VARCHAR(50),
-    feature_1_name TEXT,
-    feature_2_code VARCHAR(50),
-    feature_2_name TEXT,
-    feature_3_code VARCHAR(50),
-    feature_3_name TEXT,
-    statistical_group TEXT,
-    additional_features TEXT,
-    final_name TEXT NOT NULL,
-    ekp_35_name TEXT,
-    primary_service_raw TEXT,
-    position INTEGER NOT NULL,
-    CONSTRAINT uk_classifier_entries_code UNIQUE (code),
-    CONSTRAINT uk_classifier_entries_category_position UNIQUE (category_id, position)
-);
-
-CREATE INDEX idx_classifier_entries_category_id ON classifier_entries (category_id);
-
-CREATE TABLE dispatch_services (
-    id UUID PRIMARY KEY,
-    code VARCHAR(100) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    CONSTRAINT uk_dispatch_services_code UNIQUE (code)
-);
-
-CREATE TABLE classifier_entry_primary_services (
-    classifier_entry_id UUID NOT NULL REFERENCES classifier_entries (id) ON DELETE CASCADE,
-    dispatch_service_id UUID NOT NULL REFERENCES dispatch_services (id) ON DELETE CASCADE,
-    PRIMARY KEY (classifier_entry_id, dispatch_service_id)
-);
-
-CREATE TABLE routing_variants (
-    id UUID PRIMARY KEY,
-    dispatch_service_id UUID NOT NULL REFERENCES dispatch_services (id) ON DELETE CASCADE,
-    routing_target TEXT NOT NULL,
-    source_column VARCHAR(3) NOT NULL,
-    header_level_1 TEXT,
-    header_level_2 TEXT,
-    header_level_3 TEXT,
-    priority INTEGER NOT NULL,
-    position INTEGER NOT NULL,
-    CONSTRAINT uk_routing_variants_source_column UNIQUE (source_column),
-    CONSTRAINT uk_routing_variants_position UNIQUE (position)
-);
-
-CREATE INDEX idx_routing_variants_dispatch_service_id ON routing_variants (dispatch_service_id);
-
-CREATE TABLE routing_variant_conditions (
-    id UUID PRIMARY KEY,
-    routing_variant_id UUID NOT NULL REFERENCES routing_variants (id) ON DELETE CASCADE,
-    fact_code VARCHAR(100) NOT NULL,
-    operator VARCHAR(50) NOT NULL,
-    expected_value VARCHAR(255),
-    position INTEGER NOT NULL,
-    CONSTRAINT uk_routing_variant_conditions_position UNIQUE (routing_variant_id, position)
-);
-
-CREATE INDEX idx_routing_variant_conditions_variant_id ON routing_variant_conditions (routing_variant_id);
-
-CREATE TABLE routing_rules (
-    id UUID PRIMARY KEY,
-    classifier_entry_id UUID NOT NULL REFERENCES classifier_entries (id) ON DELETE CASCADE,
-    routing_variant_id UUID NOT NULL REFERENCES routing_variants (id) ON DELETE CASCADE,
-    result_kind VARCHAR(50) NOT NULL,
-    target_type_name TEXT,
-    raw_value TEXT NOT NULL,
-    CONSTRAINT uk_routing_rules_entry_variant UNIQUE (classifier_entry_id, routing_variant_id)
-);
-
-CREATE INDEX idx_routing_rules_classifier_entry_id ON routing_rules (classifier_entry_id);
-CREATE INDEX idx_routing_rules_routing_variant_id ON routing_rules (routing_variant_id);
-
-CREATE TABLE levels (
-    id UUID PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    difficulty VARCHAR(50) NOT NULL
-);
-
 CREATE TABLE incidents (
     id UUID PRIMARY KEY,
-    title VARCHAR(255),
-    level_id UUID REFERENCES levels (id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    target_type VARCHAR(20) NOT NULL,
+    difficulty VARCHAR(20) NOT NULL,
     address_city VARCHAR(255),
     address_street VARCHAR(255),
     address_house VARCHAR(255),
     address_building VARCHAR(255),
     address_apartment VARCHAR(255),
-    address_floor INTEGER
+    address_floor INTEGER,
+    emergency_service VARCHAR(50),
+    dds_initial_stage_id UUID,
+    prepared_card_classifier_code VARCHAR(50),
+    initial_assignment_classifier_code VARCHAR(50),
+    initial_assignment_instructions TEXT,
+    card_applicant_first_name VARCHAR(255),
+    card_applicant_last_name VARCHAR(255),
+    card_applicant_middle_name VARCHAR(255),
+    card_applicant_age INTEGER,
+    card_applicant_phone VARCHAR(255),
+    card_applicant_contact_phone VARCHAR(255),
+    card_applicant_address VARCHAR(255),
+    card_applicant_additional_info TEXT,
+    card_victim_first_name VARCHAR(255),
+    card_victim_last_name VARCHAR(255),
+    card_victim_middle_name VARCHAR(255),
+    card_victim_age INTEGER,
+    card_victim_phone VARCHAR(255),
+    card_victim_contact_phone VARCHAR(255),
+    card_victim_address VARCHAR(255),
+    card_victim_additional_info TEXT,
+    CONSTRAINT ck_incident_target_type CHECK (target_type IN ('SYSTEM_112', 'DDS')),
+    CONSTRAINT ck_incident_difficulty CHECK (difficulty IN ('EASY', 'NORMAL', 'HARD')),
+    CONSTRAINT ck_incident_emergency_service CHECK (emergency_service IS NULL OR emergency_service IN
+        ('FIRE', 'POLICE', 'AMBULANCE', 'GAS', 'ANTI_TERROR')),
+    CONSTRAINT ck_incident_profile CHECK (
+        (target_type = 'SYSTEM_112' AND emergency_service IS NULL AND prepared_card_classifier_code IS NULL)
+        OR
+        (target_type = 'DDS' AND emergency_service IS NOT NULL AND prepared_card_classifier_code IS NOT NULL)
+    )
 );
 
-CREATE INDEX idx_incidents_level_id ON incidents (level_id);
+CREATE INDEX idx_incidents_availability ON incidents (target_type, difficulty);
 
-CREATE TABLE stages (
+CREATE TABLE incident_stages (
     id UUID PRIMARY KEY,
     incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
-    position INTEGER NOT NULL,
+    position INTEGER,
     title VARCHAR(255),
-    classifier_entry_id UUID NOT NULL REFERENCES classifier_entries (id),
     description TEXT,
+    CONSTRAINT uk_incident_stages_position UNIQUE (incident_id, position),
+    CONSTRAINT uk_incident_stages_incident_and_id UNIQUE (incident_id, id)
+);
+
+CREATE INDEX idx_incident_stages_incident_id ON incident_stages (incident_id);
+
+CREATE TABLE system112_stage_details (
+    stage_id UUID PRIMARY KEY REFERENCES incident_stages (id) ON DELETE CASCADE,
+    classifier_code VARCHAR(50) NOT NULL,
     victim_first_name VARCHAR(255),
     victim_last_name VARCHAR(255),
     victim_middle_name VARCHAR(255),
@@ -117,64 +65,107 @@ CREATE TABLE stages (
     victim_phone VARCHAR(255),
     victim_contact_phone VARCHAR(255),
     victim_address VARCHAR(255),
-    victim_additional_info TEXT,
-    CONSTRAINT uk_stages_incident_position UNIQUE (incident_id, position)
+    victim_additional_info TEXT
 );
 
-CREATE INDEX idx_stages_incident_id ON stages (incident_id);
-CREATE INDEX idx_stages_classifier_entry_id ON stages (classifier_entry_id);
+CREATE INDEX idx_system112_stage_details_classifier_code ON system112_stage_details (classifier_code);
 
-CREATE TABLE dialups (
+CREATE TABLE dds_stage_details (
+    stage_id UUID PRIMARY KEY REFERENCES incident_stages (id) ON DELETE CASCADE,
+    stage_type VARCHAR(50) NOT NULL,
+    time_limit_seconds INTEGER NOT NULL,
+    CONSTRAINT ck_dds_stage_type CHECK (stage_type IN (
+        'ASSIGN_BRIGADE',
+        'WAIT_FOR_BRIGADE_STATUS_CHANGE',
+        'CALL_BRIGADE_FOR_STATUS',
+        'REQUEST_ADDITIONAL_SERVICE',
+        'COMPLETE_INCIDENT'
+    )),
+    CONSTRAINT ck_dds_stage_time_limit CHECK (time_limit_seconds > 0)
+);
+
+CREATE TABLE dds_stage_transitions (
+    incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
+    stage_id UUID NOT NULL,
+    success_stage_id UUID,
+    failure_stage_id UUID,
+    PRIMARY KEY (incident_id, stage_id),
+    CONSTRAINT fk_dds_transition_stage FOREIGN KEY (incident_id, stage_id)
+        REFERENCES incident_stages (incident_id, id) ON DELETE CASCADE,
+    CONSTRAINT fk_dds_transition_success FOREIGN KEY (incident_id, success_stage_id)
+        REFERENCES incident_stages (incident_id, id),
+    CONSTRAINT fk_dds_transition_failure FOREIGN KEY (incident_id, failure_stage_id)
+        REFERENCES incident_stages (incident_id, id),
+    CONSTRAINT fk_dds_transition_stage_type FOREIGN KEY (stage_id)
+        REFERENCES dds_stage_details (stage_id),
+    CONSTRAINT fk_dds_transition_success_type FOREIGN KEY (success_stage_id)
+        REFERENCES dds_stage_details (stage_id),
+    CONSTRAINT fk_dds_transition_failure_type FOREIGN KEY (failure_stage_id)
+        REFERENCES dds_stage_details (stage_id)
+);
+
+CREATE TABLE call_scenarios (
     id UUID PRIMARY KEY,
-    stage_id UUID NOT NULL REFERENCES stages (id) ON DELETE CASCADE,
+    stage_id UUID NOT NULL REFERENCES incident_stages (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
-    gender VARCHAR(255),
+    direction VARCHAR(20) NOT NULL,
+    counterparty VARCHAR(20) NOT NULL,
+    gender VARCHAR(20),
     ai_context TEXT,
     emotional_state VARCHAR(255),
-    applicant_first_name VARCHAR(255),
-    applicant_last_name VARCHAR(255),
-    applicant_middle_name VARCHAR(255),
-    applicant_age INTEGER,
-    applicant_phone VARCHAR(255),
-    applicant_contact_phone VARCHAR(255),
-    applicant_address VARCHAR(255),
-    applicant_additional_info TEXT,
-    CONSTRAINT uk_dialups_stage_position UNIQUE (stage_id, position)
+    person_first_name VARCHAR(255),
+    person_last_name VARCHAR(255),
+    person_middle_name VARCHAR(255),
+    person_age INTEGER,
+    person_phone VARCHAR(255),
+    person_contact_phone VARCHAR(255),
+    person_address VARCHAR(255),
+    person_additional_info TEXT,
+    CONSTRAINT ck_call_direction CHECK (direction IN ('INBOUND', 'OUTBOUND')),
+    CONSTRAINT ck_call_counterparty CHECK (counterparty IN ('CALLER', 'BRIGADE')),
+    CONSTRAINT uk_call_scenarios_position UNIQUE (stage_id, position)
 );
 
-CREATE INDEX idx_dialups_stage_id ON dialups (stage_id);
+CREATE INDEX idx_call_scenarios_stage_id ON call_scenarios (stage_id);
 
-CREATE TABLE dialup_known_facts (
-    dialup_id UUID NOT NULL REFERENCES dialups (id) ON DELETE CASCADE,
+CREATE TABLE call_scenario_known_facts (
+    call_id UUID NOT NULL REFERENCES call_scenarios (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
-    fact VARCHAR(255) NOT NULL,
-    PRIMARY KEY (dialup_id, position)
+    fact TEXT NOT NULL,
+    PRIMARY KEY (call_id, position)
 );
 
-CREATE TABLE dialup_hidden_facts (
-    dialup_id UUID NOT NULL REFERENCES dialups (id) ON DELETE CASCADE,
+CREATE TABLE call_scenario_hidden_facts (
+    call_id UUID NOT NULL REFERENCES call_scenarios (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
-    fact VARCHAR(255) NOT NULL,
-    PRIMARY KEY (dialup_id, position)
+    fact TEXT NOT NULL,
+    PRIMARY KEY (call_id, position)
 );
 
 CREATE TABLE incident_required_questions (
     incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
-    question VARCHAR(255) NOT NULL,
+    question TEXT NOT NULL,
     PRIMARY KEY (incident_id, position)
 );
 
 CREATE TABLE incident_expected_actions (
     incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
-    action VARCHAR(255) NOT NULL,
+    action TEXT NOT NULL,
     PRIMARY KEY (incident_id, position)
 );
 
 CREATE TABLE incident_critical_mistakes (
     incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
-    mistake VARCHAR(255) NOT NULL,
+    mistake TEXT NOT NULL,
     PRIMARY KEY (incident_id, position)
+);
+
+CREATE TABLE prepared_card_additional_info (
+    incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
+    info_key VARCHAR(255) NOT NULL,
+    info_value TEXT,
+    PRIMARY KEY (incident_id, info_key)
 );
