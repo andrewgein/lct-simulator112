@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package profile;
+
+option java_package = "com.simulator112.profile.grpc.contract";
+option java_multiple_files = true;
+
+enum TrainingTrack {
+  TRAINING_TRACK_UNSPECIFIED = 0;
+  TRAINING_TRACK_SYSTEM_112 = 1;
+  TRAINING_TRACK_DDS = 2;
+}
+
+enum DdsService {
+  DDS_SERVICE_UNSPECIFIED = 0;
+  DDS_SERVICE_FIRE = 1;
+  DDS_SERVICE_POLICE = 2;
+  DDS_SERVICE_AMBULANCE = 3;
+  DDS_SERVICE_GAS = 4;
+  DDS_SERVICE_ANTI_TERROR = 5;
+}
+
+message ProfessionalProfile {
+  TrainingTrack training_track = 1;
+  optional DdsService dds_service = 2;
+}
