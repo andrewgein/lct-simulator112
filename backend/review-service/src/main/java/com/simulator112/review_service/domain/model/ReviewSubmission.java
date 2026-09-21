@@ -21,9 +21,10 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID levelId, Target
         }
     }
 
-    public record StageScenario(String id, Integer position, String classifierCode, Person victim,
+    public record StageScenario(String id, Integer position, List<String> classifierCodes, Person victim,
                                 String ddsStageType, List<CallScenario> calls) {
         public StageScenario {
+            classifierCodes = List.copyOf(classifierCodes);
             calls = List.copyOf(calls);
         }
     }
@@ -37,9 +38,10 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID levelId, Target
 
     public record CardRevision(String revisionId, String cardId, long version, String callId,
                                String mainCardId, Person applicant, Person victim, Map<String, String> additionalInfo,
-                               boolean additionalInfoProvided, String incidentType) {
+                               boolean additionalInfoProvided, List<String> incidentTypes) {
         public CardRevision {
             additionalInfo = Map.copyOf(additionalInfo);
+            incidentTypes = List.copyOf(incidentTypes);
         }
     }
 
