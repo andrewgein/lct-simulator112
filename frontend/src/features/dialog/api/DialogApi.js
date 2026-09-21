@@ -30,9 +30,9 @@ export function initializeDialogSession(apiEndpoint, contextId) {
     };
 }
 
-export function requestNextDialup() {
+export function requestNextCall() {
     if (controlSocket?.readyState === WebSocket.OPEN) {
-        controlSocket.send(JSON.stringify({ type: "request_next_dialup" }));
+        controlSocket.send(JSON.stringify({ type: "request_next_call" }));
     }
 }
 

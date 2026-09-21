@@ -53,15 +53,15 @@ def handle_progress_request(context_id: str) -> dict:
         return {
             "type": "session_restored",
             "callAvailable": True,
-            "dialupId": progress.active_call_id,
+            "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
         }
     if progress.status == DialogStatus.COMPLETED:
         return {
             "type": "call_finished",
             "cardCanBeEdited": True,
-            "nextDialupAvailable": True,
-            "dialupId": progress.active_call_id,
+            "nextCallAvailable": True,
+            "callId": progress.active_call_id,
         }
     return {"type": "idle"}
 
@@ -74,18 +74,18 @@ def handle_next_call(context_id: str) -> dict:
         return {
             "type": "session_restored",
             "callAvailable": True,
-            "dialupId": progress.active_call_id,
+            "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
         }
 
     try:
         call = dialog_use_case().next_call(context_id)
     except NoMoreCallsError:
-        return {"type": "no_more_dialups"}
+        return {"type": "no_more_calls"}
     return {
-        "type": "dialup_ready",
+        "type": "call_ready",
         "callAvailable": True,
-        "dialupId": call.id,
+        "callId": call.id,
         "phoneNumber": call.person.phone,
     }
 
@@ -111,7 +111,7 @@ async def dialog_session(ws: WebSocket):
             match request_type:
                 case "request_status":
                     await ws.send_json(handle_progress_request(context_id))
-                case "request_next_dialup":
+                case "request_next_call":
                     await ws.send_json(handle_next_call(context_id))
                 case _:
                     await ws.send_json(handle_error("Unknown session command"))

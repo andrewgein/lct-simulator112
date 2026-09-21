@@ -1,4 +1,4 @@
-import { getIncidentClassifier } from "../../../../features/incident/api/IncedentApi";
+import { getIncidentClassifier } from "../../../features/incident/api/IncidentApi";
 
 export const prerender = false;
 

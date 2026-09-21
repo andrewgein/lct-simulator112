@@ -136,8 +136,8 @@ final class ContextPersistenceMapper {
     static SolutionCardRevision toDomain(SolutionContextEntity source) {
         SolutionCardRevision target = new SolutionCardRevision();
         target.setId(source.getId()); target.setContextId(source.getContext().getUuid()); target.setCardId(source.getCardId());
-        target.setPreviousRevisionId(source.getPreviousRevisionId()); target.setVersion(source.getVersion()); target.setStatus(source.getStatus());
-        target.setCallId(source.getCallId()); target.setParentCardId(source.getParentCardId()); target.setDuplicateOfCardId(source.getDuplicateOfCardId());
+        target.setPreviousRevisionId(source.getPreviousRevisionId()); target.setVersion(source.getVersion());
+        target.setCallId(source.getCallId()); target.setMainCardId(source.getMainCardId());
         target.setApplicant(toDomain(source.getApplicant())); target.setVictim(toDomain(source.getVictim()));
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
         target.setIncidentType(source.getIncidentType()); target.setCreatedAt(source.getCreatedAt());
@@ -147,8 +147,8 @@ final class ContextPersistenceMapper {
     static SolutionContextEntity toEntity(SolutionCardRevision source) {
         SolutionContextEntity target = new SolutionContextEntity();
         target.setId(source.getId()); target.setCardId(source.getCardId()); target.setPreviousRevisionId(source.getPreviousRevisionId());
-        target.setVersion(source.getVersion()); target.setStatus(source.getStatus()); target.setCallId(source.getCallId());
-        target.setParentCardId(source.getParentCardId()); target.setDuplicateOfCardId(source.getDuplicateOfCardId());
+        target.setVersion(source.getVersion()); target.setCallId(source.getCallId());
+        target.setMainCardId(source.getMainCardId());
         target.setApplicant(toEntity(source.getApplicant())); target.setVictim(toEntity(source.getVictim()));
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
         target.setIncidentType(source.getIncidentType());

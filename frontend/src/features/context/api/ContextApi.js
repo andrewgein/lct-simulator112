@@ -1,23 +1,39 @@
 import { apiCall } from "../../../services/ApiClient";
 
 const API_PREFIX = "/api/v1/context";
+const segment = encodeURIComponent;
 
-export async function createContext(levelId, token) {
+/** @param {string} levelId @param {string} token */
+export function createContext(levelId, token) {
     return apiCall(API_PREFIX, "POST", { levelId }, token);
 }
 
-export async function createCardForDialup(contextId, dialupId, context, token) {
-    return await apiCall(`${API_PREFIX}/${contextId}/dialups/${dialupId}/cards`, "POST", context, token);
+/** @param {string} contextId @param {string} callId @param {import("../contract/Context").SolutionCardRequest} card @param {string} token */
+export function createCardForCall(contextId, callId, card, token) {
+    return apiCall(`${API_PREFIX}/${segment(contextId)}/calls/${segment(callId)}/cards`, "POST", card, token);
 }
 
-export async function saveCardRevision(contextId, cardId, context, token) {
-    return await apiCall(`${API_PREFIX}/${contextId}/cards/${cardId}/revisions`, "POST", context, token);
+/** @param {string} contextId @param {string} cardId @param {import("../contract/Context").SolutionCardRequest} card @param {string} token */
+export function saveCardRevision(contextId, cardId, card, token) {
+    return apiCall(`${API_PREFIX}/${segment(contextId)}/cards/${segment(cardId)}/revisions`, "POST", card, token);
 }
 
-export async function getCards(contextId, token) {
-    return await apiCall(`${API_PREFIX}/${contextId}/cards`, "GET", undefined, token);
+/** @param {string} contextId @param {string} token */
+export function getCards(contextId, token) {
+    return apiCall(`${API_PREFIX}/${segment(contextId)}/cards`, "GET", undefined, token);
 }
 
-export async function closeContext(contextId, token) {
-    return await apiCall(`${API_PREFIX}/${contextId}/close`, "POST", {}, token);
+/** @param {string} contextId @param {string} token */
+export function getLevelProgress(contextId, token) {
+    return apiCall(`${API_PREFIX}/${segment(contextId)}/progress`, "GET", undefined, token);
+}
+
+/** @param {string} contextId @param {string} incidentId @param {import("../contract/Context").DdsStageSignal} signal @param {string} token */
+export function applyDdsStageSignal(contextId, incidentId, signal, token) {
+    return apiCall(`${API_PREFIX}/${segment(contextId)}/dds/incidents/${segment(incidentId)}/signals`, "POST", { signal }, token);
+}
+
+/** @param {string} contextId @param {string} token */
+export function closeContext(contextId, token) {
+    return apiCall(`${API_PREFIX}/${segment(contextId)}/close`, "POST", {}, token);
 }

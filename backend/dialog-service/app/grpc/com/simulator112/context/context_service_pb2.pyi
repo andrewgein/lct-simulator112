@@ -47,12 +47,6 @@ class SpeakerType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     USER: _ClassVar[SpeakerType]
     LLM: _ClassVar[SpeakerType]
-
-class SolutionContextStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = ()
-    SOLUTION_CONTEXT_STATUS_UNSPECIFIED: _ClassVar[SolutionContextStatus]
-    ACTIVE: _ClassVar[SolutionContextStatus]
-    CLOSED_DUPLICATE: _ClassVar[SolutionContextStatus]
 DIALOG_PROGRESS_STATUS_UNSPECIFIED: DialogProgressStatus
 IDLE: DialogProgressStatus
 IN_CALL: DialogProgressStatus
@@ -77,9 +71,6 @@ INCIDENT_PROGRESS_STATUS_COMPLETED: IncidentProgressStatus
 INCIDENT_PROGRESS_STATUS_FAILED: IncidentProgressStatus
 USER: SpeakerType
 LLM: SpeakerType
-SOLUTION_CONTEXT_STATUS_UNSPECIFIED: SolutionContextStatus
-ACTIVE: SolutionContextStatus
-CLOSED_DUPLICATE: SolutionContextStatus
 
 class PersonInfo(_message.Message):
     __slots__ = ("phone", "contact_phone", "last_name", "first_name", "middle_name", "address", "additional_info")
@@ -184,7 +175,7 @@ class DialogContext(_message.Message):
     def __init__(self, transcript: _Optional[_Iterable[_Union[Phrase, _Mapping]]] = ...) -> None: ...
 
 class SolutionContext(_message.Message):
-    __slots__ = ("applicant", "victim", "additional_info", "incident_type", "call_id", "parent_id", "duplicate_of_id", "revision_id", "card_id", "previous_revision_id", "version", "status", "created_at", "additional_info_provided")
+    __slots__ = ("applicant", "victim", "additional_info", "incident_type", "call_id", "main_card_id", "revision_id", "card_id", "previous_revision_id", "version", "created_at", "additional_info_provided")
     class AdditionalInfoEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -197,13 +188,11 @@ class SolutionContext(_message.Message):
     ADDITIONAL_INFO_FIELD_NUMBER: _ClassVar[int]
     INCIDENT_TYPE_FIELD_NUMBER: _ClassVar[int]
     CALL_ID_FIELD_NUMBER: _ClassVar[int]
-    PARENT_ID_FIELD_NUMBER: _ClassVar[int]
-    DUPLICATE_OF_ID_FIELD_NUMBER: _ClassVar[int]
+    MAIN_CARD_ID_FIELD_NUMBER: _ClassVar[int]
     REVISION_ID_FIELD_NUMBER: _ClassVar[int]
     CARD_ID_FIELD_NUMBER: _ClassVar[int]
     PREVIOUS_REVISION_ID_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
-    STATUS_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     ADDITIONAL_INFO_PROVIDED_FIELD_NUMBER: _ClassVar[int]
     applicant: PersonInfo
@@ -211,16 +200,14 @@ class SolutionContext(_message.Message):
     additional_info: _containers.ScalarMap[str, str]
     incident_type: str
     call_id: str
-    parent_id: str
-    duplicate_of_id: str
+    main_card_id: str
     revision_id: str
     card_id: str
     previous_revision_id: str
     version: int
-    status: SolutionContextStatus
     created_at: str
     additional_info_provided: bool
-    def __init__(self, applicant: _Optional[_Union[PersonInfo, _Mapping]] = ..., victim: _Optional[_Union[PersonInfo, _Mapping]] = ..., additional_info: _Optional[_Mapping[str, str]] = ..., incident_type: _Optional[str] = ..., call_id: _Optional[str] = ..., parent_id: _Optional[str] = ..., duplicate_of_id: _Optional[str] = ..., revision_id: _Optional[str] = ..., card_id: _Optional[str] = ..., previous_revision_id: _Optional[str] = ..., version: _Optional[int] = ..., status: _Optional[_Union[SolutionContextStatus, str]] = ..., created_at: _Optional[str] = ..., additional_info_provided: _Optional[bool] = ...) -> None: ...
+    def __init__(self, applicant: _Optional[_Union[PersonInfo, _Mapping]] = ..., victim: _Optional[_Union[PersonInfo, _Mapping]] = ..., additional_info: _Optional[_Mapping[str, str]] = ..., incident_type: _Optional[str] = ..., call_id: _Optional[str] = ..., main_card_id: _Optional[str] = ..., revision_id: _Optional[str] = ..., card_id: _Optional[str] = ..., previous_revision_id: _Optional[str] = ..., version: _Optional[int] = ..., created_at: _Optional[str] = ..., additional_info_provided: _Optional[bool] = ...) -> None: ...
 
 class FullContext(_message.Message):
     __slots__ = ("uuid", "user_id", "incident_context", "dialog_context", "solution_context", "level_context", "solution_context_revisions", "level_progress")

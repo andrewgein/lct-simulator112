@@ -3,7 +3,6 @@ package com.simulator112.contextmanager.adapter.grpc.mapper;
 import com.simulator112.context.grpc.contract.FullContext;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
 import com.simulator112.contextmanager.domain.system112.SolutionCardRevision;
-import com.simulator112.contextmanager.domain.system112.SolutionContextStatus;
 import java.util.Comparator;
 
 public final class FullContextMapper {
@@ -30,8 +29,7 @@ public final class FullContextMapper {
                 SolutionCardRevision::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(SolutionCardRevision::getId, Comparator.nullsLast(Comparator.naturalOrder()))).toList();
         builder.addAllSolutionContextRevisions(revisions.stream().map(SolutionContextMapper::toProto).toList());
-        revisions.stream().filter(value -> value.getStatus() == SolutionContextStatus.ACTIVE)
-                .max(Comparator.comparing(SolutionCardRevision::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
+        revisions.stream().max(Comparator.comparing(SolutionCardRevision::getCreatedAt, Comparator.nullsFirst(Comparator.naturalOrder())))
                 .ifPresent(value -> builder.setSolutionContext(SolutionContextMapper.toProto(value)));
         return builder.build();
     }

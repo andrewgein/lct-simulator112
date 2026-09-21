@@ -1,7 +1,6 @@
 package com.simulator112.contextmanager.adapter.out.persistence.entity;
 
 import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo;
-import com.simulator112.contextmanager.domain.system112.SolutionContextStatus;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CollectionTable;
@@ -9,8 +8,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -51,18 +48,11 @@ public class SolutionContextEntity {
     @Column(nullable = false, updatable = false)
     private long version;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, updatable = false)
-    private SolutionContextStatus status;
-
     @Column(name = "call_id", nullable = false, updatable = false)
     private UUID callId;
 
-    @Column(name = "parent_card_id", updatable = false)
-    private UUID parentCardId;
-
-    @Column(name = "duplicate_of_card_id", updatable = false)
-    private UUID duplicateOfCardId;
+    @Column(name = "main_card_id", updatable = false)
+    private UUID mainCardId;
 
     @Embedded
     @AttributeOverrides({

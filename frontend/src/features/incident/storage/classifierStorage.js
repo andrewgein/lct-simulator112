@@ -1,7 +1,7 @@
 import { createReactiveState } from "../../../../public/state";
 
-/** @typedef {import("../../incident/contract/Incident").IncidentClassifier} IncidentClassifier */
-/** @typedef {import("../../incident/contract/Incident").ClassifierIncident} ClassifierIncident */
+/** @typedef {import("../../incident/contract/Classifier").IncidentClassifier} IncidentClassifier */
+/** @typedef {import("../../incident/contract/Classifier").ClassifierEntry} ClassifierEntry */
 
 export const classifierInfo = createReactiveState({
     classifier: {},
@@ -40,7 +40,7 @@ export function loadClassifier() {
 
 /**
  * @param {string} incidentId Incident type UUID
- * @returns {ClassifierIncident | undefined}
+ * @returns {ClassifierEntry | undefined}
  */
 export function getIncidentById(incidentId) {
     for (const incidents of Object.values(classifierInfo.state.classifier)) {

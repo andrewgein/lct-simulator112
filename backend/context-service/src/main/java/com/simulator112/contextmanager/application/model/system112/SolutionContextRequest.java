@@ -13,6 +13,6 @@ public record SolutionContextRequest(
         UUID cardId,
         Long expectedVersion,
         SolutionContextOperation operation,
-        UUID parentCardId
+        UUID mainCardId
 ) {
 }

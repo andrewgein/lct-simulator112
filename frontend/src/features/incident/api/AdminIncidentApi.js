@@ -1,61 +1,36 @@
 import { apiCall } from "../../../services/ApiClient";
+import { findAvailableIncidents } from "./IncidentApi";
 
 /** @typedef {import("../contract/Incident").IncidentRequest} IncidentRequest */
 
-const API_PREFIX = "/api/v1/admin/incident"
+const API_PREFIX = "/api/v1/incidents";
+const TARGET_TYPES = ["SYSTEM_112", "DDS"];
+const DIFFICULTIES = ["EASY", "NORMAL", "HARD"];
 
+/** @param {string} token */
 export async function getIncidentLibrary(token) {
-    const incidents = [];
-    for (let page = 0; ; page++) {
-        const response = await apiCall(`${API_PREFIX}?page=${page}&size=100`, "GET", undefined, token);
-        if (!response.ok) throw new Error("Не удалось загрузить библиотеку происшествий");
-        const data = await response.json();
-        if (Array.isArray(data)) return data;
-        incidents.push(...data.content);
-        if (data.last || page + 1 >= data.totalPages) return incidents;
+    const responses = await Promise.all(
+        TARGET_TYPES.flatMap((targetType) => DIFFICULTIES.map((difficulty) =>
+            findAvailableIncidents(targetType, difficulty, token)))
+    );
+    if (responses.some((response) => !response.ok)) {
+        throw new Error("Не удалось загрузить библиотеку происшествий");
     }
+    const incidents = (await Promise.all(responses.map((response) => response.json()))).flat();
+    return [...new Map(incidents.map((incident) => [incident.id, incident])).values()];
 }
 
-/**
- * @param {string} token
- * @returns {Promise<Response>}
- */
-export async function getAllIncidents(token) {
-    return await apiCall(API_PREFIX, "GET", undefined, token);
+/** @param {string} id @param {string} token */
+export function getIncident(id, token) {
+    return apiCall(`${API_PREFIX}/${encodeURIComponent(id)}`, "GET", undefined, token);
 }
 
-/**
- * @param {string} id Incident UUID
- * @param {string} token
- * @returns {Promise<Response>}
- */
-export async function getFullIncidentById(id, token) {
-    return await apiCall(`${API_PREFIX}/${id}`, "GET", undefined, token);
+/** @param {IncidentRequest} incident @param {string} token */
+export function createIncident(incident, token) {
+    return apiCall(API_PREFIX, "POST", incident, token);
 }
 
-/**
- * @param {IncidentRequest} incident
- * @param {string} token
- * @returns {Promise<Response>}
- */
-export async function createIncident(incident, token) {
-    return await apiCall(API_PREFIX, "POST", incident, token);
-}
-
-/**
- * @param {IncidentRequest & { id: string }} incident
- * @param {string} token
- * @returns {Promise<Response>}
- */
-export async function updateIncident(incident, token) {
-    return await apiCall(`${API_PREFIX}/${incident.id}`, "PATCH", incident, token);
-}
-
-/**
- * @param {{ id: string }} incident
- * @param {string} token
- * @returns {Promise<Response>}
- */
-export async function deleteIncident(incident, token) {
-    return await apiCall(`${API_PREFIX}/${incident.id}`, "DELETE", undefined, token);
+/** @param {string} id @param {IncidentRequest} incident @param {string} token */
+export function updateIncident(id, incident, token) {
+    return apiCall(`${API_PREFIX}/${encodeURIComponent(id)}`, "PUT", incident, token);
 }

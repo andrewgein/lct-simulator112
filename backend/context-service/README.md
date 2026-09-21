@@ -42,7 +42,8 @@ REST, gRPC и scheduler зависят только от входных порт
 - `POST /api/v1/context` — создать прохождение по `levelId`;
 - `GET /api/v1/context/{id}/progress` — получить единый прогресс уровня для SYSTEM_112 или DDS;
 - `POST /api/v1/context/{id}/dds/incidents/{incidentId}/signals` — применить действие или событие DDS;
-- endpoints `/calls/{callId}/cards` и `/cards/{cardId}/revisions` управляют карточками решений.
+- endpoints `/calls/{callId}/cards` и `/cards/{cardId}/revisions` управляют карточками решений;
+- карточки поддерживают связь `LINK`/`UNLINK` через `mainCardId`: подчинённая карточка хранит идентификатор главной; связь не меняет жизненный цикл ни одной карточки.
 
 ## Хранение
 

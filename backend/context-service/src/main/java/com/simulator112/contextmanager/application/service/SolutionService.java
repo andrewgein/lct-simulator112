@@ -23,7 +23,6 @@ import com.simulator112.contextmanager.domain.system112.PersonInfo;
 import com.simulator112.contextmanager.domain.common.DialogProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;
 import com.simulator112.contextmanager.domain.system112.SolutionContextOperation;
-import com.simulator112.contextmanager.domain.system112.SolutionContextStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,8 +41,7 @@ public class SolutionService implements ManageSystem112CardUseCase {
         SolutionContextOperation operation = operationOr(request, SolutionContextOperation.CREATE);
         SolutionContextSaveResponse response = switch (operation) {
             case CREATE -> createCard(context, callId, request, null);
-            case CREATE_CHILD -> createChildCard(context, callId, request);
-            case DUPLICATE -> createDuplicate(context, callId, request);
+            case LINK -> createSubordinateCard(context, callId, request);
             case SAVE, UNLINK -> throw new IllegalArgumentException(
                     "Для изменения карточки используйте /cards/{cardId}/revisions");
         };
@@ -61,7 +59,7 @@ public class SolutionService implements ManageSystem112CardUseCase {
         return switch (operation) {
             case SAVE -> saveCard(context, cardId, request);
             case UNLINK -> unlinkCard(context, cardId, request);
-            case CREATE_CHILD, DUPLICATE -> relateCard(context, cardId, request, operation);
+            case LINK -> linkCard(context, cardId, request);
             case CREATE -> throw new IllegalArgumentException(
                     "Для новой карточки используйте /calls/{callId}/cards");
         };
@@ -83,28 +81,22 @@ public class SolutionService implements ManageSystem112CardUseCase {
     private SolutionContextSaveResponse saveCard(TrainingContext context, UUID cardId,
                                                  SolutionContextRequest request) {
         requireNoRelationTarget(request);
-        SolutionCardRevision latest = requireRequestedActiveCard(
+        SolutionCardRevision latest = requireRequestedCard(
                 context.getId(), cardId, request.expectedVersion());
-        return save(context, revisionFrom(context, latest, latest.getStatus(), latest.getParentCardId(),
-                latest.getDuplicateOfCardId(), request));
+        return save(context, revisionFrom(context, latest, latest.getMainCardId(), request));
     }
 
-    private SolutionContextSaveResponse relateCard(TrainingContext context, UUID cardId,
-                                                   SolutionContextRequest request,
-                                                   SolutionContextOperation operation) {
+    private SolutionContextSaveResponse linkCard(TrainingContext context, UUID cardId,
+                                                  SolutionContextRequest request) {
         UUID targetId = requireRelationTarget(request);
-        SolutionCardRevision card = requireRequestedActiveCard(
-                context.getId(), cardId, request.expectedVersion());
+        SolutionCardRevision card = requireRequestedCard(context.getId(), cardId, request.expectedVersion());
         requireIndependentCard(card);
         requireActiveCallForCard(context, card);
         if (cardId.equals(targetId)) {
             throw new IllegalArgumentException("Карточку нельзя связать с самой собой");
         }
-        SolutionCardRevision target = requireIndependentActiveCard(context.getId(), targetId);
-        boolean duplicate = operation == SolutionContextOperation.DUPLICATE;
-        return save(context, revisionFrom(context, card,
-                duplicate ? SolutionContextStatus.CLOSED_DUPLICATE : SolutionContextStatus.ACTIVE,
-                duplicate ? null : target.getCardId(), duplicate ? target.getCardId() : null, request));
+        requireIndependentCard(requireCard(context.getId(), targetId));
+        return save(context, revisionFrom(context, card, targetId, request));
     }
 
     private SolutionContextSaveResponse unlinkCard(TrainingContext context, UUID cardId,
@@ -113,58 +105,41 @@ public class SolutionService implements ManageSystem112CardUseCase {
         SolutionCardRevision card = requireRequestedCard(
                 context.getId(), cardId, request.expectedVersion());
         if (isIndependent(card)) {
-            throw new IllegalArgumentException("Карточка не связана и не является дубликатом: " + cardId);
+            throw new IllegalArgumentException("Карточка не связана: " + cardId);
         }
         requireActiveCallForCard(context, card);
         SolutionContextRequest relationOnly = new SolutionContextRequest(
                 null, null, null, null, cardId, card.getVersion(), SolutionContextOperation.UNLINK, null);
-        return save(context, revisionFrom(
-                context, card, SolutionContextStatus.ACTIVE, null, null, relationOnly));
+        return save(context, revisionFrom(context, card, null, relationOnly));
     }
 
-    private SolutionContextSaveResponse createChildCard(TrainingContext context, UUID callId,
-                                                        SolutionContextRequest request) {
-        UUID parentId = requireRelationTarget(request);
-        requireIndependentActiveCard(context.getId(), parentId);
-        return createCard(context, callId, request, parentId);
-    }
-
-    private SolutionContextSaveResponse createDuplicate(TrainingContext context, UUID callId,
-                                                        SolutionContextRequest request) {
-        requireNoRelationTarget(request);
-        SolutionCardRevision canonical = requireRequestedActiveCard(
-                context.getId(), request.cardId(), request.expectedVersion());
-        requireIndependentCard(canonical);
-        SolutionCardRevision duplicate = newRevision(context, UUID.randomUUID(), null, 1, callId,
-                SolutionContextStatus.CLOSED_DUPLICATE, null, canonical.getCardId(), request);
-        SolutionCardRevision savedDuplicate = persist(context, duplicate);
-        return new SolutionContextSaveResponse(
-                canonical.getId(), canonical.getCardId(), canonical.getVersion(), savedDuplicate.getCardId());
+    private SolutionContextSaveResponse createSubordinateCard(TrainingContext context, UUID callId,
+                                                              SolutionContextRequest request) {
+        UUID mainCardId = requireRelationTarget(request);
+        requireIndependentCard(requireCard(context.getId(), mainCardId));
+        return createCard(context, callId, request, mainCardId);
     }
 
     private SolutionContextSaveResponse createCard(TrainingContext context, UUID callId,
-                                                   SolutionContextRequest request, UUID parentCardId) {
+                                                   SolutionContextRequest request, UUID mainCardId) {
         if (request.cardId() != null || request.expectedVersion() != null) {
             throw new IllegalArgumentException("Для новой карточки cardId и expectedVersion должны отсутствовать");
         }
-        if (!Objects.equals(parentCardId, request.parentCardId())) {
-            throw new IllegalArgumentException("Некорректный parentCardId для новой карточки");
+        if (!Objects.equals(mainCardId, request.mainCardId())) {
+            throw new IllegalArgumentException("Некорректный mainCardId для новой карточки");
         }
         return save(context, newRevision(context, UUID.randomUUID(), null, 1, callId,
-                SolutionContextStatus.ACTIVE, parentCardId, null, request));
+                mainCardId, request));
     }
 
     private SolutionCardRevision revisionFrom(TrainingContext context, SolutionCardRevision previous,
-                                               SolutionContextStatus status, UUID parentCardId,
-                                               UUID duplicateOfCardId, SolutionContextRequest request) {
+                                               UUID mainCardId, SolutionContextRequest request) {
         return newRevision(context, previous.getCardId(), previous.getId(),
-                previous.getVersion() + 1, previous.getCallId(), status,
-                parentCardId, duplicateOfCardId, request);
+                previous.getVersion() + 1, previous.getCallId(), mainCardId, request);
     }
 
     private SolutionCardRevision newRevision(TrainingContext context, UUID cardId, UUID previousRevisionId,
-                                              long version, UUID callId, SolutionContextStatus status,
-                                              UUID parentCardId, UUID duplicateOfCardId,
+                                              long version, UUID callId, UUID mainCardId,
                                               SolutionContextRequest request) {
         SolutionCardRevision revision = new SolutionCardRevision();
         revision.setContextId(context.getId());
@@ -172,9 +147,7 @@ public class SolutionService implements ManageSystem112CardUseCase {
         revision.setPreviousRevisionId(previousRevisionId);
         revision.setVersion(version);
         revision.setCallId(callId);
-        revision.setStatus(status);
-        revision.setParentCardId(parentCardId);
-        revision.setDuplicateOfCardId(duplicateOfCardId);
+        revision.setMainCardId(mainCardId);
         fillSnapshot(revision, request);
         return revision;
     }
@@ -182,22 +155,13 @@ public class SolutionService implements ManageSystem112CardUseCase {
     private SolutionContextSaveResponse save(TrainingContext context, SolutionCardRevision revision) {
         SolutionCardRevision saved = persist(context, revision);
         return new SolutionContextSaveResponse(
-                saved.getId(), saved.getCardId(), saved.getVersion(), null);
+                saved.getId(), saved.getCardId(), saved.getVersion());
     }
 
     private SolutionCardRevision persist(TrainingContext context, SolutionCardRevision revision) {
         SolutionCardRevision saved = solutionCardStore.save(revision);
         context.getSolutionCards().add(saved);
         return saved;
-    }
-
-    private SolutionCardRevision requireRequestedActiveCard(UUID contextId, UUID cardId,
-                                                              Long expectedVersion) {
-        SolutionCardRevision card = requireRequestedCard(contextId, cardId, expectedVersion);
-        if (card.getStatus() != SolutionContextStatus.ACTIVE) {
-            throw new IllegalArgumentException("Карточка закрыта: " + cardId);
-        }
-        return card;
     }
 
     private SolutionCardRevision requireRequestedCard(UUID contextId, UUID cardId,
@@ -213,15 +177,6 @@ public class SolutionService implements ManageSystem112CardUseCase {
         return card;
     }
 
-    private SolutionCardRevision requireIndependentActiveCard(UUID contextId, UUID cardId) {
-        SolutionCardRevision card = requireCard(contextId, cardId);
-        if (card.getStatus() != SolutionContextStatus.ACTIVE) {
-            throw new IllegalArgumentException("Карточка закрыта: " + cardId);
-        }
-        requireIndependentCard(card);
-        return card;
-    }
-
     private SolutionCardRevision requireCard(UUID contextId, UUID cardId) {
         return solutionCardStore.findLatestByCard(contextId, cardId)
                 .orElseThrow(() -> new IllegalArgumentException("Карточка не найдена: " + cardId));
@@ -230,24 +185,24 @@ public class SolutionService implements ManageSystem112CardUseCase {
     private void requireIndependentCard(SolutionCardRevision card) {
         if (!isIndependent(card)) {
             throw new IllegalArgumentException(
-                    "Связанную карточку нельзя повторно связать или дублировать: " + card.getCardId());
+                    "Связанную карточку нельзя повторно связать: " + card.getCardId());
         }
     }
 
     private boolean isIndependent(SolutionCardRevision card) {
-        return card.getParentCardId() == null && card.getDuplicateOfCardId() == null;
+        return card.getMainCardId() == null;
     }
 
     private UUID requireRelationTarget(SolutionContextRequest request) {
-        if (request.parentCardId() == null) {
-            throw new IllegalArgumentException("Для связи требуется идентификатор целевой карточки");
+        if (request.mainCardId() == null) {
+            throw new IllegalArgumentException("Для связи требуется идентификатор главной карточки");
         }
-        return request.parentCardId();
+        return request.mainCardId();
     }
 
     private void requireNoRelationTarget(SolutionContextRequest request) {
-        if (request.parentCardId() != null) {
-            throw new IllegalArgumentException("parentCardId допустим только для операции связи");
+        if (request.mainCardId() != null) {
+            throw new IllegalArgumentException("mainCardId допустим только для операции связи");
         }
     }
 
@@ -324,8 +279,8 @@ public class SolutionService implements ManageSystem112CardUseCase {
         }
         var latest = ordered.getLast();
         return new SolutionContextView(latest.getId(), latest.getCardId(), latest.getPreviousRevisionId(), latest.getVersion(),
-                latest.getStatus(), latest.getCallId(), latest.getParentCardId(), latest.getDuplicateOfCardId(),
-                applicant, victim, additionalInfo, incidentType, latest.getCreatedAt());
+                latest.getCallId(), latest.getMainCardId(), applicant, victim, additionalInfo, incidentType,
+                latest.getCreatedAt());
     }
 
     private com.simulator112.contextmanager.application.model.system112.PersonInfoRequest merge(

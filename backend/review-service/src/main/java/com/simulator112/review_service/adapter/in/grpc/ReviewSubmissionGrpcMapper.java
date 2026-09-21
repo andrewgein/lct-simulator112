@@ -50,8 +50,8 @@ final class ReviewSubmissionGrpcMapper {
 
     private static ReviewSubmission.CardRevision card(SolutionContext source) {
         return new ReviewSubmission.CardRevision(source.getRevisionId(), source.getCardId(), source.getVersion(),
-                source.getCallId(), source.getParentId(), source.getDuplicateOfId(), source.getStatus().name(),
-                person(source.getApplicant()), person(source.getVictim()), source.getAdditionalInfoMap(),
+                source.getCallId(), source.getMainCardId(), person(source.getApplicant()), person(source.getVictim()),
+                source.getAdditionalInfoMap(),
                 source.hasAdditionalInfoProvided() ? source.getAdditionalInfoProvided() : source.getAdditionalInfoCount() > 0,
                 source.getIncidentType());
     }
