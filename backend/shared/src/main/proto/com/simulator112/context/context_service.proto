@@ -113,7 +113,7 @@ message SolutionContext {
   PersonInfo applicant = 1;
   PersonInfo victim = 2;
   map<string, string> additional_info = 3;
-  string incident_type = 4;
+  repeated string incident_types = 4;
   string call_id = 5;
   string main_card_id = 6;
   reserved 7, 12;
