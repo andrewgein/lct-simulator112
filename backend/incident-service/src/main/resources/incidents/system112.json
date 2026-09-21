@@ -1,0 +1,1030 @@
+[
+  {
+    "title": "ДТП с пострадавшим и возможной утечкой топлива",
+    "address": {
+      "city": "Москва",
+      "street": "Ленинградское шоссе",
+      "house": "56",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "HARD",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "00915488-e020-51a9-9f7a-b2cb0b0d0632",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": {
+          "firstName": "Антон",
+          "lastName": "Смирнов",
+          "middleName": null,
+          "age": 44,
+          "phone": null,
+          "contactPhone": null,
+          "address": null,
+          "additionalInfo": "Не может встать, сильная боль в ноге"
+        },
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "181fdd03-d9b7-5317-964d-db0e7fccc8ee",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Иван",
+              "lastName": "Морозов",
+              "middleName": null,
+              "age": 32,
+              "phone": "+79992220001",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "MAN",
+            "knownFacts": [
+              "Столкнулись два автомобиля",
+              "Есть один пострадавший",
+              "Движение частично перекрыто"
+            ],
+            "hiddenFacts": [
+              "У пострадавшего деформирована голень",
+              "Из машины ощущается запах бензина"
+            ],
+            "aiContext": "Ты очевидец ДТП. Сразу сообщи про столкновение и пострадавшего. Не ставь диагноз. Про деформацию голени скажи при вопросе о травмах, про запах бензина — при вопросе об утечке, дыме или пожарной опасности.",
+            "emotionalState": "Сильно взволнован"
+          }
+        ],
+        "classifierCodes": [
+          "ROAD_ACCIDENT_INJURED"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Сколько автомобилей?",
+      "Сколько пострадавших?",
+      "Пострадавший в сознании и дышит?",
+      "Есть ли дым, огонь или утечка топлива?"
+    ],
+    "expectedActions": [
+      "Подтвердить адрес",
+      "Определить нужные службы",
+      "Передать сведения о пострадавшем и риске возгорания"
+    ],
+    "criticalMistakes": [
+      "Не уточнено число пострадавших",
+      "Не уточнена пожарная опасность"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Иван",
+        "lastName": "Морозов",
+        "middleName": null,
+        "age": 32,
+        "phone": "+79992220001",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": "Антон",
+        "lastName": "Смирнов",
+        "middleName": null,
+        "age": 44,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Не может встать, сильная боль в ноге"
+      },
+      "additionalInfo": {
+        "trainingScenario": "ДТП с пострадавшим и возможной утечкой топлива"
+      },
+      "classifierCodes": [
+        "ROAD_ACCIDENT_INJURED"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "AMBULANCE",
+      "classifierCode": "ROAD_ACCIDENT_INJURED",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Дым из соседней квартиры, возможно ребёнок внутри",
+    "address": {
+      "city": "Москва",
+      "street": "Новочерёмушкинская",
+      "house": "41",
+      "building": "2",
+      "apartment": "88",
+      "floor": 9
+    },
+    "difficulty": "HARD",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "843d760a-9dcf-5038-bf07-218c1c805365",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": null,
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "ec57371f-d3ff-52ed-98ae-771a6955d8eb",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Наталья",
+              "lastName": "Громова",
+              "middleName": null,
+              "age": 37,
+              "phone": "+79992220002",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "WOMEN",
+            "knownFacts": [
+              "Видит дым из квартиры напротив",
+              "Слышит дымовой извещатель"
+            ],
+            "hiddenFacts": [
+              "Соседка говорила, что дома может быть 10-летний сын",
+              "Дым появился в общем коридоре"
+            ],
+            "aiContext": "Ты соседка по этажу. Говори тревожно, но по существу. Про возможного ребёнка сообщи, если оператор спросит о людях внутри. Про дым в коридоре — при вопросе о задымлении подъезда.",
+            "emotionalState": "Испугана"
+          }
+        ],
+        "classifierCodes": [
+          "FIRE_APARTMENT"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Откуда идёт дым?",
+      "Есть ли люди внутри?",
+      "Есть ли открытое пламя?",
+      "Задымлён ли подъезд?"
+    ],
+    "expectedActions": [
+      "Подтвердить адрес и этаж",
+      "Определить пожарную службу",
+      "Уточнить людей внутри"
+    ],
+    "criticalMistakes": [
+      "Не задан вопрос о людях внутри",
+      "Не указан этаж"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Наталья",
+        "lastName": "Громова",
+        "middleName": null,
+        "age": 37,
+        "phone": "+79992220002",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "trainingScenario": "Дым из соседней квартиры, возможно ребёнок внутри"
+      },
+      "classifierCodes": [
+        "FIRE_APARTMENT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "FIRE",
+      "classifierCode": "FIRE_APARTMENT",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Запах газа в квартире и ухудшение самочувствия",
+    "address": {
+      "city": "Москва",
+      "street": "Каширское шоссе",
+      "house": "74",
+      "building": "3",
+      "apartment": "112",
+      "floor": 6
+    },
+    "difficulty": "HARD",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "6fe15c3b-a140-5278-8a0e-8e3afd06c483",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": {
+          "firstName": "Людмила",
+          "lastName": "Крылова",
+          "middleName": null,
+          "age": 46,
+          "phone": null,
+          "contactPhone": null,
+          "address": null,
+          "additionalInfo": "Головокружение и тошнота"
+        },
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "b98b92f4-f23c-5d49-ba90-65aa5d6fa187",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Павел",
+              "lastName": "Крылов",
+              "middleName": null,
+              "age": 48,
+              "phone": "+79992220003",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "MAN",
+            "knownFacts": [
+              "В квартире запах газа",
+              "Жене плохо",
+              "Плита выключена"
+            ],
+            "hiddenFacts": [
+              "Запах сильнее возле счётчика",
+              "Окна пока закрыты"
+            ],
+            "aiContext": "Ты хозяин квартиры. Сразу сообщи о запахе газа и плохом самочувствии жены. Где запах сильнее и открыты ли окна — отвечай только на вопросы. Не придумывай причину утечки.",
+            "emotionalState": "Тревожен"
+          }
+        ],
+        "classifierCodes": [
+          "GAS_LEAK_HOME"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Есть ли открытое пламя?",
+      "Где запах сильнее?",
+      "Есть ли головокружение или потеря сознания?",
+      "Можно ли безопасно покинуть квартиру?"
+    ],
+    "expectedActions": [
+      "Определить газовую службу",
+      "Определить необходимость СМП",
+      "Дать безопасные инструкции"
+    ],
+    "criticalMistakes": [
+      "Совет пользоваться электровыключателями",
+      "Не учтено ухудшение самочувствия"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Павел",
+        "lastName": "Крылов",
+        "middleName": null,
+        "age": 48,
+        "phone": "+79992220003",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": "Людмила",
+        "lastName": "Крылова",
+        "middleName": null,
+        "age": 46,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Головокружение и тошнота"
+      },
+      "additionalInfo": {
+        "trainingScenario": "Запах газа в квартире и ухудшение самочувствия"
+      },
+      "classifierCodes": [
+        "GAS_LEAK_HOME"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "GAS",
+      "classifierCode": "GAS_LEAK_HOME",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Человек без сознания в вестибюле метро",
+    "address": {
+      "city": "Москва",
+      "street": "Проспект Мира",
+      "house": "41",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "HARD",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "2eda4c6b-761a-55ca-a07b-81cab7472b8d",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": {
+          "firstName": null,
+          "lastName": null,
+          "middleName": null,
+          "age": 60,
+          "phone": null,
+          "contactPhone": null,
+          "address": null,
+          "additionalInfo": "Лежит на полу в вестибюле"
+        },
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "7cc40e49-97a9-5a54-9197-c1b52905ac81",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Алина",
+              "lastName": "Мельникова",
+              "middleName": null,
+              "age": 24,
+              "phone": "+79992220004",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "WOMEN",
+            "knownFacts": [
+              "Мужчина упал",
+              "Не отвечает на обращение",
+              "Место — у турникетов"
+            ],
+            "hiddenFacts": [
+              "Дыхание редкое и шумное",
+              "Рядом сотрудник станции с аптечкой"
+            ],
+            "aiContext": "Ты пассажир и не медик. Не ставь диагноз. При просьбе оценить дыхание скажи, что оно редкое и шумное. Про сотрудника с аптечкой скажи, если спросят, кто может помочь рядом.",
+            "emotionalState": "Паникует"
+          }
+        ],
+        "classifierCodes": [
+          "MED_UNCONSCIOUS_PUBLIC"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Реагирует ли человек?",
+      "Дышит ли нормально?",
+      "Есть ли сильное кровотечение?",
+      "Где именно в объекте вы находитесь?"
+    ],
+    "expectedActions": [
+      "Определить СМП",
+      "Уточнить сознание и дыхание",
+      "Точно обозначить место встречи"
+    ],
+    "criticalMistakes": [
+      "Не проверено дыхание",
+      "Не определено точное место"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Алина",
+        "lastName": "Мельникова",
+        "middleName": null,
+        "age": 24,
+        "phone": "+79992220004",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": null,
+        "lastName": null,
+        "middleName": null,
+        "age": 60,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Лежит на полу в вестибюле"
+      },
+      "additionalInfo": {
+        "trainingScenario": "Человек без сознания в вестибюле метро"
+      },
+      "classifierCodes": [
+        "MED_UNCONSCIOUS_PUBLIC"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "AMBULANCE",
+      "classifierCode": "MED_UNCONSCIOUS_PUBLIC",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Возможное проникновение в квартиру",
+    "address": {
+      "city": "Москва",
+      "street": "Братиславская",
+      "house": "18",
+      "building": "1",
+      "apartment": "7",
+      "floor": 1
+    },
+    "difficulty": "NORMAL",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "26645dbf-bbd9-5f1e-9115-4f2b85f2471a",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": null,
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "3ce2516d-4d41-513d-b384-e6b13fc63605",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Виктория",
+              "lastName": "Лазарева",
+              "middleName": null,
+              "age": 31,
+              "phone": "+79992220005",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "WOMEN",
+            "knownFacts": [
+              "Слышала разбитое стекло",
+              "Видела незнакомого мужчину на балконе"
+            ],
+            "hiddenFacts": [
+              "Мужчина перелез внутрь квартиры",
+              "Есть запись с дверной камеры"
+            ],
+            "aiContext": "Ты соседка и находишься в безопасной квартире. Не утверждай, что человек точно преступник. Про запись с камеры скажи, если спросят о приметах или видео.",
+            "emotionalState": "Насторожена"
+          }
+        ],
+        "classifierCodes": [
+          "POLICE_BURGLARY"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Вы в безопасном месте?",
+      "Где сейчас человек?",
+      "Есть ли у него оружие?",
+      "Какие приметы?"
+    ],
+    "expectedActions": [
+      "Подтвердить адрес",
+      "Определить полицию",
+      "Не направлять заявителя к подозреваемому"
+    ],
+    "criticalMistakes": [
+      "Совет самостоятельно задержать человека",
+      "Не уточнено местонахождение"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Виктория",
+        "lastName": "Лазарева",
+        "middleName": null,
+        "age": 31,
+        "phone": "+79992220005",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "trainingScenario": "Возможное проникновение в квартиру"
+      },
+      "classifierCodes": [
+        "POLICE_BURGLARY"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "POLICE",
+      "classifierCode": "POLICE_BURGLARY",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Бесхозный чемодан на остановке",
+    "address": {
+      "city": "Москва",
+      "street": "Люблинская",
+      "house": "153",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "HARD",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "e9e67f4f-e38f-5543-a53f-2325eb7c4f29",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": null,
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "18bb4f97-0e8e-5d60-ad8c-f3d0ec391089",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Артур",
+              "lastName": "Власов",
+              "middleName": null,
+              "age": 28,
+              "phone": "+79992220006",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "MAN",
+            "knownFacts": [
+              "На остановке бесхозный чемодан",
+              "Рядом много людей"
+            ],
+            "hiddenFacts": [
+              "Не видит проводов и не слышит звуков",
+              "Сотрудник магазина собирался подойти ближе"
+            ],
+            "aiContext": "Ты прохожий. Не называй предмет взрывным устройством. Говори только о том, что видишь. Информацию о внешних признаках и попытках приблизиться сообщай по уточняющим вопросам.",
+            "emotionalState": "Слегка тревожен"
+          }
+        ],
+        "classifierCodes": [
+          "SUSPICIOUS_OBJECT"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Где точно предмет?",
+      "Кто-нибудь его трогал?",
+      "Есть ли рядом люди?",
+      "Есть ли необычные признаки?"
+    ],
+    "expectedActions": [
+      "Определить профильные службы",
+      "Рекомендовать не приближаться и не трогать",
+      "Передать точную привязку места"
+    ],
+    "criticalMistakes": [
+      "Совет открыть предмет",
+      "Не уточнено, трогал ли кто-то предмет"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Артур",
+        "lastName": "Власов",
+        "middleName": null,
+        "age": 28,
+        "phone": "+79992220006",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "trainingScenario": "Бесхозный чемодан на остановке"
+      },
+      "classifierCodes": [
+        "SUSPICIOUS_OBJECT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "ANTI_TERROR",
+      "classifierCode": "SUSPICIOUS_OBJECT",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Падение рабочего со стремянки",
+    "address": {
+      "city": "Москва",
+      "street": "Автозаводская",
+      "house": "23",
+      "building": "5",
+      "apartment": null,
+      "floor": 2
+    },
+    "difficulty": "NORMAL",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "1e54f293-0a22-535b-9c9a-06bd3a5911e3",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": {
+          "firstName": "Рустам",
+          "lastName": "Ахметов",
+          "middleName": null,
+          "age": 39,
+          "phone": null,
+          "contactPhone": null,
+          "address": null,
+          "additionalInfo": "Боль в спине после падения"
+        },
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "5d9e84e6-416d-5c81-8a6d-c070efd00ee1",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Егор",
+              "lastName": "Савин",
+              "middleName": null,
+              "age": 36,
+              "phone": "+79992220007",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "MAN",
+            "knownFacts": [
+              "Рабочий упал примерно с 3 метров",
+              "В сознании",
+              "Жалуется на боль в спине"
+            ],
+            "hiddenFacts": [
+              "Пытался встать, боль усилилась",
+              "Сильного кровотечения не видно"
+            ],
+            "aiContext": "Ты прораб. Не ставь диагноз. Про попытку встать и кровотечение сообщай, если оператор спросит.",
+            "emotionalState": "Взволнован"
+          }
+        ],
+        "classifierCodes": [
+          "MED_FALL_HEIGHT"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "С какой высоты падение?",
+      "В сознании?",
+      "Дышит нормально?",
+      "Есть ли сильное кровотечение?",
+      "Есть ли боль в шее или спине?"
+    ],
+    "expectedActions": [
+      "Определить СМП",
+      "Уточнить механизм травмы",
+      "Зафиксировать точку доступа"
+    ],
+    "criticalMistakes": [
+      "Не уточнена высота падения",
+      "Не уточнено сознание или дыхание"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Егор",
+        "lastName": "Савин",
+        "middleName": null,
+        "age": 36,
+        "phone": "+79992220007",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": "Рустам",
+        "lastName": "Ахметов",
+        "middleName": null,
+        "age": 39,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Боль в спине после падения"
+      },
+      "additionalInfo": {
+        "trainingScenario": "Падение рабочего со стремянки"
+      },
+      "classifierCodes": [
+        "MED_FALL_HEIGHT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "AMBULANCE",
+      "classifierCode": "MED_FALL_HEIGHT",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Кухонный пожар после возгорания масла",
+    "address": {
+      "city": "Москва",
+      "street": "Кантемировская",
+      "house": "17",
+      "building": "1",
+      "apartment": "64",
+      "floor": 8
+    },
+    "difficulty": "NORMAL",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "4aa233bf-2b52-5406-8667-5f50eb6d84d1",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": null,
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "6e620b2f-d65f-5de9-b090-35048b494394",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Светлана",
+              "lastName": "Жукова",
+              "middleName": null,
+              "age": 43,
+              "phone": "+79992220008",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "WOMEN",
+            "knownFacts": [
+              "Загорелось масло в сковороде",
+              "Пламя перекинулось на вытяжку",
+              "Все люди вышли"
+            ],
+            "hiddenFacts": [
+              "Огонь не вышел в коридор",
+              "В квартире осталась кошка"
+            ],
+            "aiContext": "Ты хозяйка квартиры и уже вышла. Не возвращайся внутрь. Про кошку скажи, если спросят, остался ли кто-то живой внутри.",
+            "emotionalState": "Испугана"
+          }
+        ],
+        "classifierCodes": [
+          "FIRE_KITCHEN"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Все ли люди вышли?",
+      "Пламя распространяется?",
+      "Есть ли дым в подъезде?",
+      "Закрыта ли дверь после выхода?"
+    ],
+    "expectedActions": [
+      "Определить пожарную службу",
+      "Подтвердить эвакуацию",
+      "Передать этаж и квартиру"
+    ],
+    "criticalMistakes": [
+      "Совет тушить масло водой",
+      "Не уточнена эвакуация"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Светлана",
+        "lastName": "Жукова",
+        "middleName": null,
+        "age": 43,
+        "phone": "+79992220008",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "trainingScenario": "Кухонный пожар после возгорания масла"
+      },
+      "classifierCodes": [
+        "FIRE_KITCHEN"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "FIRE",
+      "classifierCode": "FIRE_KITCHEN",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Внезапная слабость и нарушение речи у пожилой женщины",
+    "address": {
+      "city": "Москва",
+      "street": "Молодогвардейская",
+      "house": "28",
+      "building": "2",
+      "apartment": "135",
+      "floor": 11
+    },
+    "difficulty": "HARD",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "3a21ced2-049b-5913-beab-9683f55de69e",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": {
+          "firstName": "Галина",
+          "lastName": "Фёдорова",
+          "middleName": null,
+          "age": 79,
+          "phone": null,
+          "contactPhone": null,
+          "address": null,
+          "additionalInfo": "Слабость, невнятная речь"
+        },
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "c67dcd2a-b57b-5f52-ae88-d860509ca779",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Дмитрий",
+              "lastName": "Фёдоров",
+              "middleName": null,
+              "age": 51,
+              "phone": "+79992220009",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "MAN",
+            "knownFacts": [
+              "Внезапная слабость",
+              "Речь стала невнятной",
+              "Пациентка в сознании"
+            ],
+            "hiddenFacts": [
+              "Правая рука слабее левой",
+              "Симптомы начались около 10 минут назад"
+            ],
+            "aiContext": "Ты сын пациентки. Не называй диагноз. Время начала и слабость правой руки сообщи при соответствующих вопросах.",
+            "emotionalState": "Очень тревожен"
+          }
+        ],
+        "classifierCodes": [
+          "MED_NEUROLOGIC_DEFICIT"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Когда начались симптомы?",
+      "Пациентка в сознании?",
+      "Дышит нормально?",
+      "Есть ли слабость с одной стороны?"
+    ],
+    "expectedActions": [
+      "Определить СМП",
+      "Зафиксировать время начала симптомов",
+      "Передать неврологические признаки"
+    ],
+    "criticalMistakes": [
+      "Не уточнено время начала",
+      "Не определена СМП"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Дмитрий",
+        "lastName": "Фёдоров",
+        "middleName": null,
+        "age": 51,
+        "phone": "+79992220009",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": "Галина",
+        "lastName": "Фёдорова",
+        "middleName": null,
+        "age": 79,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Слабость, невнятная речь"
+      },
+      "additionalInfo": {
+        "trainingScenario": "Внезапная слабость и нарушение речи у пожилой женщины"
+      },
+      "classifierCodes": [
+        "MED_NEUROLOGIC_DEFICIT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "AMBULANCE",
+      "classifierCode": "MED_NEUROLOGIC_DEFICIT",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  },
+  {
+    "title": "Громкий хлопок во дворе и человек на земле",
+    "address": {
+      "city": "Москва",
+      "street": "Стромынка",
+      "house": "20",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "HARD",
+    "targetType": "SYSTEM_112",
+    "stages": [
+      {
+        "id": "2d63833e-196e-5f5c-8dc5-f160314cfbd1",
+        "title": "Приём вызова",
+        "position": 1,
+        "victim": null,
+        "description": "Первичный опрос заявителя и классификация происшествия.",
+        "calls": [
+          {
+            "id": "dcc870cb-cbdf-5a1f-bd32-259f40cfce30",
+            "position": 1,
+            "direction": "INBOUND",
+            "counterparty": "CALLER",
+            "person": {
+              "firstName": "Кирилл",
+              "lastName": "Никитин",
+              "middleName": null,
+              "age": 19,
+              "phone": "+79992220010",
+              "contactPhone": null,
+              "address": null,
+              "additionalInfo": null
+            },
+            "gender": "MAN",
+            "knownFacts": [
+              "Слышал громкий хлопок",
+              "У автомобиля разбито стекло",
+              "Рядом лежит человек"
+            ],
+            "hiddenFacts": [
+              "Сам момент происшествия не видел",
+              "Подозрительных предметов не замечает"
+            ],
+            "aiContext": "Ты очевидец после события. Не делай выводов о причине хлопка. Чётко отделяй то, что видел, от того, чего не видел.",
+            "emotionalState": "Испуган"
+          }
+        ],
+        "classifierCodes": [
+          "UNKNOWN_EXPLOSION_LIKE_EVENT"
+        ]
+      }
+    ],
+    "requiredQuestions": [
+      "Сколько пострадавших видно?",
+      "Есть ли дым или огонь?",
+      "Есть ли подозрительные предметы?",
+      "Что вы видели лично?"
+    ],
+    "expectedActions": [
+      "Подтвердить адрес",
+      "Определить нужные службы по фактам",
+      "Передать наблюдаемую обстановку без предположений"
+    ],
+    "criticalMistakes": [
+      "Причина указана без подтверждения",
+      "Не уточнено число пострадавших"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Кирилл",
+        "lastName": "Никитин",
+        "middleName": null,
+        "age": 19,
+        "phone": "+79992220010",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "trainingScenario": "Громкий хлопок во дворе и человек на земле"
+      },
+      "classifierCodes": [
+        "UNKNOWN_EXPLOSION_LIKE_EVENT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "POLICE",
+      "classifierCode": "UNKNOWN_EXPLOSION_LIKE_EVENT",
+      "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
+    }
+  }
+]

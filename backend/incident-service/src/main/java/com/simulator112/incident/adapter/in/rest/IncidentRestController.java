@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +25,7 @@ public class IncidentRestController {
     private final GetIncidentUseCase getIncident;
     private final FindAvailableIncidentsUseCase findAvailableIncidents;
     private final ImportIncidentsUseCase importIncidents;
+    private final IncidentSeedLoader seedLoader;
     private final IncidentRestMapper mapper;
 
     @PostMapping
@@ -36,18 +36,8 @@ public class IncidentRestController {
 
     @PostMapping("/import")
     @ResponseStatus(HttpStatus.CREATED)
-    public IncidentImportResponse importIncidents(@Valid @RequestBody IncidentImportRequest request) {
-        List<Incident> incidents = new ArrayList<>();
-        for (int index = 0; index < request.incidents().size(); index++) {
-            IncidentRequest incident = request.incidents().get(index);
-            try {
-                incidents.add(mapper.toDomain(null, incident));
-            } catch (IllegalArgumentException exception) {
-                throw new IllegalArgumentException("Инцидент #" + (index + 1) + " «" + incident.title() + "»: "
-                        + exception.getMessage(), exception);
-            }
-        }
-        var imported = importIncidents.importIncidents(incidents, request.createLevels());
+    public IncidentImportResponse importIncidents(@RequestParam(defaultValue = "true") boolean createLevels) {
+        var imported = importIncidents.importIncidents(seedLoader.load(), createLevels);
         return new IncidentImportResponse(
                 imported.incidents().stream().map(value -> new IncidentImportResponse.ImportedIncident(
                         value.id(), value.title(), value.targetType(), value.difficulty())).toList(),
