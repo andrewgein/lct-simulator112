@@ -3,7 +3,6 @@ package com.simulator112.incident.adapter.in.rest;
 import com.simulator112.incident.application.port.in.CreateIncidentUseCase;
 import com.simulator112.incident.application.port.in.FindAvailableIncidentsUseCase;
 import com.simulator112.incident.application.port.in.GetIncidentUseCase;
-import com.simulator112.incident.application.port.in.ImportIncidentsUseCase;
 import com.simulator112.incident.application.port.in.UpdateIncidentUseCase;
 import com.simulator112.incident.domain.common.Difficulty;
 import com.simulator112.incident.domain.common.Incident;
@@ -24,25 +23,12 @@ public class IncidentRestController {
     private final UpdateIncidentUseCase updateIncident;
     private final GetIncidentUseCase getIncident;
     private final FindAvailableIncidentsUseCase findAvailableIncidents;
-    private final ImportIncidentsUseCase importIncidents;
-    private final IncidentSeedLoader seedLoader;
     private final IncidentRestMapper mapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Incident create(@Valid @RequestBody IncidentRequest request) {
         return createIncident.createIncident(mapper.toDomain(null, request));
-    }
-
-    @PostMapping("/import")
-    @ResponseStatus(HttpStatus.CREATED)
-    public IncidentImportResponse importIncidents(@RequestParam(defaultValue = "true") boolean createLevels) {
-        var imported = importIncidents.importIncidents(seedLoader.load(), createLevels);
-        return new IncidentImportResponse(
-                imported.incidents().stream().map(value -> new IncidentImportResponse.ImportedIncident(
-                        value.id(), value.title(), value.targetType(), value.difficulty())).toList(),
-                imported.levels().stream().map(value -> new IncidentImportResponse.ImportedLevel(
-                        value.id(), value.title(), value.targetType(), value.difficulty(), value.incidentIds())).toList());
     }
 
     @PutMapping("/{incidentId}")
