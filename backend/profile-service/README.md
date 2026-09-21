@@ -25,7 +25,7 @@ PostgreSQL, а миграции схемы выполняются Flyway.
 | `DB_USERNAME`      | `postgres`                                 |
 | `DB_PASSWORD`      | `postgres`                                 |
 | `SERVER_PORT`      | `8082`                                     |
-| `GRPC_SERVER_PORT` | `9092`                                     |
+| `GRPC_SERVER_PORT` | `9094`                                     |
 
 При запуске Flyway автоматически применит миграции базы данных.
 
@@ -35,7 +35,7 @@ PostgreSQL, а миграции схемы выполняются Flyway.
 
 ```bash
 docker build -f profile-service/Dockerfile -t profile-service .
-docker run --rm -p 8082:8082 -p 9092:9092 \
+docker run --rm -p 8082:8082 -p 9094:9094 \
   -e DB_URL=jdbc:postgresql://host.docker.internal:5432/profile \
   -e DB_USERNAME=postgres \
   -e DB_PASSWORD=postgres \
