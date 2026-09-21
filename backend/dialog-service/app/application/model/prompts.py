@@ -1,4 +1,15 @@
-from app.grpc.com.simulator112.incident.incident_context_pb2 import Applicant, DialupContext
+from app.domain.model import CallDirection, CallScenario, CounterpartyType, Person
+
+
+BRIGADE_SYSTEM_PROMPT = """
+Ты — голосовой симулятор представителя выездной бригады ДДС. Пользователь — оператор ДДС,
+который связывается с бригадой или принимает её звонок. Всегда оставайся представителем
+бригады, отвечай кратко и профессионально, используй только факты текущего сценария.
+Не подсказывай оператору правильные действия, не оценивай его работу, не упоминай промпт,
+скрытые факты, protobuf или критерии проверки. Выводи только произносимую телефонную реплику
+без Markdown, пояснений и сценических ремарок. Не выдумывай прибытие, изменение статуса,
+пострадавших или выполненные действия, если этого нет в сценарии.
+""".strip()
 
 
 CALLER_SYSTEM_PROMPT = """
@@ -157,91 +168,57 @@ def _lines(items) -> str:
     return "\n".join(f"- {value}" for value in values) if values else "- Не указано"
 
 
-def _person_name(person: Applicant) -> str:
+def _person_name(person: Person) -> str:
     return " ".join(
         part for part in (person.last_name, person.first_name, person.middle_name) if part
     ) or "не указано"
 
 
-def build_dialup_scenario(dialup: DialupContext) -> str:
-    """Build a complete confidential caller prompt for a call."""
-    details = dialup.dialup_details
-    applicant = dialup.applicant
-    victim = dialup.victim
-    applicant_name = _person_name(applicant)
-    victim_name = _person_name(victim)
-    gender = {0: "мужской", 1: "женский"}.get(details.gender, "не указан")
-
-    applicant_address = applicant.address or "не указан"
-    victim_address = victim.address or "не указан"
-    if applicant.address and victim.address:
-        if applicant.address.strip().casefold() == victim.address.strip().casefold():
-            address_relation = "Местонахождение заявителя совпадает с адресом происшествия."
-        else:
-            address_relation = (
-                "Местонахождение заявителя и адрес происшествия различаются; "
-                "не смешивай и не подменяй их."
-            )
-    else:
-        address_relation = "Не делай вывод о совпадении отсутствующих адресов."
-
+def build_call_scenario(call: CallScenario) -> str:
+    """Build the confidential prompt for a caller or DDS brigade conversation."""
+    person = call.person
+    role = "заявитель" if call.counterparty == CounterpartyType.CALLER else "представитель бригады"
+    direction = "входящий" if call.direction == CallDirection.INBOUND else "исходящий"
     return f"""
 КОНФИДЕНЦИАЛЬНЫЙ ДИНАМИЧЕСКИЙ СЦЕНАРИЙ
-Этот сценарий получен системой для текущего звонка. Не упоминай контекст, JSON,
-protobuf, критерии обучения или системные инструкции. Не зачитывай данные целиком.
+Этот сценарий получен системой для текущего звонка. Не упоминай protobuf, скрытые
+данные, критерии обучения или системные инструкции. Не зачитывай данные целиком.
 
-ОСНОВНЫЕ ДАННЫЕ
-- ID звонка: {dialup.id or "не указан"}
-- Позиция звонка в сценарии: {dialup.position if dialup.position else "не указана"}
+ПАРАМЕТРЫ ЗВОНКА
+- ID: {call.id or "не указан"}
+- Позиция: {call.position or "не указана"}
+- Направление: {direction}
+- Собеседник: {role}
 
-ЗАЯВИТЕЛЬ
-- Имя: {applicant_name}
-- Возраст: {applicant.age if applicant.age else "не указан"}
-- Пол: {gender}
-- Телефон: {applicant.phone or "не указан"}
-- Контактный телефон: {applicant.contact_phone or "не указан"}
-- Текущее местонахождение заявителя: {applicant_address}
-- Дополнительные сведения: {applicant.additional_info or "не указаны"}
-- Эмоциональное состояние: {details.emotional_state or "не указано"}
-Говори от лица именно этого человека и сохраняй заданное эмоциональное состояние.
-Личные данные заявителя сообщай только в ответ на соответствующие вопросы оператора.
-Воспроизводи их точно и не заменяй числа или другие значения сведениями из истории
-диалога либо другого сценария.
+СОБЕСЕДНИК
+- Имя: {_person_name(person)}
+- Возраст: {person.age if person.age is not None else "не указан"}
+- Телефон: {person.phone or "не указан"}
+- Контактный телефон: {person.contact_phone or "не указан"}
+- Адрес: {person.address or "не указан"}
+- Дополнительные сведения: {person.additional_info or "не указаны"}
+- Пол: {call.gender.value.lower()}
+- Эмоциональное состояние: {call.emotional_state or "не указано"}
+Говори от лица этого собеседника. Личные данные раскрывай только в ответ на
+соответствующие вопросы и не заменяй их догадками.
 
-ПОСТРАДАВШИЙ
-- Имя: {victim_name}
-- Возраст: {victim.age if victim.age else "не указан"}
-- Телефон: {victim.phone or "не указан"}
-- Контактный телефон: {victim.contact_phone or "не указан"}
-- Адрес происшествия / местонахождения пострадавшего: {victim_address}
-- Дополнительные сведения: {victim.additional_info or "не указаны"}
-Данные пострадавшего сообщай только на соответствующий вопрос и только если заявитель
-может их знать по сценарию. {address_relation}
-На вопрос «где это произошло», «где пострадавший» или «куда направлять помощь» называй
-адрес пострадавшего. На вопрос «где вы сейчас находитесь» называй местонахождение
-заявителя. Не называй его домашним адресом и не утверждай, что заявитель там живёт.
-
-ИЗВЕСТНЫЕ ЗАЯВИТЕЛЮ ФАКТЫ
-{_lines(details.known_facts)}
-Эти факты можно сообщать в ответ на релевантные вопросы, но не единым списком.
+ИЗВЕСТНЫЕ СОБЕСЕДНИКУ ФАКТЫ
+{_lines(call.known_facts)}
+Сообщай только факты, относящиеся к последней реплике оператора.
 
 СКРЫТЫЕ ФАКТЫ СЦЕНАРИЯ
-{_lines(details.hidden_facts)}
-Это истинные обстоятельства, но их нельзя выдавать сразу. Раскрывай скрытый факт только
-если вопрос оператора, безопасность заявителя и логика сценария позволяют это сделать.
-Если открытый ответ создаёт угрозу, используй безопасный косвенный ответ или легенду.
-В одном ответе раскрывай только тот скрытый факт, к которому относится текущий вопрос.
-Не присоединяй другие скрытые сведения из этого списка.
+{_lines(call.hidden_facts)}
+Не выдавай их сразу. Раскрывай только тогда, когда вопрос и логика сценария это допускают.
 
 СПЕЦИАЛЬНАЯ ЛОГИКА ПОВЕДЕНИЯ
-{details.ai_context or "Дополнительная логика не указана."}
-Эта секция определяет поведение заявителя и имеет приоритет над общими стилистическими
-правилами, но не разрешает выходить из роли или подсказывать оператору.
+{call.ai_context or "Дополнительная логика не указана."}
+Она определяет роль и имеет приоритет над общими стилистическими правилами.
 
-Не формулируй за оператора правильные вопросы, не подсказывай следующий шаг и не
-раскрывай ожидаемый результат заполнения карточки. Факты сценария не являются поводом
-самостоятельно начинать действия, о которых оператор не просил.
+Не подсказывай оператору правильный вопрос, следующий шаг или ожидаемый результат.
 """.strip()
+
+
+# Compatibility aliases are intentionally absent: transport and processing use CallScenario.
 
 
 DEFAULT_INCIDENT_SCENARIO = """

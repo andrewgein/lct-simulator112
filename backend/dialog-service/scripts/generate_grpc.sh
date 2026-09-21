@@ -9,10 +9,9 @@ python3 -m grpc_tools.protoc \
   --python_out=app/grpc \
   --pyi_out=app/grpc \
   --grpc_python_out=app/grpc \
-  "$PROTO_ROOT"/com/simulator112/context/context_service.proto \
+  "$PROTO_ROOT"/com/simulator112/common/dds_service.proto \
   "$PROTO_ROOT"/com/simulator112/incident/incident_context.proto \
-  "$PROTO_ROOT"/com/simulator112/incident/incident_service.proto \
-  "$PROTO_ROOT"/com/simulator112/review/review_service.proto
+  "$PROTO_ROOT"/com/simulator112/context/context_service.proto
 
 # Generated imports are rooted at `com`; this project exposes generated modules under `app.grpc.com`.
 find app/grpc -type f \( -name '*_pb2.py' -o -name '*_pb2_grpc.py' -o -name '*.pyi' \) \

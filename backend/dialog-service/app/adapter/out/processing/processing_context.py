@@ -1,13 +1,11 @@
 import queue
 
-from app.grpc.com.simulator112.context.context_service_pb2 import DialogContext, Phrase, SpeakerType
 from .processing_node import UserDialogProcessingNode
 
 
 class UserDialogProcessingContext:
     def __init__(self):
         self.node_list = []
-        self.transcript = []
 
     def get_input_queue(self) -> queue.Queue | None:
         if (len(self.node_list) == 0):

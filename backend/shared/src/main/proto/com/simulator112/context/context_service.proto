@@ -64,9 +64,18 @@ message System112Progress {
   int32 total_calls = 3;
 }
 
+message DdsStageProgress {
+  string stage_id = 1;
+  string stage_type = 2;
+  string status = 3;
+  string started_at = 4;
+  string deadline = 5;
+}
+
 message DdsProgress {
   string active_stage_id = 1;
   string deadline = 2;
+  repeated DdsStageProgress stages = 3;
 }
 
 message IncidentProgress {
@@ -132,6 +141,7 @@ message FullContext {
   SolutionContext solution_context = 5;
   incident.LevelContext level_context = 6;
   repeated SolutionContext solution_context_revisions = 7;
+  LevelProgress level_progress = 8;
 }
 
 service ContextManagerService {

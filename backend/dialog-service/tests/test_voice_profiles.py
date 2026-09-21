@@ -3,11 +3,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from app.grpc.com.simulator112.incident.incident_context_pb2 import (
-    CALM,
-    PANICKED,
-)
-from app.utils.voice_profiles import (
+from app.adapter.out.processing.voice_profiles import (
     VOICE_PROFILES,
     VOICES_ROOT,
     get_voice_profile,
@@ -53,10 +49,10 @@ class VoiceManifestTests(unittest.TestCase):
     def test_selects_requested_gender_and_emotion(self):
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop("TTS_VOICE_PROFILE", None)
-            profile = select_voice_profile(PANICKED, gender="female")
+            profile = select_voice_profile("PANICKED", gender="female")
 
         self.assertEqual(profile.gender, "female")
-        self.assertEqual(profile.emotional_states, (PANICKED,))
+        self.assertEqual(profile.emotional_states, ("PANICKED",))
 
     def test_fixed_profile_id(self):
         with patch.dict(
@@ -64,7 +60,7 @@ class VoiceManifestTests(unittest.TestCase):
             {"TTS_VOICE_PROFILE": "man-artyom-calm"},
             clear=False,
         ):
-            profile = select_voice_profile(CALM)
+            profile = select_voice_profile("CALM")
 
         self.assertEqual(profile.id, "man-artyom-calm")
         self.assertEqual(profile.audio_path.name, "calm.wav")

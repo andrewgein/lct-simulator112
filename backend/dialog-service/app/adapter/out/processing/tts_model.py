@@ -10,7 +10,7 @@ import wave
 import httpx
 import numpy as np
 
-from app.utils.voice_profiles import VoiceProfile
+from app.adapter.out.processing.voice_profiles import VoiceProfile
 
 
 OUTPUT_SAMPLE_RATE = 24000
@@ -73,7 +73,7 @@ class TTSModel:
     def generate(self, text: str, profile: VoiceProfile):
         with self._lock:
             if self.text_preprocessor is None:
-                from app.utils.tts_text_preprocessor import TTSTextPreprocessor
+                from app.adapter.out.processing.tts_text_preprocessor import TTSTextPreprocessor
 
                 self.text_preprocessor = TTSTextPreprocessor()
             prepared_text = self.text_preprocessor.process(text)

@@ -8,9 +8,9 @@ import logging
 import asyncio
 from num2words import num2words
 
-from app.grpc.com.simulator112.incident.incident_context_pb2 import DialupContext
-from app.prompts import CALLER_SYSTEM_PROMPT, build_dialup_scenario
-from app.utils.llm_model import LLMModel
+from app.domain.model import CallScenario, CounterpartyType
+from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, build_call_scenario
+from app.adapter.out.processing.llm_model import LLMModel
 from .processing_node import UserDialogProcessingNode
 
 logger = logging.getLogger()
@@ -36,7 +36,7 @@ def _preprocess_text(text: str) -> str:
 
 class ChatNode(UserDialogProcessingNode):
     worker: asyncio.Task | None
-    def __init__(self, context: DialupContext, on_new_phrase=lambda text: None):
+    def __init__(self, context: CallScenario, on_new_phrase=lambda text: None):
         super().__init__()
         self.context = context
         self.on_new_phrase = on_new_phrase
@@ -50,8 +50,11 @@ class ChatNode(UserDialogProcessingNode):
         self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
         self.loop_thread.start()
 
-        system_prompt = getenv("LLM_SYSTEM_PROMPT", CALLER_SYSTEM_PROMPT)
-        incident_scenario = build_dialup_scenario(context)
+        default_prompt = (BRIGADE_SYSTEM_PROMPT
+                          if context.counterparty == CounterpartyType.BRIGADE
+                          else CALLER_SYSTEM_PROMPT)
+        system_prompt = getenv("LLM_SYSTEM_PROMPT", default_prompt)
+        incident_scenario = build_call_scenario(context)
         full_prompt = f"{system_prompt}\n\n{incident_scenario}"
         self.model = LLMModel(full_prompt)
 

@@ -4,26 +4,18 @@ from os import getenv
 from pathlib import Path
 from random import SystemRandom
 
-from app.grpc.com.simulator112.incident.incident_context_pb2 import (
-    AGGRESSIVE,
-    CALM,
-    CONFUSED,
-    MAN,
-    PANICKED,
-    WOMEN,
-    WORRIED,
-)
+from app.domain.model import Gender
 
 
-SERVICE_ROOT = Path(__file__).resolve().parents[2]
+SERVICE_ROOT = Path(__file__).resolve().parents[4]
 VOICES_ROOT = SERVICE_ROOT / "resources" / "voices"
 
 _EMOTIONAL_STATES = {
-    "calm": CALM,
-    "worried": WORRIED,
-    "panicked": PANICKED,
-    "aggressive": AGGRESSIVE,
-    "confused": CONFUSED,
+    "calm": "CALM",
+    "worried": "WORRIED",
+    "panicked": "PANICKED",
+    "aggressive": "AGGRESSIVE",
+    "confused": "CONFUSED",
 }
 _CATEGORY_METADATA = {
     "man": ("male", "adult", "man"),
@@ -39,7 +31,7 @@ class VoiceProfile:
     reference_text: str
     gender: str
     age_group: str
-    emotional_states: tuple[int, ...]
+    emotional_states: tuple[str, ...]
 
 
 def _read_manifest(path: Path) -> dict:
@@ -152,14 +144,14 @@ def validate_voice_profiles() -> None:
         raise FileNotFoundError("Missing TTS voice profiles: " + ", ".join(missing))
 
 
-def get_voice_gender(age: int, gender: int) -> str:
-    if age < 14:
+def get_voice_gender(age: int | None, gender: Gender) -> str:
+    if age is not None and age < 14:
         return "child"
-    return {MAN: "male", WOMEN: "female"}[gender]
+    return {Gender.MAN: "male", Gender.WOMEN: "female"}.get(gender, "male")
 
 
 def select_voice_profile(
-    emotional_state: int,
+    emotional_state: str,
     gender: str | None = None,
     age_group: str | None = None,
 ) -> VoiceProfile:

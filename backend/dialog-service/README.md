@@ -1,6 +1,32 @@
 # dialog-service
 
-FastAPI-сервис голосового пайплайна (STT → LLM → TTS) для симулятора звонков.
+FastAPI-сервис голосового пайплайна (STT → LLM → TTS) для симулятора звонков операторов системы 112 и операторов ДДС.
+
+## Архитектура
+
+```text
+app/
+├── domain/model/                         # CallScenario, DialogProgress, transcript
+├── application/
+│   ├── model/                            # построение LLM-промптов
+│   ├── port/inbound/                     # DialogUseCase
+│   ├── port/outbound/                    # ContextPort, VoicePipelineFactory
+│   └── service/                          # реализация DialogUseCase, transcript builder
+├── adapter/
+│   ├── config/                           # сборка зависимостей
+│   ├── inbound/websocket/                # входной WebSocket adapter
+│   └── out/
+│       ├── grpc/                         # context-service adapter и mapper
+│       ├── mock/                         # локальный context adapter
+│       └── processing/                   # цельный STT → LLM → TTS pipeline
+└── grpc/                                 # сгенерированные protobuf transport-модели
+```
+
+Domain и application не зависят от FastAPI, gRPC или protobuf. WebSocket adapter вызывает
+только `DialogUseCase` и `VoicePipelineFactory`, не обращаясь к application service или
+outbound adapters напрямую. Преобразование новых `CallScenario` и `DialogProgress`
+выполняется только в gRPC adapter. Для заявителя системы 112
+и представителя бригады ДДС используются отдельные системные роли LLM.
 Vosk распознаёт речь на CPU, LLM вызывается по внешнему API, а синтез речи
 выполняет отдельный [F5-TTS Server](https://github.com/ValyrianTech/F5-TTS_server)
 через HTTP (`F5_TTS_BASE_URL`).
@@ -90,6 +116,9 @@ python scripts/generate_voice_emotion_samples.py \
 ## Интеграция
 
 Маршруты `/api/v1/dialog/session` и `/api/v1/dialog/process-call` соответствуют
-текущему фронтенду. Для реальных сценариев укажите `CONTEXT_SOURCE=grpc` и адрес
+текущему фронтенду. Названия `request_next_dialup`/`dialupId` остаются только во внешнем
+WebSocket-контракте фронтенда; внутри сервиса используется модель звонка и новые gRPC-методы
+`GetNextCall`, `GetCall`, `StartCall`, `CompleteCall`, `DisconnectCall`.
+Для реальных сценариев укажите `CONTEXT_SOURCE=grpc` и адрес
 `CONTEXT_MANAGER_GRPC_URL` из `backend/context-service`; для автономного запуска
 можно использовать `CONTEXT_SOURCE=mock`. Dockerfile запускает сервис на порту 8005.
