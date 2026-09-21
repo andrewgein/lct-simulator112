@@ -1,0 +1,1237 @@
+[
+  {
+    "title": "Пожар в квартире на 7 этаже",
+    "address": {
+      "city": "Москва",
+      "street": "Профсоюзная",
+      "house": "48",
+      "building": "1",
+      "apartment": "73",
+      "floor": 7
+    },
+    "difficulty": "NORMAL",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "f41f4c2a-d163-5614-9ddf-420756d3351e",
+        "title": "Назначение бригады",
+        "description": "Назначить ближайший пожарный расчёт.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "3da368c9-6265-553b-8ad1-4e6055bc1b46",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "642e86df-48ea-5faa-bc04-584066105915",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "020ed881-da7a-5e47-8c31-babb1fb87369",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Расчёт прибыл во двор",
+              "Дым из окна 7 этажа"
+            ],
+            "hiddenFacts": [
+              "В подъезде сильное задымление, нужен второй расчёт"
+            ],
+            "aiContext": "Ты командир пожарного расчёта. Сообщай только наблюдаемые факты. Про необходимость усиления скажи, если диспетчер спросит об обстановке или дополнительных силах.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "be972ba3-cd30-5679-9097-06e74590b228",
+        "title": "Запрос дополнительной службы",
+        "description": "При подтверждении сильного задымления запросить дополнительный пожарный расчёт.",
+        "type": "REQUEST_ADDITIONAL_SERVICE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Есть ли люди в квартире?",
+      "Есть ли открытое горение?",
+      "Свободен ли подъезд для спецтехники?"
+    ],
+    "expectedActions": [
+      "Назначить пожарный расчёт",
+      "Проконтролировать выезд",
+      "Уточнить статус по прибытии",
+      "При угрозе распространения запросить усиление"
+    ],
+    "criticalMistakes": [
+      "Не назначена пожарная бригада",
+      "Не выполнен контроль статуса"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Сергей",
+        "lastName": "Ковалёв",
+        "middleName": null,
+        "age": 41,
+        "phone": "+79991110001",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "comment": "Дым идёт из окна квартиры."
+      },
+      "classifierCodes": [
+        "FIRE_APARTMENT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "FIRE",
+      "classifierCode": "FIRE_APARTMENT",
+      "instructions": "Направить ближайший пожарный расчёт к жилому дому."
+    },
+    "initialStageId": "f41f4c2a-d163-5614-9ddf-420756d3351e",
+    "transitions": [
+      {
+        "stageId": "f41f4c2a-d163-5614-9ddf-420756d3351e",
+        "successStageId": "3da368c9-6265-553b-8ad1-4e6055bc1b46",
+        "failureStageId": null
+      },
+      {
+        "stageId": "3da368c9-6265-553b-8ad1-4e6055bc1b46",
+        "successStageId": "642e86df-48ea-5faa-bc04-584066105915",
+        "failureStageId": "642e86df-48ea-5faa-bc04-584066105915"
+      },
+      {
+        "stageId": "642e86df-48ea-5faa-bc04-584066105915",
+        "successStageId": "be972ba3-cd30-5679-9097-06e74590b228",
+        "failureStageId": "be972ba3-cd30-5679-9097-06e74590b228"
+      }
+    ]
+  },
+  {
+    "title": "Запах газа в подъезде",
+    "address": {
+      "city": "Москва",
+      "street": "Сходненская",
+      "house": "22",
+      "building": null,
+      "apartment": "14",
+      "floor": 3
+    },
+    "difficulty": "HARD",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "d47d7b58-112f-5e0d-a259-bcd3df9de315",
+        "title": "Назначение бригады",
+        "description": "Назначить аварийную газовую бригаду.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "bbe0d90f-8b54-5202-9a36-bba73ab66112",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "b7f77b51-b9a0-5930-a98b-fadaea5f872b",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "0d44b282-2da1-56e9-b456-8f88422a4e7b",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Бригада на месте",
+              "Подъезд проветривается"
+            ],
+            "hiddenFacts": [
+              "Утечка обнаружена на соединении перед квартирным краном"
+            ],
+            "aiContext": "Ты мастер аварийной газовой службы. Если спросят результат обследования, сообщи точное место утечки. Не добавляй неподтверждённых причин.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "c21ccfd8-88c8-5523-ac5e-bfe5f0c9fc19",
+        "title": "Завершение инцидента",
+        "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
+        "type": "COMPLETE_INCIDENT",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Где сильнее запах?",
+      "Есть ли люди с головокружением или тошнотой?",
+      "Есть ли открытое пламя?"
+    ],
+    "expectedActions": [
+      "Назначить газовую бригаду",
+      "Проконтролировать прибытие",
+      "Получить результат обследования"
+    ],
+    "criticalMistakes": [
+      "Задержка назначения газовой бригады",
+      "Совет пользоваться электровыключателями при запахе газа"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Марина",
+        "lastName": "Егорова",
+        "middleName": null,
+        "age": 56,
+        "phone": "+79991110002",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "comment": "Запах сильнее на лестничной площадке 3 этажа."
+      },
+      "classifierCodes": [
+        "GAS_SMELL_ENTRANCE"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "GAS",
+      "classifierCode": "GAS_SMELL_ENTRANCE",
+      "instructions": "Срочный выезд; не допускать источников огня и искры."
+    },
+    "initialStageId": "d47d7b58-112f-5e0d-a259-bcd3df9de315",
+    "transitions": [
+      {
+        "stageId": "d47d7b58-112f-5e0d-a259-bcd3df9de315",
+        "successStageId": "bbe0d90f-8b54-5202-9a36-bba73ab66112",
+        "failureStageId": null
+      },
+      {
+        "stageId": "bbe0d90f-8b54-5202-9a36-bba73ab66112",
+        "successStageId": "b7f77b51-b9a0-5930-a98b-fadaea5f872b",
+        "failureStageId": "b7f77b51-b9a0-5930-a98b-fadaea5f872b"
+      },
+      {
+        "stageId": "b7f77b51-b9a0-5930-a98b-fadaea5f872b",
+        "successStageId": "c21ccfd8-88c8-5523-ac5e-bfe5f0c9fc19",
+        "failureStageId": "c21ccfd8-88c8-5523-ac5e-bfe5f0c9fc19"
+      }
+    ]
+  },
+  {
+    "title": "Мужчина без сознания на остановке",
+    "address": {
+      "city": "Москва",
+      "street": "Ярцевская",
+      "house": "27",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "NORMAL",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "b8bc4032-f037-56e3-8c42-31cb9015b02e",
+        "title": "Назначение бригады",
+        "description": "Назначить ближайшую бригаду СМП.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "65493f85-09c4-5dfd-80d2-7aa9f960661d",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "5670acda-8197-5460-8104-547f4492e14b",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Пациент осмотрен",
+              "Сознание восстановилось"
+            ],
+            "hiddenFacts": [
+              "Предварительно подозревается гипогликемия"
+            ],
+            "aiContext": "Ты фельдшер СМП. Сообщай состояние и действия. Диагностическое предположение называй предварительным.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "255de9dd-36c6-5709-be83-3b7271f2fca3",
+        "title": "Завершение инцидента",
+        "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
+        "type": "COMPLETE_INCIDENT",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Дышит ли человек?",
+      "Реагирует ли на обращение?",
+      "Есть ли кровотечение?"
+    ],
+    "expectedActions": [
+      "Назначить СМП",
+      "Проконтролировать выезд",
+      "Уточнить состояние после прибытия"
+    ],
+    "criticalMistakes": [
+      "Не назначена СМП",
+      "Инцидент закрыт до получения статуса"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Ольга",
+        "lastName": "Макарова",
+        "middleName": null,
+        "age": 29,
+        "phone": "+79991110003",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": null,
+        "lastName": null,
+        "middleName": null,
+        "age": 65,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Без сознания на остановке"
+      },
+      "additionalInfo": {
+        "comment": "Пострадавший лежит на лавке."
+      },
+      "classifierCodes": [
+        "MED_UNCONSCIOUS"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "AMBULANCE",
+      "classifierCode": "MED_UNCONSCIOUS",
+      "instructions": "Срочно направить бригаду скорой помощи."
+    },
+    "initialStageId": "b8bc4032-f037-56e3-8c42-31cb9015b02e",
+    "transitions": [
+      {
+        "stageId": "b8bc4032-f037-56e3-8c42-31cb9015b02e",
+        "successStageId": "65493f85-09c4-5dfd-80d2-7aa9f960661d",
+        "failureStageId": null
+      },
+      {
+        "stageId": "65493f85-09c4-5dfd-80d2-7aa9f960661d",
+        "successStageId": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8",
+        "failureStageId": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8"
+      },
+      {
+        "stageId": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8",
+        "successStageId": "255de9dd-36c6-5709-be83-3b7271f2fca3",
+        "failureStageId": "255de9dd-36c6-5709-be83-3b7271f2fca3"
+      }
+    ]
+  },
+  {
+    "title": "Драка во дворе жилого дома",
+    "address": {
+      "city": "Москва",
+      "street": "Фестивальная",
+      "house": "31",
+      "building": "2",
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "HARD",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "489b45f2-455c-5f19-be77-914c2b7c0eea",
+        "title": "Назначение бригады",
+        "description": "Назначить ближайший наряд полиции.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "9912b9cd-0327-56b1-90c2-369e7ae58b3e",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "74821132-7cd2-580a-92db-c893554e86c4",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "795d2232-6fba-5ead-b032-d56512d3331f",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Наряд прибыл",
+              "Стороны разъединены"
+            ],
+            "hiddenFacts": [
+              "У одного участника изъят складной нож"
+            ],
+            "aiContext": "Ты сотрудник полиции. Информацию об изъятом ноже сообщи при вопросе об оружии или угрозах.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "f5b48ab9-fce0-501a-86c5-6f0ed9a55115",
+        "title": "Завершение инцидента",
+        "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
+        "type": "COMPLETE_INCIDENT",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Сколько участников?",
+      "Есть ли оружие?",
+      "Есть ли пострадавшие?"
+    ],
+    "expectedActions": [
+      "Назначить наряд",
+      "Проконтролировать прибытие",
+      "Уточнить угрозы на месте"
+    ],
+    "criticalMistakes": [
+      "Не уточнено наличие оружия",
+      "Не назначен наряд"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Алексей",
+        "lastName": "Рыбаков",
+        "middleName": null,
+        "age": 34,
+        "phone": "+79991110004",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "comment": "Заявитель наблюдает из окна."
+      },
+      "classifierCodes": [
+        "POLICE_FIGHT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "POLICE",
+      "classifierCode": "POLICE_FIGHT",
+      "instructions": "Направить наряд, соблюдать меры предосторожности."
+    },
+    "initialStageId": "489b45f2-455c-5f19-be77-914c2b7c0eea",
+    "transitions": [
+      {
+        "stageId": "489b45f2-455c-5f19-be77-914c2b7c0eea",
+        "successStageId": "9912b9cd-0327-56b1-90c2-369e7ae58b3e",
+        "failureStageId": null
+      },
+      {
+        "stageId": "9912b9cd-0327-56b1-90c2-369e7ae58b3e",
+        "successStageId": "74821132-7cd2-580a-92db-c893554e86c4",
+        "failureStageId": "74821132-7cd2-580a-92db-c893554e86c4"
+      },
+      {
+        "stageId": "74821132-7cd2-580a-92db-c893554e86c4",
+        "successStageId": "f5b48ab9-fce0-501a-86c5-6f0ed9a55115",
+        "failureStageId": "f5b48ab9-fce0-501a-86c5-6f0ed9a55115"
+      }
+    ]
+  },
+  {
+    "title": "Подозрительный предмет у торгового центра",
+    "address": {
+      "city": "Москва",
+      "street": "Щукинская",
+      "house": "42",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "HARD",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "c5f438e4-0ab3-5f6d-a032-c55ee2a4c2b0",
+        "title": "Назначение бригады",
+        "description": "Направить наряд полиции для ограничения доступа.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "6661ee2f-f5af-54b1-91d8-d818d344119e",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "0de14882-34b3-5cdb-b36a-6280adf62947",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "12ff0a76-cefc-5ec5-9319-adcbc0ac8210",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Периметр ограничен",
+              "Люди от предмета отведены"
+            ],
+            "hiddenFacts": [
+              "Предмет не вскрывали и содержимое неизвестно"
+            ],
+            "aiContext": "Ты старший наряда. Не делай выводов о содержимом предмета и подчёркивай, что его не вскрывали.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "3b495fbb-f2fd-53ce-a006-ebb0e64dd747",
+        "title": "Запрос дополнительной службы",
+        "description": "Передать сведения профильной антитеррористической службе.",
+        "type": "REQUEST_ADDITIONAL_SERVICE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Где точно предмет?",
+      "Кто-нибудь его трогал?",
+      "Есть ли рядом люди?"
+    ],
+    "expectedActions": [
+      "Назначить наряд",
+      "Организовать удаление людей",
+      "Запросить профильную службу"
+    ],
+    "criticalMistakes": [
+      "Совет самостоятельно осмотреть предмет",
+      "Не организовано ограничение доступа"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Денис",
+        "lastName": "Орлов",
+        "middleName": null,
+        "age": 38,
+        "phone": "+79991110005",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "comment": "Чёрный рюкзак у колонны рядом со входом."
+      },
+      "classifierCodes": [
+        "SUSPICIOUS_OBJECT"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "POLICE",
+      "classifierCode": "SUSPICIOUS_OBJECT",
+      "instructions": "Обеспечить удаление людей; не допускать манипуляций с предметом."
+    },
+    "initialStageId": "c5f438e4-0ab3-5f6d-a032-c55ee2a4c2b0",
+    "transitions": [
+      {
+        "stageId": "c5f438e4-0ab3-5f6d-a032-c55ee2a4c2b0",
+        "successStageId": "6661ee2f-f5af-54b1-91d8-d818d344119e",
+        "failureStageId": null
+      },
+      {
+        "stageId": "6661ee2f-f5af-54b1-91d8-d818d344119e",
+        "successStageId": "0de14882-34b3-5cdb-b36a-6280adf62947",
+        "failureStageId": "0de14882-34b3-5cdb-b36a-6280adf62947"
+      },
+      {
+        "stageId": "0de14882-34b3-5cdb-b36a-6280adf62947",
+        "successStageId": "3b495fbb-f2fd-53ce-a006-ebb0e64dd747",
+        "failureStageId": "3b495fbb-f2fd-53ce-a006-ebb0e64dd747"
+      }
+    ]
+  },
+  {
+    "title": "Пожар в гаражном кооперативе",
+    "address": {
+      "city": "Москва",
+      "street": "2-я Магистральная",
+      "house": "18",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "NORMAL",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "1bbb63ae-bc95-542b-94d3-73a76bafb578",
+        "title": "Назначение бригады",
+        "description": "Направить пожарный расчёт.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "c1d369df-75e2-5803-97ae-92a54efdb7dc",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "1937ad2b-aff1-5766-b7fd-055527bd866c",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "e074284c-ca9e-59d9-9a51-be15cfd6d722",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Горит один гараж",
+              "Тушение начато"
+            ],
+            "hiddenFacts": [
+              "В соседнем гараже находятся газовые баллоны"
+            ],
+            "aiContext": "Ты пожарный. Про баллоны сообщи, если диспетчер спросит о рисках распространения или опасных материалах.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "afc041bb-3e89-56f8-a08b-fc10b4a5079d",
+        "title": "Запрос дополнительной службы",
+        "description": "При наличии газовых баллонов запросить усиление и передать опасный фактор.",
+        "type": "REQUEST_ADDITIONAL_SERVICE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Есть ли люди внутри?",
+      "Есть ли баллоны или топливо?",
+      "Огонь распространяется?"
+    ],
+    "expectedActions": [
+      "Назначить пожарный расчёт",
+      "Уточнить опасные материалы",
+      "При угрозе запросить усиление"
+    ],
+    "criticalMistakes": [
+      "Не уточнены опасные материалы"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Роман",
+        "lastName": "Тихонов",
+        "middleName": null,
+        "age": 45,
+        "phone": "+79991110006",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "comment": "Сильный дым из ряда гаражей."
+      },
+      "classifierCodes": [
+        "FIRE_GARAGE"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "FIRE",
+      "classifierCode": "FIRE_GARAGE",
+      "instructions": "Направить расчёт и оценить опасные материалы."
+    },
+    "initialStageId": "1bbb63ae-bc95-542b-94d3-73a76bafb578",
+    "transitions": [
+      {
+        "stageId": "1bbb63ae-bc95-542b-94d3-73a76bafb578",
+        "successStageId": "c1d369df-75e2-5803-97ae-92a54efdb7dc",
+        "failureStageId": null
+      },
+      {
+        "stageId": "c1d369df-75e2-5803-97ae-92a54efdb7dc",
+        "successStageId": "1937ad2b-aff1-5766-b7fd-055527bd866c",
+        "failureStageId": "1937ad2b-aff1-5766-b7fd-055527bd866c"
+      },
+      {
+        "stageId": "1937ad2b-aff1-5766-b7fd-055527bd866c",
+        "successStageId": "afc041bb-3e89-56f8-a08b-fc10b4a5079d",
+        "failureStageId": "afc041bb-3e89-56f8-a08b-fc10b4a5079d"
+      }
+    ]
+  },
+  {
+    "title": "Подозрение на отравление продуктами сгорания",
+    "address": {
+      "city": "Москва",
+      "street": "Нагорная",
+      "house": "12",
+      "building": "1",
+      "apartment": "46",
+      "floor": 4
+    },
+    "difficulty": "HARD",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "020bf809-dcca-5155-ab37-45c306f7ebdf",
+        "title": "Назначение бригады",
+        "description": "Направить аварийную газовую бригаду.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "e6becdca-d645-5d8b-a783-ae59599dcb0c",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "bb17dfae-471f-5e54-9dab-aa6f89af223b",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "9dd4eb0a-caad-57cc-b3a1-66938f445da5",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Подача газа перекрыта",
+              "Проводится обследование"
+            ],
+            "hiddenFacts": [
+              "Выявлена неисправность дымохода"
+            ],
+            "aiContext": "Ты специалист газовой службы. Сообщи об отключении газа; причину называй только после обследования.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "7865293b-6852-5684-b23f-844ce1e1c842",
+        "title": "Запрос дополнительной службы",
+        "description": "Запросить скорую помощь из-за ухудшения самочувствия жильца.",
+        "type": "REQUEST_ADDITIONAL_SERVICE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Есть ли запах газа?",
+      "Есть ли тошнота или потеря сознания?",
+      "Работает ли газовое оборудование?"
+    ],
+    "expectedActions": [
+      "Назначить газовую бригаду",
+      "Запросить СМП при симптомах",
+      "Получить итоговый статус"
+    ],
+    "criticalMistakes": [
+      "Не запрошена медицинская помощь при симптомах"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Ирина",
+        "lastName": "Соколова",
+        "middleName": null,
+        "age": 44,
+        "phone": "+79991110007",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": "Нина",
+        "lastName": "Соколова",
+        "middleName": null,
+        "age": 72,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Слабость и головокружение"
+      },
+      "additionalInfo": {
+        "comment": "Пожилая женщина почувствовала себя плохо."
+      },
+      "classifierCodes": [
+        "GAS_COMBUSTION_POISONING"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "GAS",
+      "classifierCode": "GAS_COMBUSTION_POISONING",
+      "instructions": "Срочный выезд; при симптомах организовать СМП."
+    },
+    "initialStageId": "020bf809-dcca-5155-ab37-45c306f7ebdf",
+    "transitions": [
+      {
+        "stageId": "020bf809-dcca-5155-ab37-45c306f7ebdf",
+        "successStageId": "e6becdca-d645-5d8b-a783-ae59599dcb0c",
+        "failureStageId": null
+      },
+      {
+        "stageId": "e6becdca-d645-5d8b-a783-ae59599dcb0c",
+        "successStageId": "bb17dfae-471f-5e54-9dab-aa6f89af223b",
+        "failureStageId": "bb17dfae-471f-5e54-9dab-aa6f89af223b"
+      },
+      {
+        "stageId": "bb17dfae-471f-5e54-9dab-aa6f89af223b",
+        "successStageId": "7865293b-6852-5684-b23f-844ce1e1c842",
+        "failureStageId": "7865293b-6852-5684-b23f-844ce1e1c842"
+      }
+    ]
+  },
+  {
+    "title": "ДТП с травмированным велосипедистом",
+    "address": {
+      "city": "Москва",
+      "street": "Большая Академическая",
+      "house": "35",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "NORMAL",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "701049f2-98b6-5812-9d45-9d154bb1b5aa",
+        "title": "Назначение бригады",
+        "description": "Назначить бригаду СМП.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "d8c04172-c2c2-5905-8131-d269ba083f96",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "7dcc5113-823f-5048-913c-887547868f48",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Пациент в сознании",
+              "Состояние стабильное"
+            ],
+            "hiddenFacts": [
+              "Решена транспортировка в стационар из-за травмы головы"
+            ],
+            "aiContext": "Ты фельдшер СМП. Сообщи стабильность состояния; решение о транспортировке — при вопросе о дальнейших действиях.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "b704c855-00aa-548b-94a9-bdda393f1f00",
+        "title": "Запрос дополнительной службы",
+        "description": "Запросить полицию для оформления ДТП и безопасности на проезжей части.",
+        "type": "REQUEST_ADDITIONAL_SERVICE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Пострадавший в сознании?",
+      "Есть ли сильное кровотечение?",
+      "Безопасно ли место?"
+    ],
+    "expectedActions": [
+      "Назначить СМП",
+      "Запросить полицию",
+      "Уточнить состояние после прибытия"
+    ],
+    "criticalMistakes": [
+      "Не назначена СМП",
+      "Не запрошена полиция при ДТП"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Михаил",
+        "lastName": "Зотов",
+        "middleName": null,
+        "age": 31,
+        "phone": "+79991110008",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": {
+        "firstName": "Артём",
+        "lastName": "Лебедев",
+        "middleName": null,
+        "age": 27,
+        "phone": null,
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": "Травма головы, в сознании"
+      },
+      "additionalInfo": {
+        "comment": "Автомобиль и велосипед у правой полосы."
+      },
+      "classifierCodes": [
+        "ROAD_ACCIDENT_CYCLIST"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "AMBULANCE",
+      "classifierCode": "ROAD_ACCIDENT_CYCLIST",
+      "instructions": "Срочно направить СМП к месту ДТП."
+    },
+    "initialStageId": "701049f2-98b6-5812-9d45-9d154bb1b5aa",
+    "transitions": [
+      {
+        "stageId": "701049f2-98b6-5812-9d45-9d154bb1b5aa",
+        "successStageId": "d8c04172-c2c2-5905-8131-d269ba083f96",
+        "failureStageId": null
+      },
+      {
+        "stageId": "d8c04172-c2c2-5905-8131-d269ba083f96",
+        "successStageId": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd",
+        "failureStageId": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd"
+      },
+      {
+        "stageId": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd",
+        "successStageId": "b704c855-00aa-548b-94a9-bdda393f1f00",
+        "failureStageId": "b704c855-00aa-548b-94a9-bdda393f1f00"
+      }
+    ]
+  },
+  {
+    "title": "Пожар сухой травы рядом с дачами",
+    "address": {
+      "city": "Москва",
+      "street": "Варшавское шоссе",
+      "house": "170",
+      "building": null,
+      "apartment": null,
+      "floor": null
+    },
+    "difficulty": "NORMAL",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "5a9c4509-172d-5c5d-bd23-6cf30724df22",
+        "title": "Назначение бригады",
+        "description": "Назначить пожарный расчёт.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "ebd70e83-30e3-52bd-9985-14b72fed9fb2",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "504ec61f-623a-5b06-880b-075bbdd83c14",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "906aa07a-1f4f-5869-bdae-a27fcab7fdf9",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Тушение начато",
+              "Очаг примерно в 150 м от дач"
+            ],
+            "hiddenFacts": [
+              "Ветер усилился, огонь движется к деревянному забору"
+            ],
+            "aiContext": "Ты командир расчёта. Сообщи об усилении ветра, если спросят о риске распространения.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "4cb8b5af-ba90-5859-88ce-09bd2ab265f8",
+        "title": "Запрос дополнительной службы",
+        "description": "При усилении ветра и угрозе постройкам запросить дополнительный расчёт.",
+        "type": "REQUEST_ADDITIONAL_SERVICE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Какова площадь горения?",
+      "Есть ли угроза постройкам?",
+      "Сильный ли ветер?"
+    ],
+    "expectedActions": [
+      "Назначить пожарный расчёт",
+      "Уточнить направление распространения",
+      "При угрозе запросить усиление"
+    ],
+    "criticalMistakes": [
+      "Не уточнена угроза постройкам"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Владимир",
+        "lastName": "Фомин",
+        "middleName": null,
+        "age": 52,
+        "phone": "+79991110009",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "comment": "Огонь виден со стороны СНТ."
+      },
+      "classifierCodes": [
+        "FIRE_GRASS"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "FIRE",
+      "classifierCode": "FIRE_GRASS",
+      "instructions": "Оценить угрозу перехода огня на постройки."
+    },
+    "initialStageId": "5a9c4509-172d-5c5d-bd23-6cf30724df22",
+    "transitions": [
+      {
+        "stageId": "5a9c4509-172d-5c5d-bd23-6cf30724df22",
+        "successStageId": "ebd70e83-30e3-52bd-9985-14b72fed9fb2",
+        "failureStageId": null
+      },
+      {
+        "stageId": "ebd70e83-30e3-52bd-9985-14b72fed9fb2",
+        "successStageId": "504ec61f-623a-5b06-880b-075bbdd83c14",
+        "failureStageId": "504ec61f-623a-5b06-880b-075bbdd83c14"
+      },
+      {
+        "stageId": "504ec61f-623a-5b06-880b-075bbdd83c14",
+        "successStageId": "4cb8b5af-ba90-5859-88ce-09bd2ab265f8",
+        "failureStageId": "4cb8b5af-ba90-5859-88ce-09bd2ab265f8"
+      }
+    ]
+  },
+  {
+    "title": "Агрессивный мужчина в подъезде",
+    "address": {
+      "city": "Москва",
+      "street": "Алтайская",
+      "house": "19",
+      "building": "1",
+      "apartment": null,
+      "floor": 1
+    },
+    "difficulty": "NORMAL",
+    "targetType": "DDS",
+    "stages": [
+      {
+        "id": "e1d08634-ccf9-5aac-bbf8-49a26fc16d26",
+        "title": "Назначение бригады",
+        "description": "Назначить наряд полиции.",
+        "type": "ASSIGN_BRIGADE",
+        "timeLimitSeconds": 60,
+        "calls": []
+      },
+      {
+        "id": "7e45615f-e8e7-555b-a952-413cc33f75b5",
+        "title": "Контроль статуса",
+        "description": "Проконтролировать выезд и прибытие назначенной бригады.",
+        "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
+        "timeLimitSeconds": 120,
+        "calls": []
+      },
+      {
+        "id": "02892b20-07d6-542c-b988-ece69a87505c",
+        "title": "Связь с бригадой",
+        "description": "Получить актуальный статус с места происшествия.",
+        "type": "CALL_BRIGADE_FOR_STATUS",
+        "timeLimitSeconds": 90,
+        "calls": [
+          {
+            "id": "d441302b-3243-525c-afad-a6f9299798e3",
+            "position": 1,
+            "direction": "OUTBOUND",
+            "counterparty": "BRIGADE",
+            "person": null,
+            "gender": null,
+            "knownFacts": [
+              "Наряд на месте",
+              "Мужчина под контролем"
+            ],
+            "hiddenFacts": [
+              "Оружия не обнаружено, есть признаки опьянения"
+            ],
+            "aiContext": "Ты сотрудник полиции. Сообщи, что угроза прекращена. Сведения об оружии и опьянении дай при уточняющих вопросах.",
+            "emotionalState": "Спокоен"
+          }
+        ]
+      },
+      {
+        "id": "36931224-9f88-5d6c-b871-011fdc3c54e5",
+        "title": "Завершение инцидента",
+        "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
+        "type": "COMPLETE_INCIDENT",
+        "timeLimitSeconds": 60,
+        "calls": []
+      }
+    ],
+    "requiredQuestions": [
+      "Есть ли оружие?",
+      "Нападает ли он на людей сейчас?",
+      "Заявитель в безопасном месте?"
+    ],
+    "expectedActions": [
+      "Назначить наряд",
+      "Проконтролировать прибытие",
+      "Уточнить прекращение угрозы"
+    ],
+    "criticalMistakes": [
+      "Не уточнено наличие оружия",
+      "Не назначен наряд"
+    ],
+    "preparedCardTemplate": {
+      "applicant": {
+        "firstName": "Елена",
+        "lastName": "Беляева",
+        "middleName": null,
+        "age": 39,
+        "phone": "+79991110010",
+        "contactPhone": null,
+        "address": null,
+        "additionalInfo": null
+      },
+      "victim": null,
+      "additionalInfo": {
+        "comment": "Заявительница находится за закрытой дверью."
+      },
+      "classifierCodes": [
+        "POLICE_AGGRESSIVE_PERSON"
+      ]
+    },
+    "initialAssignment": {
+      "emergencyService": "POLICE",
+      "classifierCode": "POLICE_AGGRESSIVE_PERSON",
+      "instructions": "Направить ближайший наряд к подъезду."
+    },
+    "initialStageId": "e1d08634-ccf9-5aac-bbf8-49a26fc16d26",
+    "transitions": [
+      {
+        "stageId": "e1d08634-ccf9-5aac-bbf8-49a26fc16d26",
+        "successStageId": "7e45615f-e8e7-555b-a952-413cc33f75b5",
+        "failureStageId": null
+      },
+      {
+        "stageId": "7e45615f-e8e7-555b-a952-413cc33f75b5",
+        "successStageId": "02892b20-07d6-542c-b988-ece69a87505c",
+        "failureStageId": "02892b20-07d6-542c-b988-ece69a87505c"
+      },
+      {
+        "stageId": "02892b20-07d6-542c-b988-ece69a87505c",
+        "successStageId": "36931224-9f88-5d6c-b871-011fdc3c54e5",
+        "failureStageId": "36931224-9f88-5d6c-b871-011fdc3c54e5"
+      }
+    ]
+  }
+]
