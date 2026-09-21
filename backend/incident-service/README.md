@@ -1,6 +1,6 @@
 # Incident Service
 
-`incident-service` хранит два независимых типа учебных происшествий:
+`incident-service` хранит уровни и два независимых типа учебных происшествий:
 
 - `SYSTEM_112` — сценарий оператора системы 112 со звонками заявителей;
 - `DDS` — сценарий оператора ДДС с подготовленной карточкой, этапами реагирования, звонками бригад и бинарными
@@ -41,7 +41,7 @@ PostgreSQL и classifier gRPC client реализуют выходные пор�
 | `GET`  | `/api/v1/incidents/{incidentId}`                  | Получить происшествие           |
 | `GET`  | `/api/v1/incidents?targetType=...&difficulty=...` | Найти доступные происшествия    |
 
-Старые endpoints уровней, этапов и dialup удалены. `IncidentRequest.targetType` принимает `SYSTEM_112` или `DDS`.
+`IncidentRequest.targetType` принимает `SYSTEM_112` или `DDS`. Уровни доступны через `/api/v1/levels`; каждый уровень содержит только один тип инцидентов и задаёт режим `SEQUENTIAL` или `PARALLEL`.
 
 ## gRPC API
 
@@ -56,6 +56,7 @@ rpc GetIncident(GetIncidentRequest) returns (IncidentContext);
 Flyway создаёт нормализованные таблицы:
 
 - `incidents`;
+- `levels` и упорядоченные связи `level_incidents`;
 - `incident_stages` с общими данными этапа;
 - `system112_stage_details` и `dds_stage_details` со специализированными данными;
 - `call_scenarios` с направлением `INBOUND`/`OUTBOUND` и контрагентом `CALLER`/`BRIGADE`;

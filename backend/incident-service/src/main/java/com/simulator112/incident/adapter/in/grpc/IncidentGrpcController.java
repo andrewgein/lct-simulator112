@@ -2,6 +2,7 @@ package com.simulator112.incident.adapter.in.grpc;
 
 import com.simulator112.incident.application.port.in.FindAvailableIncidentsUseCase;
 import com.simulator112.incident.application.port.in.GetIncidentUseCase;
+import com.simulator112.incident.application.port.in.GetLevelUseCase;
 import com.simulator112.incident.domain.common.Difficulty;
 import com.simulator112.incident.domain.common.IncidentTargetType;
 import com.simulator112.incident.grpc.contract.*;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class IncidentGrpcController extends IncidentGrpcServiceGrpc.IncidentGrpcServiceImplBase {
     private final GetIncidentUseCase getIncident;
+    private final GetLevelUseCase getLevel;
     private final FindAvailableIncidentsUseCase findAvailableIncidents;
     private final IncidentGrpcMapper mapper;
 
@@ -23,6 +25,18 @@ public class IncidentGrpcController extends IncidentGrpcServiceGrpc.IncidentGrpc
     public void getIncident(GetIncidentRequest request, StreamObserver<IncidentContext> observer) {
         try {
             observer.onNext(mapper.toProto(getIncident.getIncident(UUID.fromString(request.getIncidentId()))));
+            observer.onCompleted();
+        } catch (IllegalArgumentException exception) {
+            observer.onError(Status.INVALID_ARGUMENT.withDescription(exception.getMessage()).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void getLevel(GetLevelRequest request, StreamObserver<LevelContext> observer) {
+        try {
+            var level = getLevel.getLevel(UUID.fromString(request.getLevelId()));
+            var incidents = level.incidentIds().stream().map(getIncident::getIncident).toList();
+            observer.onNext(mapper.toProto(level, incidents));
             observer.onCompleted();
         } catch (IllegalArgumentException exception) {
             observer.onError(Status.INVALID_ARGUMENT.withDescription(exception.getMessage()).asRuntimeException());

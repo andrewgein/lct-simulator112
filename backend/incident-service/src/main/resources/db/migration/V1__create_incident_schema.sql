@@ -43,6 +43,27 @@ CREATE TABLE incidents (
 
 CREATE INDEX idx_incidents_availability ON incidents (target_type, difficulty);
 
+CREATE TABLE levels (
+    id UUID PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    target_type VARCHAR(20) NOT NULL,
+    difficulty VARCHAR(20) NOT NULL,
+    execution_mode VARCHAR(20) NOT NULL,
+    CONSTRAINT ck_level_target_type CHECK (target_type IN ('SYSTEM_112', 'DDS')),
+    CONSTRAINT ck_level_difficulty CHECK (difficulty IN ('EASY', 'NORMAL', 'HARD')),
+    CONSTRAINT ck_level_execution_mode CHECK (execution_mode IN ('SEQUENTIAL', 'PARALLEL'))
+);
+
+CREATE TABLE level_incidents (
+    level_id UUID NOT NULL REFERENCES levels (id) ON DELETE CASCADE,
+    incident_id UUID NOT NULL REFERENCES incidents (id),
+    position INTEGER NOT NULL,
+    PRIMARY KEY (level_id, position),
+    CONSTRAINT uk_level_incident UNIQUE (level_id, incident_id)
+);
+
+CREATE INDEX idx_level_incidents_incident_id ON level_incidents (incident_id);
+
 CREATE TABLE incident_stages (
     id UUID PRIMARY KEY,
     incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,

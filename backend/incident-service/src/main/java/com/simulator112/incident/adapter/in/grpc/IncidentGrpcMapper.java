@@ -9,10 +9,26 @@ import com.simulator112.incident.domain.dds.DdsStage;
 import com.simulator112.incident.domain.system112.System112Incident;
 import com.simulator112.incident.domain.system112.System112Stage;
 import com.simulator112.incident.grpc.contract.IncidentContext;
+import com.simulator112.incident.grpc.contract.LevelContext;
 import org.springframework.stereotype.Component;
 
 @Component
 public class IncidentGrpcMapper {
+    public LevelContext toProto(com.simulator112.incident.domain.level.Level level,
+                                java.util.List<Incident> incidents) {
+        return LevelContext.newBuilder()
+                .setId(level.id().toString())
+                .setTitle(level.title())
+                .setTargetType(toProto(level.targetType()))
+                .setDifficulty(toProto(level.difficulty()))
+                .setExecutionMode(switch (level.executionMode()) {
+                    case SEQUENTIAL -> com.simulator112.incident.grpc.contract.ExecutionMode.EXECUTION_MODE_SEQUENTIAL;
+                    case PARALLEL -> com.simulator112.incident.grpc.contract.ExecutionMode.EXECUTION_MODE_PARALLEL;
+                })
+                .addAllIncidents(incidents.stream().map(this::toProto).toList())
+                .build();
+    }
+
     public IncidentContext toProto(Incident incident) {
         IncidentContext.Builder builder = IncidentContext.newBuilder()
                 .setId(incident.id().toString())
