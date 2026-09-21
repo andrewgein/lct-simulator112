@@ -24,7 +24,7 @@ public class IncidentSnapshot {
     private UUID initialStageId;
     private Address address;
     private Criteria criteria;
-    private String preparedCardClassifierCode;
+    private List<String> preparedCardClassifierCodes = new ArrayList<>();
     private Person cardApplicant;
     private Person cardVictim;
     private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();

@@ -64,7 +64,7 @@ final class ContextPersistenceMapper {
         target.setTitle(source.getTitle()); target.setTargetType(source.getContext().getTargetType());
         target.setDifficulty(source.getContext().getDifficulty()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
         target.setInitialStageId(source.getInitialStageId()); target.setAddress(toDomain(source.getAddress()));
-        target.setCriteria(toDomain(source.getDispatcherCriteria())); target.setPreparedCardClassifierCode(source.getPreparedCardClassifierCode());
+        target.setCriteria(toDomain(source.getDispatcherCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
         target.setCardApplicant(toDomain(source.getCardApplicant())); target.setCardVictim(toDomain(source.getCardVictim()));
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
@@ -81,7 +81,7 @@ final class ContextPersistenceMapper {
         target.setId(source.getPersistenceId()); target.setSourceIncidentId(source.getSourceId()); target.setPosition(source.getPosition());
         target.setTitle(source.getTitle()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
         target.setInitialStageId(source.getInitialStageId()); target.setAddress(toEntity(source.getAddress()));
-        target.setDispatcherCriteria(toEntity(source.getCriteria())); target.setPreparedCardClassifierCode(source.getPreparedCardClassifierCode());
+        target.setDispatcherCriteria(toEntity(source.getCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
         target.setCardApplicant(toEntity(source.getCardApplicant())); target.setCardVictim(toEntity(source.getCardVictim()));
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
@@ -96,7 +96,7 @@ final class ContextPersistenceMapper {
     private static StageSnapshot toDomain(StageContextEntity source) {
         StageSnapshot target = new StageSnapshot();
         target.setPersistenceId(source.getId()); target.setSourceId(source.getSourceStageId()); target.setPosition(source.getPosition());
-        target.setTitle(source.getTitle()); target.setClassifierCode(source.getClassifierCode()); target.setDdsStageType(source.getDdsStageType());
+        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
         target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
         target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictim(toDomain(source.getVictim()));
         target.setCalls(source.getCalls().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
@@ -106,7 +106,7 @@ final class ContextPersistenceMapper {
     private static StageContextEntity toEntity(StageSnapshot source) {
         StageContextEntity target = new StageContextEntity();
         target.setId(source.getPersistenceId()); target.setSourceStageId(source.getSourceId()); target.setPosition(source.getPosition());
-        target.setTitle(source.getTitle()); target.setClassifierCode(source.getClassifierCode()); target.setDdsStageType(source.getDdsStageType());
+        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
         target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
         target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictim(toEntity(source.getVictim()));
         source.getCalls().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addCall);

@@ -37,7 +37,7 @@ public final class IncidentContextMapper {
         value.setAddress(toDomain(proto.getAddress())); value.setCriteria(toDomain(proto.getCriteria()));
         value.setStatus(IncidentProgressStatus.PENDING);
         if (proto.hasPreparedCardTemplate()) {
-            value.setPreparedCardClassifierCode(proto.getPreparedCardTemplate().getClassifierCode());
+            value.setPreparedCardClassifierCodes(new ArrayList<>(proto.getPreparedCardTemplate().getClassifierCodesList()));
             value.setCardApplicant(toDomain(proto.getPreparedCardTemplate().getApplicant()));
             value.setCardVictim(toDomain(proto.getPreparedCardTemplate().getVictim()));
             value.setPreparedCardAdditionalInfo(new LinkedHashMap<>(proto.getPreparedCardTemplate().getAdditionalInfoMap()));
@@ -60,7 +60,7 @@ public final class IncidentContextMapper {
         value.setSourceId(UUID.fromString(proto.getId())); value.setTitle(proto.getTitle());
         value.setDescription(proto.getDescription()); value.setStatus(StageStatus.PENDING);
         if (proto.hasSystem112()) {
-            value.setPosition(proto.getSystem112().getPosition()); value.setClassifierCode(proto.getSystem112().getClassifierCode());
+            value.setPosition(proto.getSystem112().getPosition()); value.setClassifierCodes(new ArrayList<>(proto.getSystem112().getClassifierCodesList()));
             value.setVictim(toDomain(proto.getSystem112().getVictim()));
         } else if (proto.hasDds()) {
             value.setDdsStageType(DdsStageType.valueOf(proto.getDds().getType().name().replace("DDS_STAGE_TYPE_", "")));
@@ -90,9 +90,9 @@ public final class IncidentContextMapper {
                 .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.valueOf("INCIDENT_TARGET_TYPE_" + value.getTargetType().name()))
                 .setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.valueOf("DIFFICULTY_" + value.getDifficulty().name()));
         value.getStages().forEach(stage -> builder.addStages(toProto(stage)));
-        if (value.getPreparedCardClassifierCode() != null) builder.setPreparedCardTemplate(
+        if (!value.getPreparedCardClassifierCodes().isEmpty()) builder.setPreparedCardTemplate(
                 com.simulator112.incident.grpc.contract.PreparedCardTemplate.newBuilder()
-                        .setClassifierCode(value.getPreparedCardClassifierCode()).setApplicant(toProto(value.getCardApplicant()))
+                        .addAllClassifierCodes(value.getPreparedCardClassifierCodes()).setApplicant(toProto(value.getCardApplicant()))
                         .setVictim(toProto(value.getCardVictim())).putAllAdditionalInfo(value.getPreparedCardAdditionalInfo()));
         if (value.getInitialAssignmentService() != null) builder.setInitialAssignment(
                 com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
@@ -110,7 +110,7 @@ public final class IncidentContextMapper {
                 .setDescription(orEmpty(value.getDescription())).addAllCalls(value.getCalls().stream().map(IncidentContextMapper::toProto).toList());
         if (value.getDdsStageType() == null) builder.setSystem112(
                 com.simulator112.incident.grpc.contract.System112StageDetails.newBuilder().setPosition(value.getPosition())
-                        .setClassifierCode(orEmpty(value.getClassifierCode())).setVictim(toProto(value.getVictim())));
+                        .addAllClassifierCodes(value.getClassifierCodes()).setVictim(toProto(value.getVictim())));
         else builder.setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
                 .setType(com.simulator112.incident.grpc.contract.DdsStageType.valueOf("DDS_STAGE_TYPE_" + value.getDdsStageType().name()))
                 .setTimeLimitSeconds(value.getTimeLimitSeconds()));
