@@ -22,9 +22,20 @@ spring:
               predicates:
                 - Path=/api/v1/auth/**
 
-            #User service — управление профилем
-            - id: user-service
-              uri: ${USER_SERVICE_URL:http://localhost:8082}
+            #Profile service — назначение профессионального профиля администратором
+            - id: profile-service-admin
+              uri: ${PROFILE_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/admin/profiles/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
+            #Profile service — управление профилем
+            - id: profile-service
+              uri: ${PROFILE_SERVICE_URL:http://localhost:8082}
               predicates:
                 - Path=/api/v1/profile/**
               filters:
@@ -55,22 +66,43 @@ spring:
               filters:
                 - name: JwtAuthFilter
 
-            #Admin constructors — authenticated administrators only
-            - id: incident-service-admin
-              uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
+            #Classifier — справочник происшествий и маршрутизация
+            - id: classifier-service
+              uri: ${CLASSIFIER_SERVICE_URL:http://localhost:8087}
               predicates:
-                - Path=/api/v1/admin/incident/**
+                - Path=/api/v1/classifier/**
+              filters:
+                - name: JwtAuthFilter
+
+            #Classifier — административное чтение справочника
+            - id: classifier-service-admin
+              uri: ${CLASSIFIER_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/admin/classifier/**
               filters:
                 - name: JwtAuthFilter
                 - name: RoleAuthorization
                   args:
                     roles: ADMIN
 
-            #Incedent service - хранилище происшествий (уровней)
-            - id: incident-service
+            #Incident constructors — authenticated administrators only
+            - id: incident-service-write
               uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
               predicates:
-                - Path=/api/v1/incident/**
+                - Path=/api/v1/incidents,/api/v1/incidents/**,/api/v1/levels,/api/v1/levels/**
+                - Method=POST,PUT
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
+            #Incident catalog — authenticated users
+            - id: incident-service-read
+              uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/incidents,/api/v1/incidents/**,/api/v1/levels,/api/v1/levels/**
+                - Method=GET
               filters:
                 - name: JwtAuthFilter
 
