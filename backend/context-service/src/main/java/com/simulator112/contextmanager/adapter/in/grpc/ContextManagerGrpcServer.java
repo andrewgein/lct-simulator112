@@ -158,33 +158,7 @@ public class ContextManagerGrpcServer extends ContextManagerServiceGrpc.ContextM
     }
 
     private LevelProgress toProto(com.simulator112.contextmanager.domain.common.LevelProgress progress) {
-        var builder = LevelProgress.newBuilder()
-                .setContextId(progress.contextId().toString())
-                .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.valueOf(
-                        "INCIDENT_TARGET_TYPE_" + progress.targetType().name()))
-                .setExecutionMode(com.simulator112.incident.grpc.contract.ExecutionMode.valueOf(
-                        "EXECUTION_MODE_" + progress.executionMode().name()))
-                .setStatus(ContextProgressStatus.valueOf("CONTEXT_PROGRESS_STATUS_" + progress.status().name()));
-        progress.incidents().forEach(incident -> {
-            var value = IncidentProgress.newBuilder()
-                    .setIncidentId(incident.incidentId().toString())
-                    .setStatus(IncidentProgressStatus.valueOf(
-                            "INCIDENT_PROGRESS_STATUS_" + incident.status().name()));
-            if (incident.system112() != null) {
-                value.setSystem112(System112Progress.newBuilder()
-                        .setActiveCallId(incident.system112().activeCallId() == null ? ""
-                                : incident.system112().activeCallId().toString())
-                        .setCompletedCalls(incident.system112().completedCalls())
-                        .setTotalCalls(incident.system112().totalCalls()));
-            } else {
-                value.setDds(DdsProgress.newBuilder()
-                        .setActiveStageId(incident.dds().activeStageId() == null ? ""
-                                : incident.dds().activeStageId().toString())
-                        .setDeadline(incident.dds().deadline() == null ? "" : incident.dds().deadline().toString()));
-            }
-            builder.addIncidents(value);
-        });
-        return builder.build();
+        return com.simulator112.contextmanager.adapter.grpc.mapper.LevelProgressGrpcMapper.toProto(progress);
     }
 
     // TODO: frontend grpc ??

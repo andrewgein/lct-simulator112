@@ -8,6 +8,7 @@ import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.CallSnapshot;
 import com.simulator112.contextmanager.domain.dds.DdsProgress;
+import com.simulator112.contextmanager.domain.dds.DdsStageProgress;
 import com.simulator112.contextmanager.domain.common.IncidentProgress;
 import com.simulator112.contextmanager.domain.common.LevelProgress;
 import com.simulator112.contextmanager.domain.system112.System112Progress;
@@ -176,7 +177,10 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
     private IncidentProgress toDdsProgress(IncidentSnapshot incident) {
         Instant deadline = incident.getActiveStageId() == null ? null : activeStage(incident).getDeadlineAt();
         return new IncidentProgress(incident.getSourceId(), incident.getStatus(), null,
-                new DdsProgress(incident.getActiveStageId(), deadline));
+                new DdsProgress(incident.getActiveStageId(), deadline, incident.getStages().stream()
+                        .map(stage -> new DdsStageProgress(stage.getSourceId(), stage.getDdsStageType(),
+                                stage.getStatus(), stage.getStartedAt(), stage.getDeadlineAt()))
+                        .toList()));
     }
 
     private IncidentProgress toSystem112Progress(IncidentSnapshot incident) {

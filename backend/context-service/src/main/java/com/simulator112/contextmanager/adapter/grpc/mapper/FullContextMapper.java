@@ -24,6 +24,7 @@ public final class FullContextMapper {
             context.getIncidents().forEach(value -> level.addIncidents(IncidentContextMapper.toProto(value)));
             builder.setLevelContext(level);
         }
+        builder.setLevelProgress(LevelProgressGrpcMapper.fromContext(context));
         if (context.getDialog() != null) builder.setDialogContext(DialogContextMapper.toProto(context.getDialog()));
         var revisions = context.getSolutionCards().stream().sorted(Comparator.comparing(
                 SolutionCardRevision::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
