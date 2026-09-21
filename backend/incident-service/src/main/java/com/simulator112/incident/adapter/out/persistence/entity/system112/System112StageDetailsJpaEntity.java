@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -24,8 +26,11 @@ public class System112StageDetailsJpaEntity {
     @JoinColumn(name = "stage_id")
     private IncidentStageJpaEntity stage;
 
+    @ElementCollection
+    @CollectionTable(name = "system112_stage_classifier_codes", joinColumns = @JoinColumn(name = "stage_id"))
+    @OrderColumn(name = "position")
     @Column(name = "classifier_code", nullable = false, length = 50)
-    private String classifierCode;
+    private List<String> classifierCodes = new ArrayList<>();
 
     @Embedded
     @AttributeOverrides({

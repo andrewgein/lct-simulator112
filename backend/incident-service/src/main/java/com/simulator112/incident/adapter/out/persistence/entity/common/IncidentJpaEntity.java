@@ -50,8 +50,11 @@ public class IncidentJpaEntity {
     @Column(name = "dds_initial_stage_id")
     private UUID ddsInitialStageId;
 
-    @Column(name = "prepared_card_classifier_code")
-    private String preparedCardClassifierCode;
+    @ElementCollection
+    @CollectionTable(name = "prepared_card_classifier_codes", joinColumns = @JoinColumn(name = "incident_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "classifier_code", nullable = false, length = 50)
+    private List<String> preparedCardClassifierCodes = new ArrayList<>();
 
     @Column(name = "initial_assignment_classifier_code")
     private String initialAssignmentClassifierCode;

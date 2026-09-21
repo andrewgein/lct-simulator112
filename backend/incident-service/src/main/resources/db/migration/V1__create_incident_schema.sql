@@ -11,7 +11,6 @@ CREATE TABLE incidents (
     address_floor INTEGER,
     emergency_service VARCHAR(50),
     dds_initial_stage_id UUID,
-    prepared_card_classifier_code VARCHAR(50),
     initial_assignment_classifier_code VARCHAR(50),
     initial_assignment_instructions TEXT,
     card_applicant_first_name VARCHAR(255),
@@ -35,9 +34,9 @@ CREATE TABLE incidents (
     CONSTRAINT ck_incident_emergency_service CHECK (emergency_service IS NULL OR emergency_service IN
         ('FIRE', 'POLICE', 'AMBULANCE', 'GAS', 'ANTI_TERROR')),
     CONSTRAINT ck_incident_profile CHECK (
-        (target_type = 'SYSTEM_112' AND emergency_service IS NULL AND prepared_card_classifier_code IS NULL)
+        (target_type = 'SYSTEM_112' AND emergency_service IS NULL)
         OR
-        (target_type = 'DDS' AND emergency_service IS NOT NULL AND prepared_card_classifier_code IS NOT NULL)
+        (target_type = 'DDS' AND emergency_service IS NOT NULL)
     )
 );
 
@@ -78,7 +77,6 @@ CREATE INDEX idx_incident_stages_incident_id ON incident_stages (incident_id);
 
 CREATE TABLE system112_stage_details (
     stage_id UUID PRIMARY KEY REFERENCES incident_stages (id) ON DELETE CASCADE,
-    classifier_code VARCHAR(50) NOT NULL,
     victim_first_name VARCHAR(255),
     victim_last_name VARCHAR(255),
     victim_middle_name VARCHAR(255),
@@ -89,7 +87,14 @@ CREATE TABLE system112_stage_details (
     victim_additional_info TEXT
 );
 
-CREATE INDEX idx_system112_stage_details_classifier_code ON system112_stage_details (classifier_code);
+CREATE TABLE system112_stage_classifier_codes (
+    stage_id UUID NOT NULL REFERENCES system112_stage_details (stage_id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    classifier_code VARCHAR(50) NOT NULL,
+    PRIMARY KEY (stage_id, position)
+);
+
+CREATE INDEX idx_system112_stage_classifier_codes_code ON system112_stage_classifier_codes (classifier_code);
 
 CREATE TABLE dds_stage_details (
     stage_id UUID PRIMARY KEY REFERENCES incident_stages (id) ON DELETE CASCADE,
@@ -189,4 +194,11 @@ CREATE TABLE prepared_card_additional_info (
     info_key VARCHAR(255) NOT NULL,
     info_value TEXT,
     PRIMARY KEY (incident_id, info_key)
+);
+
+CREATE TABLE prepared_card_classifier_codes (
+    incident_id UUID NOT NULL REFERENCES incidents (id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    classifier_code VARCHAR(50) NOT NULL,
+    PRIMARY KEY (incident_id, position)
 );

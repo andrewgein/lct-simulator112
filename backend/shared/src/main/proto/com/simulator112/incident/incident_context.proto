@@ -45,7 +45,7 @@ message IncidentStage {
 }
 
 message System112StageDetails {
-  string classifier_code = 1;
+  repeated string classifier_codes = 1;
   Person victim = 2;
   int32 position = 3;
 }
@@ -69,7 +69,7 @@ message CallScenario {
 }
 
 message PreparedCardTemplate {
-  string classifier_code = 1;
+  repeated string classifier_codes = 1;
   Person applicant = 2;
   Person victim = 3;
   map<string, string> additional_info = 4;

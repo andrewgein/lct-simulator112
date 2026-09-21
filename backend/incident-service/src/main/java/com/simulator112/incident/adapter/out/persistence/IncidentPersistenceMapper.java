@@ -21,7 +21,7 @@ public class IncidentPersistenceMapper {
             List<DdsStage> stages = entity.getStages().stream().map(this::toDdsStage).toList();
             return new DdsIncident(
                     entity.getId(), entity.getTitle(), toDomain(entity.getAddress()), entity.getDifficulty(), stages,
-                    new PreparedCardTemplate(entity.getPreparedCardClassifierCode(),
+                    new PreparedCardTemplate(entity.getPreparedCardClassifierCodes(),
                             toDomain(entity.getCardApplicant()), toDomain(entity.getCardVictim()),
                             entity.getPreparedCardAdditionalInfo()),
                     new InitialAssignment(entity.getEmergencyService(), entity.getInitialAssignmentClassifierCode(),
@@ -58,7 +58,7 @@ public class IncidentPersistenceMapper {
             setCriteria(entity, dds.criteria().requiredQuestions(), dds.criteria().expectedActions(),
                     dds.criteria().criticalMistakes());
             PreparedCardTemplate card = dds.preparedCardTemplate();
-            entity.setPreparedCardClassifierCode(card.classifierCode());
+            entity.setPreparedCardClassifierCodes(new java.util.ArrayList<>(card.classifierCodes()));
             entity.setCardApplicant(toEntity(card.applicant()));
             entity.setCardVictim(toEntity(card.victim()));
             entity.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(card.additionalInfo()));
@@ -78,7 +78,7 @@ public class IncidentPersistenceMapper {
     private System112Stage toSystem112Stage(IncidentStageJpaEntity entity) {
         System112StageDetailsJpaEntity details = entity.getSystem112Details();
         return new System112Stage(
-                entity.getId(), entity.getTitle(), entity.getPosition(), details.getClassifierCode(),
+                entity.getId(), entity.getTitle(), entity.getPosition(), details.getClassifierCodes(),
                 toDomain(details.getVictim()), entity.getDescription(),
                 entity.getCalls().stream().map(this::toDomain).toList());
     }
@@ -94,7 +94,7 @@ public class IncidentPersistenceMapper {
         IncidentStageJpaEntity entity = toEntityBase(stage);
         entity.setPosition(stage.position());
         System112StageDetailsJpaEntity details = new System112StageDetailsJpaEntity();
-        details.setClassifierCode(stage.classifierCode());
+        details.setClassifierCodes(new java.util.ArrayList<>(stage.classifierCodes()));
         details.setVictim(toEntity(stage.victim()));
         entity.setSystem112Details(details);
         return entity;

@@ -62,7 +62,7 @@ public class IncidentGrpcMapper {
     private com.simulator112.incident.grpc.contract.IncidentStage toProto(System112Stage stage) {
         return toProtoBase(stage)
                 .setSystem112(com.simulator112.incident.grpc.contract.System112StageDetails.newBuilder()
-                        .setClassifierCode(string(stage.classifierCode()))
+                        .addAllClassifierCodes(stage.classifierCodes())
                         .setVictim(toProto(stage.victim()))
                         .setPosition(stage.position()))
                 .build();
@@ -123,7 +123,7 @@ public class IncidentGrpcMapper {
     private com.simulator112.incident.grpc.contract.PreparedCardTemplate toProto(
             com.simulator112.incident.domain.dds.PreparedCardTemplate value) {
         return com.simulator112.incident.grpc.contract.PreparedCardTemplate.newBuilder()
-                .setClassifierCode(value.classifierCode()).setApplicant(toProto(value.applicant()))
+                .addAllClassifierCodes(value.classifierCodes()).setApplicant(toProto(value.applicant()))
                 .setVictim(toProto(value.victim())).putAllAdditionalInfo(value.additionalInfo()).build();
     }
 
