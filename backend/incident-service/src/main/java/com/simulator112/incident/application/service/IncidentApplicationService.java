@@ -129,7 +129,7 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             }
             for (UUID next : java.util.stream.Stream.of(
                             transition.successStageId(), transition.failureStageId())
-                    .filter(java.util.Objects::nonNull).toList()) {
+                    .filter(java.util.Objects::nonNull).distinct().toList()) {
                 if (!stageIds.contains(next)) {
                     throw new IllegalArgumentException("Переход ссылается на неизвестный этап " + next);
                 }
