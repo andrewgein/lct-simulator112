@@ -1,117 +1,135 @@
 package com.simulator112.incident;
 
-import com.simulator112.incident.dto.request.classifier.ResolveRoutingRequest;
-import com.simulator112.incident.grpc.IncidentGrpcServiceImpl;
-import com.simulator112.incident.grpc.contract.RoutingResult;
-import com.simulator112.incident.model.enums.classifier.RoutingResultKind;
-import com.simulator112.incident.service.classifier.RoutingService;
-import io.grpc.stub.StreamObserver;
+import com.simulator112.incident.application.port.out.IncidentRepository;
+import com.simulator112.incident.application.port.out.LevelRepository;
+import com.simulator112.incident.domain.common.*;
+import com.simulator112.incident.domain.dds.*;
+import com.simulator112.incident.domain.system112.System112Criteria;
+import com.simulator112.incident.domain.system112.System112Incident;
+import com.simulator112.incident.domain.system112.System112Stage;
+import com.simulator112.incident.domain.level.ExecutionMode;
+import com.simulator112.incident.domain.level.Level;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = "grpc.server.port=0")
 class IncidentApplicationTests {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private IncidentRepository incidentRepository;
+    @Autowired
+    private LevelRepository levelRepository;
 
-	@Autowired
-	private JdbcTemplate jdbcTemplate;
+    @Test
+    void createsNormalizedIncidentAndLevelSchema() {
+        assertThat(tableCount("INCIDENTS")).isEqualTo(1);
+        assertThat(tableCount("INCIDENT_STAGES")).isEqualTo(1);
+        assertThat(tableCount("SYSTEM112_STAGE_DETAILS")).isEqualTo(1);
+        assertThat(tableCount("DDS_STAGE_DETAILS")).isEqualTo(1);
+        assertThat(tableCount("CALL_SCENARIOS")).isEqualTo(1);
+        assertThat(tableCount("LEVELS")).isEqualTo(1);
+        assertThat(tableCount("LEVEL_INCIDENTS")).isEqualTo(1);
+        assertThat(tableCount("DIALUPS")).isZero();
+        assertThat(tableCount("CLASSIFIER_ENTRIES")).isZero();
+    }
 
-	@Autowired
-	private RoutingService routingService;
+    @Test
+    void persistsStagesWithCalls() {
+        var call = new CallScenario(null, 0, CallDirection.INBOUND, CounterpartyType.CALLER,
+                new Person("Иван", "Иванов", null, 35, "+70000000000", null, null, null),
+                Gender.MAN, List.of("Виден дым"), List.of("Есть пострадавший"), "caller", "WORRIED");
+        var stage = new System112Stage(null, "Первичный вызов", 0,
+                "101", null, "Описание", List.of(call));
+        var incident = new System112Incident(null, "Пожар",
+                new Address("Москва", "Тверская", "1", null, null, 1), Difficulty.EASY,
+                List.of(stage), new System112Criteria(
+                List.of("Адрес?"), List.of("Передать карточку"), List.of()));
 
-	@Autowired
-	private IncidentGrpcServiceImpl incidentGrpcService;
+        var saved = incidentRepository.save(incident);
+        var loaded = incidentRepository.findById(saved.id()).orElseThrow();
 
-	@Test
-	void contextLoads() {
-		assertThat(count("classifier_categories")).isEqualTo(24);
-		assertThat(count("classifier_entries")).isEqualTo(1283);
-		assertThat(count("dispatch_services")).isEqualTo(58);
-		assertThat(count("routing_variants")).isEqualTo(86);
-		assertThat(count("routing_variant_conditions")).isEqualTo(28);
-		assertThat(count("routing_rules")).isEqualTo(22484);
-	}
+        assertThat(loaded.stages()).hasSize(1);
+        assertThat(loaded.stages()).hasOnlyElementsOfType(System112Stage.class);
+        assertThat(loaded.stages().getFirst().calls()).hasSize(1);
+        assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.INBOUND);
+        assertThat(detailCount("SYSTEM112_STAGE_DETAILS", saved.id())).isEqualTo(1);
+        assertThat(detailCount("DDS_STAGE_DETAILS", saved.id())).isZero();
+    }
 
-	@Test
-	void resolvesRoutingFromClassifierRules() {
-		var result = routingService.resolve("1010101", new ResolveRoutingRequest(Map.of(
-				"ACCESS_STATUS", "AVAILABLE",
-				"OFFENSE_STATUS", "PRESENT",
-				"VICTIM_STATUS", "PRESENT",
-				"GASIFICATION", "TRUE",
-				"THREAT_TO_PEOPLE", "TRUE"
-		)));
+    @Test
+    void persistsOrderedLevelIncidents() {
+        var call = new CallScenario(null, 0, CallDirection.INBOUND, CounterpartyType.CALLER,
+                null, null, List.of(), List.of(), null, null);
+        var stage = new System112Stage(null, "Вызов", 0, "101", null, null, List.of(call));
+        var first = incidentRepository.save(new System112Incident(null, "Первый",
+                new Address("Москва", "Тверская", "1", null, null, null), Difficulty.EASY,
+                List.of(stage), new System112Criteria(List.of(), List.of(), List.of())));
+        var second = incidentRepository.save(new System112Incident(null, "Второй",
+                new Address("Москва", "Тверская", "2", null, null, null), Difficulty.EASY,
+                List.of(stage), new System112Criteria(List.of(), List.of(), List.of())));
 
-		assertThat(result.classifierCode()).isEqualTo("1010101");
-		assertThat(result.decisions()).anySatisfy(decision -> {
-			assertThat(decision.service().code()).isEqualTo("MCHS");
-			assertThat(decision.routingTarget()).isEqualTo("Служба 101");
-			assertThat(decision.resultKind()).isEqualTo(RoutingResultKind.SERVICE_TYPE);
-			assertThat(decision.targetTypeName()).isEqualTo("пожар: мусор");
-		});
-		assertThat(result.decisions()).anySatisfy(decision -> {
-			assertThat(decision.service().code()).isEqualTo("AMBULANCE");
-			assertThat(decision.resultKind()).isEqualTo(RoutingResultKind.SERVICE_TYPE);
-			assertThat(decision.targetTypeName()).isEqualTo("пожар");
-		});
-		assertThat(result.decisions().stream()
-				.filter(decision -> decision.service().code().equals("POLICE")))
-				.singleElement()
-				.satisfies(decision -> {
-					assertThat(decision.matchedVariant()).isEqualTo("выбран признак Правонарушение");
-					assertThat(decision.targetTypeName()).isEqualTo("пожар");
-				});
-		assertThat(result.decisions()).anySatisfy(decision -> {
-			assertThat(decision.service().code()).isEqualTo("MOSGAZ");
-			assertThat(decision.resultKind()).isEqualTo(RoutingResultKind.SERVICE_TYPE);
-			assertThat(decision.targetTypeName()).isEqualTo("пожар");
-		});
-	}
+        var saved = levelRepository.save(new Level(null, "Параллельный уровень",
+                IncidentTargetType.SYSTEM_112, Difficulty.EASY, ExecutionMode.PARALLEL,
+                List.of(first.id(), second.id())));
+        var loaded = levelRepository.findById(saved.id()).orElseThrow();
 
-	@Test
-	void resolvesRoutingThroughGrpc() {
-		var request = com.simulator112.incident.grpc.contract.ResolveRoutingRequest.newBuilder()
-				.setClassifierCode("1010101")
-				.putFacts("ACCESS_STATUS", "AVAILABLE")
-				.putFacts("VICTIM_STATUS", "PRESENT")
-				.putFacts("GASIFICATION", "TRUE")
-				.build();
-		AtomicReference<RoutingResult> response = new AtomicReference<>();
-		AtomicReference<Throwable> error = new AtomicReference<>();
+        assertThat(loaded.incidentIds()).containsExactly(first.id(), second.id());
+    }
 
-		incidentGrpcService.resolveRouting(request, new StreamObserver<>() {
-			@Override
-			public void onNext(RoutingResult value) {
-				response.set(value);
-			}
+    @Test
+    void persistsTimedDdsStagesAndStatusCall() {
+        var brigade = new Person("Бригада 12", null, null, null, null, null, null, null);
+        var outgoing = new CallScenario(null, 0, CallDirection.OUTBOUND, CounterpartyType.BRIGADE,
+                brigade, null, List.of("Передана карточка"), List.of(), "dispatch", "CALM");
+        UUID initialStageId = UUID.randomUUID();
+        UUID successStageId = UUID.randomUUID();
+        UUID failureStageId = UUID.randomUUID();
+        var initialStage = new DdsStage(initialStageId, "Уточнение статуса",
+                "Позвонить бригаде", DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of(outgoing));
+        var successStage = new DdsStage(successStageId, "Ожидание статуса",
+                "Ожидать обновления", DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 180, List.of());
+        var failureStage = new DdsStage(failureStageId, "Завершение",
+                "Завершить реагирование", DdsStageType.COMPLETE_INCIDENT, 30, List.of());
+        var incident = new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
+                Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
+                new PreparedCardTemplate("101", null, null, java.util.Map.of()),
+                new InitialAssignment(EmergencyService.FIRE, "101", "Направить ближайшую бригаду"),
+                new DdsCriteria(List.of("Адрес?"), List.of("Назначить бригаду"), List.of()),
+                initialStageId,
+                List.of(new DdsStageTransition(initialStageId, successStageId, failureStageId)));
 
-			@Override
-			public void onError(Throwable throwable) {
-				error.set(throwable);
-			}
+        var saved = incidentRepository.save(incident);
+        var loaded = (DdsIncident) incidentRepository.findById(saved.id()).orElseThrow();
 
-			@Override
-			public void onCompleted() {
-			}
-		});
+        assertThat(loaded.stages()).hasOnlyElementsOfType(DdsStage.class);
+        assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.OUTBOUND);
+        assertThat(loaded.stages().getFirst().type()).isEqualTo(DdsStageType.CALL_BRIGADE_FOR_STATUS);
+        assertThat(loaded.stages().getFirst().timeLimitSeconds()).isEqualTo(60);
+        assertThat(detailCount("DDS_STAGE_DETAILS", saved.id())).isEqualTo(3);
+        assertThat(loaded.transitions()).containsExactly(
+                new DdsStageTransition(initialStageId, successStageId, failureStageId));
+    }
 
-		assertThat(error.get()).isNull();
-		assertThat(response.get()).isNotNull();
-		assertThat(response.get().getClassifierCode()).isEqualTo("1010101");
-		assertThat(response.get().getDecisionsList()).isNotEmpty();
-		assertThat(response.get().getDecisionsList()).anySatisfy(decision -> {
-			assertThat(decision.getService().getCode()).isEqualTo("MCHS");
-			assertThat(decision.getRoutingTarget()).isEqualTo("Служба 101");
-		});
-	}
+    private Integer tableCount(String tableName) {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?",
+                Integer.class,
+                tableName);
+    }
 
-	private Long count(String table) {
-		return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + table, Long.class);
-	}
+    private Integer detailCount(String tableName, UUID incidentId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM " + tableName + " d JOIN incident_stages s ON s.id = d.stage_id "
+                        + "WHERE s.incident_id = ?",
+                Integer.class,
+                incidentId);
+    }
 }

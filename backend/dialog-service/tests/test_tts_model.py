@@ -11,8 +11,8 @@ import httpx
 import numpy as np
 from dotenv import load_dotenv
 
-from app.utils.tts_model import TTSError, TTSModel
-from app.utils.voice_profiles import VoiceProfile, get_voice_profile
+from app.adapter.out.processing.tts_model import TTSError, TTSModel
+from app.adapter.out.processing.voice_profiles import VoiceProfile, get_voice_profile
 
 
 class _IdentityPreprocessor:
@@ -71,7 +71,7 @@ class TTSModelTests(unittest.TestCase):
         def build_client(*args, **kwargs):
             return real_client(*args, transport=transport, **kwargs)
 
-        return patch("app.utils.tts_model.httpx.Client", side_effect=build_client)
+        return patch("app.adapter.out.processing.tts_model.httpx.Client", side_effect=build_client)
 
     def test_registers_voice_then_synthesizes_with_its_label(self):
         requests = []

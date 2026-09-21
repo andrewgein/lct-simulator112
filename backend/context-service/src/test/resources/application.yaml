@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:context;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  grpc:
+    server:
+      port: 0
+    client:
+      channel:
+        incident-service:
+          target: static://localhost:65531
+        review-service:
+          target: static://localhost:65532

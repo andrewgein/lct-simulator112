@@ -2,53 +2,95 @@ syntax = "proto3";
 
 package incident;
 
+import "com/simulator112/common/dds_service.proto";
+
 option java_package = "com.simulator112.incident.grpc.contract";
 option java_multiple_files = true;
 
 message LevelContext {
   string id = 1;
   string title = 2;
-  repeated IncidentContext incidents = 3;
+  IncidentTargetType target_type = 3;
   Difficulty difficulty = 4;
+  ExecutionMode execution_mode = 5;
+  repeated IncidentContext incidents = 6;
 }
 
 message IncidentContext {
   string id = 1;
   string title = 2;
   Address address = 3;
-  DispatcherCriteria dispatcher_criteria = 4;
-  repeated StageContext stages = 5;
+  Difficulty difficulty = 4;
+  IncidentTargetType target_type = 5;
+  repeated IncidentStage stages = 6;
+  Criteria criteria = 7;
+  optional PreparedCardTemplate prepared_card_template = 8;
+  optional InitialAssignment initial_assignment = 9;
+  string dds_initial_stage_id = 10;
+  repeated DdsStageTransition dds_stage_transitions = 11;
 }
 
-message StageContext {
+message IncidentStage {
+  reserved 3;
+
   string id = 1;
   string title = 2;
-  int32 position = 3;
-  repeated DialupContext dialups = 4;
-  Applicant victim = 5;
-  string description = 6;
-  ClassifierEntry classifier_entry = 7;
+  string description = 5;
+  repeated CallScenario calls = 6;
+
+  oneof details {
+    System112StageDetails system_112 = 7;
+    DdsStageDetails dds = 8;
+  }
 }
 
-message DialupContext {
+message System112StageDetails {
+  string classifier_code = 1;
+  Person victim = 2;
+  int32 position = 3;
+}
+
+message DdsStageDetails {
+  DdsStageType type = 1;
+  int32 time_limit_seconds = 2;
+}
+
+message CallScenario {
   string id = 1;
   int32 position = 2;
-  DialupDetails dialup_details = 3;
-  Applicant applicant = 4;
-  Applicant victim = 5;
+  CallDirection direction = 3;
+  CounterpartyType counterparty = 4;
+  Person person = 5;
+  Gender gender = 6;
+  repeated string known_facts = 7;
+  repeated string hidden_facts = 8;
+  string ai_context = 9;
+  string emotional_state = 10;
 }
 
-message ClassifierEntry {
-  string id = 1;
-  string code = 2;
-  string name = 3;
-  repeated DispatchService primary_services = 4;
+message PreparedCardTemplate {
+  string classifier_code = 1;
+  Person applicant = 2;
+  Person victim = 3;
+  map<string, string> additional_info = 4;
 }
 
-message DispatchService {
-  string id = 1;
-  string code = 2;
-  string name = 3;
+message InitialAssignment {
+  common.DdsService emergency_service = 1;
+  string classifier_code = 2;
+  string instructions = 3;
+}
+
+message DdsStageTransition {
+  string stage_id = 1;
+  string success_stage_id = 2;
+  string failure_stage_id = 3;
+}
+
+message Criteria {
+  repeated string required_questions = 1;
+  repeated string expected_actions = 2;
+  repeated string critical_mistakes = 3;
 }
 
 message Address {
@@ -57,50 +99,62 @@ message Address {
   string house = 3;
   string building = 4;
   string apartment = 5;
-  int32 floor = 6;
+  optional int32 floor = 6;
 }
 
-message Applicant {
+message Person {
   string first_name = 1;
   string last_name = 2;
   string middle_name = 3;
-  int32 age = 4;
+  optional int32 age = 4;
   string phone = 5;
-  EmotionalState emotional_state = 6;
-  string contact_phone = 7;
-  string address = 8;
-  string additional_info = 9;
+  string contact_phone = 6;
+  string address = 7;
+  string additional_info = 8;
 }
 
-message DialupDetails {
-  Gender gender = 1;
-  repeated string known_facts = 2;
-  repeated string hidden_facts = 3;
-  string ai_context = 4;
-  string emotional_state = 5;
+enum ExecutionMode {
+  EXECUTION_MODE_UNSPECIFIED = 0;
+  EXECUTION_MODE_SEQUENTIAL = 1;
+  EXECUTION_MODE_PARALLEL = 2;
 }
 
-message DispatcherCriteria {
-  repeated string required_questions = 1;
-  repeated string expected_actions = 2;
-  repeated string critical_mistakes = 3;
+enum IncidentTargetType {
+  INCIDENT_TARGET_TYPE_UNSPECIFIED = 0;
+  INCIDENT_TARGET_TYPE_SYSTEM_112 = 1;
+  INCIDENT_TARGET_TYPE_DDS = 2;
 }
 
 enum Difficulty {
-  EASY = 0;
-  NORMAL = 1;
-  HARD = 2;
-}
-
-enum EmotionalState {
-  CALM = 0;
-  WORRIED = 1;
-  PANICKED = 2;
-  AGGRESSIVE = 3;
-  CONFUSED = 4;
+  DIFFICULTY_UNSPECIFIED = 0;
+  DIFFICULTY_EASY = 1;
+  DIFFICULTY_NORMAL = 2;
+  DIFFICULTY_HARD = 3;
 }
 
 enum Gender {
-  MAN = 0;
-  WOMEN = 1;
+  GENDER_UNSPECIFIED = 0;
+  GENDER_MAN = 1;
+  GENDER_WOMEN = 2;
+}
+
+enum DdsStageType {
+  DDS_STAGE_TYPE_UNSPECIFIED = 0;
+  DDS_STAGE_TYPE_ASSIGN_BRIGADE = 1;
+  DDS_STAGE_TYPE_WAIT_FOR_BRIGADE_STATUS_CHANGE = 2;
+  DDS_STAGE_TYPE_CALL_BRIGADE_FOR_STATUS = 3;
+  DDS_STAGE_TYPE_REQUEST_ADDITIONAL_SERVICE = 4;
+  DDS_STAGE_TYPE_COMPLETE_INCIDENT = 5;
+}
+
+enum CallDirection {
+  CALL_DIRECTION_UNSPECIFIED = 0;
+  CALL_DIRECTION_INBOUND = 1;
+  CALL_DIRECTION_OUTBOUND = 2;
+}
+
+enum CounterpartyType {
+  COUNTERPARTY_TYPE_UNSPECIFIED = 0;
+  COUNTERPARTY_TYPE_CALLER = 1;
+  COUNTERPARTY_TYPE_BRIGADE = 2;
 }

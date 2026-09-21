@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.types import ASGIApp, Receive, Scope, Send
-from app.input_server import router as input_server_router
-from app.utils.tts_model import TTSModel
+from app.adapter.config.configuration import components
+from app.adapter.inbound.websocket.controller import configure, router as input_server_router
 from dotenv import load_dotenv
 from prometheus_fastapi_instrumentator import Instrumentator
 import logging
@@ -10,12 +10,16 @@ import logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 load_dotenv()
+application_components = components()
+configure(application_components.dialog, application_components.voice_pipeline)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing TTS model")
-    TTSModel()
+    application_components.voice_pipeline.warm_up()
     yield
+
 
 app = FastAPI(lifespan=lifespan)
 

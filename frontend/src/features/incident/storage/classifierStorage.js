@@ -15,7 +15,7 @@ export function loadClassifier() {
     if (Object.keys(classifierInfo.state.classifier).length) {
         return Promise.resolve(classifierInfo.state.classifier);
     }
-    classifierRequest ||= fetch("/api/v1/incident/classifier")
+    classifierRequest ||= fetch("/api/v1/classifier")
         .then((response) => {
             if (!response.ok) throw new Error("Не удалось загрузить классификатор");
             return response.json();

@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: profile-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/profile}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+    hibernate:
+      ddl-auto: validate
+
+    show-sql: true
+
+  flyway:
+    enabled: true
+
+server:
+  port: ${SERVER_PORT:8082}
+
+grpc:
+  server:
+    port: ${GRPC_SERVER_PORT:9092}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

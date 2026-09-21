@@ -11,7 +11,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: false
+    open-in-view: false
   flyway:
     enabled: true
   grpc:
@@ -23,6 +24,9 @@ spring:
           target: ${INCIDENT_SERVICE_GRPC_TARGET:static://localhost:9091}
         review-service:
           target: ${REVIEW_SERVICE_GRPC_TARGET:static://localhost:9092}
+context:
+  dds:
+    timeout-check-delay-ms: ${DDS_TIMEOUT_CHECK_DELAY_MS:1000}
 management:
   endpoints:
     web:

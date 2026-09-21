@@ -1,38 +1,41 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+from app.adapter.out.grpc.context_adapter import GrpcContextAdapter
+from app.domain.model import CallDirection, CounterpartyType, Gender
+from app.grpc.com.simulator112.context.context_service_pb2 import GetCallRequest
 from app.grpc.com.simulator112.incident.incident_context_pb2 import (
-    Applicant,
-    DialupContext,
+    CALL_DIRECTION_OUTBOUND,
+    COUNTERPARTY_TYPE_BRIGADE,
+    GENDER_MAN,
+    CallScenario,
+    Person,
 )
-from app.utils.context_service import get_dialup
 
 
-class DialupContextLookupTests(unittest.TestCase):
-    @patch("app.utils.context_service._call")
-    def test_requests_dialup_with_its_victim(self, call_mock):
-        applicant = Applicant(
-            first_name="Анна",
-            address="Москва, улица Заявителя, дом 1",
-        )
-        victim = Applicant(
-            first_name="Иван",
-            address="Москва, улица Происшествия, дом 2",
-        )
-        call_mock.return_value = DialupContext(
-            id="dialup-1",
-            applicant=applicant,
-            victim=victim,
+class ContextGrpcAdapterTests(unittest.TestCase):
+    @patch.object(GrpcContextAdapter, "_call")
+    def test_maps_new_call_contract_to_domain(self, call_mock: MagicMock):
+        call_mock.return_value = CallScenario(
+            id="call-1",
+            position=2,
+            direction=CALL_DIRECTION_OUTBOUND,
+            counterparty=COUNTERPARTY_TYPE_BRIGADE,
+            person=Person(first_name="Иван", age=42, phone="112"),
+            gender=GENDER_MAN,
+            known_facts=["Бригада прибыла"],
+            emotional_state="CALM",
         )
 
-        found_dialup = get_dialup("context-1", "dialup-1")
+        call = GrpcContextAdapter("localhost:9090").get_call("context-1", "call-1")
 
-        self.assertEqual("Москва, улица Заявителя, дом 1", found_dialup.applicant.address)
-        self.assertEqual("Москва, улица Происшествия, дом 2", found_dialup.victim.address)
+        self.assertEqual(CallDirection.OUTBOUND, call.direction)
+        self.assertEqual(CounterpartyType.BRIGADE, call.counterparty)
+        self.assertEqual(Gender.MAN, call.gender)
+        self.assertEqual(42, call.person.age)
         method, request = call_mock.call_args.args
-        self.assertEqual("GetDialup", method)
-        self.assertEqual("context-1", request.context_id)
-        self.assertEqual("dialup-1", request.dialup_id)
+        self.assertEqual("GetCall", method)
+        self.assertEqual(GetCallRequest(context_id="context-1", call_id="call-1"), request)
 
 
 if __name__ == "__main__":

@@ -28,8 +28,71 @@ enum DialogProgressStatus {
 
 message DialogProgress {
   string context_id = 1;
-  string active_dialup_id = 2;
+  string active_call_id = 2;
   DialogProgressStatus status = 3;
+}
+
+enum DdsStageSignal {
+  DDS_STAGE_SIGNAL_UNSPECIFIED = 0;
+  DDS_STAGE_SIGNAL_BRIGADE_ASSIGNED = 1;
+  DDS_STAGE_SIGNAL_BRIGADE_STATUS_CHANGED = 2;
+  DDS_STAGE_SIGNAL_STATUS_CALL_COMPLETED = 3;
+  DDS_STAGE_SIGNAL_ADDITIONAL_SERVICE_REQUESTED = 4;
+  DDS_STAGE_SIGNAL_INCIDENT_COMPLETED = 5;
+}
+
+enum ContextProgressStatus {
+  CONTEXT_PROGRESS_STATUS_UNSPECIFIED = 0;
+  CONTEXT_PROGRESS_STATUS_CREATED = 1;
+  CONTEXT_PROGRESS_STATUS_FILLED = 2;
+  CONTEXT_PROGRESS_STATUS_IN_REVIEW = 3;
+  CONTEXT_PROGRESS_STATUS_DIALOG = 4;
+  CONTEXT_PROGRESS_STATUS_DONE = 5;
+}
+
+enum IncidentProgressStatus {
+  INCIDENT_PROGRESS_STATUS_UNSPECIFIED = 0;
+  INCIDENT_PROGRESS_STATUS_PENDING = 1;
+  INCIDENT_PROGRESS_STATUS_ACTIVE = 2;
+  INCIDENT_PROGRESS_STATUS_COMPLETED = 3;
+  INCIDENT_PROGRESS_STATUS_FAILED = 4;
+}
+
+message System112Progress {
+  string active_call_id = 1;
+  int32 completed_calls = 2;
+  int32 total_calls = 3;
+}
+
+message DdsStageProgress {
+  string stage_id = 1;
+  string stage_type = 2;
+  string status = 3;
+  string started_at = 4;
+  string deadline = 5;
+}
+
+message DdsProgress {
+  string active_stage_id = 1;
+  string deadline = 2;
+  repeated DdsStageProgress stages = 3;
+}
+
+message IncidentProgress {
+  string incident_id = 1;
+  IncidentProgressStatus status = 2;
+  oneof details {
+    System112Progress system_112 = 3;
+    DdsProgress dds = 4;
+  }
+}
+
+message LevelProgress {
+  string context_id = 1;
+  incident.IncidentTargetType target_type = 2;
+  incident.ExecutionMode execution_mode = 3;
+  ContextProgressStatus status = 4;
+  repeated IncidentProgress incidents = 5;
 }
 
 enum SpeakerType {
@@ -57,7 +120,7 @@ message SolutionContext {
   PersonInfo victim = 2;
   map<string, string> additional_info = 3;
   string incident_type = 4;
-  string dialup_id = 5;
+  string call_id = 5;
   string parent_id = 6;
   string duplicate_of_id = 7;
   string revision_id = 8;
@@ -78,6 +141,7 @@ message FullContext {
   SolutionContext solution_context = 5;
   incident.LevelContext level_context = 6;
   repeated SolutionContext solution_context_revisions = 7;
+  LevelProgress level_progress = 8;
 }
 
 service ContextManagerService {
@@ -85,12 +149,14 @@ service ContextManagerService {
   rpc AppendDialogContext(AppendDialogContextRequest) returns (google.protobuf.Empty);
   rpc AppendSolutionContext(AppendSolutionContextRequest) returns (google.protobuf.Empty);
   rpc GetFullContext(GetFullContextRequest) returns (FullContext);
-  rpc GetNextDialup(GetNextDialupRequest) returns (incident.DialupContext);
-  rpc GetDialup(GetDialupRequest) returns (incident.DialupContext);
+  rpc GetNextCall(GetNextCallRequest) returns (incident.CallScenario);
+  rpc GetCall(GetCallRequest) returns (incident.CallScenario);
   rpc GetDialogProgress(GetDialogProgressRequest) returns (DialogProgress);
-  rpc StartDialup(StartDialupRequest) returns (DialogProgress);
-  rpc CompleteDialup(CompleteDialupRequest) returns (DialogProgress);
-  rpc DisconnectDialup(DisconnectDialupRequest) returns (DialogProgress);
+  rpc StartCall(StartCallRequest) returns (DialogProgress);
+  rpc CompleteCall(CompleteCallRequest) returns (DialogProgress);
+  rpc DisconnectCall(DisconnectCallRequest) returns (DialogProgress);
+  rpc GetLevelProgress(GetLevelProgressRequest) returns (LevelProgress);
+  rpc ApplyDdsStageSignal(ApplyDdsStageSignalRequest) returns (LevelProgress);
 }
 
 message GetIncidentContextRequest {
@@ -111,31 +177,41 @@ message GetFullContextRequest {
   string uuid = 1;
 }
 
-message GetNextDialupRequest {
+message GetNextCallRequest {
   string uuid = 1;
-  string current_dialup_id = 2;
+  string current_call_id = 2;
 }
 
-message GetDialupRequest {
+message GetCallRequest {
   string context_id = 1;
-  string dialup_id = 2;
+  string call_id = 2;
 }
 
 message GetDialogProgressRequest {
   string context_id = 1;
 }
 
-message StartDialupRequest {
+message StartCallRequest {
   string context_id = 1;
-  string dialup_id = 2;
+  string call_id = 2;
 }
 
-message CompleteDialupRequest {
+message CompleteCallRequest {
   string context_id = 1;
-  string dialup_id = 2;
+  string call_id = 2;
 }
 
-message DisconnectDialupRequest {
+message DisconnectCallRequest {
   string context_id = 1;
-  string dialup_id = 2;
+  string call_id = 2;
+}
+
+message GetLevelProgressRequest {
+  string context_id = 1;
+}
+
+message ApplyDdsStageSignalRequest {
+  string context_id = 1;
+  string incident_id = 2;
+  DdsStageSignal signal = 3;
 }
