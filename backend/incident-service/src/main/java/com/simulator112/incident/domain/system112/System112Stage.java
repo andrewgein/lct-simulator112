@@ -11,11 +11,12 @@ public record System112Stage(
         UUID id,
         String title,
         int position,
-        String classifierCode,
+        List<String> classifierCodes,
         Person victim,
         String description,
         List<CallScenario> calls) implements IncidentStage {
     public System112Stage {
+        classifierCodes = classifierCodes == null ? List.of() : List.copyOf(classifierCodes);
         calls = calls == null ? List.of() : List.copyOf(calls);
     }
 }

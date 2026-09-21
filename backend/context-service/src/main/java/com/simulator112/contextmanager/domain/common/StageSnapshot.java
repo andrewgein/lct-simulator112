@@ -15,7 +15,7 @@ public class StageSnapshot {
     private UUID sourceId;
     private Integer position;
     private String title;
-    private String classifierCode;
+    private List<String> classifierCodes = new ArrayList<>();
     private DdsStageType ddsStageType;
     private Integer timeLimitSeconds;
     private StageStatus status;

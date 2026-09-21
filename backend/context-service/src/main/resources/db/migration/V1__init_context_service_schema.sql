@@ -28,7 +28,6 @@ CREATE TABLE incident_contexts (
     address_building VARCHAR(255),
     address_apartment VARCHAR(255),
     address_floor INTEGER,
-    prepared_card_classifier_code VARCHAR(50),
     card_applicant_first_name VARCHAR(255),
     card_applicant_last_name VARCHAR(255),
     card_applicant_middle_name VARCHAR(255),
@@ -60,6 +59,13 @@ CREATE TABLE context_prepared_card_additional_info (
     info_key VARCHAR(255) NOT NULL,
     info_value TEXT,
     PRIMARY KEY (incident_context_id, info_key)
+);
+
+CREATE TABLE context_prepared_card_classifier_codes (
+    incident_context_id UUID NOT NULL REFERENCES incident_contexts (id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    classifier_code VARCHAR(50) NOT NULL,
+    PRIMARY KEY (incident_context_id, position)
 );
 
 CREATE TABLE incident_context_required_questions (
@@ -106,7 +112,6 @@ CREATE TABLE solution_contexts (
     victim_address VARCHAR(255),
     victim_additional_info TEXT,
     additional_info_provided BOOLEAN NOT NULL,
-    incident_type VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_solution_context_card_version UNIQUE (context_id, card_id, version),
     CONSTRAINT uk_solution_context_previous_revision UNIQUE (previous_revision_id)
@@ -124,6 +129,13 @@ CREATE TABLE solution_context_additional_info (
     PRIMARY KEY (solution_context_id, info_key)
 );
 
+CREATE TABLE solution_context_incident_types (
+    solution_context_id UUID NOT NULL REFERENCES solution_contexts (id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    classifier_code VARCHAR(50) NOT NULL,
+    PRIMARY KEY (solution_context_id, position)
+);
+
 CREATE TABLE context_dds_stage_transitions (
     incident_context_id UUID NOT NULL REFERENCES incident_contexts (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
@@ -139,7 +151,6 @@ CREATE TABLE stage_contexts (
     incident_context_id UUID NOT NULL REFERENCES incident_contexts (id) ON DELETE CASCADE,
     position INTEGER,
     title VARCHAR(255),
-    classifier_code VARCHAR(50),
     dds_stage_type VARCHAR(50),
     time_limit_seconds INTEGER,
     status VARCHAR(20) NOT NULL,
@@ -156,6 +167,13 @@ CREATE TABLE stage_contexts (
     victim_additional_info TEXT,
     victim_emotional_state VARCHAR(50),
     CONSTRAINT uk_stage_context_source UNIQUE (incident_context_id, source_stage_id)
+);
+
+CREATE TABLE stage_context_classifier_codes (
+    stage_context_id UUID NOT NULL REFERENCES stage_contexts (id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    classifier_code VARCHAR(50) NOT NULL,
+    PRIMARY KEY (stage_context_id, position)
 );
 
 CREATE TABLE call_contexts (

@@ -39,7 +39,7 @@ public final class System112ReviewRubric implements ReviewRubric {
         return new ReviewSubmission.CardRevision(current.revisionId(), current.cardId(), current.version(), current.callId(),
                 current.mainCardId(), merge(previous.applicant(), current.applicant()), merge(previous.victim(), current.victim()),
                 current.additionalInfoProvided() ? current.additionalInfo() : previous.additionalInfo(),
-                current.additionalInfoProvided(), blank(current.incidentType()) ? previous.incidentType() : current.incidentType());
+                current.additionalInfoProvided(), current.incidentTypes().isEmpty() ? previous.incidentTypes() : current.incidentTypes());
     }
 
     private static ReviewSubmission.Person merge(ReviewSubmission.Person previous, ReviewSubmission.Person current) {
@@ -53,6 +53,14 @@ public final class System112ReviewRubric implements ReviewRubric {
 
     private static boolean same(String first, String second) {
         return normalize(first).equals(normalize(second));
+    }
+
+    private static boolean sameSet(List<String> expected, List<String> actual) {
+        Set<String> expectedCodes = new HashSet<>();
+        expected.forEach(value -> expectedCodes.add(normalize(value)));
+        Set<String> actualCodes = new HashSet<>();
+        actual.forEach(value -> actualCodes.add(normalize(value)));
+        return expectedCodes.equals(actualCodes);
     }
 
     private static String normalize(String value) {
@@ -115,8 +123,8 @@ public final class System112ReviewRubric implements ReviewRubric {
                 comparePerson(values, expected.call().person(), card == null ? null : card.applicant());
             if (expected.stage().victim() != null)
                 comparePerson(values, expected.stage().victim(), card == null ? null : card.victim());
-            if (!blank(expected.stage().classifierCode()))
-                values.add(card != null && same(expected.stage().classifierCode(), card.incidentType()));
+            if (!expected.stage().classifierCodes().isEmpty())
+                values.add(card != null && sameSet(expected.stage().classifierCodes(), card.incidentTypes()));
             if (values.isEmpty()) values.add(card != null);
             checks += values.size();
             correct += (int) values.stream().filter(Boolean::booleanValue).count();

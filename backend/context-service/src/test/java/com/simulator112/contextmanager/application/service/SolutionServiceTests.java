@@ -66,7 +66,7 @@ class SolutionServiceTests {
         attachCall(activeCallId);
         SolutionCardRevision target = card(UUID.randomUUID());
         stub(target);
-        var request = new SolutionContextRequest(person(), null, Map.of(), "FIRE",
+        var request = new SolutionContextRequest(person(), null, Map.of(), List.of("FIRE"),
                 null, null, SolutionContextOperation.LINK, target.getCardId());
 
         var response = service.createCardForCall(context.getId(), activeCallId, request);
@@ -82,7 +82,7 @@ class SolutionServiceTests {
         SolutionCardRevision card = card(activeCallId);
         card.setMainCardId(UUID.randomUUID());
         card.setApplicant(new PersonInfo("79990000000", null, "Иванов", "Иван", null, "Москва", null));
-        card.setIncidentType("FIRE");
+        card.setIncidentTypes(new java.util.ArrayList<>(List.of("FIRE", "GAS")));
         card.setAdditionalInfoProvided(true);
         card.getAdditionalInfo().put("floor", "3");
         stub(card);
@@ -96,6 +96,7 @@ class SolutionServiceTests {
         var assembled = service.getCards(context.getId()).getFirst();
         assertEquals("Иван", assembled.applicant().firstName());
         assertEquals(Map.of("floor", "3"), assembled.additionalInfo());
+        assertEquals(List.of("FIRE", "GAS"), assembled.incidentTypes());
     }
 
     @Test
@@ -128,7 +129,7 @@ class SolutionServiceTests {
 
     private SolutionContextRequest request(SolutionContextOperation operation,
                                            SolutionCardRevision card, UUID mainCardId) {
-        return new SolutionContextRequest(person(), null, Map.of("floor", "5"), "FIRE",
+        return new SolutionContextRequest(person(), null, Map.of("floor", "5"), List.of("FIRE"),
                 card.getCardId(), card.getVersion(), operation, mainCardId);
     }
 

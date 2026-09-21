@@ -61,7 +61,7 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             throw new IllegalArgumentException("Происшествие должно содержать хотя бы один этап");
         }
         if (incident instanceof System112Incident system112) {
-            system112.stages().forEach(stage -> classifierCatalog.requireEntry(stage.classifierCode()));
+            system112.stages().forEach(stage -> requireClassifierCodes(stage.classifierCodes()));
             if (system112.stages().stream()
                     .flatMap(stage -> stage.calls().stream())
                     .noneMatch(call -> call.counterparty()
@@ -73,10 +73,23 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             if (dds.preparedCardTemplate() == null || dds.initialAssignment() == null) {
                 throw new IllegalArgumentException("Сценарий ДДС требует карточку и первичное назначение");
             }
-            classifierCatalog.requireEntry(dds.preparedCardTemplate().classifierCode());
+            requireClassifierCodes(dds.preparedCardTemplate().classifierCodes());
             validateDdsStageCalls(dds);
             validateDdsTree(dds);
         }
+    }
+
+    private void requireClassifierCodes(List<String> classifierCodes) {
+        if (classifierCodes.isEmpty()) {
+            throw new IllegalArgumentException("Необходимо указать хотя бы один тип происшествия");
+        }
+        if (classifierCodes.stream().anyMatch(code -> code == null || code.isBlank())) {
+            throw new IllegalArgumentException("Тип происшествия не может быть пустым");
+        }
+        if (classifierCodes.stream().distinct().count() != classifierCodes.size()) {
+            throw new IllegalArgumentException("Типы происшествия не должны повторяться");
+        }
+        classifierCodes.forEach(classifierCatalog::requireEntry);
     }
 
     private void validateDdsStageCalls(DdsIncident incident) {

@@ -82,7 +82,12 @@ public class IncidentContextEntity {
     @Embedded
     private DispatcherCriteria dispatcherCriteria;
 
-    private String preparedCardClassifierCode;
+    @ElementCollection
+    @CollectionTable(name = "context_prepared_card_classifier_codes",
+            joinColumns = @JoinColumn(name = "incident_context_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "classifier_code", nullable = false, length = 50)
+    private List<String> preparedCardClassifierCodes = new ArrayList<>();
 
     @Embedded
     @AttributeOverrides({

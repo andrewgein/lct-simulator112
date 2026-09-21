@@ -12,7 +12,7 @@ public final class SolutionContextMapper {
         var builder = SolutionContext.newBuilder()
                 .setApplicant(toProto(revision.getApplicant()))
                 .setVictim(toProto(revision.getVictim()))
-                .setIncidentType(orEmpty(revision.getIncidentType()))
+                .addAllIncidentTypes(revision.getIncidentTypes())
                 .putAllAdditionalInfo(revision.getAdditionalInfo())
                 .setAdditionalInfoProvided(revision.isAdditionalInfoProvided())
                 .setCallId(orEmpty(revision.getCallId()))

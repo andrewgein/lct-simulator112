@@ -10,6 +10,8 @@ import com.simulator112.contextmanager.domain.common.StageStatus;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Column;
@@ -23,6 +25,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -48,7 +51,11 @@ public class StageContextEntity {
 
     private String title;
 
-    private String classifierCode;
+    @ElementCollection
+    @CollectionTable(name = "stage_context_classifier_codes", joinColumns = @JoinColumn(name = "stage_context_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "classifier_code", nullable = false, length = 50)
+    private List<String> classifierCodes = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private DdsStageType ddsStageType;

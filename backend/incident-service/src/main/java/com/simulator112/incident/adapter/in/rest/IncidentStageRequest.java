@@ -14,7 +14,7 @@ public record IncidentStageRequest(
         UUID id,
         @NotBlank String title,
         Integer position,
-        String classifierCode,
+        List<String> classifierCodes,
         @Valid Person victim,
         String description,
         DdsStageType type,

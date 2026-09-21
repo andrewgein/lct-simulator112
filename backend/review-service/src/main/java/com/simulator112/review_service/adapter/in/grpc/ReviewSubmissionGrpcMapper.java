@@ -41,7 +41,7 @@ final class ReviewSubmissionGrpcMapper {
 
     private static ReviewSubmission.StageScenario stage(IncidentStage source) {
         return new ReviewSubmission.StageScenario(source.getId(), source.hasSystem112() ? source.getSystem112().getPosition() : null,
-                source.hasSystem112() ? source.getSystem112().getClassifierCode() : null,
+                source.hasSystem112() ? source.getSystem112().getClassifierCodesList() : java.util.List.of(),
                 source.hasSystem112() ? person(source.getSystem112().getVictim()) : null,
                 source.hasDds() ? source.getDds().getType().name().replace("DDS_STAGE_TYPE_", "") : null,
                 source.getCallsList().stream().map(call -> new ReviewSubmission.CallScenario(
@@ -53,7 +53,7 @@ final class ReviewSubmissionGrpcMapper {
                 source.getCallId(), source.getMainCardId(), person(source.getApplicant()), person(source.getVictim()),
                 source.getAdditionalInfoMap(),
                 source.hasAdditionalInfoProvided() ? source.getAdditionalInfoProvided() : source.getAdditionalInfoCount() > 0,
-                source.getIncidentType());
+                source.getIncidentTypesList());
     }
 
     private static ReviewSubmission.Person person(com.simulator112.incident.grpc.contract.Person source) {

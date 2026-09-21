@@ -70,10 +70,35 @@ class IncidentApplicationServiceTest {
                 .hasMessageContaining("достижимы");
     }
 
+    @Test
+    void requiresPreparedCardClassifierCodes() {
+        UUID root = UUID.randomUUID();
+        DdsIncident incident = incident(List.of(stage(root)), root, List.of(), List.of());
+
+        assertThatThrownBy(() -> service.createIncident(incident))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("хотя бы один тип происшествия");
+    }
+
+    @Test
+    void rejectsDuplicatePreparedCardClassifierCodes() {
+        UUID root = UUID.randomUUID();
+        DdsIncident incident = incident(List.of(stage(root)), root, List.of(), List.of("101", "101"));
+
+        assertThatThrownBy(() -> service.createIncident(incident))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("не должны повторяться");
+    }
+
     private DdsIncident incident(List<DdsStage> stages, UUID initialStageId,
                                  List<DdsStageTransition> transitions) {
+        return incident(stages, initialStageId, transitions, List.of("101"));
+    }
+
+    private DdsIncident incident(List<DdsStage> stages, UUID initialStageId,
+                                 List<DdsStageTransition> transitions, List<String> classifierCodes) {
         return new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
-                Difficulty.NORMAL, stages, new PreparedCardTemplate("101", null, null, Map.of()),
+                Difficulty.NORMAL, stages, new PreparedCardTemplate(classifierCodes, null, null, Map.of()),
                 new InitialAssignment(com.simulator112.incident.domain.common.EmergencyService.FIRE, "101", null),
                 new DdsCriteria(List.of("Адрес?"), List.of("Назначить бригаду"), List.of()),
                 initialStageId, transitions);

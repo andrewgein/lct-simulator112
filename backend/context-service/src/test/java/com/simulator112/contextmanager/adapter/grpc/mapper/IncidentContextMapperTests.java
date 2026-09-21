@@ -23,11 +23,14 @@ class IncidentContextMapperTests {
         IncidentContext source = IncidentContext.newBuilder()
                 .setId(UUID.randomUUID().toString())
                 .setTitle("Пожар")
+                .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.INCIDENT_TARGET_TYPE_SYSTEM_112)
+                .setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_EASY)
                 .addStages(IncidentStage.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setSystem112(System112StageDetails.newBuilder()
                                 .setPosition(0)
-                                .setClassifierCode("101"))
+                                .addClassifierCodes("101")
+                                .addClassifierCodes("102"))
                         .addCalls(CallScenario.newBuilder()
                                 .setId(callId.toString())
                                 .setPosition(0)
@@ -40,6 +43,9 @@ class IncidentContextMapperTests {
         CallScenario result = IncidentContextMapper.toProto(
                 stored.getStages().getFirst().getCalls().getFirst());
 
+        assertThat(stored.getStages().getFirst().getClassifierCodes()).containsExactly("101", "102");
+        assertThat(IncidentContextMapper.toProto(stored).getStages(0).getSystem112().getClassifierCodesList())
+                .containsExactly("101", "102");
         assertThat(result.getId()).isEqualTo(callId.toString());
         assertThat(result.getPerson().getFirstName()).isEqualTo("Анна");
         assertThat(result.getPerson().getAddress()).isEqualTo("Адрес заявителя");
