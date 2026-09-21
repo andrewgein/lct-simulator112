@@ -36,8 +36,7 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID levelId, Target
     }
 
     public record CardRevision(String revisionId, String cardId, long version, String callId,
-                               String parentCardId, String duplicateOfCardId, String status,
-                               Person applicant, Person victim, Map<String, String> additionalInfo,
+                               String mainCardId, Person applicant, Person victim, Map<String, String> additionalInfo,
                                boolean additionalInfoProvided, String incidentType) {
         public CardRevision {
             additionalInfo = Map.copyOf(additionalInfo);

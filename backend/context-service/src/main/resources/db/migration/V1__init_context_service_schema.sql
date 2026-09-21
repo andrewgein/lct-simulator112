@@ -89,10 +89,8 @@ CREATE TABLE solution_contexts (
     card_id UUID NOT NULL,
     previous_revision_id UUID REFERENCES solution_contexts (id),
     version BIGINT NOT NULL CHECK (version > 0),
-    status VARCHAR(50) NOT NULL,
     call_id UUID NOT NULL,
-    parent_card_id UUID,
-    duplicate_of_card_id UUID,
+    main_card_id UUID,
     applicant_phone VARCHAR(255),
     applicant_contact_phone VARCHAR(255),
     applicant_last_name VARCHAR(255),
@@ -111,10 +109,7 @@ CREATE TABLE solution_contexts (
     incident_type VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_solution_context_card_version UNIQUE (context_id, card_id, version),
-    CONSTRAINT uk_solution_context_previous_revision UNIQUE (previous_revision_id),
-    CONSTRAINT ck_solution_context_relation CHECK (
-        NOT (parent_card_id IS NOT NULL AND duplicate_of_card_id IS NOT NULL)
-    )
+    CONSTRAINT uk_solution_context_previous_revision UNIQUE (previous_revision_id)
 );
 
 CREATE INDEX idx_solution_context_context_call

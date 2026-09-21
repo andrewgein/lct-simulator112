@@ -37,8 +37,7 @@ public final class System112ReviewRubric implements ReviewRubric {
                                                        ReviewSubmission.CardRevision current) {
         if (previous == null) return current;
         return new ReviewSubmission.CardRevision(current.revisionId(), current.cardId(), current.version(), current.callId(),
-                current.parentCardId(), current.duplicateOfCardId(), current.status(),
-                merge(previous.applicant(), current.applicant()), merge(previous.victim(), current.victim()),
+                current.mainCardId(), merge(previous.applicant(), current.applicant()), merge(previous.victim(), current.victim()),
                 current.additionalInfoProvided() ? current.additionalInfo() : previous.additionalInfo(),
                 current.additionalInfoProvided(), blank(current.incidentType()) ? previous.incidentType() : current.incidentType());
     }
@@ -134,12 +133,8 @@ public final class System112ReviewRubric implements ReviewRubric {
             if (matches.size() != 1) continue;
             var card = matches.getFirst();
             boolean valid = switch (expected.operation()) {
-                case CREATE ->
-                        "ACTIVE".equals(card.status()) && blank(card.parentCardId()) && blank(card.duplicateOfCardId());
-                case CREATE_CHILD ->
-                        "ACTIVE".equals(card.status()) && linked(card.parentCardId(), expected.targetCallId(), cards);
-                case DUPLICATE ->
-                        "CLOSED_DUPLICATE".equals(card.status()) && linked(card.duplicateOfCardId(), expected.targetCallId(), cards);
+                case CREATE -> blank(card.mainCardId());
+                case LINK -> linked(card.mainCardId(), expected.targetCallId(), cards);
             };
             if (valid) correct++;
         }
@@ -148,7 +143,7 @@ public final class System112ReviewRubric implements ReviewRubric {
 
     private boolean linked(String targetCardId, String expectedCallId, Map<String, ReviewSubmission.CardRevision> cards) {
         var target = cards.get(targetCardId);
-        return target != null && expectedCallId.equals(target.callId()) && "ACTIVE".equals(target.status());
+        return target != null && expectedCallId.equals(target.callId());
     }
 
     private double coverageRatio(List<ExpectedCall> calls, Map<String, List<ReviewSubmission.CardRevision>> byCall) {
@@ -164,10 +159,10 @@ public final class System112ReviewRubric implements ReviewRubric {
             var calls = stage.calls().stream().sorted(Comparator.comparingInt(ReviewSubmission.CallScenario::position)).toList();
             if (calls.isEmpty()) continue;
             String canonical = calls.getFirst().id();
-            result.add(new ExpectedCall(calls.getFirst(), stage, previousCanonical == null ? Operation.CREATE : Operation.CREATE_CHILD,
-                    previousCanonical));
+            result.add(new ExpectedCall(calls.getFirst(), stage,
+                    previousCanonical == null ? Operation.CREATE : Operation.LINK, previousCanonical));
             for (int index = 1; index < calls.size(); index++) {
-                result.add(new ExpectedCall(calls.get(index), stage, Operation.DUPLICATE, canonical));
+                result.add(new ExpectedCall(calls.get(index), stage, Operation.LINK, canonical));
             }
             previousCanonical = canonical;
         }
@@ -188,7 +183,7 @@ public final class System112ReviewRubric implements ReviewRubric {
         if (!blank(expected)) checks.add(same(expected, actual));
     }
 
-    private enum Operation {CREATE, CREATE_CHILD, DUPLICATE}
+    private enum Operation {CREATE, LINK}
 
     private record ExpectedCall(ReviewSubmission.CallScenario call, ReviewSubmission.StageScenario stage,
                                 Operation operation, String targetCallId) {

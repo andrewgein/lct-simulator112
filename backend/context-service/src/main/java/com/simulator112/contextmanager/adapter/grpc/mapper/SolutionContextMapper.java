@@ -20,11 +20,8 @@ public final class SolutionContextMapper {
                 .setCardId(orEmpty(revision.getCardId()))
                 .setPreviousRevisionId(orEmpty(revision.getPreviousRevisionId()))
                 .setVersion(revision.getVersion())
-                .setStatus(com.simulator112.context.grpc.contract.SolutionContextStatus.valueOf(
-                        revision.getStatus().name()))
                 .setCreatedAt(revision.getCreatedAt() == null ? "" : revision.getCreatedAt().toString());
-        if (revision.getParentCardId() != null) builder.setParentId(revision.getParentCardId().toString());
-        if (revision.getDuplicateOfCardId() != null) builder.setDuplicateOfId(revision.getDuplicateOfCardId().toString());
+        if (revision.getMainCardId() != null) builder.setMainCardId(revision.getMainCardId().toString());
         return builder.build();
     }
 

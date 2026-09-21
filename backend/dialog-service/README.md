@@ -116,9 +116,9 @@ python scripts/generate_voice_emotion_samples.py \
 ## Интеграция
 
 Маршруты `/api/v1/dialog/session` и `/api/v1/dialog/process-call` соответствуют
-текущему фронтенду. Названия `request_next_dialup`/`dialupId` остаются только во внешнем
-WebSocket-контракте фронтенда; внутри сервиса используется модель звонка и новые gRPC-методы
-`GetNextCall`, `GetCall`, `StartCall`, `CompleteCall`, `DisconnectCall`.
+фронтенду. WebSocket-контракт использует `request_next_call`, `call_ready`, `callId` и
+`nextCallAvailable`; gRPC-интеграция — `GetNextCall`, `GetCall`, `StartCall`, `CompleteCall`,
+`DisconnectCall`.
 Для реальных сценариев укажите `CONTEXT_SOURCE=grpc` и адрес
 `CONTEXT_MANAGER_GRPC_URL` из `backend/context-service`; для автономного запуска
 можно использовать `CONTEXT_SOURCE=mock`. Dockerfile запускает сервис на порту 8005.

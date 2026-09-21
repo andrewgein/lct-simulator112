@@ -1,23 +1,23 @@
-/**
- * @typedef {"EASY" | "NORMAL" | "HARD"} IncidentDifficulty
- */
+/** @typedef {"EASY" | "NORMAL" | "HARD"} Difficulty */
+/** @typedef {"SYSTEM_112" | "DDS"} IncidentTargetType */
+/** @typedef {"SEQUENTIAL" | "PARALLEL"} ExecutionMode */
+/** @typedef {"MAN" | "WOMEN"} Gender */
+/** @typedef {"INBOUND" | "OUTBOUND"} CallDirection */
+/** @typedef {"CALLER" | "BRIGADE"} CounterpartyType */
+/** @typedef {"ASSIGN_BRIGADE" | "WAIT_FOR_BRIGADE_STATUS_CHANGE" | "CALL_BRIGADE_FOR_STATUS" | "REQUEST_ADDITIONAL_SERVICE" | "COMPLETE_INCIDENT"} DdsStageType */
 
 /**
- * @typedef {"CALM" | "WORRIED" | "PANICKED" | "AGGRESSIVE" | "CONFUSED"} EmotionalState
- */
-
-/**
- * @typedef {Object} IncidentAddress
+ * @typedef {Object} Address
  * @property {string} city
  * @property {string} street
  * @property {string} house
  * @property {string | null} building
  * @property {string | null} apartment
- * @property {number} floor
+ * @property {number | null} floor
  */
 
 /**
- * @typedef {Object} IncidentPerson
+ * @typedef {Object} Person
  * @property {string} firstName
  * @property {string} lastName
  * @property {string | null} middleName
@@ -29,93 +29,109 @@
  */
 
 /**
- * @typedef {Object} DispatcherCriteria
+ * @typedef {Object} Criteria
  * @property {string[]} requiredQuestions
  * @property {string[]} expectedActions
  * @property {string[]} criticalMistakes
  */
 
 /**
- * @typedef {Object} IncidentType
- * @property {string} id UUID of the incident type
- * @property {string} serviceType
- * @property {string} typeId
- * @property {string} typeName
- */
-
-/**
- * @typedef {Object} IncidentAdditionalInfo
- * @property {string} id
- * @property {string} additionalInfoId
- * @property {string} fieldCode
- * @property {string} fieldName
- * @property {string} fieldType
- * @property {boolean} required
- * @property {string} fieldValue
- */
-
-/**
- * @typedef {Object} DialupDetails
- * @property {"MAN" | "WOMEN" | null} gender
+ * @typedef {Object} CallScenario
+ * @property {string | null} id
+ * @property {number} position
+ * @property {CallDirection} direction
+ * @property {CounterpartyType} counterparty
+ * @property {Person} person
+ * @property {Gender} gender
  * @property {string[]} knownFacts
  * @property {string[]} hiddenFacts
  * @property {string | null} aiContext
- * @property {EmotionalState | null} emotionalState
+ * @property {string | null} emotionalState
  */
 
 /**
- * @typedef {Object} IncidentDialup
- * @property {string} id
- * @property {number} position
- * @property {IncidentPerson | null} applicant
- * @property {DialupDetails} dialupDetails
- */
-
-/**
- * @typedef {Object} IncidentStage
- * @property {string} id
- * @property {string | null} title
- * @property {number} position
- * @property {IncidentType} type
- * @property {string | null} description
- * @property {IncidentPerson | null} victim
- * @property {IncidentAdditionalInfo[]} additionalInfo
- * @property {IncidentDialup[]} dialups
- */
-
-/**
- * @typedef {Object} IncidentData
+ * @typedef {Object} System112Stage
+ * @property {string | null} id
  * @property {string} title
- * @property {IncidentAddress} address
- * @property {DispatcherCriteria} criteria
+ * @property {number} position
+ * @property {string} classifierCode
+ * @property {Person | null} victim
+ * @property {string | null} description
+ * @property {CallScenario[]} calls
  */
 
 /**
- * @typedef {IncidentData} IncidentRequest
+ * @typedef {Object} DdsStage
+ * @property {string | null} id
+ * @property {string} title
+ * @property {string | null} description
+ * @property {DdsStageType} type
+ * @property {number} timeLimitSeconds
+ * @property {CallScenario[]} calls
  */
 
 /**
- * @typedef {IncidentData & { id: string, stages: IncidentStage[] }} Incident
+ * @typedef {Object} PreparedCardTemplate
+ * @property {string} classifierCode
+ * @property {Person | null} applicant
+ * @property {Person | null} victim
+ * @property {Object.<string, string>} additionalInfo
  */
 
 /**
- * @typedef {Object} ClassifierField
- * @property {string} id UUID of the additional information field
- * @property {string} name
- * @property {string} type
- * @property {boolean} required
+ * @typedef {Object} InitialAssignment
+ * @property {string} emergencyService
+ * @property {string} classifierCode
+ * @property {string | null} instructions
  */
 
 /**
- * @typedef {Object} ClassifierIncident
- * @property {string} id UUID of the incident type
- * @property {string} name
- * @property {ClassifierField[]} fields
- * @property {string[]} instructions
+ * @typedef {Object} DdsStageTransition
+ * @property {string} stageId
+ * @property {string | null} successStageId
+ * @property {string | null} failureStageId
  */
 
 /**
- * @typedef {Object.<string, Object.<string, ClassifierIncident>>} IncidentClassifier
+ * @typedef {Object} IncidentBase
+ * @property {string | null} id
+ * @property {string} title
+ * @property {Address} address
+ * @property {Difficulty} difficulty
+ * @property {IncidentTargetType} targetType
+ * @property {Criteria} criteria
  */
+
+/** @typedef {IncidentBase & { targetType: "SYSTEM_112", stages: System112Stage[] }} System112Incident */
+/** @typedef {IncidentBase & { targetType: "DDS", stages: DdsStage[], preparedCardTemplate: PreparedCardTemplate | null, initialAssignment: InitialAssignment | null, initialStageId: string, transitions: DdsStageTransition[] }} DdsIncident */
+/** @typedef {System112Incident | DdsIncident} Incident */
+
+/**
+ * @typedef {Object} IncidentRequest
+ * @property {string} title
+ * @property {Address} address
+ * @property {Difficulty} difficulty
+ * @property {IncidentTargetType} targetType
+ * @property {(System112Stage | DdsStage)[]} stages
+ * @property {string[]} requiredQuestions
+ * @property {string[]} expectedActions
+ * @property {string[]} criticalMistakes
+ * @property {PreparedCardTemplate | null} preparedCardTemplate
+ * @property {InitialAssignment | null} initialAssignment
+ * @property {string | null} initialStageId
+ * @property {DdsStageTransition[]} transitions
+ */
+
+/**
+ * @typedef {Object} Level
+ * @property {string | null} id
+ * @property {string} title
+ * @property {IncidentTargetType} targetType
+ * @property {Difficulty} difficulty
+ * @property {ExecutionMode} executionMode
+ * @property {string[]} incidentIds
+ */
+
+/** @typedef {Omit<Level, "id">} LevelRequest */
 
 export {};

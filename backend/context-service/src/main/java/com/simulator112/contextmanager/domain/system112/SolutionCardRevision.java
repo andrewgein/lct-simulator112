@@ -15,10 +15,8 @@ public class SolutionCardRevision {
     private UUID cardId;
     private UUID previousRevisionId;
     private long version;
-    private SolutionContextStatus status;
     private UUID callId;
-    private UUID parentCardId;
-    private UUID duplicateOfCardId;
+    private UUID mainCardId;
     private PersonInfo applicant;
     private PersonInfo victim;
     private Map<String, String> additionalInfo = new HashMap<>();
