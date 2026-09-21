@@ -140,7 +140,7 @@ final class ContextPersistenceMapper {
         target.setCallId(source.getCallId()); target.setMainCardId(source.getMainCardId());
         target.setApplicant(toDomain(source.getApplicant())); target.setVictim(toDomain(source.getVictim()));
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
-        target.setIncidentType(source.getIncidentType()); target.setCreatedAt(source.getCreatedAt());
+        target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes())); target.setCreatedAt(source.getCreatedAt());
         return target;
     }
 
@@ -151,7 +151,7 @@ final class ContextPersistenceMapper {
         target.setMainCardId(source.getMainCardId());
         target.setApplicant(toEntity(source.getApplicant())); target.setVictim(toEntity(source.getVictim()));
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
-        target.setIncidentType(source.getIncidentType());
+        target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes()));
         return target;
     }
 

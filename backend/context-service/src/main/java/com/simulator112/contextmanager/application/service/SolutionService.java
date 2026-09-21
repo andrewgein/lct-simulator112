@@ -258,7 +258,7 @@ public class SolutionService implements ManageSystem112CardUseCase {
         revision.setVictim(toPerson(request.victim()));
         revision.setAdditionalInfoProvided(request.additionalInfo() != null);
         if (request.additionalInfo() != null) revision.getAdditionalInfo().putAll(request.additionalInfo());
-        revision.setIncidentType(request.incidentType());
+        if (request.incidentTypes() != null) revision.setIncidentTypes(new ArrayList<>(request.incidentTypes()));
     }
 
     private PersonInfo toPerson(com.simulator112.contextmanager.application.model.system112.PersonInfoRequest value) {
@@ -271,15 +271,15 @@ public class SolutionService implements ManageSystem112CardUseCase {
         com.simulator112.contextmanager.application.model.system112.PersonInfoRequest applicant = null;
         com.simulator112.contextmanager.application.model.system112.PersonInfoRequest victim = null;
         Map<String, String> additionalInfo = Map.of();
-        String incidentType = null;
+        List<String> incidentTypes = List.of();
         for (SolutionCardRevision revision : ordered) {
             applicant = merge(applicant, revision.getApplicant()); victim = merge(victim, revision.getVictim());
             if (revision.isAdditionalInfoProvided()) additionalInfo = Map.copyOf(revision.getAdditionalInfo());
-            if (revision.getIncidentType() != null) incidentType = revision.getIncidentType();
+            if (!revision.getIncidentTypes().isEmpty()) incidentTypes = List.copyOf(revision.getIncidentTypes());
         }
         var latest = ordered.getLast();
         return new SolutionContextView(latest.getId(), latest.getCardId(), latest.getPreviousRevisionId(), latest.getVersion(),
-                latest.getCallId(), latest.getMainCardId(), applicant, victim, additionalInfo, incidentType,
+                latest.getCallId(), latest.getMainCardId(), applicant, victim, additionalInfo, incidentTypes,
                 latest.getCreatedAt());
     }
 

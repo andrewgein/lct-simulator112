@@ -1,7 +1,9 @@
 package com.simulator112.contextmanager.domain.system112;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
@@ -21,6 +23,6 @@ public class SolutionCardRevision {
     private PersonInfo victim;
     private Map<String, String> additionalInfo = new HashMap<>();
     private boolean additionalInfoProvided;
-    private String incidentType;
+    private List<String> incidentTypes = new ArrayList<>();
     private Instant createdAt;
 }

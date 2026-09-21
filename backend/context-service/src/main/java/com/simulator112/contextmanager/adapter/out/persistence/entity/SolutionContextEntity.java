@@ -15,13 +15,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -87,8 +90,11 @@ public class SolutionContextEntity {
     @Column(name = "additional_info_provided", nullable = false, updatable = false)
     private boolean additionalInfoProvided;
 
-    @Column(name = "incident_type", updatable = false)
-    private String incidentType;
+    @ElementCollection
+    @CollectionTable(name = "solution_context_incident_types", joinColumns = @JoinColumn(name = "solution_context_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "classifier_code", nullable = false, length = 50, updatable = false)
+    private List<String> incidentTypes = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

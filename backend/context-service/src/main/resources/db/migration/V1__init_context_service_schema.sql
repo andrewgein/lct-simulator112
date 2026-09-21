@@ -112,7 +112,6 @@ CREATE TABLE solution_contexts (
     victim_address VARCHAR(255),
     victim_additional_info TEXT,
     additional_info_provided BOOLEAN NOT NULL,
-    incident_type VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_solution_context_card_version UNIQUE (context_id, card_id, version),
     CONSTRAINT uk_solution_context_previous_revision UNIQUE (previous_revision_id)
@@ -128,6 +127,13 @@ CREATE TABLE solution_context_additional_info (
     info_key VARCHAR(255) NOT NULL,
     info_value TEXT,
     PRIMARY KEY (solution_context_id, info_key)
+);
+
+CREATE TABLE solution_context_incident_types (
+    solution_context_id UUID NOT NULL REFERENCES solution_contexts (id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    classifier_code VARCHAR(50) NOT NULL,
+    PRIMARY KEY (solution_context_id, position)
 );
 
 CREATE TABLE context_dds_stage_transitions (
