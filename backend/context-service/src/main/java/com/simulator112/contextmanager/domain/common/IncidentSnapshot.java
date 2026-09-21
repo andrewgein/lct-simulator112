@@ -1,0 +1,36 @@
+package com.simulator112.contextmanager.domain.common;
+
+import com.simulator112.contextmanager.domain.dds.DdsStageTransition;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import com.simulator112.shared.dto.Difficulty;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class IncidentSnapshot {
+    private UUID persistenceId;
+    private UUID sourceId;
+    private int position;
+    private String title;
+    private IncidentTargetType targetType;
+    private Difficulty difficulty;
+    private IncidentProgressStatus status;
+    private UUID activeStageId;
+    private UUID initialStageId;
+    private Address address;
+    private Criteria criteria;
+    private String preparedCardClassifierCode;
+    private Person cardApplicant;
+    private Person cardVictim;
+    private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();
+    private String initialAssignmentService;
+    private String initialAssignmentClassifierCode;
+    private String initialAssignmentInstructions;
+    private List<DdsStageTransition> transitions = new ArrayList<>();
+    private List<StageSnapshot> stages = new ArrayList<>();
+}
