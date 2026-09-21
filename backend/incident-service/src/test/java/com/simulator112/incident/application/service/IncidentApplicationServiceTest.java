@@ -34,6 +34,19 @@ class IncidentApplicationServiceTest {
     }
 
     @Test
+    void acceptsTransitionWithSameSuccessAndFailureStage() {
+        UUID root = UUID.randomUUID();
+        UUID next = UUID.randomUUID();
+        DdsIncident incident = incident(
+                List.of(stage(root), stage(next)),
+                root,
+                List.of(new DdsStageTransition(root, next, next)));
+        when(repository.save(incident)).thenReturn(incident);
+
+        service.createIncident(incident);
+    }
+
+    @Test
     void rejectsCallsOutsideStatusClarificationStage() {
         UUID root = UUID.randomUUID();
         var call = new CallScenario(null, 0, CallDirection.OUTBOUND, CounterpartyType.BRIGADE,
