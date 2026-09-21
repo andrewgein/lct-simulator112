@@ -11,7 +11,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
-    open-in-vivew: false
+    open-in-view: false
   grpc:
     server:
       port: 9092
