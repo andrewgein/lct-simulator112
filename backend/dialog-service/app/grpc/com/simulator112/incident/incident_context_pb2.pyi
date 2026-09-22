@@ -138,14 +138,14 @@ class IncidentStage(_message.Message):
     def __init__(self, id: _Optional[str] = ..., title: _Optional[str] = ..., description: _Optional[str] = ..., calls: _Optional[_Iterable[_Union[CallScenario, _Mapping]]] = ..., system_112: _Optional[_Union[System112StageDetails, _Mapping]] = ..., dds: _Optional[_Union[DdsStageDetails, _Mapping]] = ...) -> None: ...
 
 class System112StageDetails(_message.Message):
-    __slots__ = ("classifier_code", "victim", "position")
-    CLASSIFIER_CODE_FIELD_NUMBER: _ClassVar[int]
-    VICTIM_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("classifier_codes", "victim_count", "position")
+    CLASSIFIER_CODES_FIELD_NUMBER: _ClassVar[int]
+    VICTIM_COUNT_FIELD_NUMBER: _ClassVar[int]
     POSITION_FIELD_NUMBER: _ClassVar[int]
-    classifier_code: str
-    victim: Person
+    classifier_codes: _containers.RepeatedScalarFieldContainer[str]
+    victim_count: int
     position: int
-    def __init__(self, classifier_code: _Optional[str] = ..., victim: _Optional[_Union[Person, _Mapping]] = ..., position: _Optional[int] = ...) -> None: ...
+    def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., victim_count: _Optional[int] = ..., position: _Optional[int] = ...) -> None: ...
 
 class DdsStageDetails(_message.Message):
     __slots__ = ("type", "time_limit_seconds")
@@ -180,7 +180,7 @@ class CallScenario(_message.Message):
     def __init__(self, id: _Optional[str] = ..., position: _Optional[int] = ..., direction: _Optional[_Union[CallDirection, str]] = ..., counterparty: _Optional[_Union[CounterpartyType, str]] = ..., person: _Optional[_Union[Person, _Mapping]] = ..., gender: _Optional[_Union[Gender, str]] = ..., known_facts: _Optional[_Iterable[str]] = ..., hidden_facts: _Optional[_Iterable[str]] = ..., ai_context: _Optional[str] = ..., emotional_state: _Optional[str] = ...) -> None: ...
 
 class PreparedCardTemplate(_message.Message):
-    __slots__ = ("classifier_code", "applicant", "victim", "additional_info")
+    __slots__ = ("classifier_codes", "applicant", "victim_count", "additional_info")
     class AdditionalInfoEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -188,15 +188,15 @@ class PreparedCardTemplate(_message.Message):
         key: str
         value: str
         def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
-    CLASSIFIER_CODE_FIELD_NUMBER: _ClassVar[int]
+    CLASSIFIER_CODES_FIELD_NUMBER: _ClassVar[int]
     APPLICANT_FIELD_NUMBER: _ClassVar[int]
-    VICTIM_FIELD_NUMBER: _ClassVar[int]
+    VICTIM_COUNT_FIELD_NUMBER: _ClassVar[int]
     ADDITIONAL_INFO_FIELD_NUMBER: _ClassVar[int]
-    classifier_code: str
+    classifier_codes: _containers.RepeatedScalarFieldContainer[str]
     applicant: Person
-    victim: Person
+    victim_count: int
     additional_info: _containers.ScalarMap[str, str]
-    def __init__(self, classifier_code: _Optional[str] = ..., applicant: _Optional[_Union[Person, _Mapping]] = ..., victim: _Optional[_Union[Person, _Mapping]] = ..., additional_info: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., applicant: _Optional[_Union[Person, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class InitialAssignment(_message.Message):
     __slots__ = ("emergency_service", "classifier_code", "instructions")

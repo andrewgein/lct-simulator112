@@ -37,7 +37,8 @@ public final class System112ReviewRubric implements ReviewRubric {
                                                        ReviewSubmission.CardRevision current) {
         if (previous == null) return current;
         return new ReviewSubmission.CardRevision(current.revisionId(), current.cardId(), current.version(), current.callId(),
-                current.mainCardId(), merge(previous.applicant(), current.applicant()), merge(previous.victim(), current.victim()),
+                current.mainCardId(), merge(previous.applicant(), current.applicant()),
+                current.victimCount() == null ? previous.victimCount() : current.victimCount(),
                 current.additionalInfoProvided() ? current.additionalInfo() : previous.additionalInfo(),
                 current.additionalInfoProvided(), current.incidentTypes().isEmpty() ? previous.incidentTypes() : current.incidentTypes());
     }
@@ -121,8 +122,8 @@ public final class System112ReviewRubric implements ReviewRubric {
             List<Boolean> values = new ArrayList<>();
             if (expected.call().person() != null)
                 comparePerson(values, expected.call().person(), card == null ? null : card.applicant());
-            if (expected.stage().victim() != null)
-                comparePerson(values, expected.stage().victim(), card == null ? null : card.victim());
+            values.add(card != null && card.victimCount() != null
+                    && expected.stage().victimCount() == card.victimCount());
             if (!expected.stage().classifierCodes().isEmpty())
                 values.add(card != null && sameSet(expected.stage().classifierCodes(), card.incidentTypes()));
             if (values.isEmpty()) values.add(card != null);

@@ -111,7 +111,7 @@ class IncidentApplicationServiceTest {
     private DdsIncident incident(List<DdsStage> stages, UUID initialStageId,
                                  List<DdsStageTransition> transitions, List<String> classifierCodes) {
         return new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
-                Difficulty.NORMAL, stages, new PreparedCardTemplate(classifierCodes, null, null, Map.of()),
+                Difficulty.NORMAL, stages, new PreparedCardTemplate(classifierCodes, null, 0, Map.of()),
                 new InitialAssignment(com.simulator112.incident.domain.common.EmergencyService.FIRE, "101", null),
                 new DdsCriteria(List.of("Адрес?"), List.of("Назначить бригаду"), List.of()),
                 initialStageId, transitions);

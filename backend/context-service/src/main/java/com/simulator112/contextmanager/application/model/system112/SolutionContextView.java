@@ -13,7 +13,7 @@ public record SolutionContextView(
         UUID callId,
         UUID mainCardId,
         PersonInfoRequest applicant,
-        PersonInfoRequest victim,
+        int victimCount,
         Map<String, String> additionalInfo,
         List<String> incidentTypes,
         Instant createdAt

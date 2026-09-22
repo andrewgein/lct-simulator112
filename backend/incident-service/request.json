@@ -17,14 +17,6 @@
     "emotionalState": "PANICKED",
     "description": "Молодая женщина"
   },
-  "victim": {
-    "firstName": "Анна",
-    "lastName": "Петрова",
-    "middleName": "",
-    "phone": "+7 (999) 123-45-67",
-    "emotionalState": "PANICKED",
-    "description": "Молодая женщина"
-  },
   "additionalInfo": [
     {
       "additionalInfoId": "87326f46-0e83-4c1c-b63b-8c6de0b3d558",
@@ -73,5 +65,6 @@
       "Не проверить точный адрес",
       "Сообщить вслух фразу вроде 'полиция уже едет', когда заявительница не может говорить свободно"
     ]
-  }
+  },
+  "victimCount": 1
 }

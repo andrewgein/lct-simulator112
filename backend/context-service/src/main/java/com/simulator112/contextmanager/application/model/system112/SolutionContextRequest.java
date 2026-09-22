@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public record SolutionContextRequest(
         PersonInfoRequest applicant,
-        PersonInfoRequest victim,
+        Integer victimCount,
         Map<String, String> additionalInfo,
         List<String> incidentTypes,
         UUID cardId,

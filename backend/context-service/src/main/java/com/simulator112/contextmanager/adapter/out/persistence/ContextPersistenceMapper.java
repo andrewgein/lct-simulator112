@@ -65,7 +65,7 @@ final class ContextPersistenceMapper {
         target.setDifficulty(source.getContext().getDifficulty()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
         target.setInitialStageId(source.getInitialStageId()); target.setAddress(toDomain(source.getAddress()));
         target.setCriteria(toDomain(source.getDispatcherCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
-        target.setCardApplicant(toDomain(source.getCardApplicant())); target.setCardVictim(toDomain(source.getCardVictim()));
+        target.setCardApplicant(toDomain(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
         target.setInitialAssignmentClassifierCode(source.getInitialAssignmentClassifierCode());
@@ -82,7 +82,7 @@ final class ContextPersistenceMapper {
         target.setTitle(source.getTitle()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
         target.setInitialStageId(source.getInitialStageId()); target.setAddress(toEntity(source.getAddress()));
         target.setDispatcherCriteria(toEntity(source.getCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
-        target.setCardApplicant(toEntity(source.getCardApplicant())); target.setCardVictim(toEntity(source.getCardVictim()));
+        target.setCardApplicant(toEntity(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
         target.setInitialAssignmentClassifierCode(source.getInitialAssignmentClassifierCode());
@@ -98,7 +98,7 @@ final class ContextPersistenceMapper {
         target.setPersistenceId(source.getId()); target.setSourceId(source.getSourceStageId()); target.setPosition(source.getPosition());
         target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
         target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
-        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictim(toDomain(source.getVictim()));
+        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictimCount(source.getVictimCount());
         target.setCalls(source.getCalls().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return target;
     }
@@ -108,7 +108,7 @@ final class ContextPersistenceMapper {
         target.setId(source.getPersistenceId()); target.setSourceStageId(source.getSourceId()); target.setPosition(source.getPosition());
         target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
         target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
-        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictim(toEntity(source.getVictim()));
+        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictimCount(source.getVictimCount());
         source.getCalls().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addCall);
         return target;
     }
@@ -138,7 +138,7 @@ final class ContextPersistenceMapper {
         target.setId(source.getId()); target.setContextId(source.getContext().getUuid()); target.setCardId(source.getCardId());
         target.setPreviousRevisionId(source.getPreviousRevisionId()); target.setVersion(source.getVersion());
         target.setCallId(source.getCallId()); target.setMainCardId(source.getMainCardId());
-        target.setApplicant(toDomain(source.getApplicant())); target.setVictim(toDomain(source.getVictim()));
+        target.setApplicant(toDomain(source.getApplicant())); target.setVictimCount(source.getVictimCount());
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
         target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes())); target.setCreatedAt(source.getCreatedAt());
         return target;
@@ -149,7 +149,7 @@ final class ContextPersistenceMapper {
         target.setId(source.getId()); target.setCardId(source.getCardId()); target.setPreviousRevisionId(source.getPreviousRevisionId());
         target.setVersion(source.getVersion()); target.setCallId(source.getCallId());
         target.setMainCardId(source.getMainCardId());
-        target.setApplicant(toEntity(source.getApplicant())); target.setVictim(toEntity(source.getVictim()));
+        target.setApplicant(toEntity(source.getApplicant())); target.setVictimCount(source.getVictimCount());
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
         target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes()));
         return target;

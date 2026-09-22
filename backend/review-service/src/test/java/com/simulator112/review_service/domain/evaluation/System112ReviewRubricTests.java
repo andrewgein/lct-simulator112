@@ -16,8 +16,8 @@ class System112ReviewRubricTests {
         var first = new ReviewSubmission.CallScenario("call-1", 0, person);
         var second = new ReviewSubmission.CallScenario("call-2", 0, person);
         var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
-                new ReviewSubmission.StageScenario("stage-1", 0, List.of("fire"), null, null, List.of(first)),
-                new ReviewSubmission.StageScenario("stage-2", 1, List.of("fire"), null, null, List.of(second))));
+                new ReviewSubmission.StageScenario("stage-1", 0, List.of("fire"), 0, null, List.of(first)),
+                new ReviewSubmission.StageScenario("stage-2", 1, List.of("fire"), 0, null, List.of(second))));
         var card1 = card("card-1", "call-1", "", person);
         var card2 = card("card-2", "call-2", "card-1", person);
         var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
@@ -33,7 +33,7 @@ class System112ReviewRubricTests {
     void missingCardLosesCoverageFieldAndOperationPoints() {
         var call = new ReviewSubmission.CallScenario("call", 0, null);
         var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
-                new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), null, null, List.of(call))));
+                new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 0, null, List.of(call))));
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
                 ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(), List.of());
 
@@ -47,18 +47,18 @@ class System112ReviewRubricTests {
 
     @Test
     void rejectsMissingIncidentType() {
-        assertThat(fieldScore(List.of("fire", "gas"), List.of("fire"))).isZero();
+        assertThat(fieldScore(List.of("fire", "gas"), List.of("fire"))).isEqualTo(35);
     }
 
     @Test
     void rejectsExtraIncidentType() {
-        assertThat(fieldScore(List.of("fire", "gas"), List.of("fire", "gas", "police"))).isZero();
+        assertThat(fieldScore(List.of("fire", "gas"), List.of("fire", "gas", "police"))).isEqualTo(35);
     }
 
     private int fieldScore(List<String> expectedTypes, List<String> cardTypes) {
         var call = new ReviewSubmission.CallScenario("call", 0, null);
         var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
-                new ReviewSubmission.StageScenario("stage", 0, expectedTypes, null, null, List.of(call))));
+                new ReviewSubmission.StageScenario("stage", 0, expectedTypes, 0, null, List.of(call))));
         var card = card("card", "call", "", null, cardTypes);
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
                 ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(card), List.of());
@@ -75,6 +75,6 @@ class System112ReviewRubricTests {
     private ReviewSubmission.CardRevision card(String id, String callId, String mainCardId,
                                                ReviewSubmission.Person person, List<String> incidentTypes) {
         return new ReviewSubmission.CardRevision(UUID.randomUUID().toString(), id, 1, callId, mainCardId,
-                person, null, Map.of(), true, incidentTypes);
+                person, 0, Map.of(), true, incidentTypes);
     }
 }

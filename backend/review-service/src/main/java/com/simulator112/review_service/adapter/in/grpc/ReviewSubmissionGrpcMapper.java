@@ -42,7 +42,7 @@ final class ReviewSubmissionGrpcMapper {
     private static ReviewSubmission.StageScenario stage(IncidentStage source) {
         return new ReviewSubmission.StageScenario(source.getId(), source.hasSystem112() ? source.getSystem112().getPosition() : null,
                 source.hasSystem112() ? source.getSystem112().getClassifierCodesList() : java.util.List.of(),
-                source.hasSystem112() ? person(source.getSystem112().getVictim()) : null,
+                source.hasSystem112() ? source.getSystem112().getVictimCount() : 0,
                 source.hasDds() ? source.getDds().getType().name().replace("DDS_STAGE_TYPE_", "") : null,
                 source.getCallsList().stream().map(call -> new ReviewSubmission.CallScenario(
                         call.getId(), call.getPosition(), person(call.getPerson()))).toList());
@@ -50,8 +50,8 @@ final class ReviewSubmissionGrpcMapper {
 
     private static ReviewSubmission.CardRevision card(SolutionContext source) {
         return new ReviewSubmission.CardRevision(source.getRevisionId(), source.getCardId(), source.getVersion(),
-                source.getCallId(), source.getMainCardId(), person(source.getApplicant()), person(source.getVictim()),
-                source.getAdditionalInfoMap(),
+                source.getCallId(), source.getMainCardId(), person(source.getApplicant()),
+                source.hasVictimCount() ? source.getVictimCount() : null, source.getAdditionalInfoMap(),
                 source.hasAdditionalInfoProvided() ? source.getAdditionalInfoProvided() : source.getAdditionalInfoCount() > 0,
                 source.getIncidentTypesList());
     }

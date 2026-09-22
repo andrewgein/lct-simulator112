@@ -47,7 +47,7 @@ class IncidentApplicationTests {
                 new Person("Иван", "Иванов", null, 35, "+70000000000", null, null, null),
                 Gender.MAN, List.of("Виден дым"), List.of("Есть пострадавший"), "caller", "WORRIED");
         var stage = new System112Stage(null, "Первичный вызов", 0,
-                List.of("101", "102"), null, "Описание", List.of(call));
+                List.of("101", "102"), 1, "Описание", List.of(call));
         var incident = new System112Incident(null, "Пожар",
                 new Address("Москва", "Тверская", "1", null, null, 1), Difficulty.EASY,
                 List.of(stage), new System112Criteria(
@@ -69,7 +69,7 @@ class IncidentApplicationTests {
     void persistsOrderedLevelIncidents() {
         var call = new CallScenario(null, 0, CallDirection.INBOUND, CounterpartyType.CALLER,
                 null, null, List.of(), List.of(), null, null);
-        var stage = new System112Stage(null, "Вызов", 0, List.of("101"), null, null, List.of(call));
+        var stage = new System112Stage(null, "Вызов", 0, List.of("101"), 0, null, List.of(call));
         var first = incidentRepository.save(new System112Incident(null, "Первый",
                 new Address("Москва", "Тверская", "1", null, null, null), Difficulty.EASY,
                 List.of(stage), new System112Criteria(List.of(), List.of(), List.of())));
@@ -101,7 +101,7 @@ class IncidentApplicationTests {
                 "Завершить реагирование", DdsStageType.COMPLETE_INCIDENT, 30, List.of());
         var incident = new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
-                new PreparedCardTemplate(List.of("101", "102"), null, null, java.util.Map.of()),
+                new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of()),
                 new InitialAssignment(EmergencyService.FIRE, "101", "Направить ближайшую бригаду"),
                 new DdsCriteria(List.of("Адрес?"), List.of("Назначить бригаду"), List.of()),
                 initialStageId,

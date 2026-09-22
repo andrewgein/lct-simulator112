@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Applicant;
 import com.simulator112.contextmanager.domain.dds.DdsStageType;
 import com.simulator112.contextmanager.domain.common.StageStatus;
 import jakarta.persistence.AttributeOverride;
@@ -73,19 +72,8 @@ public class StageContextEntity {
     @Column(columnDefinition = "text")
     private String description;
 
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "firstName", column = @Column(name = "victim_first_name")),
-            @AttributeOverride(name = "lastName", column = @Column(name = "victim_last_name")),
-            @AttributeOverride(name = "middleName", column = @Column(name = "victim_middle_name")),
-            @AttributeOverride(name = "age", column = @Column(name = "victim_age")),
-            @AttributeOverride(name = "phone", column = @Column(name = "victim_phone")),
-            @AttributeOverride(name = "contactPhone", column = @Column(name = "victim_contact_phone")),
-            @AttributeOverride(name = "address", column = @Column(name = "victim_address")),
-            @AttributeOverride(name = "additionalInfo", column = @Column(name = "victim_additional_info", columnDefinition = "text")),
-            @AttributeOverride(name = "emotionalState", column = @Column(name = "victim_emotional_state"))
-    })
-    private Applicant victim;
+    @Column(name = "victim_count", nullable = false)
+    private int victimCount;
 
     @OneToMany(mappedBy = "stage", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")

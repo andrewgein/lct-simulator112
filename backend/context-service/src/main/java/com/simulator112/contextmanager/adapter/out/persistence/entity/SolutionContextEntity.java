@@ -69,17 +69,8 @@ public class SolutionContextEntity {
     })
     private PersonInfo applicant;
 
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "phone", column = @Column(name = "victim_phone", updatable = false)),
-            @AttributeOverride(name = "contactPhone", column = @Column(name = "victim_contact_phone", updatable = false)),
-            @AttributeOverride(name = "lastName", column = @Column(name = "victim_last_name", updatable = false)),
-            @AttributeOverride(name = "firstName", column = @Column(name = "victim_first_name", updatable = false)),
-            @AttributeOverride(name = "middleName", column = @Column(name = "victim_middle_name", updatable = false)),
-            @AttributeOverride(name = "address", column = @Column(name = "victim_address", updatable = false)),
-            @AttributeOverride(name = "additionalInfo", column = @Column(name = "victim_additional_info", columnDefinition = "text", updatable = false))
-    })
-    private PersonInfo victim;
+    @Column(name = "victim_count", updatable = false)
+    private Integer victimCount;
 
     @ElementCollection
     @CollectionTable(name = "solution_context_additional_info", joinColumns = @JoinColumn(name = "solution_context_id"))

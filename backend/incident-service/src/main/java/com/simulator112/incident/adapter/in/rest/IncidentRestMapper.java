@@ -31,16 +31,19 @@ public class IncidentRestMapper {
         var stages = request.stages().stream()
                 .map(stage -> new System112Stage(stage.id(), stage.title(),
                         require(stage.position(), "Позиция этапа системы 112 обязательна"),
-                        stage.classifierCodes(), stage.victim(), stage.description(), stage.calls()))
+                        stage.classifierCodes(), requireVictimCount(stage.victimCount()), stage.description(), stage.calls()))
                 .toList();
         return new System112Incident(id, request.title(), request.address(), request.difficulty(), stages,
                 new System112Criteria(request.requiredQuestions(), request.expectedActions(), mistakes));
     }
 
     private int require(Integer value, String message) {
-        if (value == null) {
-            throw new IllegalArgumentException(message);
-        }
+        if (value == null) throw new IllegalArgumentException(message);
+        return value;
+    }
+
+    private int requireVictimCount(Integer value) {
+        if (value == null || value < 0) throw new IllegalArgumentException("Количество пострадавших не может быть отрицательным");
         return value;
     }
 }
