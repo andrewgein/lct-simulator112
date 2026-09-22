@@ -99,6 +99,28 @@ services:
       retries: 10
       start_period: 30s
 
+  course-service:
+    image: ${COURSE_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/course-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-course
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/course
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      INCIDENT_GRPC_HOST: ${COMPOSE_PROJECT_NAME}-incident
+      INCIDENT_GRPC_PORT: 9091
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      incident-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   context-service:
     image: ${CONTEXT_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/context-service:${IMAGE_TAG:?IMAGE_TAG is required}}
     container_name: ${COMPOSE_PROJECT_NAME}-context
@@ -249,6 +271,7 @@ services:
       # prod-monitoring network if a second stack ever runs on this VM.
       AUTH_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-auth:8081
       INCIDENT_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-incident:8086
+      COURSE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-course:8088
       CONTEXT_MANGER_URL: http://${COMPOSE_PROJECT_NAME}-context:8084
       REVIEW_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-review:8085
       PROFILE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-profile:8082
@@ -263,6 +286,8 @@ services:
       auth-service:
         condition: service_started
       incident-service:
+        condition: service_started
+      course-service:
         condition: service_started
       context-service:
         condition: service_started
