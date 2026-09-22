@@ -1,0 +1,23 @@
+name: profile-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/profile-service/**
+      - backend/shared/**
+      - .github/workflows/profile-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: profile-service
+      context: backend
+      dockerfile: backend/profile-service/Dockerfile
+      compose_service: profile-service
+      image_env: PROFILE_SERVICE_IMAGE
+      container_suffix: profile

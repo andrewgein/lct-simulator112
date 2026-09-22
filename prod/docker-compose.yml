@@ -1,0 +1,298 @@
+# Parameterized prod app stack (single environment - sim112-stable only). Application images
+# are built by GitHub Actions and selected with IMAGE_REGISTRY and IMAGE_TAG. For example:
+#   IMAGE_REGISTRY=ghcr.io/owner IMAGE_TAG=main-<sha> docker compose -p sim112-stable \
+#     --env-file prod/.env -f prod/docker-compose.yml up -d
+#
+# dialog-service IS here (runs in Docker - it needs no GPU itself anymore; TTS is a separate
+# HTTP call to qwentts.cpp). Only qwentts.cpp stays on the home PC (needs the GPU directly),
+# reached from dialog-service over Tailscale (TTS_SERVER_TAILSCALE_HOST). Monitoring
+# (Prometheus/Grafana) and the public-facing nginx are separate stacks in prod/monitoring/ and
+# prod/edge/ - see prod/DEPLOY.md.
+#
+# Requires the external networks created once on the VM:
+#   docker network create prod-edge
+#   docker network create prod-monitoring
+
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: ${COMPOSE_PROJECT_NAME}-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: ${COMPOSE_PROJECT_NAME}-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME}-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    image: ${AUTH_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/auth-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-auth
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/auth
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_PRIVATE_KEY_PATH: file:/run/secrets/private.pem
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+    volumes:
+      - ../secrets/private.pem:/run/secrets/private.pem:ro
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  incident-service:
+    image: ${INCIDENT_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/incident-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-incident
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/incident
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      CLASSIFIER_GRPC_HOST: ${COMPOSE_PROJECT_NAME}-classifier
+      CLASSIFIER_GRPC_PORT: 9093
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      classifier-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  context-service:
+    image: ${CONTEXT_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/context-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-context
+    ports:
+      - "${CONTEXT_GRPC_HOST_PORT}:9090"   # not needed by dialog-service anymore (same docker
+                                            # network now) - kept published for manual debugging
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/context
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Container-name target, not bare service name: context-service/api-gateway/etc. all also
+      # join the shared prod-monitoring network (so Prometheus can scrape them), and Compose
+      # registers the service name as a DNS alias on every network a container joins -
+      # including external ones. If a second stack is ever run on this VM again, bare service
+      # names would collide on prod-monitoring; container names stay unique per stack.
+      INCIDENT_SERVICE_GRPC_TARGET: static://${COMPOSE_PROJECT_NAME}-incident:9091
+      REVIEW_SERVICE_GRPC_TARGET: static://${COMPOSE_PROJECT_NAME}-review:9092
+      SPRING_DATA_REDIS_HOST: redis
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      incident-service:
+        condition: service_healthy
+      review-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  review-service:
+    image: ${REVIEW_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/review-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-review
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/review
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      incident-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  profile-service:
+    image: ${PROFILE_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/profile-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-profile
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/profile
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  classifier-service:
+    image: ${CLASSIFIER_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/classifier-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-classifier
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/classifier
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  notification-service:
+    image: ${NOTIFICATION_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/notification-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-notification
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/notification
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8087/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Dials context-service directly over the docker network (CONTEXT_MANAGER_GRPC_URL below).
+  # It needs no GPU itself (Vosk STT is CPU, TTS is an HTTP call to qwentts.cpp on the home PC)
+  # - only the TTS server stays outside Docker.
+  dialog-service:
+    image: ${DIALOG_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/dialog-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-dialog
+    environment:
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+      CONTEXT_SOURCE: grpc
+      CONTEXT_MANAGER_GRPC_URL: ${COMPOSE_PROJECT_NAME}-context:9090
+      QWENTS_BASE_URL: http://${TTS_SERVER_TAILSCALE_HOST:?TTS_SERVER_TAILSCALE_HOST is required}:8888
+      TTS_MAX_GENERATION_TOKENS: 512
+      TTS_TEMPERATURE: 0.7
+      TTS_STRESS_MODE: all
+    networks: [default, monitoring]
+    depends_on:
+      context-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8005/health')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  api-gateway:
+    image: ${API_GATEWAY_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/api-gateway:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-gateway
+    environment:
+      # Container-name targets, not bare service names - see the comment on context-service's
+      # env above: bare service names would collide across stacks on the shared
+      # prod-monitoring network if a second stack ever runs on this VM.
+      AUTH_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-auth:8081
+      INCIDENT_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-incident:8086
+      CONTEXT_MANGER_URL: http://${COMPOSE_PROJECT_NAME}-context:8084
+      REVIEW_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-review:8085
+      PROFILE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-profile:8082
+      CLASSIFIER_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-classifier:8087
+      DIALOG_SERVICE_URL: ws://${COMPOSE_PROJECT_NAME}-dialog:8005
+      REDIS_HOST: redis
+      JWT_PUBLIC_KEY_PATH: file:/run/secrets/public.pem
+    volumes:
+      - ../secrets/public.pem:/run/secrets/public.pem:ro
+    networks: [default, edge, monitoring]
+    depends_on:
+      auth-service:
+        condition: service_started
+      incident-service:
+        condition: service_started
+      context-service:
+        condition: service_started
+      review-service:
+        condition: service_started
+      profile-service:
+        condition: service_started
+      classifier-service:
+        condition: service_started
+      dialog-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/frontend:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-frontend
+    networks: [default, edge]
+    depends_on:
+      - api-gateway
+
+networks:
+  default:
+    name: ${COMPOSE_PROJECT_NAME}-net
+  edge:
+    external: true
+    name: prod-edge
+  monitoring:
+    external: true
+    name: prod-monitoring
+
+volumes:
+  postgres_data:

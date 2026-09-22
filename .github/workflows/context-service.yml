@@ -1,0 +1,23 @@
+name: context-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/context-service/**
+      - backend/shared/**
+      - .github/workflows/context-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: context-service
+      context: backend
+      dockerfile: backend/context-service/Dockerfile
+      compose_service: context-service
+      image_env: CONTEXT_SERVICE_IMAGE
+      container_suffix: context

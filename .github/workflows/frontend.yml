@@ -1,0 +1,22 @@
+name: frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - frontend/**
+      - .github/workflows/frontend.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: frontend
+      context: frontend
+      dockerfile: frontend/Dockerfile
+      compose_service: frontend
+      image_env: FRONTEND_IMAGE
+      container_suffix: frontend

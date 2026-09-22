@@ -1,0 +1,22 @@
+name: notification-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/notification-service/**
+      - .github/workflows/notification-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: notification-service
+      context: backend/notification-service
+      dockerfile: backend/notification-service/Dockerfile
+      compose_service: notification-service
+      image_env: NOTIFICATION_SERVICE_IMAGE
+      container_suffix: notification

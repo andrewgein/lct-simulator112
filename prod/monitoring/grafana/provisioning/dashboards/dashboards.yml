@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: lct-simulator112
+    orgId: 1
+    folder: lct-simulator112
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

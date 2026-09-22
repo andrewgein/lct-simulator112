@@ -1,0 +1,90 @@
+events {}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+
+    # Compress Astro SSR responses and text assets at the public edge. WebSocket
+    # upgrade responses are not compressible and remain handled by their locations.
+    gzip on;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_vary on;
+    gzip_types text/css text/javascript application/javascript application/json application/manifest+json application/xml image/svg+xml;
+
+    # Docker's embedded DNS - resolve upstream at request time, not at nginx startup/reload.
+    # Otherwise nginx refuses to start (and takes BOTH domains down) whenever the app stack
+    # is mid-deploy and its frontend container is briefly gone.
+    resolver 127.0.0.11 valid=10s;
+
+    # Standard nginx WebSocket-proxy pattern: forward the client's Upgrade header through.
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        ''      close;
+    }
+
+    # Do not include query strings in WebSocket access logs.
+    log_format no_query '$remote_addr - [$time_local] "$request_method $uri" $status $body_bytes_sent';
+
+    # sim-112.ru / sim-112.online - the only environment. Router VM terminates TLS and forwards
+    # plain HTTP here.
+    server {
+        listen 80;
+        server_name sim-112.ru www.sim-112.ru sim-112.online www.sim-112.online;
+
+        location /api/v1/dialog/ {
+            # The gateway authenticates Astro's HTTP-only accessToken cookie before opening
+            # the upstream WebSocket to dialog-service.
+            access_log /var/log/nginx/access.log no_query;
+            set $dialog_gateway sim112-stable-gateway:8080;
+            proxy_pass http://$dialog_gateway;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Authorization "Bearer $cookie_accessToken";
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+        }
+
+        location / {
+            set $upstream sim112-stable-frontend;
+            proxy_pass http://$upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    # dev.sim-112.ru / dev.sim-112.online - intentionally left pointing at a stack that is no
+    # longer deployed (there is only one environment now). Router VM keeps forwarding these
+    # domains here; nginx's embedded-DNS resolver just can't resolve the upstream, so these
+    # domains 502 instead of routing anywhere. Kept as-is rather than removed so the router
+    # VM/DNS/TLS setup doesn't need to change.
+    server {
+        listen 80;
+        server_name dev.sim-112.ru dev.sim-112.online;
+
+        location /api/v1/dialog/ {
+            access_log /var/log/nginx/access.log no_query;
+            set $dialog_gateway sim112-testing-gateway:8080;
+            proxy_pass http://$dialog_gateway;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Authorization "Bearer $cookie_accessToken";
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $connection_upgrade;
+        }
+
+        location / {
+            set $upstream sim112-testing-frontend;
+            proxy_pass http://$upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}

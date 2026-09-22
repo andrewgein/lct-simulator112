@@ -1,0 +1,23 @@
+name: review-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/review-service/**
+      - backend/shared/**
+      - .github/workflows/review-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: review-service
+      context: backend
+      dockerfile: backend/review-service/Dockerfile
+      compose_service: review-service
+      image_env: REVIEW_SERVICE_IMAGE
+      container_suffix: review

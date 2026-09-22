@@ -1,0 +1,23 @@
+name: classifier-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/classifier-service/**
+      - backend/shared/**
+      - .github/workflows/classifier-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: classifier-service
+      context: backend
+      dockerfile: backend/classifier-service/Dockerfile
+      compose_service: classifier-service
+      image_env: CLASSIFIER_SERVICE_IMAGE
+      container_suffix: classifier

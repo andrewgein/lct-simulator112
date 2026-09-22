@@ -1,0 +1,23 @@
+name: incident-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/incident-service/**
+      - backend/shared/**
+      - .github/workflows/incident-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: incident-service
+      context: backend
+      dockerfile: backend/incident-service/Dockerfile
+      compose_service: incident-service
+      image_env: INCIDENT_SERVICE_IMAGE
+      container_suffix: incident
