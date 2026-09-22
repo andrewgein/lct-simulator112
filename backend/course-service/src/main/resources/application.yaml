@@ -1,0 +1,30 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: course
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/course}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+  flyway:
+    enabled: true
+
+incident:
+  grpc:
+    host: ${INCIDENT_GRPC_HOST:localhost}
+    port: ${INCIDENT_GRPC_PORT:9091}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

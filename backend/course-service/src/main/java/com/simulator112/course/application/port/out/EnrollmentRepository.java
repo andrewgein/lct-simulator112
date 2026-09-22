@@ -1,0 +1,17 @@
+package com.simulator112.course.application.port.out;
+
+import com.simulator112.course.domain.enrollment.Enrollment;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface EnrollmentRepository {
+    Enrollment save(Enrollment enrollment);
+
+    Optional<Enrollment> findByCourseIdAndStudentId(UUID courseId, UUID studentId);
+
+    List<Enrollment> findAllByStudentId(UUID studentId);
+
+    List<Enrollment> findAllByCourseId(UUID courseId);
+}

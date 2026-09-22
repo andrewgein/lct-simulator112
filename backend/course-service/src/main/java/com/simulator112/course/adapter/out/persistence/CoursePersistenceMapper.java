@@ -1,0 +1,91 @@
+package com.simulator112.course.adapter.out.persistence;
+
+import com.simulator112.course.adapter.out.persistence.entity.AssignmentJpaEntity;
+import com.simulator112.course.adapter.out.persistence.entity.CourseJpaEntity;
+import com.simulator112.course.adapter.out.persistence.entity.CourseMaterialJpaEntity;
+import com.simulator112.course.adapter.out.persistence.entity.EnrollmentJpaEntity;
+import com.simulator112.course.adapter.out.persistence.entity.StudyGroupJpaEntity;
+import com.simulator112.course.domain.course.Assignment;
+import com.simulator112.course.domain.course.Course;
+import com.simulator112.course.domain.course.CourseMaterial;
+import com.simulator112.course.domain.enrollment.Enrollment;
+import com.simulator112.course.domain.group.StudyGroup;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+
+@Component
+public class CoursePersistenceMapper {
+
+    public Course toDomain(CourseJpaEntity entity) {
+        return new Course(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getAuthorId(),
+                entity.getMaterials().stream().map(this::toDomain).toList(),
+                entity.getAssignments().stream().map(this::toDomain).toList());
+    }
+
+    public CourseJpaEntity toEntity(Course course) {
+        CourseJpaEntity entity = new CourseJpaEntity();
+        entity.setId(course.id());
+        entity.setTitle(course.title());
+        entity.setDescription(course.description());
+        entity.setAuthorId(course.authorId());
+        course.materials().stream().map(this::toEntity).forEach(entity::addMaterial);
+        course.assignments().stream().map(this::toEntity).forEach(entity::addAssignment);
+        return entity;
+    }
+
+    public StudyGroup toDomain(StudyGroupJpaEntity entity) {
+        return new StudyGroup(entity.getId(), entity.getTitle(), entity.getOwnerId(), entity.getStudentIds());
+    }
+
+    public StudyGroupJpaEntity toEntity(StudyGroup studyGroup) {
+        StudyGroupJpaEntity entity = new StudyGroupJpaEntity();
+        entity.setId(studyGroup.id());
+        entity.setTitle(studyGroup.title());
+        entity.setOwnerId(studyGroup.ownerId());
+        entity.setStudentIds(new ArrayList<>(studyGroup.studentIds()));
+        return entity;
+    }
+
+    public Enrollment toDomain(EnrollmentJpaEntity entity) {
+        return new Enrollment(entity.getId(), entity.getCourseId(), entity.getStudentId(), entity.getGroupId(),
+                entity.getMaterialsCompletedAt(), entity.getCompletedAssignmentIds(), entity.getCompletedAt());
+    }
+
+    public EnrollmentJpaEntity toEntity(Enrollment enrollment) {
+        EnrollmentJpaEntity entity = new EnrollmentJpaEntity();
+        entity.setId(enrollment.id());
+        entity.setCourseId(enrollment.courseId());
+        entity.setStudentId(enrollment.studentId());
+        entity.setGroupId(enrollment.groupId());
+        entity.setMaterialsCompletedAt(enrollment.materialsCompletedAt());
+        entity.setCompletedAssignmentIds(new ArrayList<>(enrollment.completedAssignmentIds()));
+        entity.setCompletedAt(enrollment.completedAt());
+        return entity;
+    }
+
+    private CourseMaterial toDomain(CourseMaterialJpaEntity entity) {
+        return new CourseMaterial(entity.getId(), entity.getTitle(), entity.getContentMarkdown());
+    }
+
+    private CourseMaterialJpaEntity toEntity(CourseMaterial material) {
+        CourseMaterialJpaEntity entity = new CourseMaterialJpaEntity();
+        entity.setId(material.id());
+        entity.setTitle(material.title());
+        entity.setContentMarkdown(material.contentMarkdown());
+        return entity;
+    }
+
+    private Assignment toDomain(AssignmentJpaEntity entity) {
+        return new Assignment(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getIncidentIds());
+    }
+
+    private AssignmentJpaEntity toEntity(Assignment assignment) {
+        AssignmentJpaEntity entity = new AssignmentJpaEntity();
+        entity.setId(assignment.id());
+        entity.setTitle(assignment.title());
+        entity.setDescription(assignment.description());
+        entity.setIncidentIds(new ArrayList<>(assignment.incidentIds()));
+        return entity;
+    }
+}
