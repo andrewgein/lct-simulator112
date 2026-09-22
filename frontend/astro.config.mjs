@@ -21,6 +21,10 @@ export default defineConfig({
       mode: 'standalone'
   }),
 
+  security: {
+      checkOrigin: false
+  },
+
   vite: {
       optimizeDeps: {
           include: ['astro-leaflet > leaflet'],
