@@ -3,8 +3,10 @@ package com.simulator112.incident.adapter.in.rest;
 import com.simulator112.incident.application.port.in.CreateLevelUseCase;
 import com.simulator112.incident.application.port.in.GetLevelUseCase;
 import com.simulator112.incident.application.port.in.UpdateLevelUseCase;
+import com.simulator112.incident.domain.common.IncidentTargetType;
 import com.simulator112.incident.domain.level.Level;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +37,16 @@ public class LevelRestController {
     @PutMapping("/{levelId}")
     public Level update(@PathVariable UUID levelId, @Valid @RequestBody LevelRequest request) {
         return updateLevel.updateLevel(levelId, toDomain(levelId, request));
+    }
+
+    @GetMapping
+    public List<Level> getAll(
+            @RequestHeader("X-User-Role") String role,
+            @RequestHeader(value = "X-Training-Track", required = false) IncidentTargetType trainingTrack) {
+        if (!"ADMIN".equals(role) && trainingTrack == null) {
+            throw new IllegalArgumentException("Профиль обучения не назначен");
+        }
+        return getLevel.getLevels("ADMIN".equals(role) ? null : trainingTrack);
     }
 
     @GetMapping("/{levelId}")

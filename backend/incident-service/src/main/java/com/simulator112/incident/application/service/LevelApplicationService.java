@@ -5,8 +5,10 @@ import com.simulator112.incident.application.port.in.GetLevelUseCase;
 import com.simulator112.incident.application.port.in.UpdateLevelUseCase;
 import com.simulator112.incident.application.port.out.IncidentRepository;
 import com.simulator112.incident.application.port.out.LevelRepository;
+import com.simulator112.incident.domain.common.IncidentTargetType;
 import com.simulator112.incident.domain.level.Level;
 import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,12 @@ public class LevelApplicationService implements CreateLevelUseCase, GetLevelUseC
     public Level getLevel(UUID levelId) {
         return levelRepository.findById(levelId)
                 .orElseThrow(() -> new IllegalArgumentException("Уровень не найден: " + levelId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Level> getLevels(IncidentTargetType targetType) {
+        return targetType == null ? levelRepository.findAll() : levelRepository.findAllByTargetType(targetType);
     }
 
     private void validate(Level level) {

@@ -29,7 +29,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "181fdd03-d9b7-5317-964d-db0e7fccc8ee",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -58,7 +57,7 @@
           }
         ],
         "classifierCodes": [
-          "ROAD_ACCIDENT_INJURED"
+          "2020000"
         ]
       }
     ],
@@ -102,12 +101,12 @@
         "trainingScenario": "ДТП с пострадавшим и возможной утечкой топлива"
       },
       "classifierCodes": [
-        "ROAD_ACCIDENT_INJURED"
+        "2020000"
       ]
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "ROAD_ACCIDENT_INJURED",
+      "classifierCode": "2020000",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -132,7 +131,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "ec57371f-d3ff-52ed-98ae-771a6955d8eb",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -160,7 +158,7 @@
           }
         ],
         "classifierCodes": [
-          "FIRE_APARTMENT"
+          "1050101"
         ]
       }
     ],
@@ -195,12 +193,12 @@
         "trainingScenario": "Дым из соседней квартиры, возможно ребёнок внутри"
       },
       "classifierCodes": [
-        "FIRE_APARTMENT"
+        "1050101"
       ]
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
-      "classifierCode": "FIRE_APARTMENT",
+      "classifierCode": "1050101",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -234,7 +232,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "b98b92f4-f23c-5d49-ba90-65aa5d6fa187",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -263,7 +260,7 @@
           }
         ],
         "classifierCodes": [
-          "GAS_LEAK_HOME"
+          "13020201"
         ]
       }
     ],
@@ -307,12 +304,12 @@
         "trainingScenario": "Запах газа в квартире и ухудшение самочувствия"
       },
       "classifierCodes": [
-        "GAS_LEAK_HOME"
+        "13020201"
       ]
     },
     "initialAssignment": {
       "emergencyService": "GAS",
-      "classifierCode": "GAS_LEAK_HOME",
+      "classifierCode": "13020201",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -346,7 +343,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "7cc40e49-97a9-5a54-9197-c1b52905ac81",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -375,7 +371,7 @@
           }
         ],
         "classifierCodes": [
-          "MED_UNCONSCIOUS_PUBLIC"
+          "22020000"
         ]
       }
     ],
@@ -419,12 +415,12 @@
         "trainingScenario": "Человек без сознания в вестибюле метро"
       },
       "classifierCodes": [
-        "MED_UNCONSCIOUS_PUBLIC"
+        "22020000"
       ]
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "MED_UNCONSCIOUS_PUBLIC",
+      "classifierCode": "22020000",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -449,7 +445,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "3ce2516d-4d41-513d-b384-e6b13fc63605",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -477,7 +472,7 @@
           }
         ],
         "classifierCodes": [
-          "POLICE_BURGLARY"
+          "15020100"
         ]
       }
     ],
@@ -512,12 +507,12 @@
         "trainingScenario": "Возможное проникновение в квартиру"
       },
       "classifierCodes": [
-        "POLICE_BURGLARY"
+        "15020100"
       ]
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "POLICE_BURGLARY",
+      "classifierCode": "15020100",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -542,7 +537,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "18bb4f97-0e8e-5d60-ad8c-f3d0ec391089",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -570,7 +564,7 @@
           }
         ],
         "classifierCodes": [
-          "SUSPICIOUS_OBJECT"
+          "15130600"
         ]
       }
     ],
@@ -605,12 +599,12 @@
         "trainingScenario": "Бесхозный чемодан на остановке"
       },
       "classifierCodes": [
-        "SUSPICIOUS_OBJECT"
+        "15130600"
       ]
     },
     "initialAssignment": {
       "emergencyService": "ANTI_TERROR",
-      "classifierCode": "SUSPICIOUS_OBJECT",
+      "classifierCode": "15130600",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -644,7 +638,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "5d9e84e6-416d-5c81-8a6d-c070efd00ee1",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -673,7 +666,7 @@
           }
         ],
         "classifierCodes": [
-          "MED_FALL_HEIGHT"
+          "17040100"
         ]
       }
     ],
@@ -718,12 +711,12 @@
         "trainingScenario": "Падение рабочего со стремянки"
       },
       "classifierCodes": [
-        "MED_FALL_HEIGHT"
+        "17040100"
       ]
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "MED_FALL_HEIGHT",
+      "classifierCode": "17040100",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -748,7 +741,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "6e620b2f-d65f-5de9-b090-35048b494394",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -777,7 +769,7 @@
           }
         ],
         "classifierCodes": [
-          "FIRE_KITCHEN"
+          "1050401"
         ]
       }
     ],
@@ -812,12 +804,12 @@
         "trainingScenario": "Кухонный пожар после возгорания масла"
       },
       "classifierCodes": [
-        "FIRE_KITCHEN"
+        "1050401"
       ]
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
-      "classifierCode": "FIRE_KITCHEN",
+      "classifierCode": "1050401",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -851,7 +843,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "c67dcd2a-b57b-5f52-ae88-d860509ca779",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -880,7 +871,7 @@
           }
         ],
         "classifierCodes": [
-          "MED_NEUROLOGIC_DEFICIT"
+          "22480000"
         ]
       }
     ],
@@ -924,12 +915,12 @@
         "trainingScenario": "Внезапная слабость и нарушение речи у пожилой женщины"
       },
       "classifierCodes": [
-        "MED_NEUROLOGIC_DEFICIT"
+        "22480000"
       ]
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "MED_NEUROLOGIC_DEFICIT",
+      "classifierCode": "22480000",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   },
@@ -954,7 +945,6 @@
         "description": "Первичный опрос заявителя и классификация происшествия.",
         "calls": [
           {
-            "id": "dcc870cb-cbdf-5a1f-bd32-259f40cfce30",
             "position": 1,
             "direction": "INBOUND",
             "counterparty": "CALLER",
@@ -983,7 +973,7 @@
           }
         ],
         "classifierCodes": [
-          "UNKNOWN_EXPLOSION_LIKE_EVENT"
+          "23060000"
         ]
       }
     ],
@@ -1018,12 +1008,12 @@
         "trainingScenario": "Громкий хлопок во дворе и человек на земле"
       },
       "classifierCodes": [
-        "UNKNOWN_EXPLOSION_LIKE_EVENT"
+        "23060000"
       ]
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "UNKNOWN_EXPLOSION_LIKE_EVENT",
+      "classifierCode": "23060000",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
   }
