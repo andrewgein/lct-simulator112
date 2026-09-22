@@ -93,7 +93,7 @@ public class SolutionContextEntity {
     @ElementCollection
     @CollectionTable(name = "solution_context_incident_types", joinColumns = @JoinColumn(name = "solution_context_id"))
     @OrderColumn(name = "position")
-    @Column(name = "classifier_code", nullable = false, length = 50, updatable = false)
+    @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> incidentTypes = new ArrayList<>();
 
     @CreationTimestamp
