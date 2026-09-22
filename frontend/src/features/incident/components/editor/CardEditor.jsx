@@ -63,16 +63,14 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const [seconds, setSeconds] = useState(0);
   const [savedEditMode, setSavedEditMode] = useState(false);
   const incident = findIncident(classifierState.classifier, editor.incidentType);
-  const excludeEdited = ["CREATE_CHILD", "DUPLICATE"].includes(editor.operation);
   const editingCard = cards.find((card) => card.cardId === editor.editingCardId);
-  const relationCards = cards.filter((card) => card.cardId !== editor.editingCardId && !card.parentCardId && !card.duplicateOfCardId);
-  const availableCards = excludeEdited ? relationCards : cards;
-  const selectedCard = availableCards.find((card) => card.cardId === editor.selectedCardId);
-  const referenceVisible = editor.operation !== "CREATE" && !(editor.operation === "SAVE" && editor.editingCardId);
-  const relatedCard = !!editingCard?.parentCardId || !!editingCard?.duplicateOfCardId;
-  const canUnlink = relatedCard && call.phase === "active" && call.activeDialupId === editingCard.dialupId;
-  const relationLocked = relatedCard || (call.phase === "finished" && excludeEdited);
-  const canSave = !editor.cardSaved && (editor.operation === "CREATE" || !!selectedCard);
+  const relationCards = cards.filter((card) => card.cardId !== editor.editingCardId && !card.mainCardId);
+  const selectedCard = relationCards.find((card) => card.cardId === editor.selectedCardId);
+  const referenceVisible = editor.operation === "LINK";
+  const relatedCard = !!editingCard?.mainCardId;
+  const canUnlink = relatedCard && call.phase === "active" && call.activeCallId === editingCard.callId;
+  const relationLocked = relatedCard || call.phase === "finished";
+  const canSave = !editor.cardSaved && (editor.operation !== "LINK" || !!selectedCard);
 
   useEffect(() => setSavedEditMode(false), [editor.editingCardId, editor.open]);
 
@@ -95,9 +93,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     if (relationLocked) return;
     const fallback = editor.editingCardId ? "SAVE" : "CREATE";
     const nextOperation = editor.operation === operation ? fallback : operation;
-    const excludesEdited = ["CREATE_CHILD", "DUPLICATE"].includes(nextOperation);
-    const nextCards = excludesEdited ? relationCards : cards;
-    const selectedCardId = nextCards.some((card) => card.cardId === editor.selectedCardId) ? editor.selectedCardId : nextCards[0]?.cardId || "";
+    const selectedCardId = relationCards.some((card) => card.cardId === editor.selectedCardId) ? editor.selectedCardId : relationCards[0]?.cardId || "";
     onChange({ ...editor, operation: nextOperation, selectedCardId });
   };
   const selectReference = (cardId) => {
@@ -132,14 +128,15 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const save = async () => {
     if (!canSave) return;
     const revisingCard = !!editingCard;
-    if (!revisingCard && !call.activeDialupId) return console.error("Cannot create a card without dialupId");
-    const url = revisingCard ? `/api/v1/context/${contextId}/cards/${editingCard.cardId}/revisions` : `/api/v1/context/${contextId}/dialups/${call.activeDialupId}/cards`;
+    if (!revisingCard && !call.activeCallId) return console.error("Cannot create a card without callId");
+    const url = revisingCard ? `/api/v1/context/${contextId}/cards/${editingCard.cardId}/revisions` : `/api/v1/context/${contextId}/calls/${call.activeCallId}/cards`;
+    const operation = editor.operation === "LINK" ? "LINK" : revisingCard ? "SAVE" : "CREATE";
     onChange({ ...editor, saving: true });
     try {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operation: editor.operation, cardId: revisingCard ? editingCard.cardId : editor.operation === "DUPLICATE" ? selectedCard.cardId : null, expectedVersion: revisingCard ? editingCard.version : editor.operation === "DUPLICATE" ? selectedCard.version : null, parentCardId: editor.operation === "CREATE_CHILD" || (revisingCard && editor.operation === "DUPLICATE") ? selectedCard.cardId : null, applicant: { ...editor.applicant, isApplicantVictim: editor.isApplicantVictim }, victim: editor.victim, incidentType: editor.incidentType, additionalInfo: editor.additionalInfo })
+        body: JSON.stringify({ operation, cardId: revisingCard ? editingCard.cardId : null, expectedVersion: revisingCard ? editingCard.version : null, mainCardId: operation === "LINK" ? selectedCard.cardId : null, applicant: editor.applicant, victim: editor.victim, incidentType: editor.incidentType, additionalInfo: editor.additionalInfo })
       });
       if (!response.ok) throw new Error(await response.text());
       onClose(call.phase === "finished");
@@ -180,7 +177,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       <footer class="workspace-footer wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           <wa-button class="workspace-save" size="l" type="button" appearance="outlined" variant="neutral" onClick={() => setSavedEditMode(true)}><wa-icon slot="start" name="pencil"></wa-icon>Редактировать</wa-button>
-          {relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label={editingCard.duplicateOfCardId ? "Отменить дубликат" : "Отвязать карточку"} onClick={unlink}><wa-icon name={editingCard.duplicateOfCardId ? "clone" : "link-slash"}></wa-icon></wa-button>}
+          {relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button>}
           <wa-button class="workspace-close" type="button" size="l" appearance="outlined" variant="neutral" onClick={cancel}><wa-icon name="xmark" label="Закрыть карточку"></wa-icon></wa-button>
         </div>
       </footer>
@@ -212,7 +209,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
               {availableCards.map((card) => <wa-option key={card.cardId} value={card.cardId}>{applicantName(card)} / {cardAddress(card)}</wa-option>)}
             </wa-select>
             <div class="workspace-operation-buttons wa-cluster wa-gap-xs wa-justify-content-end">
-              {!relatedCard && <wa-button type="button" appearance={editor.operation === "DUPLICATE" ? "filled" : "outlined"} variant={editor.operation === "DUPLICATE" ? "brand" : "neutral"} disabled={relationLocked || !relationCards.length} onClick={() => selectOperation("DUPLICATE")}><wa-icon slot="start" name="clone"></wa-icon>Дубликат</wa-button>}
+              {!relatedCard && <wa-button type="button" appearance={editor.operation === "LINK" ? "filled" : "outlined"} variant={editor.operation === "LINK" ? "brand" : "neutral"} disabled={relationLocked || !relationCards.length} onClick={() => selectOperation("LINK")}><wa-icon slot="start" name="link"></wa-icon>Связать</wa-button>}
             </div>
           </div>
           <h2 class="workspace-section-title">Добавить тип происшествия</h2>
@@ -227,7 +224,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {isDev && <wa-button size="l" type="button" appearance="outlined" onClick={autofill}><wa-icon name="wand-magic-sparkles" label="Автозаполнение"></wa-icon></wa-button>}
           <wa-button class="workspace-save" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canSave} loading={editor.saving} onClick={save}>Сохранить</wa-button>
-          {relatedCard ? <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label={editingCard.duplicateOfCardId ? "Отменить дубликат" : "Отвязать карточку"} onClick={unlink}><wa-icon name={editingCard.duplicateOfCardId ? "clone" : "link-slash"}></wa-icon></wa-button> : <wa-button class="workspace-link" type="button" size="l" appearance={editor.operation === "CREATE_CHILD" ? "filled" : "outlined"} variant="neutral" disabled={relationLocked || !relationCards.length} aria-label="Связать карточку" onClick={() => selectOperation("CREATE_CHILD")}><wa-icon name="link"></wa-icon></wa-button>}
+          {relatedCard ? <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button> : <wa-button class="workspace-link" type="button" size="l" appearance={editor.operation === "LINK" ? "filled" : "outlined"} variant="neutral" disabled={relationLocked || !relationCards.length} aria-label="Связать карточку" onClick={() => selectOperation("LINK")}><wa-icon name="link"></wa-icon></wa-button>}
           {editingCard && <wa-button class="workspace-close" type="button" size="l" appearance="outlined" variant="neutral" aria-label="Закрыть карточку" onClick={cancel}><wa-icon name="xmark" aria-hidden="true"></wa-icon></wa-button>}
         </div>
       </footer>

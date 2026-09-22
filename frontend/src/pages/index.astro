@@ -1,6 +1,91 @@
 ---
-import Page from "../layouts/Page.astro"
+import Page from "../layouts/Page.astro";
+import Header from "../layouts/Header.astro";
+import MainHeader from "../layouts/MainHeader.astro";
+import { getLevels } from "../features/level/api/LevelApi";
+import { DifficultyOptions } from "../features/incident/contract/Difficulty";
+
 export const prerender = false;
+
+const targetTypeLabels = {
+  SYSTEM_112: "Система-112",
+  DDS: "ДДС"
+};
+const executionModeLabels = {
+  SEQUENTIAL: "Последовательно",
+  PARALLEL: "Параллельно"
+};
+
+let levels = [];
+let error = null;
+try {
+  const response = await getLevels(Astro.locals.accessToken);
+  if (!response.ok) {
+    error = response.status === 403
+      ? "Профиль обучения ещё не назначен. Обратитесь к администратору."
+      : "Не удалось загрузить уровни";
+  } else {
+    levels = await response.json();
+  }
+} catch {
+  error = "Не удалось загрузить уровни";
+}
 ---
 
-<Page />
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Уровни обучения" />
+  {!error && !levels.length && (
+    <wa-callout>Для вашего профиля пока нет доступных уровней.</wa-callout>
+  )}
+  {!error && levels.length > 0 && (
+    <div class="wa-grid wa-gap-l">
+      {levels.map((level) => (
+        <wa-card with-header>
+          <h2 slot="header" class="level-title">{level.title}</h2>
+          <div class="wa-stack wa-gap-m">
+            <div class="wa-cluster wa-gap-xs">
+              <wa-badge variant={level.targetType === "DDS" ? "warning" : "brand"}>{targetTypeLabels[level.targetType] || level.targetType}</wa-badge>
+              <wa-badge variant="neutral" appearance="outlined">{DifficultyOptions.find((item) => item.value === level.difficulty)?.label || level.difficulty}</wa-badge>
+            </div>
+            <div class="wa-stack wa-gap-xs">
+              <span>Режим: {executionModeLabels[level.executionMode] || level.executionMode}</span>
+              <span>Происшествий: {level.incidentCount || 0}</span>
+            </div>
+            <wa-button class="start-level" variant="brand" data-level-id={level.id}>Начать уровень</wa-button>
+          </div>
+        </wa-card>
+      ))}
+    </div>
+  )}
+</Page>
+
+<script>
+  document.querySelectorAll(".start-level").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const levelId = button.getAttribute("data-level-id");
+      if (!levelId) return;
+      button.loading = true;
+      try {
+        const response = await fetch("/api/v1/context", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ levelId })
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const { contextId } = await response.json();
+        window.location.href = `/level/${encodeURIComponent(levelId)}?context=${encodeURIComponent(contextId)}`;
+      } catch (error) {
+        console.error("Failed to start level", error);
+        alert("Не удалось начать уровень. Попробуйте ещё раз.");
+        button.loading = false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .level-title {
+    margin: 0;
+  }
+</style>

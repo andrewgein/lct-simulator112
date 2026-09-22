@@ -4,17 +4,134 @@ body {
   margin: 0;
 }
 
+:root {
+  --wa-font-size-scale: 0.875;
+  --wa-font-family-body: 'Manrope Variable', Helvetica, Arial, sans-serif;
+  --wa-font-family-heading: 'Manrope Variable', Helvetica, Arial, sans-serif;
+  --wa-border-radius-scale: 0;
+  --wa-shadow-scale: 0;
+  --app-header-background: #293238;
+  min-height: 100%;
+}
+
+/* Dispatch-console palette: cool gray work surface, square controls, cyan selection and emergency orange actions. */
+:root {
+  color-scheme: light;
+  --wa-color-neutral-05: #263238;
+  --wa-color-neutral-10: #35434a;
+  --wa-color-neutral-20: #4c5d65;
+  --wa-color-neutral-30: #65767e;
+  --wa-color-neutral-40: #7e8f97;
+  --wa-color-neutral-50: #98a6ac;
+  --wa-color-neutral-60: #b1bcc0;
+  --wa-color-neutral-70: #c8d0d3;
+  --wa-color-neutral-80: #d9dfe1;
+  --wa-color-neutral-90: #e8ecec;
+  --wa-color-neutral-95: #f4f6f6;
+  --wa-color-surface-default: #f4f6f6;
+  --wa-color-surface-raised: #ffffff;
+  --wa-color-surface-lowered: #c8d1d5;
+  --wa-color-surface-border: #b8c1c5;
+  --wa-color-text-normal: #263238;
+  --wa-color-text-quiet: #6f7e85;
+  --wa-color-text-link: #007fb6;
+  --wa-color-focus: #008dca;
+  --wa-color-mix-hover: #263238 7%;
+  --wa-color-mix-active: #263238 13%;
+
+  --wa-color-neutral-fill-quiet: #f4f6f6;
+  --wa-color-neutral-fill-normal: #e8ecec;
+  --wa-color-neutral-fill-loud: #4c5d65;
+  --wa-color-neutral-border-quiet: #d9dfe1;
+  --wa-color-neutral-border-normal: #b8c1c5;
+  --wa-color-neutral-border-loud: #7e8f97;
+  --wa-color-neutral-on-quiet: #4c5d65;
+  --wa-color-neutral-on-normal: #35434a;
+  --wa-color-neutral-on-loud: #ffffff;
+
+  --wa-color-brand: #157dbd;
+  --wa-color-brand-fill-quiet: #e8f4fb;
+  --wa-color-brand-fill-normal: #c5e5f6;
+  --wa-color-brand-fill-loud: #157dbd;
+  --wa-color-brand-border-quiet: #c5e5f6;
+  --wa-color-brand-border-normal: #76bde3;
+  --wa-color-brand-border-loud: #157dbd;
+  --wa-color-brand-on-quiet: #075984;
+  --wa-color-brand-on-normal: #064666;
+  --wa-color-brand-on-loud: #ffffff;
+
+  --wa-color-success-fill-quiet: #dcfce7;
+  --wa-color-success-fill-normal: #bbf7d0;
+  --wa-color-success-fill-loud: #16a34a;
+  --wa-color-success-border-quiet: #bbf7d0;
+  --wa-color-success-border-normal: #86efac;
+  --wa-color-success-border-loud: #16a34a;
+  --wa-color-success-on-quiet: #166534;
+  --wa-color-success-on-normal: #14532d;
+  --wa-color-success-on-loud: #ffffff;
+
+  --wa-color-warning-fill-quiet: #fff5dc;
+  --wa-color-warning-fill-normal: #ffe8aa;
+  --wa-color-warning-fill-loud: #e5a800;
+  --wa-color-warning-border-quiet: #ffe8aa;
+  --wa-color-warning-border-normal: #efc24e;
+  --wa-color-warning-border-loud: #c28b00;
+  --wa-color-warning-on-quiet: #8a6200;
+  --wa-color-warning-on-normal: #6f4f00;
+  --wa-color-warning-on-loud: #263238;
+
+  --wa-color-danger-fill-quiet: #fff0eb;
+  --wa-color-danger-fill-normal: #ffd9cd;
+  --wa-color-danger-fill-loud: #ff5b2d;
+  --wa-color-danger-border-quiet: #ffd9cd;
+  --wa-color-danger-border-normal: #ff9b7d;
+  --wa-color-danger-border-loud: #ff5b2d;
+  --wa-color-danger-on-quiet: #bf3718;
+  --wa-color-danger-on-normal: #9e2d13;
+  --wa-color-danger-on-loud: #ffffff;
+}
+
+wa-page {
+  --wa-font-weight-body: 400;
+  --wa-font-weight-heading: 600;
+}
+
+wa-card[appearance='filled'],
+wa-card[appearance='filled-outlined'] {
+  background-color: var(--wa-color-surface-raised);
+}
+
+wa-divider {
+  --color: var(--wa-color-surface-border);
+}
+
 wa-page > .main-header-slot[slot="main-header"] {
   padding-block: var(--wa-space-2xl) 0 !important;
   padding-inline: var(--wa-space-xl) !important;
 }
 
-wa-page[view="mobile"] > .main-header-slot[slot="main-header"] {
+wa-page > .main-header-slot[slot="main-header"] h1 {
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.018em;
+}
+
+wa-page > main {
+  line-height: 1.55;
+  letter-spacing: 0.012em;
+}
+
+wa-page > main :is(h1, h2, h3, h4, h5, h6, [class*='wa-heading-']) {
+  line-height: 1.18;
+  letter-spacing: 0.015em;
+}
+
+wa-page[view='mobile'] > .main-header-slot[slot='main-header'] {
   padding-block: var(--wa-space-s) 0 !important;
   padding-inline: var(--wa-space-xs) !important;
 }
 
-wa-page[view="mobile"] > main {
+wa-page[view='mobile'] > main {
   padding: var(--wa-space-xs);
 }
 
@@ -24,15 +141,24 @@ wa-page[view="mobile"] > main {
   place-items: center;
 }
 
-wa-page[view="mobile"] .centered-page {
+wa-page[view='mobile'] .centered-page {
   min-block-size: calc(100dvh - var(--wa-space-xs) - var(--wa-space-xs));
 }
 
 header {
-  padding-block: var(--wa-space-xs);
-  padding-inline: 2.5rem;
-  width: 100%;
-  height: 100%;
+  --wa-font-family-body: 'Manrope Variable', Helvetica, Arial, sans-serif;
+  --wa-font-family-heading: 'Manrope Variable', Helvetica, Arial, sans-serif;
+  --wa-font-weight-action: 600;
+  --wa-color-neutral-on-quiet: #f4f6f6;
+  --wa-color-neutral-on-normal: #ffffff;
+  font-family: 'Manrope Variable', Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  background-color: var(--app-header-background);
+	border-block-end: var(--wa-border-style) var(--wa-panel-border-width) var(--wa-color-surface-border);
+	padding-block: var(--wa-space-xs);
+	padding-inline: 2.5rem;
+	width: 100%;
+	height: 100%;
 }
 
 .header-layout {
@@ -47,6 +173,27 @@ header {
   min-width: 0;
 }
 
+.header-brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.header-brand img {
+  display: block;
+  width: 4.5rem;
+  height: 2.25rem;
+  object-fit: contain;
+}
+
+header wa-button::part(button):hover {
+  background: #35434a;
+}
+
+header wa-button::part(button):active {
+  background: #405159;
+}
+
 header wa-button.header-nav-active {
   position: relative;
 }
@@ -57,8 +204,13 @@ header wa-button.header-nav-active::after {
   inset-block-end: 0;
   height: var(--wa-border-width-s);
   background-color: var(--wa-color-on-quiet, var(--wa-color-neutral-on-quiet));
-  content: "";
+  content: '';
   pointer-events: none;
+}
+
+.leaflet-container {
+  width: 100vw !important;
+  height: 100vh !important;
 }
 
 .error-message {
@@ -68,4 +220,25 @@ header wa-button.header-nav-active::after {
   z-index: 1000;
   max-width: 400px;
   width: min(400px, calc(100vw - 3rem));
+}
+
+wa-button.level-card::part(button) {
+  padding: 3rem;
+  border-width: 0;
+  background: var(--wa-color-surface-raised);
+  color: var(--wa-color-text-normal);
+}
+
+wa-button.level-card::part(button):hover {
+  background: #e8ecec;
+  color: #263238;
+}
+
+wa-button.level-card::part(button):active {
+  background: #d9dfe1;
+  color: #263238;
+}
+
+.level-difficulty-header {
+  padding-left: 2rem;
 }

@@ -1,6 +1,7 @@
 package com.simulator112.incident.application.service;
 
 import com.simulator112.incident.application.port.in.CreateLevelUseCase;
+import com.simulator112.incident.application.port.in.DeleteLevelUseCase;
 import com.simulator112.incident.application.port.in.GetLevelUseCase;
 import com.simulator112.incident.application.port.in.UpdateLevelUseCase;
 import com.simulator112.incident.application.port.out.IncidentRepository;
@@ -16,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class LevelApplicationService implements CreateLevelUseCase, GetLevelUseCase, UpdateLevelUseCase {
+public class LevelApplicationService implements CreateLevelUseCase, GetLevelUseCase, UpdateLevelUseCase, DeleteLevelUseCase {
     private final LevelRepository levelRepository;
     private final IncidentRepository incidentRepository;
 
@@ -37,6 +38,15 @@ public class LevelApplicationService implements CreateLevelUseCase, GetLevelUseC
                 level.executionMode(), level.incidentIds());
         validate(updated);
         return levelRepository.save(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteLevel(UUID levelId) {
+        if (levelRepository.findById(levelId).isEmpty()) {
+            throw new IllegalArgumentException("Уровень не найден: " + levelId);
+        }
+        levelRepository.deleteById(levelId);
     }
 
     @Override

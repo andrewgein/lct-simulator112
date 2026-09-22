@@ -9,6 +9,9 @@ const isActive = (href: string) => href === "/" ? pathname === href : pathname.s
 
 <header slot="header">
   <div class="header-layout">
+    <a class="header-brand" href="/" aria-label="На главную">
+      <img src="/assets/simulator-logo.svg" alt="" />
+    </a>
     <div class="wa-split">
     <div class="wa-cluster">
       <div class="wa-cluster">
@@ -17,6 +20,7 @@ const isActive = (href: string) => href === "/" ? pathname === href : pathname.s
                    aria-current={isActive('/') ? 'page' : undefined}>
           Уровни
         </wa-button>
+        <wa-button class:list={{ 'header-nav-active': isActive('/map') }} appearance="plain" variant="neutral" href="/map" aria-current={isActive('/map') ? 'page' : undefined}>Карта</wa-button>
       </div>
       {isAdmin && (
         <div class="wa-cluster">

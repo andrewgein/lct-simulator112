@@ -85,11 +85,22 @@ spring:
                   args:
                     roles: ADMIN
 
+            #Level administration — full level data for authenticated administrators only
+            - id: incident-level-admin
+              uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/admin/incident/levels,/api/v1/admin/incident/levels/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
             #Incident constructors — authenticated administrators only
             - id: incident-service-write
               uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
               predicates:
-                - Path=/api/v1/incidents,/api/v1/incidents/**,/api/v1/levels,/api/v1/levels/**
+                - Path=/api/v1/incidents,/api/v1/incidents/**
                 - Method=POST,PUT
               filters:
                 - name: JwtAuthFilter
@@ -97,11 +108,21 @@ spring:
                   args:
                     roles: ADMIN
 
+            #Level catalog — filtered by the user's training profile
+            - id: incident-level-catalog
+              uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/levels,/api/v1/levels/**
+                - Method=GET
+              filters:
+                - name: JwtAuthFilter
+                - name: TrainingProfile
+
             #Incident catalog — authenticated users
             - id: incident-service-read
               uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
               predicates:
-                - Path=/api/v1/incidents,/api/v1/incidents/**,/api/v1/levels,/api/v1/levels/**
+                - Path=/api/v1/incidents,/api/v1/incidents/**
                 - Method=GET
               filters:
                 - name: JwtAuthFilter

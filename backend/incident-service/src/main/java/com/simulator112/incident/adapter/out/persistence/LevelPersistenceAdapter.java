@@ -53,6 +53,12 @@ public class LevelPersistenceAdapter implements LevelRepository {
         return levelRepository.findAllByTargetType(targetType).stream().map(this::toDomain).toList();
     }
 
+    @Override
+    @Transactional
+    public void deleteById(UUID levelId) {
+        levelRepository.deleteById(levelId);
+    }
+
     private Level toDomain(LevelJpaEntity entity) {
         return new Level(entity.getId(), entity.getTitle(), entity.getTargetType(), entity.getDifficulty(),
                 entity.getExecutionMode(), entity.getIncidents().stream().map(incident -> incident.getId()).toList());

@@ -22,6 +22,9 @@ export default defineConfig({
   }),
 
   vite: {
+      optimizeDeps: {
+          include: ['astro-leaflet > leaflet'],
+      },
       server: {
           proxy: {
               '/api/v1/dialog': {

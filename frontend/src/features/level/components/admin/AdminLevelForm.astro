@@ -8,28 +8,32 @@ const availableIncidents = [...new Map([...incidents, ...(level.incidents || [])
 ---
 
 <form id="level-form" class="wa-stack wa-gap-l" data-id={level.id || ""}>
-  <wa-callout id="level-error" variant="danger" hidden>
-  </wa-callout>
+  <wa-callout id="level-error" variant="danger" hidden></wa-callout>
   <input id="selected-incidents-validation" class="validation-input" type="text" required aria-label="Происшествия уровня">
   <div class="constructor-columns">
     <section class="wa-stack wa-gap-m" aria-labelledby="level-settings-heading">
       <h2 id="level-settings-heading" class="wa-heading-xl">Информация об уровне</h2>
       <div class="wa-stack wa-gap-l">
-        <wa-input name="title" label="Название уровня" value={level.title || ""} required>
-        </wa-input>
-        <wa-select name="difficulty" label="Сложность" value={level.difficulty} required>
+        <wa-input name="title" label="Название уровня" value={level.title || ""} required></wa-input>
+        <wa-select name="targetType" label="Профиль обучения" value={level.targetType || "SYSTEM_112"} required>
+          <wa-option value="SYSTEM_112">Система-112</wa-option>
+          <wa-option value="DDS">ДДС</wa-option>
+        </wa-select>
+        <wa-select name="difficulty" label="Сложность" value={level.difficulty || "EASY"} required>
           {DifficultyOptions.map(({ value, label }) => (
-            <wa-option value={value}>
-              {label}
-            </wa-option>
+            <wa-option value={value}>{label}</wa-option>
           ))}
+        </wa-select>
+        <wa-select name="executionMode" label="Режим выполнения" value={level.executionMode || "SEQUENTIAL"} required>
+          <wa-option value="SEQUENTIAL">Последовательно</wa-option>
+          <wa-option value="PARALLEL">Параллельно</wa-option>
         </wa-select>
       </div>
       <div class="wa-stack wa-gap-s">
         <strong class="wa-heading-xl">Происшествия уровня</strong>
         <p id="selected-empty" hidden={selectedIds.size > 0}>Добавьте происшествия из библиотеки справа.</p>
         {availableIncidents.map((incident) => (
-          <div data-selected-id={incident.id} hidden={!selectedIds.has(incident.id)}>
+          <div data-selected-id={incident.id} data-target-type={incident.targetType} data-difficulty={incident.difficulty} hidden={!selectedIds.has(incident.id)}>
             <AdminIncidentCard {incident}>
               <wa-button slot="actions" type="button" data-remove-id={incident.id} variant="danger" appearance="outlined">
                 <wa-icon name="minus"></wa-icon>
@@ -39,22 +43,17 @@ const availableIncidents = [...new Map([...incidents, ...(level.incidents || [])
         ))}
       </div>
     </section>
-    <wa-divider class="constructor-divider-desktop" orientation="vertical">
-    </wa-divider>
-    <wa-divider class="constructor-divider-mobile">
-    </wa-divider>
+    <wa-divider class="constructor-divider-desktop" orientation="vertical"></wa-divider>
+    <wa-divider class="constructor-divider-mobile"></wa-divider>
     <section class="wa-stack wa-gap-s" aria-labelledby="library-heading">
       <strong id="library-heading" class="wa-heading-xl">Библиотека происшествий</strong>
       {availableIncidents.length === 0 && (
-        <p>
-          Библиотека пуста.
-          <a href="/admin/incidents/new">Создать происшествие</a>
-        </p>
+        <p>Библиотека пуста. <a href="/admin/incidents/new">Создать происшествие</a></p>
       )}
       {availableIncidents.map((incident) => (
-        <div data-added-id={incident.id} hidden={selectedIds.has(incident.id)}>
+        <div data-added-id={incident.id} data-target-type={incident.targetType} data-difficulty={incident.difficulty} hidden={selectedIds.has(incident.id)}>
           <AdminIncidentCard {incident}>
-            <wa-button slot="actions" data-add-id={incident.id} variant="brand" appearance="outlined">
+            <wa-button slot="actions" type="button" data-add-id={incident.id} variant="brand" appearance="outlined">
               <wa-icon name="plus"></wa-icon>
             </wa-button>
           </AdminIncidentCard>
@@ -68,19 +67,24 @@ const availableIncidents = [...new Map([...incidents, ...(level.incidents || [])
   const form = document.querySelector('#level-form');
   const error = form.querySelector('#level-error');
   const submit = document.querySelector('[type="submit"][form="level-form"]');
+  const targetTypeSelect = form.querySelector('[name="targetType"]');
+  const difficultySelect = form.querySelector('[name="difficulty"]');
   const selectedRows = [...form.querySelectorAll('[data-selected-id]')];
   const addedRows = [...form.querySelectorAll('[data-added-id]')];
   const addButtons = [...form.querySelectorAll('[data-add-id]')];
   const removeButtons = [...form.querySelectorAll('[data-remove-id]')];
   const selectionValidation = form.querySelector('#selected-incidents-validation');
   const selected = new Set(selectedRows.filter((row) => !row.hidden).map((row) => row.dataset.selectedId));
-  const attached = new Set(selected);
-  let levelId = form.dataset.id;
+  const levelId = form.dataset.id;
   let saving = false;
+
+  function matchesLevel(row) {
+    return row.dataset.targetType === targetTypeSelect.value && row.dataset.difficulty === difficultySelect.value;
+  }
 
   function renderSelection() {
     selectedRows.forEach((row) => row.hidden = !selected.has(row.dataset.selectedId));
-    addedRows.forEach((row) => row.hidden = selected.has(row.dataset.addedId));
+    addedRows.forEach((row) => row.hidden = selected.has(row.dataset.addedId) || !matchesLevel(row));
     addButtons.forEach((button) => button.toggleAttribute('disabled', saving || selected.has(button.dataset.addId)));
     removeButtons.forEach((button) => button.toggleAttribute('disabled', saving));
     form.querySelector('#selected-empty').hidden = selected.size > 0;
@@ -88,7 +92,16 @@ const availableIncidents = [...new Map([...incidents, ...(level.incidents || [])
     selectionValidation.setCustomValidity(selected.size ? '' : 'Выберите хотя бы одно происшествие.');
   }
 
+  function resetIncompatibleSelection() {
+    selectedRows.forEach((row) => {
+      if (!matchesLevel(row)) selected.delete(row.dataset.selectedId);
+    });
+    renderSelection();
+  }
+
   renderSelection();
+  targetTypeSelect.addEventListener('change', resetIncompatibleSelection);
+  difficultySelect.addEventListener('change', resetIncompatibleSelection);
 
   addButtons.forEach((button) => button.addEventListener('click', () => {
     if (saving || selected.has(button.dataset.addId)) return;
@@ -101,19 +114,6 @@ const availableIncidents = [...new Map([...incidents, ...(level.incidents || [])
     renderSelection();
   }));
 
-  async function send(path, method, body) {
-    const response = await fetch(`/api/v1/admin/incident/levels${path}`, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      throw new Error(data.message || data.detail || 'Не удалось сохранить уровень. Повторите сохранение.');
-    }
-    return response;
-  }
-
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (saving) return;
@@ -124,27 +124,24 @@ const availableIncidents = [...new Map([...incidents, ...(level.incidents || [])
     renderSelection();
     try {
       const data = new FormData(form);
-      const response = await send(levelId ? `/${levelId}` : '', levelId ? 'PATCH' : 'POST', {
-        title: data.get('title'), difficulty: data.get('difficulty')
+      const response = await fetch(`/api/v1/admin/incident/levels${levelId ? `/${levelId}` : ''}`, {
+        method: levelId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: data.get('title'),
+          targetType: data.get('targetType'),
+          difficulty: data.get('difficulty'),
+          executionMode: data.get('executionMode'),
+          incidentIds: [...selected]
+        })
       });
-      if (!levelId) {
-        levelId = (await response.json()).id;
-        // A retry edits the created level instead of creating another one.
-        history.replaceState(null, '', `/admin/levels/${levelId}`);
-      }
-      for (const id of selected) {
-        if (attached.has(id)) continue;
-        await send(`/${levelId}/incidents/${id}`, 'PUT');
-        attached.add(id);
-      }
-      for (const id of attached) {
-        if (selected.has(id)) continue;
-        await send(`/${levelId}/incidents/${id}`, 'DELETE');
-        attached.delete(id);
+      if (!response.ok) {
+        const responseBody = await response.json().catch(() => ({}));
+        throw new Error(responseBody.message || responseBody.detail || 'Не удалось сохранить уровень. Повторите сохранение.');
       }
       window.location.href = '/admin/levels';
-    } catch (err) {
-      error.textContent = err.message;
+    } catch (requestError) {
+      error.textContent = requestError.message;
       error.hidden = false;
     } finally {
       saving = false;

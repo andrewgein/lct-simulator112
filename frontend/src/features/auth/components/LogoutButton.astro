@@ -1,0 +1,24 @@
+---
+
+---
+
+<wa-button id="logout-button" appearance="plain" variant="danger"
+  >Выйти
+  <wa-icon name="sign-out" slot="end"></wa-icon>
+</wa-button>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const logoutButton = document.querySelector("#logout-button");
+    logoutButton?.addEventListener("click", async () => {
+      fetch("/api/v1/auth/logout", { method: "POST", redirect: "follow" })
+        .then((response) => {
+          if (response.redirected) {
+            console.log("Redirected to:", response.url);
+            window.location.href = response.url;
+          }
+        })
+        .catch((err) => console.error(err));
+    });
+  });
+</script>

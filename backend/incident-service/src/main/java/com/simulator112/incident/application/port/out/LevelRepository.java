@@ -14,4 +14,6 @@ public interface LevelRepository {
     List<Level> findAll();
 
     List<Level> findAllByTargetType(IncidentTargetType targetType);
+
+    void deleteById(UUID levelId);
 }

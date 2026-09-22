@@ -1,0 +1,72 @@
+---
+import { Leaflet } from "astro-leaflet";
+import Page from "../layouts/Page.astro";
+export const prerender = false;
+---
+
+<Page>
+  <Leaflet
+    id="location-map"
+    options={{
+      mapOptions: {
+        attributionControl: false,
+      },
+      center: [55.7521, 37.6177], // Example coordinates
+      zoom: 12,
+    }}
+  />
+</Page>
+
+<script>
+  import { getMapFromId } from "astro-leaflet";
+  import L from "astro-leaflet/leaflet";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetInputId = urlParams.get("target");
+
+    const map = getMapFromId("location-map");
+
+    if (map) {
+      let currentMarker = null;
+
+      map.on("click", async (e) => {
+        const { lat, lng } = e.latlng;
+
+        if (currentMarker) {
+          currentMarker.setLatLng([lat, lng]);
+        } else {
+          currentMarker = L.marker([lat, lng]).addTo(map);
+        }
+
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru`,
+          );
+          const data = await response.json();
+
+          if (data && data.display_name) {
+            const address = data.display_name;
+
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage(
+                { type: "LOCATION_PICKED", address, lat, lng, targetInputId },
+                window.location.origin
+              );
+            }
+          } else {
+            console.log("Address not found for this location.");
+          }
+        } catch (error) {
+          console.error("Reverse geocoding failed:", error);
+        }
+      });
+    }
+  });
+</script>
+
+<style>
+  :global(main) {
+    padding: 0rem;
+  }
+</style>
