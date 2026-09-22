@@ -15,7 +15,7 @@ jobs:
     uses: ./.github/workflows/_build-and-deploy-service.yml
     with:
       image: auth-service
-      context: backend/auth-service
+      context: backend
       dockerfile: backend/auth-service/Dockerfile
       compose_service: auth-service
       image_env: AUTH_SERVICE_IMAGE

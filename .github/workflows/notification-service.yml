@@ -15,7 +15,7 @@ jobs:
     uses: ./.github/workflows/_build-and-deploy-service.yml
     with:
       image: notification-service
-      context: backend/notification-service
+      context: backend
       dockerfile: backend/notification-service/Dockerfile
       compose_service: notification-service
       image_env: NOTIFICATION_SERVICE_IMAGE
