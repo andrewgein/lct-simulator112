@@ -139,6 +139,35 @@ spring:
                 - name: JwtAuthFilter
                 - name: TrainingProfile
 
+            #Course constructor — administrators and supervisors
+            - id: course-service-write
+              uri: ${COURSE_SERVICE_URL:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/courses,/api/v1/courses/**,/api/v1/study-groups,/api/v1/study-groups/**
+                - Method=POST,PUT
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN,SUPERVISOR
+
+            #Course catalog — authenticated users
+            - id: course-service-read
+              uri: ${COURSE_SERVICE_URL:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/courses,/api/v1/courses/**,/api/v1/study-groups,/api/v1/study-groups/**
+                - Method=GET
+              filters:
+                - name: JwtAuthFilter
+
+            #Course progress — the student's own enrollments
+            - id: course-service-enrollments
+              uri: ${COURSE_SERVICE_URL:http://localhost:8088}
+              predicates:
+                - Path=/api/v1/enrollments,/api/v1/enrollments/**
+              filters:
+                - name: JwtAuthFilter
+
             #Incident catalog — authenticated users
             - id: incident-service-read
               uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
