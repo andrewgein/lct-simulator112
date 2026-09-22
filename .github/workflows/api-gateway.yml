@@ -1,0 +1,22 @@
+name: api-gateway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/api-gateway/**
+      - .github/workflows/api-gateway.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: api-gateway
+      context: backend/api-gateway
+      dockerfile: backend/api-gateway/Dockerfile
+      compose_service: api-gateway
+      image_env: API_GATEWAY_IMAGE
+      container_suffix: gateway

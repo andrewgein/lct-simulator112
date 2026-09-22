@@ -1,0 +1,23 @@
+# Public-facing nginx on the VM. Router VM (85.30.248.253) terminates TLS and forwards
+# plain HTTP to this VM's :80 - this container routes it to the right stack by Host header,
+# and sends /api/v1/dialog/** through the authenticated API gateway WebSocket route.
+# Requires the external network created once:  docker network create prod-edge
+#
+# Before first run, copy nginx.conf.template to nginx.conf.
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: prod-edge-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - edge
+
+networks:
+  edge:
+    external: true
+    name: prod-edge

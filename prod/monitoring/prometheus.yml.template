@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: sim112-stable
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - sim112-stable-auth:8081
+          - sim112-stable-profile:8082
+          - sim112-stable-gateway:8080
+          - sim112-stable-context:8084
+          - sim112-stable-review:8085
+          - sim112-stable-incident:8086
+          - sim112-stable-notification:8087
+          - sim112-stable-classifier:8087
+
+  # dialog-service runs in-stack (in Docker, container-name target like everything else above)
+  # - only qwentts.cpp stays on the home PC, and it has no /metrics endpoint to scrape.
+  # Different metrics_path than the Java services above, so it's a separate job. Scraped less
+  # often - every request shows up in its own logs (ConnectionLoggingMiddleware), and 15s was
+  # too noisy there.
+  - job_name: dialog-service
+    scrape_interval: 5m
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["sim112-stable-dialog:8005"]
+
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]

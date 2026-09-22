@@ -1,0 +1,22 @@
+name: auth-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/auth-service/**
+      - .github/workflows/auth-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: auth-service
+      context: backend/auth-service
+      dockerfile: backend/auth-service/Dockerfile
+      compose_service: auth-service
+      image_env: AUTH_SERVICE_IMAGE
+      container_suffix: auth

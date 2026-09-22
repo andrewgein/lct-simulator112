@@ -1,0 +1,22 @@
+name: dialog-service
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - backend/dialog-service/**
+      - .github/workflows/dialog-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: dialog-service
+      context: backend/dialog-service
+      dockerfile: backend/dialog-service/Dockerfile
+      compose_service: dialog-service
+      image_env: DIALOG_SERVICE_IMAGE
+      container_suffix: dialog
