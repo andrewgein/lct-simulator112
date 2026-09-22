@@ -70,6 +70,7 @@ public class IncidentJpaEntity {
             @AttributeOverride(name = "age", column = @Column(name = "card_applicant_age")),
             @AttributeOverride(name = "phone", column = @Column(name = "card_applicant_phone")),
             @AttributeOverride(name = "contactPhone", column = @Column(name = "card_applicant_contact_phone")),
+            @AttributeOverride(name = "onScenePhone", column = @Column(name = "card_applicant_on_scene_phone")),
             @AttributeOverride(name = "address", column = @Column(name = "card_applicant_address")),
             @AttributeOverride(name = "additionalInfo", column = @Column(name = "card_applicant_additional_info"))
     })

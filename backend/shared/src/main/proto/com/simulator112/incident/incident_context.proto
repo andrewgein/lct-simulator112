@@ -111,6 +111,7 @@ message Person {
   string contact_phone = 6;
   string address = 7;
   string additional_info = 8;
+  string on_scene_phone = 9;
 }
 
 enum ExecutionMode {

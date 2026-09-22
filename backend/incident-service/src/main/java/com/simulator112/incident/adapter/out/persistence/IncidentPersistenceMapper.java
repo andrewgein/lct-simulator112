@@ -159,12 +159,13 @@ public class IncidentPersistenceMapper {
 
     private Person toDomain(PersonEmbeddable value) {
         return value == null ? null : new Person(value.getFirstName(), value.getLastName(), value.getMiddleName(),
-                value.getAge(), value.getPhone(), value.getContactPhone(), value.getAddress(),
-                value.getAdditionalInfo());
+                value.getAge(), value.getPhone(), value.getContactPhone(), value.getOnScenePhone(),
+                value.getAddress(), value.getAdditionalInfo());
     }
 
     private PersonEmbeddable toEntity(Person value) {
         return value == null ? null : new PersonEmbeddable(value.firstName(), value.lastName(), value.middleName(),
-                value.age(), value.phone(), value.contactPhone(), value.address(), value.additionalInfo());
+                value.age(), value.phone(), value.contactPhone(), value.onScenePhone(), value.address(),
+                value.additionalInfo());
     }
 }

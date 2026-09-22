@@ -29,7 +29,7 @@ public final class SolutionContextMapper {
         if (person == null) return com.simulator112.context.grpc.contract.PersonInfo.getDefaultInstance();
         return com.simulator112.context.grpc.contract.PersonInfo.newBuilder()
                 .setPhone(orEmpty(person.phone())).setContactPhone(orEmpty(person.contactPhone()))
-                .setLastName(orEmpty(person.lastName())).setFirstName(orEmpty(person.firstName()))
+                .setOnScenePhone(orEmpty(person.onScenePhone())).setLastName(orEmpty(person.lastName())).setFirstName(orEmpty(person.firstName()))
                 .setMiddleName(orEmpty(person.middleName())).setAddress(orEmpty(person.address()))
                 .setAdditionalInfo(orEmpty(person.additionalInfo())).build();
     }

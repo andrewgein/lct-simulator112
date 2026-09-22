@@ -48,7 +48,8 @@ public final class System112ReviewRubric implements ReviewRubric {
         if (previous == null) return current;
         return new ReviewSubmission.Person(inherit(current.firstName(), previous.firstName()), inherit(current.lastName(), previous.lastName()),
                 inherit(current.middleName(), previous.middleName()), inherit(current.phone(), previous.phone()),
-                inherit(current.contactPhone(), previous.contactPhone()), inherit(current.address(), previous.address()),
+                inherit(current.contactPhone(), previous.contactPhone()), inherit(current.onScenePhone(), previous.onScenePhone()),
+                inherit(current.address(), previous.address()),
                 inherit(current.additionalInfo(), previous.additionalInfo()));
     }
 
@@ -184,6 +185,7 @@ public final class System112ReviewRubric implements ReviewRubric {
         compare(checks, expected.middleName(), actual == null ? null : actual.middleName());
         compare(checks, expected.phone(), actual == null ? null : actual.phone());
         compare(checks, expected.contactPhone(), actual == null ? null : actual.contactPhone());
+        compare(checks, expected.onScenePhone(), actual == null ? null : actual.onScenePhone());
         compare(checks, expected.address(), actual == null ? null : actual.address());
         compare(checks, expected.additionalInfo(), actual == null ? null : actual.additionalInfo());
     }

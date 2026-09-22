@@ -22,6 +22,7 @@ public class Applicant {
     private Integer age;
     private String phone;
     private String contactPhone;
+    private String onScenePhone;
     private String address;
     private String additionalInfo;
 

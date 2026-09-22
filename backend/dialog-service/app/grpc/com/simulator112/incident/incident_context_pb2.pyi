@@ -245,7 +245,7 @@ class Address(_message.Message):
     def __init__(self, city: _Optional[str] = ..., street: _Optional[str] = ..., house: _Optional[str] = ..., building: _Optional[str] = ..., apartment: _Optional[str] = ..., floor: _Optional[int] = ...) -> None: ...
 
 class Person(_message.Message):
-    __slots__ = ("first_name", "last_name", "middle_name", "age", "phone", "contact_phone", "address", "additional_info")
+    __slots__ = ("first_name", "last_name", "middle_name", "age", "phone", "contact_phone", "address", "additional_info", "on_scene_phone")
     FIRST_NAME_FIELD_NUMBER: _ClassVar[int]
     LAST_NAME_FIELD_NUMBER: _ClassVar[int]
     MIDDLE_NAME_FIELD_NUMBER: _ClassVar[int]
@@ -254,6 +254,7 @@ class Person(_message.Message):
     CONTACT_PHONE_FIELD_NUMBER: _ClassVar[int]
     ADDRESS_FIELD_NUMBER: _ClassVar[int]
     ADDITIONAL_INFO_FIELD_NUMBER: _ClassVar[int]
+    ON_SCENE_PHONE_FIELD_NUMBER: _ClassVar[int]
     first_name: str
     last_name: str
     middle_name: str
@@ -262,4 +263,5 @@ class Person(_message.Message):
     contact_phone: str
     address: str
     additional_info: str
-    def __init__(self, first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., middle_name: _Optional[str] = ..., age: _Optional[int] = ..., phone: _Optional[str] = ..., contact_phone: _Optional[str] = ..., address: _Optional[str] = ..., additional_info: _Optional[str] = ...) -> None: ...
+    on_scene_phone: str
+    def __init__(self, first_name: _Optional[str] = ..., last_name: _Optional[str] = ..., middle_name: _Optional[str] = ..., age: _Optional[int] = ..., phone: _Optional[str] = ..., contact_phone: _Optional[str] = ..., address: _Optional[str] = ..., additional_info: _Optional[str] = ..., on_scene_phone: _Optional[str] = ...) -> None: ...

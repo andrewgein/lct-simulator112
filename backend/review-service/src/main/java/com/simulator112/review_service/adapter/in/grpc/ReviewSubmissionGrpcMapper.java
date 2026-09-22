@@ -59,13 +59,15 @@ final class ReviewSubmissionGrpcMapper {
     private static ReviewSubmission.Person person(com.simulator112.incident.grpc.contract.Person source) {
         if (source.equals(com.simulator112.incident.grpc.contract.Person.getDefaultInstance())) return null;
         return new ReviewSubmission.Person(source.getFirstName(), source.getLastName(), source.getMiddleName(),
-                source.getPhone(), source.getContactPhone(), source.getAddress(), source.getAdditionalInfo());
+                source.getPhone(), source.getContactPhone(), source.getOnScenePhone(), source.getAddress(),
+                source.getAdditionalInfo());
     }
 
     private static ReviewSubmission.Person person(com.simulator112.context.grpc.contract.PersonInfo source) {
         if (source.equals(com.simulator112.context.grpc.contract.PersonInfo.getDefaultInstance())) return null;
         return new ReviewSubmission.Person(source.getFirstName(), source.getLastName(), source.getMiddleName(),
-                source.getPhone(), source.getContactPhone(), source.getAddress(), source.getAdditionalInfo());
+                source.getPhone(), source.getContactPhone(), source.getOnScenePhone(), source.getAddress(),
+                source.getAdditionalInfo());
     }
 
     private static UUID uuid(String value) {

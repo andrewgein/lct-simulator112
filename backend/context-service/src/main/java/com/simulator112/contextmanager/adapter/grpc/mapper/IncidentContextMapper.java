@@ -145,13 +145,15 @@ public final class IncidentContextMapper {
     private static Person toDomain(com.simulator112.incident.grpc.contract.Person value) {
         if (value.equals(com.simulator112.incident.grpc.contract.Person.getDefaultInstance())) return null;
         return new Person(value.getFirstName(), value.getLastName(), value.getMiddleName(), value.hasAge() ? value.getAge() : null,
-                value.getPhone(), value.getContactPhone(), value.getAddress(), value.getAdditionalInfo(), null);
+                value.getPhone(), value.getContactPhone(), value.getOnScenePhone(), value.getAddress(),
+                value.getAdditionalInfo(), null);
     }
     private static com.simulator112.incident.grpc.contract.Person toProto(Person value) {
         if (value == null) return com.simulator112.incident.grpc.contract.Person.getDefaultInstance();
         var builder = com.simulator112.incident.grpc.contract.Person.newBuilder().setFirstName(orEmpty(value.firstName()))
                 .setLastName(orEmpty(value.lastName())).setMiddleName(orEmpty(value.middleName())).setPhone(orEmpty(value.phone()))
-                .setContactPhone(orEmpty(value.contactPhone())).setAddress(orEmpty(value.address())).setAdditionalInfo(orEmpty(value.additionalInfo()));
+                .setContactPhone(orEmpty(value.contactPhone())).setOnScenePhone(orEmpty(value.onScenePhone()))
+                .setAddress(orEmpty(value.address())).setAdditionalInfo(orEmpty(value.additionalInfo()));
         if (value.age() != null) builder.setAge(value.age()); return builder.build();
     }
     private static UUID uuid(String value) { return value == null || value.isBlank() ? null : UUID.fromString(value); }

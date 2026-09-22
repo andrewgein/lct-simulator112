@@ -155,7 +155,8 @@ public class IncidentGrpcMapper {
         var builder = com.simulator112.incident.grpc.contract.Person.newBuilder()
                 .setFirstName(string(value.firstName())).setLastName(string(value.lastName()))
                 .setMiddleName(string(value.middleName())).setPhone(string(value.phone()))
-                .setContactPhone(string(value.contactPhone())).setAddress(string(value.address()))
+                .setContactPhone(string(value.contactPhone())).setOnScenePhone(string(value.onScenePhone()))
+                .setAddress(string(value.address()))
                 .setAdditionalInfo(string(value.additionalInfo()));
         if (value.age() != null) builder.setAge(value.age());
         return builder.build();

@@ -81,7 +81,7 @@ class SolutionServiceTests {
         allowSave();
         SolutionCardRevision card = card(activeCallId);
         card.setMainCardId(UUID.randomUUID());
-        card.setApplicant(new PersonInfo("79990000000", null, "Иванов", "Иван", null, "Москва", null));
+        card.setApplicant(new PersonInfo("79990000000", null, null, "Иванов", "Иван", null, "Москва", null));
         card.setIncidentTypes(new java.util.ArrayList<>(List.of("FIRE", "GAS")));
         card.setAdditionalInfoProvided(true);
         card.getAdditionalInfo().put("floor", "3");
@@ -134,7 +134,7 @@ class SolutionServiceTests {
     }
 
     private PersonInfoRequest person() {
-        return new PersonInfoRequest("79990000000", null, "Петров", "Пётр", null, "Москва", null);
+        return new PersonInfoRequest("79990000000", null, null, "Петров", "Пётр", null, "Москва", null);
     }
 
     private SolutionCardRevision card(UUID callId) {
