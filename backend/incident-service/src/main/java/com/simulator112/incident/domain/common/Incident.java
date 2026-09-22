@@ -1,5 +1,7 @@
 package com.simulator112.incident.domain.common;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -14,5 +16,6 @@ public interface Incident {
 
     List<? extends IncidentStage> stages();
 
+    @JsonProperty("targetType")
     IncidentTargetType targetType();
 }
