@@ -8,7 +8,7 @@ import { findIncident, normalizeStage, personIsIncomplete, personValue, request,
  */
 export default function IncidentStagesEditor({ initialStages = [] }) {
   const [stages, setStages] = useState(() => initialStages.map((stage, index) => normalizeStage(stage, stage.id || `stage-${index}`)));
-  const [classifier, setClassifier] = useState({});
+  const [classifier, setClassifier] = useState([]);
   const [incidentAddress, setIncidentAddress] = useState("");
   const [openStage, setOpenStage] = useState("");
   const [openDialup, setOpenDialup] = useState("");
@@ -19,7 +19,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
   stagesRef.current = stages;
 
   useEffect(() => {
-    const unsubscribe = classifierInfo.subscribe((state) => setClassifier({ ...state.classifier }));
+    const unsubscribe = classifierInfo.subscribe((state) => setClassifier([...state.classifier]));
     loadClassifier().catch((error) => console.error("Failed to load incident classifier:", error));
     return unsubscribe;
   }, []);

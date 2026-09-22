@@ -20,7 +20,7 @@
  * @property {PersonInfo | null} applicant
  * @property {PersonInfo | null} victim
  * @property {Object.<string, string> | null} additionalInfo
- * @property {string | null} incidentType
+ * @property {string[] | null} incidentTypes
  * @property {string | null} cardId
  * @property {number | null} expectedVersion
  * @property {SolutionContextOperation} operation
@@ -45,7 +45,7 @@
  * @property {PersonInfo | null} applicant
  * @property {PersonInfo | null} victim
  * @property {Object.<string, string>} additionalInfo
- * @property {string | null} incidentType
+ * @property {string[]} incidentTypes
  * @property {string} createdAt
  */
 
