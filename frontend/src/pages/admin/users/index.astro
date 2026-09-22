@@ -1,0 +1,216 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { getAllUsers } from "../../../features/auth/api/AdminUserApi";
+import { getAllUserProfiles } from "../../../features/profile/api/UserProfileApi";
+
+export const prerender = false;
+
+if (Astro.cookies.get("role")?.value !== "ADMIN") {
+  return Astro.redirect("/");
+}
+
+let users = [];
+let profiles = [];
+let error = null;
+
+try {
+  const [usersResponse, profilesResponse] = await Promise.all([
+    getAllUsers(Astro.locals.accessToken),
+    getAllUserProfiles(Astro.locals.accessToken)
+  ]);
+  if (!usersResponse.ok || !profilesResponse.ok) throw new Error();
+  const usersData = await usersResponse.json();
+  users = usersData.data || [];
+  profiles = await profilesResponse.json();
+} catch {
+  error = "Не удалось загрузить пользователей";
+}
+
+const profilesByUserId = new Map(profiles.map((profile) => [String(profile.userId), profile]));
+const roleLabels = {
+  ADMIN: "Администратор",
+  STUDENT: "Обучающийся"
+};
+const trainingTrackLabels = {
+  SYSTEM_112: "Система-112",
+  DDS: "ДДС"
+};
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Управление пользователями" />
+
+  {!error && (
+    <div class="wa-stack wa-gap-l">
+      <wa-input id="user-search" type="search" label="Поиск" placeholder="Имя или электронная почта">
+        <wa-icon slot="start" name="magnifying-glass"></wa-icon>
+      </wa-input>
+
+      {users.length === 0 ? (
+        <wa-callout variant="neutral">Пользователей пока нет.</wa-callout>
+      ) : (
+        <wa-scroller>
+          <table class="wa-zebra-rows wa-hover-rows">
+            <thead>
+              <tr>
+                <th scope="col">Пользователь</th>
+                <th scope="col">Дата регистрации</th>
+                <th scope="col">Роль</th>
+                <th scope="col">Направление</th>
+                <th scope="col">Служба ДДС</th>
+                <th scope="col"><span class="wa-visually-hidden">Действия</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => {
+                const profile = profilesByUserId.get(String(user.id));
+                const fullName = profile ? `${profile.name} ${profile.surname}` : "Профиль не создан";
+                const trainingTrack = profile?.trainingTrack || "";
+                const isDds = trainingTrack === "DDS";
+                const canEditTrainingTrack = Boolean(profile) && user.role !== "ADMIN";
+                return (
+                  <tr data-user-row data-user-id={user.id} data-has-profile={Boolean(profile)} data-search={`${user.email} ${fullName}`.toLowerCase()}>
+                    <th scope="row">
+                      <div class="wa-stack wa-gap-2xs">
+                        <span>{fullName}</span>
+                        <small>{user.email}</small>
+                      </div>
+                    </th>
+                    <td>{user.createdAt ? dateFormatter.format(new Date(user.createdAt)) : "—"}</td>
+                    <td>
+                      <wa-select class="user-role" aria-label={`Роль пользователя ${user.email}`} value={user.role}>
+                        <wa-option value="STUDENT">{roleLabels.STUDENT}</wa-option>
+                        <wa-option value="ADMIN">{roleLabels.ADMIN}</wa-option>
+                      </wa-select>
+                    </td>
+                    <td>
+                      {profile ? (
+                        <wa-select class="training-track" aria-label={`Направление пользователя ${user.email}`} value={trainingTrack} disabled={!canEditTrainingTrack}>
+                          <wa-option value="">Не назначено</wa-option>
+                          <wa-option value="SYSTEM_112">{trainingTrackLabels.SYSTEM_112}</wa-option>
+                          <wa-option value="DDS">{trainingTrackLabels.DDS}</wa-option>
+                        </wa-select>
+                      ) : (
+                        <span>Сначала пользователь должен создать профиль</span>
+                      )}
+                    </td>
+                    <td>
+                      {profile && (
+                        <div class="dds-service-field" hidden={!isDds || !canEditTrainingTrack}>
+                          <wa-select class="dds-service" aria-label={`Служба ДДС пользователя ${user.email}`} value={profile.ddsService || ""} disabled={!isDds || !canEditTrainingTrack}>
+                            <wa-option value="">Не выбрана</wa-option>
+                            <wa-option value="FIRE">Пожарная охрана</wa-option>
+                            <wa-option value="POLICE">Полиция</wa-option>
+                            <wa-option value="AMBULANCE">Скорая помощь</wa-option>
+                            <wa-option value="GAS">Газовая служба</wa-option>
+                            <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+                          </wa-select>
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      <wa-button class="save-user" variant="brand" size="small">Сохранить</wa-button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </wa-scroller>
+      )}
+
+      <wa-callout id="no-users-found" variant="neutral" hidden>Пользователи не найдены.</wa-callout>
+    </div>
+  )}
+</Page>
+
+<script>
+  const rows = Array.from(document.querySelectorAll<HTMLElement>("[data-user-row]"));
+  const search = document.querySelector<HTMLInputElement>("#user-search");
+  const noUsersFound = document.querySelector<HTMLElement>("#no-users-found");
+
+  const getErrorMessage = async (response: Response) => {
+    try {
+      const error = await response.json();
+      return error.message || error.detail || "Не удалось сохранить изменения";
+    } catch {
+      return "Не удалось сохранить изменения";
+    }
+  };
+
+  rows.forEach((row) => {
+    const role = row.querySelector<HTMLInputElement>(".user-role");
+    const trainingTrack = row.querySelector<HTMLInputElement>(".training-track");
+    const ddsServiceField = row.querySelector<HTMLElement>(".dds-service-field");
+    const ddsService = row.querySelector<HTMLInputElement>(".dds-service");
+    const saveButton = row.querySelector<HTMLInputElement>(".save-user");
+    const hasProfile = row.dataset.hasProfile === "true";
+
+    const syncFields = () => {
+      const canEditTrainingTrack = hasProfile && role?.value === "STUDENT";
+      trainingTrack?.toggleAttribute("disabled", !canEditTrainingTrack);
+      const showDdsService = canEditTrainingTrack && trainingTrack?.value === "DDS";
+      ddsServiceField?.toggleAttribute("hidden", !showDdsService);
+      ddsService?.toggleAttribute("disabled", !showDdsService);
+    };
+
+    role?.addEventListener("change", syncFields);
+    trainingTrack?.addEventListener("change", syncFields);
+    syncFields();
+
+    saveButton?.addEventListener("click", async () => {
+      const userId = row.dataset.userId;
+      if (!userId || !role) return;
+      if (role.value === "STUDENT" && hasProfile && !trainingTrack?.value) {
+        alert("Выберите направление обучения");
+        return;
+      }
+      if (role.value === "STUDENT" && trainingTrack?.value === "DDS" && !ddsService?.value) {
+        alert("Выберите службу ДДС");
+        return;
+      }
+
+      saveButton.toggleAttribute("loading", true);
+      try {
+        const roleResponse = await fetch(`/api/v1/admin/users/${encodeURIComponent(userId)}/role`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role: role.value })
+        });
+        if (!roleResponse.ok) throw new Error(await getErrorMessage(roleResponse));
+
+        if (role.value === "STUDENT" && hasProfile && trainingTrack) {
+          const profileResponse = await fetch(`/api/v1/admin/users/${encodeURIComponent(userId)}/professional-profile`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              trainingTrack: trainingTrack.value,
+              ddsService: trainingTrack.value === "DDS" ? ddsService?.value : null
+            })
+          });
+          if (!profileResponse.ok) throw new Error(await getErrorMessage(profileResponse));
+        }
+
+        window.location.reload();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "Не удалось сохранить изменения");
+        saveButton.toggleAttribute("loading", false);
+      }
+    });
+  });
+
+  search?.addEventListener("input", () => {
+    const query = search.value.trim().toLowerCase();
+    let visibleCount = 0;
+    rows.forEach((row) => {
+      const visible = (row.dataset.search || "").includes(query);
+      row.toggleAttribute("hidden", !visible);
+      if (visible) visibleCount += 1;
+    });
+    noUsersFound?.toggleAttribute("hidden", visibleCount > 0);
+  });
+</script>

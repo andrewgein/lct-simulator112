@@ -9,6 +9,17 @@ spring:
         webflux:
           routes:
 
+            #Auth service — управление пользователями администраторами
+            - id: auth-service-admin-users
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/admin/users
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
             #Auth service
             - id: auth-service-getrole
               uri: ${AUTH_SERVICE_URL:http://localhost:8081}
@@ -26,7 +37,7 @@ spring:
             - id: profile-service-admin
               uri: ${PROFILE_SERVICE_URL:http://localhost:8082}
               predicates:
-                - Path=/api/v1/admin/profiles/**
+                - Path=/api/v1/admin/profiles,/api/v1/admin/profiles/**
               filters:
                 - name: JwtAuthFilter
                 - name: RoleAuthorization

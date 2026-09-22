@@ -29,10 +29,8 @@ const isActive = (href: string) => href === "/" ? pathname === href : pathname.s
               appearance="plain" variant="brand" href="/admin/incidents"
               aria-current={isActive('/admin/incidents') ? 'page' : undefined}>
                 Управление сценариями </wa-button>
-            <wa-button class:list={{ 'header-nav-active': isActive('/admin/levels') }}
-                       appearance="plain" variant="brand" href="/admin/levels"
-                       aria-current={isActive('/admin/levels') ? 'page' : undefined}>
-              Управление уровнями </wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/admin/levels') }} appearance="plain" variant="brand" href="/admin/levels" aria-current={isActive('/admin/levels') ? 'page' : undefined}>Управление уровнями</wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/admin/users') }} appearance="plain" variant="brand" href="/admin/users" aria-current={isActive('/admin/users') ? 'page' : undefined}>Пользователи</wa-button>
         </div>
       )}
     </div>
