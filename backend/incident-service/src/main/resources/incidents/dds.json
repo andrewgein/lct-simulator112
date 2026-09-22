@@ -36,7 +36,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "020ed881-da7a-5e47-8c31-babb1fb87369",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -94,12 +93,12 @@
         "comment": "Дым идёт из окна квартиры."
       },
       "classifierCodes": [
-        "FIRE_APARTMENT"
+        "1050101"
       ]
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
-      "classifierCode": "FIRE_APARTMENT",
+      "classifierCode": "1050101",
       "instructions": "Направить ближайший пожарный расчёт к жилому дому."
     },
     "initialStageId": "f41f4c2a-d163-5614-9ddf-420756d3351e",
@@ -158,7 +157,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "0d44b282-2da1-56e9-b456-8f88422a4e7b",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -215,12 +213,12 @@
         "comment": "Запах сильнее на лестничной площадке 3 этажа."
       },
       "classifierCodes": [
-        "GAS_SMELL_ENTRANCE"
+        "13020500"
       ]
     },
     "initialAssignment": {
       "emergencyService": "GAS",
-      "classifierCode": "GAS_SMELL_ENTRANCE",
+      "classifierCode": "13020500",
       "instructions": "Срочный выезд; не допускать источников огня и искры."
     },
     "initialStageId": "d47d7b58-112f-5e0d-a259-bcd3df9de315",
@@ -279,7 +277,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "5670acda-8197-5460-8104-547f4492e14b",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -345,12 +342,12 @@
         "comment": "Пострадавший лежит на лавке."
       },
       "classifierCodes": [
-        "MED_UNCONSCIOUS"
+        "22020000"
       ]
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "MED_UNCONSCIOUS",
+      "classifierCode": "22020000",
       "instructions": "Срочно направить бригаду скорой помощи."
     },
     "initialStageId": "b8bc4032-f037-56e3-8c42-31cb9015b02e",
@@ -409,7 +406,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "795d2232-6fba-5ead-b032-d56512d3331f",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -466,12 +462,12 @@
         "comment": "Заявитель наблюдает из окна."
       },
       "classifierCodes": [
-        "POLICE_FIGHT"
+        "15060201"
       ]
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "POLICE_FIGHT",
+      "classifierCode": "15060201",
       "instructions": "Направить наряд, соблюдать меры предосторожности."
     },
     "initialStageId": "489b45f2-455c-5f19-be77-914c2b7c0eea",
@@ -530,7 +526,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "12ff0a76-cefc-5ec5-9319-adcbc0ac8210",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -587,12 +582,12 @@
         "comment": "Чёрный рюкзак у колонны рядом со входом."
       },
       "classifierCodes": [
-        "SUSPICIOUS_OBJECT"
+        "15130600"
       ]
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "SUSPICIOUS_OBJECT",
+      "classifierCode": "15130600",
       "instructions": "Обеспечить удаление людей; не допускать манипуляций с предметом."
     },
     "initialStageId": "c5f438e4-0ab3-5f6d-a032-c55ee2a4c2b0",
@@ -651,7 +646,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "e074284c-ca9e-59d9-9a51-be15cfd6d722",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -707,12 +701,12 @@
         "comment": "Сильный дым из ряда гаражей."
       },
       "classifierCodes": [
-        "FIRE_GARAGE"
+        "1990043"
       ]
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
-      "classifierCode": "FIRE_GARAGE",
+      "classifierCode": "1990043",
       "instructions": "Направить расчёт и оценить опасные материалы."
     },
     "initialStageId": "1bbb63ae-bc95-542b-94d3-73a76bafb578",
@@ -771,7 +765,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "9dd4eb0a-caad-57cc-b3a1-66938f445da5",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -836,12 +829,12 @@
         "comment": "Пожилая женщина почувствовала себя плохо."
       },
       "classifierCodes": [
-        "GAS_COMBUSTION_POISONING"
+        "22340200"
       ]
     },
     "initialAssignment": {
       "emergencyService": "GAS",
-      "classifierCode": "GAS_COMBUSTION_POISONING",
+      "classifierCode": "22340200",
       "instructions": "Срочный выезд; при симптомах организовать СМП."
     },
     "initialStageId": "020bf809-dcca-5155-ab37-45c306f7ebdf",
@@ -900,7 +893,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "7dcc5113-823f-5048-913c-887547868f48",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -966,12 +958,12 @@
         "comment": "Автомобиль и велосипед у правой полосы."
       },
       "classifierCodes": [
-        "ROAD_ACCIDENT_CYCLIST"
+        "2020000"
       ]
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "ROAD_ACCIDENT_CYCLIST",
+      "classifierCode": "2020000",
       "instructions": "Срочно направить СМП к месту ДТП."
     },
     "initialStageId": "701049f2-98b6-5812-9d45-9d154bb1b5aa",
@@ -1030,7 +1022,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "906aa07a-1f4f-5869-bdae-a27fcab7fdf9",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -1086,12 +1077,12 @@
         "comment": "Огонь виден со стороны СНТ."
       },
       "classifierCodes": [
-        "FIRE_GRASS"
+        "1010201"
       ]
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
-      "classifierCode": "FIRE_GRASS",
+      "classifierCode": "1010201",
       "instructions": "Оценить угрозу перехода огня на постройки."
     },
     "initialStageId": "5a9c4509-172d-5c5d-bd23-6cf30724df22",
@@ -1150,7 +1141,6 @@
         "timeLimitSeconds": 90,
         "calls": [
           {
-            "id": "d441302b-3243-525c-afad-a6f9299798e3",
             "position": 1,
             "direction": "OUTBOUND",
             "counterparty": "BRIGADE",
@@ -1207,12 +1197,12 @@
         "comment": "Заявительница находится за закрытой дверью."
       },
       "classifierCodes": [
-        "POLICE_AGGRESSIVE_PERSON"
+        "17011100"
       ]
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "POLICE_AGGRESSIVE_PERSON",
+      "classifierCode": "17011100",
       "instructions": "Направить ближайший наряд к подъезду."
     },
     "initialStageId": "e1d08634-ccf9-5aac-bbf8-49a26fc16d26",
