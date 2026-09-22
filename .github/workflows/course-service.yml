@@ -1,0 +1,24 @@
+name: course-service
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - backend/course-service/**
+      - backend/shared/**
+      - .github/workflows/course-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: course-service
+      context: backend
+      dockerfile: backend/course-service/Dockerfile
+      compose_service: course-service
+      image_env: COURSE_SERVICE_IMAGE
+      container_suffix: course
