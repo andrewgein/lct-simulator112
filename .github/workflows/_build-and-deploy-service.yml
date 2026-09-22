@@ -86,7 +86,7 @@ jobs:
     # Single environment: only main deploys, to the sim112-stable stack.
     if: inputs.compose_service != '' && github.ref_name == 'main'
     needs: build
-    runs-on: [self-hosted, lct-simulator112]
+    runs-on: [self-hosted, simulator112]
     permissions:
       contents: read
       packages: read
