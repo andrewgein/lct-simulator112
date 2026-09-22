@@ -70,11 +70,10 @@ export function moveItem(items, index, direction) {
   return result;
 }
 
-export function findIncident(classifier, id) {
-  for (const incidents of Object.values(classifier)) {
-    for (const incident of Object.values(incidents)) {
-      if (incident.id === id) return incident;
-    }
+export function findIncident(classifier, code) {
+  for (const category of classifier) {
+    const incident = category.entries.find((entry) => entry.code === code);
+    if (incident) return incident;
   }
 }
 

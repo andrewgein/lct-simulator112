@@ -26,7 +26,7 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState) 
     kind,
     relationCount,
     expanded,
-    incident: incident?.name || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
+    incident: incident?.finalName || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
     applicant: applicantName(card),
     applicantPhone: card.applicant?.phone || "Не указан",
     victim: victimName,

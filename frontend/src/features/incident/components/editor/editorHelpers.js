@@ -1,22 +1,12 @@
-export const serviceLabels = {
-  "fire-service": "Пожарно-спасательная служба",
-  "police-service": "Полиция",
-  "ambulance-service": "Скорая медицинская помощь",
-  "gas-service": "Аварийная газовая служба",
-  "anti-terror-service": "Антитеррористическая служба"
-};
-
-export const serviceOrder = ["fire-service", "police-service", "ambulance-service", "gas-service", "anti-terror-service"];
 export const emptyPerson = () => ({ phone: "", contactPhone: "", lastName: "", firstName: "", middleName: "", address: "", additionalInfo: "", incidentType: "" });
 export const normalizePerson = (person = {}) => ({ ...emptyPerson(), ...person });
 export const applicantName = (card) => [card.applicant?.lastName, card.applicant?.firstName, card.applicant?.middleName].filter(Boolean).join(" ") || "Заявитель не указан";
 export const cardAddress = (card) => card.applicant?.address || card.victim?.address || "Адрес не указан";
 
-export function findIncident(classifier, id) {
-  for (const incidents of Object.values(classifier)) {
-    for (const incident of Object.values(incidents)) {
-      if (incident.id === id) return incident;
-    }
+export function findIncident(classifier, code) {
+  for (const category of classifier) {
+    const incident = category.entries.find((entry) => entry.code === code);
+    if (incident) return incident;
   }
 }
 
