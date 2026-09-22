@@ -20,11 +20,16 @@ try {
 <Page {error}>
   <Header slot="header" />
   <MainHeader slot="main-header" title="Сценарии происшествий">
-    <wa-button href="/admin/incidents/new" variant="brand" appearance="accent">
-      <wa-icon name="plus" slot="start">
-      </wa-icon>
-      Новый сценарий
-    </wa-button>
+    <div class="wa-cluster">
+      <wa-button href="/admin/incidents/new" variant="brand" appearance="outlined">
+        <wa-icon name="headset" slot="start"></wa-icon>
+        Новый сценарий Системы-112
+      </wa-button>
+      <wa-button href="/admin/incidents/dds/new" variant="brand" appearance="accent">
+        <wa-icon name="diagram-project" slot="start"></wa-icon>
+        Новый сценарий ДДС
+      </wa-button>
+    </div>
   </MainHeader>
   {incidents.length ? (
     <div class="wa-stack wa-gap-s">

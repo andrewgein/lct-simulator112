@@ -8,6 +8,7 @@
  * @typedef {Object} PersonInfo
  * @property {string} phone
  * @property {string} contactPhone
+ * @property {string} onScenePhone
  * @property {string} lastName
  * @property {string} firstName
  * @property {string} middleName
@@ -18,7 +19,7 @@
 /**
  * @typedef {Object} SolutionCardRequest
  * @property {PersonInfo | null} applicant
- * @property {PersonInfo | null} victim
+ * @property {number} victimCount
  * @property {Object.<string, string> | null} additionalInfo
  * @property {string[] | null} incidentTypes
  * @property {string | null} cardId
@@ -43,7 +44,7 @@
  * @property {string} callId
  * @property {string | null} mainCardId
  * @property {PersonInfo | null} applicant
- * @property {PersonInfo | null} victim
+ * @property {number} victimCount
  * @property {Object.<string, string>} additionalInfo
  * @property {string[]} incidentTypes
  * @property {string} createdAt

@@ -16,6 +16,7 @@ try {
     error = "Не удалось загрузить сценарии";
   } else {
     incident = await response.json();
+    if (incident.targetType === "DDS") return Astro.redirect(`/admin/incidents/dds/${encodeURIComponent(Astro.params.id)}`);
   }
 } catch (err) {
   error = "Не удалось загрузить сценарий";

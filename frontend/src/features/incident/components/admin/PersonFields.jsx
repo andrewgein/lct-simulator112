@@ -26,9 +26,11 @@ export default function PersonFields({ title, person, gender, incidentAddress = 
       </wa-input>
       <wa-number-input value={person.age} label="Возраст" min="1" onInput={change("age")}>
       </wa-number-input>
-      <wa-input value={person.phone} label="Телефон" required={hasPersonData} onInput={change("phone")}>
+      <wa-input value={person.phone} label="АОН" required={hasPersonData} onInput={change("phone")}>
       </wa-input>
-      <wa-input value={person.contactPhone} label="Контактный телефон" onInput={change("contactPhone")}>
+      <wa-input value={person.contactPhone} label="Предоставленный телефон" onInput={change("contactPhone")}>
+      </wa-input>
+      <wa-input value={person.onScenePhone} label="Телефон на место" onInput={change("onScenePhone")}>
       </wa-input>
       <wa-input value={person.address} label="Адрес" disabled={person.useIncidentAddress} onInput={change("address")}>
       </wa-input>

@@ -1,4 +1,4 @@
-import IncidentTypeSelect from "./IncidentTypeSelect.jsx";
+import IncidentTypeSelect from "../../../classifier/components/IncidentTypeSelect.jsx";
 
 export default function ReactionPlanCard({ classifierState, values, required = false, onChange }) {
   const incidentTypes = values.length ? values : [""];

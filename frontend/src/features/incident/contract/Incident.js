@@ -24,6 +24,7 @@
  * @property {number | null} age
  * @property {string} phone
  * @property {string | null} contactPhone
+ * @property {string | null} onScenePhone
  * @property {string | null} address
  * @property {string | null} additionalInfo
  */
@@ -55,7 +56,7 @@
  * @property {string} title
  * @property {number} position
  * @property {string} classifierCode
- * @property {Person | null} victim
+ * @property {number} victimCount
  * @property {string | null} description
  * @property {CallScenario[]} calls
  */
@@ -72,9 +73,9 @@
 
 /**
  * @typedef {Object} PreparedCardTemplate
- * @property {string} classifierCode
+ * @property {string[]} classifierCodes
  * @property {Person | null} applicant
- * @property {Person | null} victim
+ * @property {number} victimCount
  * @property {Object.<string, string>} additionalInfo
  */
 

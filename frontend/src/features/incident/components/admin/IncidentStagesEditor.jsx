@@ -30,7 +30,6 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
       setIncidentAddress(value);
       setStages((items) => items.map((stage) => ({
         ...stage,
-        victim: stage.victim.useIncidentAddress ? { ...stage.victim, address: value } : stage.victim,
         dialups: stage.dialups.map((dialup) => dialup.applicant.useIncidentAddress ? { ...dialup, applicant: { ...dialup.applicant, address: value } } : dialup)
       })));
     };
@@ -49,10 +48,6 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
         if (!stage.typeId) {
           setOpenStage(stage.key);
           throw new Error("Выберите тип происшествия для этапа");
-        }
-        if (personIsIncomplete(stage.victim)) {
-          setOpenStage(stage.key);
-          throw new Error("Для пострадавшего укажите имя, фамилию и телефон");
         }
         const missingField = findIncident(classifierInfo.state.classifier, stage.typeId)?.fields?.find((field) => field.required && !stage.additionalInfo[field.id]);
         if (missingField) {
@@ -80,7 +75,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
           position,
           typeId: stage.typeId,
           description: stage.description || null,
-          victim: personValue(stage.victim),
+          victimCount: stage.victimCount,
           additionalInfo: Object.entries(stage.additionalInfo).filter(([, fieldValue]) => fieldValue !== "").map(([additionalInfoId, fieldValue]) => ({ additionalInfoId, fieldValue }))
         };
         const saved = stage.id
