@@ -13,7 +13,7 @@ export async function getUserProfile(userId, token) {
 }
 
 export async function getAllUserProfiles(token) {
-    return await apiCall(`${API_PREFIX}/all`, "GET", undefined, token);
+    return await apiCall("/api/v1/admin/profiles", "GET", undefined, token);
 }
 
 /** @param {UserProfileRequest} profile */
@@ -29,6 +29,10 @@ export async function updateProfile(profile, token) {
 /** @param {UserProfileRequest} profile */
 export async function updateUserProfile(userId, profile, token) {
     return await apiCall(`${API_PREFIX}/${userId}`, "PATCH", profile, token);
+}
+
+export async function assignProfessionalProfile(userId, professionalProfile, token) {
+    return await apiCall(`/api/v1/admin/profiles/${encodeURIComponent(userId)}/professional-profile`, "PUT", professionalProfile, token);
 }
 
 export async function deleteUserProfile(userId, token) {

@@ -42,7 +42,7 @@ public class SecurityConfig {
                         "/api/v1/auth/reset-password",
                         "/actuator/**")
                     .permitAll()
-                    .requestMatchers("/api/v1/auth/change-role/**")
+                    .requestMatchers("/api/v1/auth/change-role/**", "/api/v1/admin/users")
                     .hasAuthority("ADMIN")
                     .anyRequest()
                     .denyAll())

@@ -10,7 +10,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -28,11 +27,6 @@ public class UserProfileController {
     @GetMapping("/{userId}")
     public UserProfileResponse getUserProfile(@PathVariable UUID userId) {
         return UserProfileWebMapper.toResponse(userProfiles.getProfile(userId));
-    }
-
-    @GetMapping("/all")
-    public List<UserProfileResponse> getAllUserProfiles() {
-        return userProfiles.getAllProfiles().stream().map(UserProfileWebMapper::toResponse).toList();
     }
 
     @PostMapping
