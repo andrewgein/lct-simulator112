@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker/locale/ru";
 
-const personFields = ["lastName", "firstName", "middleName", "age", "phone", "contactPhone", "address", "additionalInfo"];
+const personFields = ["lastName", "firstName", "middleName", "age", "phone", "contactPhone", "onScenePhone", "address", "additionalInfo"];
 export const splitLines = (value) => value.split("\n").map((item) => item.trim()).filter(Boolean);
 const clientId = () => crypto.randomUUID();
 const randomPhone = () => `+79${String(Math.floor(Math.random() * 1_000_000_000)).padStart(9, "0")}`;
@@ -14,7 +14,8 @@ export function generatePerson(gender) {
     middleName: faker.person.middleName(sex),
     age: faker.number.int({ min: 18, max: 85 }),
     phone: randomPhone(),
-    contactPhone: randomPhone()
+    contactPhone: randomPhone(),
+    onScenePhone: randomPhone()
   };
 }
 
@@ -56,7 +57,7 @@ export function normalizeStage(stage = {}, key = clientId()) {
     title: stage.title || "",
     typeId: stage.type?.id || stage.typeId || "",
     description: stage.description || "",
-    victim: emptyPerson(stage.victim),
+    victimCount: stage.victimCount ?? 0,
     additionalInfo,
     dialups: (stage.dialups || []).map((dialup, index) => normalizeDialup(dialup, dialup.id || `${key}-dialup-${index}`))
   };

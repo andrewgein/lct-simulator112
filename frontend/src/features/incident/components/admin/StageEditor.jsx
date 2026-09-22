@@ -1,9 +1,9 @@
 import { useRef } from "preact/hooks";
-import IncidentTypeSelect from "../editor/IncidentTypeSelect.jsx";
+import IncidentTypeSelect from "../../../classifier/components/IncidentTypeSelect.jsx";
 import AdditionalFields from "./AdditionalFields.jsx";
 import DialupEditor from "./DialupEditor.jsx";
 import EditorDialog from "./EditorDialog.jsx";
-import PersonFields from "./PersonFields.jsx";
+import VictimFields from "../VictimFields.jsx";
 import { findIncident, moveItem, normalizeDialup } from "./editorHelpers";
 
 export default function StageEditor({ stage, index, count, firstDialupNumber, classifier, incidentAddress, openStage, openDialup, dialupError, onChange, onOpenStage, onCloseStage, onOpenDialup, onCloseDialup, onRemove, onMove }) {
@@ -62,7 +62,8 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
         <div class="wa-stack wa-gap-m">
           <div class="wa-cluster wa-align-items-stretch wa-gap-l">
           <div class="stage-victim dialog-section wa-stack wa-gap-s">
-            <PersonFields title="Пострадавший" person={stage.victim} incidentAddress={incidentAddress} onChange={(victim) => onChange({ ...stage, victim })} />
+            <h3 class="wa-heading-l">Пострадавшие</h3>
+            <VictimFields victimCount={stage.victimCount} required onChange={(victimCount) => onChange({ ...stage, victimCount })} />
           </div>
           <wa-divider class="dialog-divider-desktop" orientation="vertical">
           </wa-divider>

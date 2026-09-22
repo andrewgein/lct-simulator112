@@ -2,6 +2,8 @@
 /** @typedef {import("../../contract/Incident").Incident} Incident */
 /** @type {{ incident: Incident, canDelete?: boolean }} */
 const { incident, canDelete = true } = Astro.props;
+const isDds = incident.targetType === "DDS";
+const editHref = isDds ? `/admin/incidents/dds/${incident.id}` : `/admin/incidents/${incident.id}`;
 ---
 
 <wa-card>
@@ -10,11 +12,14 @@ const { incident, canDelete = true } = Astro.props;
       <strong class="wa-heading-l">
         {incident.title}
       </strong>
-      {incident.stages?.[0]?.type?.typeName}
+      <div class="wa-cluster wa-gap-xs">
+        <wa-badge variant={isDds ? "warning" : "brand"}>{isDds ? "ДДС" : "Система-112"}</wa-badge>
+        <span>{isDds ? `${incident.stages?.length || 0} этапов` : incident.stages?.[0]?.type?.typeName}</span>
+      </div>
     </div>
     <div class="wa-cluster">
       <slot name="actions">
-        <wa-button href={`/admin/incidents/${incident.id}`} appearance="outlined">
+        <wa-button href={editHref} appearance="outlined" aria-label={`Редактировать сценарий ${incident.title}`}>
           <wa-icon name="pen"></wa-icon>
         </wa-button>
         {canDelete && (

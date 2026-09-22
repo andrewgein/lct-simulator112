@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import AdditionalInfoCard from "./AdditionalInfoCard.jsx";
 import InstructionsCard from "./InstructionsCard.jsx";
 import PersonCard from "./PersonCard.jsx";
+import VictimFields from "../VictimFields.jsx";
 import ReactionPlanCard from "./ReactionPlanCard.jsx";
 import { applicantName, cardAddress, emptyPerson, findIncident, normalizePerson } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
@@ -74,7 +75,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const relatedCard = !!editingCard?.mainCardId;
   const canUnlink = relatedCard && call.phase === "active" && call.activeCallId === editingCard.callId;
   const relationLocked = relatedCard || call.phase === "finished";
-  const canSave = !editor.cardSaved && incidentTypes.length === editor.incidentTypes.length && incidentTypes.length > 0 && (editor.operation !== "LINK" || !!selectedCard);
+  const canSave = !editor.cardSaved && Number.isInteger(editor.victimCount) && editor.victimCount >= 0 && incidentTypes.length === editor.incidentTypes.length && incidentTypes.length > 0 && (editor.operation !== "LINK" || !!selectedCard);
 
   useEffect(() => setSavedEditMode(false), [editor.editingCardId, editor.open]);
 
@@ -87,12 +88,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     return () => window.clearInterval(timer);
   }, [editor.open, call.phase]);
 
-  const setPerson = (name, person) => {
-    const next = { ...editor, [name]: person };
-    if (name === "applicant" && editor.isApplicantVictim) next.victim = { ...next.victim, ...person };
-    onChange(next);
-  };
-  const toggleApplicantVictim = (checked) => onChange({ ...editor, isApplicantVictim: checked, victim: checked ? { ...editor.victim, ...editor.applicant } : editor.victim });
+  const setApplicant = (applicant) => onChange({ ...editor, applicant });
   const selectOperation = (operation) => {
     if (relationLocked) return;
     const fallback = editor.editingCardId ? "SAVE" : "CREATE";
@@ -102,7 +98,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   };
   const selectReference = (cardId) => {
     const card = cards.find((item) => item.cardId === cardId);
-    onChange(editor.operation === "SAVE" && card ? { ...editor, selectedCardId: cardId, applicant: normalizePerson(card.applicant), victim: normalizePerson(card.victim), isApplicantVictim: false, incidentTypes: card.incidentTypes?.length ? card.incidentTypes : [""], additionalInfo: card.additionalInfo || {} } : { ...editor, selectedCardId: cardId });
+    onChange(editor.operation === "SAVE" && card ? { ...editor, selectedCardId: cardId, applicant: normalizePerson(card.applicant), victimCount: card.victimCount ?? 0, incidentTypes: card.incidentTypes?.length ? card.incidentTypes : [""], additionalInfo: card.additionalInfo || {} } : { ...editor, selectedCardId: cardId });
   };
   const autofill = () => {
     const firstIncident = classifierState.classifier.flatMap((category) => category.entries)[0];
@@ -110,9 +106,8 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     const values = { boolean: "true", number: "1", email: "test@example.com", tel: "79001234567", url: "https://example.com" };
     onChange({
       ...editor,
-      applicant: { ...emptyPerson(), phone: "79001234567", contactPhone: "79001234567", lastName: "Иванов", firstName: "Иван", middleName: "Иванович", address: "г. Москва, ул. Тверская, д. 1", additionalInfo: "Тестовый заявитель" },
-      victim: { ...emptyPerson(), phone: "79007654321", contactPhone: "79007654321", lastName: "Петров", firstName: "Пётр", middleName: "Петрович", address: "г. Москва, ул. Тверская, д. 1", additionalInfo: "Сознание сохранено" },
-      isApplicantVictim: false,
+      applicant: { ...emptyPerson(), phone: "79001234567", contactPhone: "79001234567", onScenePhone: "79001234567", lastName: "Иванов", firstName: "Иван", middleName: "Иванович", address: "г. Москва, ул. Тверская, д. 1", additionalInfo: "Тестовый заявитель" },
+      victimCount: 1,
       incidentTypes: [firstIncident.code],
       additionalInfo: Object.fromEntries((firstIncident.fields || []).map((field) => [field.id, values[field.type.toLowerCase()] || "Тестовое значение"]))
     });
@@ -140,7 +135,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operation, cardId: revisingCard ? editingCard.cardId : null, expectedVersion: revisingCard ? editingCard.version : null, mainCardId: operation === "LINK" ? selectedCard.cardId : null, applicant: editor.applicant, victim: editor.victim, incidentTypes, additionalInfo: editor.additionalInfo })
+        body: JSON.stringify({ operation, cardId: revisingCard ? editingCard.cardId : null, expectedVersion: revisingCard ? editingCard.version : null, mainCardId: operation === "LINK" ? selectedCard.cardId : null, applicant: editor.applicant, victimCount: editor.victimCount, incidentTypes, additionalInfo: editor.additionalInfo })
       });
       if (!response.ok) throw new Error(await response.text());
       onClose(call.phase === "finished");
@@ -160,15 +155,15 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
           <wa-icon name="phone" aria-hidden="true"></wa-icon>
           <div class="workspace-connection-copy"><strong>Карточка сохранена</strong><span class="workspace-call-label">режим просмотра</span></div>
         </div>
-        <div class="workspace-phone"><span class="workspace-call-label">Телефон заявителя</span><strong>{formatPhone(editor.applicant.phone)}</strong></div>
+        <div class="workspace-phone"><span class="workspace-call-label">АОН</span><strong>{formatPhone(editor.applicant.phone)}</strong></div>
         <div class="workspace-incident-meta"><strong>Происшествие {editingCard.cardId}</strong><span>{incidentNames || "Тип происшествия не выбран"}</span></div>
         <div class="workspace-timer saved-view-label">Просмотр</div>
       </header>
       <div class="saved-card-body">
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о заявителе">
-          <div class="saved-card-panel saved-person-heading wa-cluster wa-gap-l wa-align-items-baseline"><strong>{applicantName(editingCard)}</strong><span>{editingCard.applicant?.isApplicantVictim ? "заявитель и пострадавший" : "заявитель"}</span></div>
+          <div class="saved-card-panel saved-person-heading wa-cluster wa-gap-l wa-align-items-baseline"><strong>{applicantName(editingCard)}</strong><span>заявитель</span></div>
           <div class="saved-card-panel saved-address wa-stack wa-gap-s"><span class="saved-label">Адрес</span><strong>{cardAddress(editingCard)}</strong>{editor.applicant.additionalInfo && <span>{editor.applicant.additionalInfo}</span>}</div>
-          <div class="saved-card-panel"><span class="saved-label">Пострадавший</span><p><strong>{[editor.victim.lastName, editor.victim.firstName, editor.victim.middleName].filter(Boolean).join(" ") || "Не указан"}</strong></p>{editor.victim.phone && <p>{formatPhone(editor.victim.phone)}</p>}</div>
+          <div class="saved-card-panel"><span class="saved-label">Пострадавшие</span><p><strong>{editor.victimCount > 0 ? `Есть · ${editor.victimCount}` : "Нет"}</strong></p></div>
           <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Описание со слов заявителя</span><p>{editor.applicant.additionalInfo || "Описание не заполнено"}</p></div>
         </section>
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о происшествии">
@@ -195,16 +190,16 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
           <wa-icon name={call.phase === "active" ? "phone-volume" : "phone"} aria-hidden="true"></wa-icon>
           <div class="workspace-connection-copy"><strong>{call.phase === "active" ? "На линии" : "Карточка происшествия"}</strong><span class="workspace-call-label">{call.phase === "active" ? "активное соединение" : "редактирование"}</span></div>
         </div>
-        <div class="workspace-phone"><span class="workspace-call-label">Телефон заявителя</span><strong>{formatPhone(call.phone || editor.applicant.phone)}</strong></div>
+        <div class="workspace-phone"><span class="workspace-call-label">АОН</span><strong>{formatPhone(call.phone || editor.applicant.phone)}</strong></div>
         <div class="workspace-incident-meta"><strong>{editingCard ? `Происшествие ${editingCard.cardId}` : "Новое происшествие"}</strong><span>{incidentNames || "Тип происшествия не выбран"}</span></div>
         <div class="workspace-timer" aria-label={`Время звонка: ${formatTime(seconds)}`}>{formatTime(seconds)}</div>
       </header>
       <div class="workspace-body">
-        <section class="workspace-column" aria-label="Заявитель и пострадавший">
+        <section class="workspace-column" aria-label="Заявитель и пострадавшие">
           <h2 class="workspace-section-title">Данные вызова</h2>
           <div class="workspace-column-inner wa-stack wa-gap-m">
-            <PersonCard title="Информация о заявителе" kind="applicant" person={editor.applicant} addressRequired={!editor.victim.address} isApplicantVictim={editor.isApplicantVictim} dadataApiKey={dadataApiKey} onChange={(person) => setPerson("applicant", person)} onApplicantVictimChange={toggleApplicantVictim} />
-            <PersonCard title="Информация о пострадавшем" kind="victim" person={editor.victim} addressRequired={!editor.applicant.address} isApplicantVictim={editor.isApplicantVictim} dadataApiKey={dadataApiKey} onChange={(person) => setPerson("victim", person)} />
+            <PersonCard title="Информация о заявителе" kind="applicant" person={editor.applicant} addressRequired dadataApiKey={dadataApiKey} onChange={setApplicant} />
+            <wa-card><VictimFields victimCount={editor.victimCount} required onChange={(victimCount) => onChange({ ...editor, victimCount })} /></wa-card>
           </div>
         </section>
         <section class="workspace-column" aria-label="Классификация происшествия">
