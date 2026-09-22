@@ -38,7 +38,11 @@ public class UserProfileController {
             @RequestHeader("X-User-Id") UUID userId,
             @Valid @RequestBody CreateUserProfileRequest request) {
         return UserProfileWebMapper.toResponse(
-                userProfiles.createProfile(userId, request.name(), request.surname()));
+                userProfiles.createProfile(
+                        userId,
+                        request.name(),
+                        request.surname(),
+                        request.toProfessionalProfile()));
     }
 
     @PatchMapping("/{userId}")

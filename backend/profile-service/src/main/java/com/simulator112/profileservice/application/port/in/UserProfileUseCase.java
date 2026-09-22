@@ -1,5 +1,6 @@
 package com.simulator112.profileservice.application.port.in;
 
+import com.simulator112.profileservice.domain.model.ProfessionalProfile;
 import com.simulator112.profileservice.domain.model.UserProfile;
 
 import java.util.List;
@@ -11,7 +12,7 @@ public interface UserProfileUseCase {
 
     List<UserProfile> getAllProfiles();
 
-    UserProfile createProfile(UUID userId, String name, String surname);
+    UserProfile createProfile(UUID userId, String name, String surname, ProfessionalProfile professionalProfile);
 
     UserProfile updateProfile(UUID userId, String name, String surname);
 
