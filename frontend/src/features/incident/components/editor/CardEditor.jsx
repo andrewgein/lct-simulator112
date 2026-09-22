@@ -206,7 +206,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         <section class="workspace-column" aria-label="Классификация происшествия">
           <div class="workspace-reference">
             <wa-select label="Связанная карточка" hidden={!referenceVisible} value={editor.selectedCardId} onChange={(event) => selectReference(event.currentTarget.value)}>
-              {availableCards.map((card) => <wa-option key={card.cardId} value={card.cardId}>{applicantName(card)} / {cardAddress(card)}</wa-option>)}
+              {relationCards.map((card) => <wa-option key={card.cardId} value={card.cardId}>{applicantName(card)} / {cardAddress(card)}</wa-option>)}
             </wa-select>
             <div class="workspace-operation-buttons wa-cluster wa-gap-xs wa-justify-content-end">
               {!relatedCard && <wa-button type="button" appearance={editor.operation === "LINK" ? "filled" : "outlined"} variant={editor.operation === "LINK" ? "brand" : "neutral"} disabled={relationLocked || !relationCards.length} onClick={() => selectOperation("LINK")}><wa-icon slot="start" name="link"></wa-icon>Связать</wa-button>}
