@@ -5,6 +5,8 @@ import MainHeader from "../../../layouts/MainHeader.astro";
 import AdminIncidentForm from "../../../features/incident/components/admin/AdminIncidentForm.astro";
 
 export const prerender = false;
+const role = Astro.cookies.get("role")?.value;
+if (!["ADMIN", "SUPERVISOR"].includes(role || "")) return Astro.redirect("/");
 ---
 <Page>
   <Header slot="header" />

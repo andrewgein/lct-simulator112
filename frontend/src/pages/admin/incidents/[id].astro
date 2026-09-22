@@ -6,6 +6,8 @@ import AdminIncidentForm from "../../../features/incident/components/admin/Admin
 import { getIncident } from "../../../features/incident/api/AdminIncidentApi";
 
 export const prerender = false;
+const role = Astro.cookies.get("role")?.value;
+if (!["ADMIN", "SUPERVISOR"].includes(role || "")) return Astro.redirect("/");
 let incident = null;
 let error = null;
 try {

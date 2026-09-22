@@ -11,7 +11,7 @@ export async function POST({ params, request, cookies }) {
     }
 
     const { role } = await request.json();
-    if (role !== "ADMIN" && role !== "STUDENT") {
+    if (!["ADMIN", "SUPERVISOR", "STUDENT"].includes(role)) {
         return new Response(JSON.stringify({ message: "Недопустимая роль" }), {
             status: 400,
             headers: { "Content-Type": "application/json" }

@@ -7,6 +7,7 @@ import { getIncidentLibrary } from "../../../features/incident/api/AdminIncident
 import { apiCall } from "../../../services/ApiClient";
 
 export const prerender = false;
+if (Astro.cookies.get("role")?.value !== "ADMIN") return Astro.redirect("/");
 const token = Astro.cookies.get("accessToken")?.value;
 let level;
 let incidents = [];

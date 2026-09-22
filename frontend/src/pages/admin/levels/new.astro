@@ -6,6 +6,7 @@ import AdminLevelForm from "../../../features/level/components/admin/AdminLevelF
 import { getIncidentLibrary } from "../../../features/incident/api/AdminIncidentApi";
 
 export const prerender = false;
+if (Astro.cookies.get("role")?.value !== "ADMIN") return Astro.redirect("/");
 let incidents = [];
 let error = null;
 try {
