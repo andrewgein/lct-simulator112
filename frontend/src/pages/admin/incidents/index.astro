@@ -6,6 +6,9 @@ import AdminIncidentCard from "../../../features/incident/components/admin/Admin
 import { getIncidentLibrary } from "../../../features/incident/api/AdminIncidentApi";
 
 export const prerender = false;
+const role = Astro.cookies.get("role")?.value;
+if (!["ADMIN", "SUPERVISOR"].includes(role || "")) return Astro.redirect("/");
+const canDelete = role === "ADMIN";
 let incidents = [];
 let error = null;
 try {
@@ -26,7 +29,7 @@ try {
   {incidents.length ? (
     <div class="wa-stack wa-gap-s">
       {incidents.map((incident) => (
-        <AdminIncidentCard {incident} />
+        <AdminIncidentCard {incident} {canDelete} />
       ))}
     </div>
   ) : (

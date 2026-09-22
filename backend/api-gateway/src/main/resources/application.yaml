@@ -117,7 +117,7 @@ spring:
                   args:
                     roles: ADMIN
 
-            #Incident constructors — authenticated administrators only
+            #Incident constructors — administrators and supervisors
             - id: incident-service-write
               uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
               predicates:
@@ -127,7 +127,7 @@ spring:
                 - name: JwtAuthFilter
                 - name: RoleAuthorization
                   args:
-                    roles: ADMIN
+                    roles: ADMIN,SUPERVISOR
 
             #Level catalog — filtered by the user's training profile
             - id: incident-level-catalog

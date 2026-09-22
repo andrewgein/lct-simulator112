@@ -31,6 +31,7 @@ try {
 const profilesByUserId = new Map(profiles.map((profile) => [String(profile.userId), profile]));
 const roleLabels = {
   ADMIN: "Администратор",
+  SUPERVISOR: "Преподаватель",
   STUDENT: "Обучающийся"
 };
 const trainingTrackLabels = {
@@ -71,7 +72,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
                 const fullName = profile ? `${profile.name} ${profile.surname}` : "Профиль не создан";
                 const trainingTrack = profile?.trainingTrack || "";
                 const isDds = trainingTrack === "DDS";
-                const canEditTrainingTrack = Boolean(profile) && user.role !== "ADMIN";
+                const canEditTrainingTrack = Boolean(profile) && user.role === "STUDENT";
                 return (
                   <tr data-user-row data-user-id={user.id} data-has-profile={Boolean(profile)} data-search={`${user.email} ${fullName}`.toLowerCase()}>
                     <th scope="row">
@@ -84,6 +85,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
                     <td>
                       <wa-select class="user-role" aria-label={`Роль пользователя ${user.email}`} value={user.role}>
                         <wa-option value="STUDENT">{roleLabels.STUDENT}</wa-option>
+                        <wa-option value="SUPERVISOR">{roleLabels.SUPERVISOR}</wa-option>
                         <wa-option value="ADMIN">{roleLabels.ADMIN}</wa-option>
                       </wa-select>
                     </td>

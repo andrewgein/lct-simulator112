@@ -3,6 +3,7 @@ import LogoutButton from "../features/auth/components/LogoutButton.astro";
 
 const role = Astro.cookies.get("role")?.value;
 const isAdmin = role === "ADMIN";
+const canManageScenarios = isAdmin || role === "SUPERVISOR";
 const pathname = Astro.url.pathname;
 const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
 ---
@@ -22,15 +23,12 @@ const isActive = (href: string) => href === "/" ? pathname === href : pathname.s
         </wa-button>
         <wa-button class:list={{ 'header-nav-active': isActive('/map') }} appearance="plain" variant="neutral" href="/map" aria-current={isActive('/map') ? 'page' : undefined}>Карта</wa-button>
       </div>
-      {isAdmin && (
+      {canManageScenarios && (
         <div class="wa-cluster">
           <wa-divider orientation="vertical" />
-            <wa-button class:list={{ 'header-nav-active': isActive('/admin/incidents') }}
-              appearance="plain" variant="brand" href="/admin/incidents"
-              aria-current={isActive('/admin/incidents') ? 'page' : undefined}>
-                Управление сценариями </wa-button>
-            <wa-button class:list={{ 'header-nav-active': isActive('/admin/levels') }} appearance="plain" variant="brand" href="/admin/levels" aria-current={isActive('/admin/levels') ? 'page' : undefined}>Управление уровнями</wa-button>
-            <wa-button class:list={{ 'header-nav-active': isActive('/admin/users') }} appearance="plain" variant="brand" href="/admin/users" aria-current={isActive('/admin/users') ? 'page' : undefined}>Пользователи</wa-button>
+          <wa-button class:list={{ 'header-nav-active': isActive('/admin/incidents') }} appearance="plain" variant="brand" href="/admin/incidents" aria-current={isActive('/admin/incidents') ? 'page' : undefined}>Управление сценариями</wa-button>
+          {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/levels') }} appearance="plain" variant="brand" href="/admin/levels" aria-current={isActive('/admin/levels') ? 'page' : undefined}>Управление уровнями</wa-button>}
+          {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/users') }} appearance="plain" variant="brand" href="/admin/users" aria-current={isActive('/admin/users') ? 'page' : undefined}>Пользователи</wa-button>}
         </div>
       )}
     </div>

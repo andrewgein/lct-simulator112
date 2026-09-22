@@ -6,6 +6,7 @@ import { apiCall } from "../../../services/ApiClient";
 import { DifficultyOptions } from "../../../features/incident/contract/Difficulty";
 
 export const prerender = false;
+if (Astro.cookies.get("role")?.value !== "ADMIN") return Astro.redirect("/");
 let levels = [];
 let error = null;
 try {

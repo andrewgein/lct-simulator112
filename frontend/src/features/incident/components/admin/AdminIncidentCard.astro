@@ -1,7 +1,7 @@
 ---
 /** @typedef {import("../../contract/Incident").Incident} Incident */
-/** @type {{ incident: Incident }} */
-const { incident } = Astro.props;
+/** @type {{ incident: Incident, canDelete?: boolean }} */
+const { incident, canDelete = true } = Astro.props;
 ---
 
 <wa-card>
@@ -17,9 +17,11 @@ const { incident } = Astro.props;
         <wa-button href={`/admin/incidents/${incident.id}`} appearance="outlined">
           <wa-icon name="pen"></wa-icon>
         </wa-button>
-        <wa-button class="delete-incident" data-id={incident.id} appearance="outlined" variant="danger">
-          <wa-icon name="trash"></wa-icon>
-        </wa-button>
+        {canDelete && (
+          <wa-button class="delete-incident" data-id={incident.id} appearance="outlined" variant="danger">
+            <wa-icon name="trash"></wa-icon>
+          </wa-button>
+        )}
       </slot>
     </div>
   </div>
