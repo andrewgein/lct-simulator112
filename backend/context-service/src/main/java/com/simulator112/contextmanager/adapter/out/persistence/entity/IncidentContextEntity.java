@@ -103,19 +103,8 @@ public class IncidentContextEntity {
     })
     private Applicant cardApplicant;
 
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "firstName", column = @Column(name = "card_victim_first_name")),
-            @AttributeOverride(name = "lastName", column = @Column(name = "card_victim_last_name")),
-            @AttributeOverride(name = "middleName", column = @Column(name = "card_victim_middle_name")),
-            @AttributeOverride(name = "age", column = @Column(name = "card_victim_age")),
-            @AttributeOverride(name = "phone", column = @Column(name = "card_victim_phone")),
-            @AttributeOverride(name = "contactPhone", column = @Column(name = "card_victim_contact_phone")),
-            @AttributeOverride(name = "address", column = @Column(name = "card_victim_address")),
-            @AttributeOverride(name = "additionalInfo", column = @Column(name = "card_victim_additional_info")),
-            @AttributeOverride(name = "emotionalState", column = @Column(name = "card_victim_emotional_state"))
-    })
-    private Applicant cardVictim;
+    @Column(name = "card_victim_count", nullable = false)
+    private int cardVictimCount;
 
     @ElementCollection
     @CollectionTable(name = "context_prepared_card_additional_info",

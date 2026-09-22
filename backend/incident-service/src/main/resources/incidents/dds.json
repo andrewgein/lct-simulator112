@@ -88,13 +88,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": null,
       "additionalInfo": {
         "comment": "Дым идёт из окна квартиры."
       },
       "classifierCodes": [
         "1050101"
-      ]
+      ],
+      "victimCount": 0
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
@@ -208,13 +208,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": null,
       "additionalInfo": {
         "comment": "Запах сильнее на лестничной площадке 3 этажа."
       },
       "classifierCodes": [
         "13020500"
-      ]
+      ],
+      "victimCount": 0
     },
     "initialAssignment": {
       "emergencyService": "GAS",
@@ -328,22 +328,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": {
-        "firstName": null,
-        "lastName": null,
-        "middleName": null,
-        "age": 65,
-        "phone": null,
-        "contactPhone": null,
-        "address": null,
-        "additionalInfo": "Без сознания на остановке"
-      },
       "additionalInfo": {
         "comment": "Пострадавший лежит на лавке."
       },
       "classifierCodes": [
         "22020000"
-      ]
+      ],
+      "victimCount": 1
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
@@ -457,13 +448,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": null,
       "additionalInfo": {
         "comment": "Заявитель наблюдает из окна."
       },
       "classifierCodes": [
         "15060201"
-      ]
+      ],
+      "victimCount": 0
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
@@ -577,13 +568,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": null,
       "additionalInfo": {
         "comment": "Чёрный рюкзак у колонны рядом со входом."
       },
       "classifierCodes": [
         "15130600"
-      ]
+      ],
+      "victimCount": 0
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
@@ -696,13 +687,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": null,
       "additionalInfo": {
         "comment": "Сильный дым из ряда гаражей."
       },
       "classifierCodes": [
         "1990043"
-      ]
+      ],
+      "victimCount": 0
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
@@ -815,22 +806,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": {
-        "firstName": "Нина",
-        "lastName": "Соколова",
-        "middleName": null,
-        "age": 72,
-        "phone": null,
-        "contactPhone": null,
-        "address": null,
-        "additionalInfo": "Слабость и головокружение"
-      },
       "additionalInfo": {
         "comment": "Пожилая женщина почувствовала себя плохо."
       },
       "classifierCodes": [
         "22340200"
-      ]
+      ],
+      "victimCount": 1
     },
     "initialAssignment": {
       "emergencyService": "GAS",
@@ -944,22 +926,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": {
-        "firstName": "Артём",
-        "lastName": "Лебедев",
-        "middleName": null,
-        "age": 27,
-        "phone": null,
-        "contactPhone": null,
-        "address": null,
-        "additionalInfo": "Травма головы, в сознании"
-      },
       "additionalInfo": {
         "comment": "Автомобиль и велосипед у правой полосы."
       },
       "classifierCodes": [
         "2020000"
-      ]
+      ],
+      "victimCount": 1
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
@@ -1072,13 +1045,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": null,
       "additionalInfo": {
         "comment": "Огонь виден со стороны СНТ."
       },
       "classifierCodes": [
         "1010201"
-      ]
+      ],
+      "victimCount": 0
     },
     "initialAssignment": {
       "emergencyService": "FIRE",
@@ -1192,13 +1165,13 @@
         "address": null,
         "additionalInfo": null
       },
-      "victim": null,
       "additionalInfo": {
         "comment": "Заявительница находится за закрытой дверью."
       },
       "classifierCodes": [
         "17011100"
-      ]
+      ],
+      "victimCount": 0
     },
     "initialAssignment": {
       "emergencyService": "POLICE",

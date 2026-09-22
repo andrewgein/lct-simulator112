@@ -26,7 +26,7 @@ public class IncidentSnapshot {
     private Criteria criteria;
     private List<String> preparedCardClassifierCodes = new ArrayList<>();
     private Person cardApplicant;
-    private Person cardVictim;
+    private int cardVictimCount;
     private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();
     private String initialAssignmentService;
     private String initialAssignmentClassifierCode;

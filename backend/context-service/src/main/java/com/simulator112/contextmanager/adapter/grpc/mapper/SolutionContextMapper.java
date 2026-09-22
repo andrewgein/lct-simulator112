@@ -11,7 +11,6 @@ public final class SolutionContextMapper {
     public static SolutionContext toProto(SolutionCardRevision revision) {
         var builder = SolutionContext.newBuilder()
                 .setApplicant(toProto(revision.getApplicant()))
-                .setVictim(toProto(revision.getVictim()))
                 .addAllIncidentTypes(revision.getIncidentTypes())
                 .putAllAdditionalInfo(revision.getAdditionalInfo())
                 .setAdditionalInfoProvided(revision.isAdditionalInfoProvided())
@@ -21,6 +20,7 @@ public final class SolutionContextMapper {
                 .setPreviousRevisionId(orEmpty(revision.getPreviousRevisionId()))
                 .setVersion(revision.getVersion())
                 .setCreatedAt(revision.getCreatedAt() == null ? "" : revision.getCreatedAt().toString());
+        if (revision.getVictimCount() != null) builder.setVictimCount(revision.getVictimCount());
         if (revision.getMainCardId() != null) builder.setMainCardId(revision.getMainCardId().toString());
         return builder.build();
     }

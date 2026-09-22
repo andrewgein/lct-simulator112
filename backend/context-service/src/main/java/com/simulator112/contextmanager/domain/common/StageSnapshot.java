@@ -22,6 +22,6 @@ public class StageSnapshot {
     private Instant startedAt;
     private Instant deadlineAt;
     private String description;
-    private Person victim;
+    private int victimCount;
     private List<CallSnapshot> calls = new ArrayList<>();
 }

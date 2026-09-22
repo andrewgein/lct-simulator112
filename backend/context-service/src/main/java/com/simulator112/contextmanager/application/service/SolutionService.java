@@ -254,8 +254,11 @@ public class SolutionService implements ManageSystem112CardUseCase {
     }
 
     private void fillSnapshot(SolutionCardRevision revision, SolutionContextRequest request) {
+        if (request.victimCount() != null && request.victimCount() < 0) {
+            throw new IllegalArgumentException("Количество пострадавших не может быть отрицательным");
+        }
         revision.setApplicant(toPerson(request.applicant()));
-        revision.setVictim(toPerson(request.victim()));
+        revision.setVictimCount(request.victimCount());
         revision.setAdditionalInfoProvided(request.additionalInfo() != null);
         if (request.additionalInfo() != null) revision.getAdditionalInfo().putAll(request.additionalInfo());
         if (request.incidentTypes() != null) revision.setIncidentTypes(new ArrayList<>(request.incidentTypes()));
@@ -269,17 +272,18 @@ public class SolutionService implements ManageSystem112CardUseCase {
     private SolutionContextView toAssembledView(List<SolutionCardRevision> revisions) {
         var ordered = revisions.stream().sorted(java.util.Comparator.comparingLong(SolutionCardRevision::getVersion)).toList();
         com.simulator112.contextmanager.application.model.system112.PersonInfoRequest applicant = null;
-        com.simulator112.contextmanager.application.model.system112.PersonInfoRequest victim = null;
+        int victimCount = 0;
         Map<String, String> additionalInfo = Map.of();
         List<String> incidentTypes = List.of();
         for (SolutionCardRevision revision : ordered) {
-            applicant = merge(applicant, revision.getApplicant()); victim = merge(victim, revision.getVictim());
+            applicant = merge(applicant, revision.getApplicant());
+            if (revision.getVictimCount() != null) victimCount = revision.getVictimCount();
             if (revision.isAdditionalInfoProvided()) additionalInfo = Map.copyOf(revision.getAdditionalInfo());
             if (!revision.getIncidentTypes().isEmpty()) incidentTypes = List.copyOf(revision.getIncidentTypes());
         }
         var latest = ordered.getLast();
         return new SolutionContextView(latest.getId(), latest.getCardId(), latest.getPreviousRevisionId(), latest.getVersion(),
-                latest.getCallId(), latest.getMainCardId(), applicant, victim, additionalInfo, incidentTypes,
+                latest.getCallId(), latest.getMainCardId(), applicant, victimCount, additionalInfo, incidentTypes,
                 latest.getCreatedAt());
     }
 

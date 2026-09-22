@@ -20,7 +20,7 @@ public class SolutionCardRevision {
     private UUID callId;
     private UUID mainCardId;
     private PersonInfo applicant;
-    private PersonInfo victim;
+    private Integer victimCount;
     private Map<String, String> additionalInfo = new HashMap<>();
     private boolean additionalInfoProvided;
     private List<String> incidentTypes = new ArrayList<>();

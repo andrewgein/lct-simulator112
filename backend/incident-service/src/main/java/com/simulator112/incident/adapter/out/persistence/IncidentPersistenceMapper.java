@@ -22,7 +22,7 @@ public class IncidentPersistenceMapper {
             return new DdsIncident(
                     entity.getId(), entity.getTitle(), toDomain(entity.getAddress()), entity.getDifficulty(), stages,
                     new PreparedCardTemplate(entity.getPreparedCardClassifierCodes(),
-                            toDomain(entity.getCardApplicant()), toDomain(entity.getCardVictim()),
+                            toDomain(entity.getCardApplicant()), entity.getCardVictimCount(),
                             entity.getPreparedCardAdditionalInfo()),
                     new InitialAssignment(entity.getEmergencyService(), entity.getInitialAssignmentClassifierCode(),
                             entity.getInitialAssignmentInstructions()),
@@ -60,7 +60,7 @@ public class IncidentPersistenceMapper {
             PreparedCardTemplate card = dds.preparedCardTemplate();
             entity.setPreparedCardClassifierCodes(new java.util.ArrayList<>(card.classifierCodes()));
             entity.setCardApplicant(toEntity(card.applicant()));
-            entity.setCardVictim(toEntity(card.victim()));
+            entity.setCardVictimCount(card.victimCount());
             entity.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(card.additionalInfo()));
             InitialAssignment assignment = dds.initialAssignment();
             entity.setEmergencyService(assignment.emergencyService());
@@ -79,7 +79,7 @@ public class IncidentPersistenceMapper {
         System112StageDetailsJpaEntity details = entity.getSystem112Details();
         return new System112Stage(
                 entity.getId(), entity.getTitle(), entity.getPosition(), details.getClassifierCodes(),
-                toDomain(details.getVictim()), entity.getDescription(),
+                details.getVictimCount(), entity.getDescription(),
                 entity.getCalls().stream().map(this::toDomain).toList());
     }
 
@@ -95,7 +95,7 @@ public class IncidentPersistenceMapper {
         entity.setPosition(stage.position());
         System112StageDetailsJpaEntity details = new System112StageDetailsJpaEntity();
         details.setClassifierCodes(new java.util.ArrayList<>(stage.classifierCodes()));
-        details.setVictim(toEntity(stage.victim()));
+        details.setVictimCount(stage.victimCount());
         entity.setSystem112Details(details);
         return entity;
     }

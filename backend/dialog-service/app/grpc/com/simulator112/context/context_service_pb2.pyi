@@ -175,7 +175,7 @@ class DialogContext(_message.Message):
     def __init__(self, transcript: _Optional[_Iterable[_Union[Phrase, _Mapping]]] = ...) -> None: ...
 
 class SolutionContext(_message.Message):
-    __slots__ = ("applicant", "victim", "additional_info", "incident_type", "call_id", "main_card_id", "revision_id", "card_id", "previous_revision_id", "version", "created_at", "additional_info_provided")
+    __slots__ = ("applicant", "victim_count", "additional_info", "incident_types", "call_id", "main_card_id", "revision_id", "card_id", "previous_revision_id", "version", "created_at", "additional_info_provided")
     class AdditionalInfoEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -184,9 +184,9 @@ class SolutionContext(_message.Message):
         value: str
         def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     APPLICANT_FIELD_NUMBER: _ClassVar[int]
-    VICTIM_FIELD_NUMBER: _ClassVar[int]
+    VICTIM_COUNT_FIELD_NUMBER: _ClassVar[int]
     ADDITIONAL_INFO_FIELD_NUMBER: _ClassVar[int]
-    INCIDENT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    INCIDENT_TYPES_FIELD_NUMBER: _ClassVar[int]
     CALL_ID_FIELD_NUMBER: _ClassVar[int]
     MAIN_CARD_ID_FIELD_NUMBER: _ClassVar[int]
     REVISION_ID_FIELD_NUMBER: _ClassVar[int]
@@ -196,9 +196,9 @@ class SolutionContext(_message.Message):
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     ADDITIONAL_INFO_PROVIDED_FIELD_NUMBER: _ClassVar[int]
     applicant: PersonInfo
-    victim: PersonInfo
+    victim_count: int
     additional_info: _containers.ScalarMap[str, str]
-    incident_type: str
+    incident_types: _containers.RepeatedScalarFieldContainer[str]
     call_id: str
     main_card_id: str
     revision_id: str
@@ -207,7 +207,7 @@ class SolutionContext(_message.Message):
     version: int
     created_at: str
     additional_info_provided: bool
-    def __init__(self, applicant: _Optional[_Union[PersonInfo, _Mapping]] = ..., victim: _Optional[_Union[PersonInfo, _Mapping]] = ..., additional_info: _Optional[_Mapping[str, str]] = ..., incident_type: _Optional[str] = ..., call_id: _Optional[str] = ..., main_card_id: _Optional[str] = ..., revision_id: _Optional[str] = ..., card_id: _Optional[str] = ..., previous_revision_id: _Optional[str] = ..., version: _Optional[int] = ..., created_at: _Optional[str] = ..., additional_info_provided: _Optional[bool] = ...) -> None: ...
+    def __init__(self, applicant: _Optional[_Union[PersonInfo, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ..., incident_types: _Optional[_Iterable[str]] = ..., call_id: _Optional[str] = ..., main_card_id: _Optional[str] = ..., revision_id: _Optional[str] = ..., card_id: _Optional[str] = ..., previous_revision_id: _Optional[str] = ..., version: _Optional[int] = ..., created_at: _Optional[str] = ..., additional_info_provided: _Optional[bool] = ...) -> None: ...
 
 class FullContext(_message.Message):
     __slots__ = ("uuid", "user_id", "incident_context", "dialog_context", "solution_context", "level_context", "solution_context_revisions", "level_progress")

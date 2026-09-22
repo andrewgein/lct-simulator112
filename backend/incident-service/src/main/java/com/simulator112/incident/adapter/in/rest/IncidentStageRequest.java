@@ -1,7 +1,6 @@
 package com.simulator112.incident.adapter.in.rest;
 
 import com.simulator112.incident.domain.common.CallScenario;
-import com.simulator112.incident.domain.common.Person;
 import com.simulator112.incident.domain.dds.DdsStageType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +14,7 @@ public record IncidentStageRequest(
         @NotBlank String title,
         Integer position,
         List<String> classifierCodes,
-        @Valid Person victim,
+        Integer victimCount,
         String description,
         DdsStageType type,
         Integer timeLimitSeconds,
