@@ -26,7 +26,11 @@ on:
         default: ""
 
 env:
-  IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  # Scoped to this repo (not just the owner) - simulator112 and lct-simulator112 share the
+  # same owner and 8/10 service names, and GHCR packages are locked to whichever repo created
+  # them first. ghcr.io/<owner>/<image> would collide with simulator112's already-existing
+  # packages and fail to push (denied: permission_denied: write_package).
+  IMAGE_REGISTRY: ghcr.io/${{ github.repository }}
   IMAGE_TAG: ${{ github.ref_name }}-${{ github.sha }}
   COMPOSE_PROJECT: sim112-stable
 
