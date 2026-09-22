@@ -44,7 +44,7 @@ class IncidentApplicationTests {
     @Test
     void persistsStagesWithCalls() {
         var call = new CallScenario(null, 0, CallDirection.INBOUND, CounterpartyType.CALLER,
-                new Person("Иван", "Иванов", null, 35, "+70000000000", null, null, null),
+                new Person("Иван", "Иванов", null, 35, "+70000000000", null, null, null, null),
                 Gender.MAN, List.of("Виден дым"), List.of("Есть пострадавший"), "caller", "WORRIED");
         var stage = new System112Stage(null, "Первичный вызов", 0,
                 List.of("101", "102"), 1, "Описание", List.of(call));
@@ -87,7 +87,7 @@ class IncidentApplicationTests {
 
     @Test
     void persistsTimedDdsStagesAndStatusCall() {
-        var brigade = new Person("Бригада 12", null, null, null, null, null, null, null);
+        var brigade = new Person("Бригада 12", null, null, null, null, null, null, null, null);
         var outgoing = new CallScenario(null, 0, CallDirection.OUTBOUND, CounterpartyType.BRIGADE,
                 brigade, null, List.of("Передана карточка"), List.of(), "dispatch", "CALM");
         UUID initialStageId = UUID.randomUUID();

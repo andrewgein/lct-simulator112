@@ -54,6 +54,7 @@ public class CallScenarioJpaEntity {
             @AttributeOverride(name = "age", column = @Column(name = "person_age")),
             @AttributeOverride(name = "phone", column = @Column(name = "person_phone")),
             @AttributeOverride(name = "contactPhone", column = @Column(name = "person_contact_phone")),
+            @AttributeOverride(name = "onScenePhone", column = @Column(name = "person_on_scene_phone")),
             @AttributeOverride(name = "address", column = @Column(name = "person_address")),
             @AttributeOverride(name = "additionalInfo", column = @Column(name = "person_additional_info"))
     })

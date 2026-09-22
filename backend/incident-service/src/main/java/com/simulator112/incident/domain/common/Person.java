@@ -7,6 +7,7 @@ public record Person(
         Integer age,
         String phone,
         String contactPhone,
+        String onScenePhone,
         String address,
         String additionalInfo) {
 }

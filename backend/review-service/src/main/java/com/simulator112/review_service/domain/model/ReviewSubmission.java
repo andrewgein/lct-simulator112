@@ -33,7 +33,7 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID levelId, Target
     }
 
     public record Person(String firstName, String lastName, String middleName, String phone,
-                         String contactPhone, String address, String additionalInfo) {
+                         String contactPhone, String onScenePhone, String address, String additionalInfo) {
     }
 
     public record CardRevision(String revisionId, String cardId, long version, String callId,

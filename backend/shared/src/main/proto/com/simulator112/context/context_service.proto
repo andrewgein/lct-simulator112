@@ -16,6 +16,7 @@ message PersonInfo {
   string middle_name = 5;
   string address = 6;
   string additional_info = 7;
+  string on_scene_phone = 8;
 }
 
 enum DialogProgressStatus {

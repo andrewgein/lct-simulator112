@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class System112ReviewRubricTests {
     @Test
     void awardsFullScoreForCorrectCardLinksAndFields() {
-        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, "Москва", null);
+        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
         var first = new ReviewSubmission.CallScenario("call-1", 0, person);
         var second = new ReviewSubmission.CallScenario("call-2", 0, person);
         var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(

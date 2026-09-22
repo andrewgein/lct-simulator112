@@ -265,8 +265,8 @@ public class SolutionService implements ManageSystem112CardUseCase {
     }
 
     private PersonInfo toPerson(com.simulator112.contextmanager.application.model.system112.PersonInfoRequest value) {
-        return value == null ? null : new PersonInfo(value.phone(), value.contactPhone(), value.lastName(),
-                value.firstName(), value.middleName(), value.address(), value.additionalInfo());
+        return value == null ? null : new PersonInfo(value.phone(), value.contactPhone(), value.onScenePhone(),
+                value.lastName(), value.firstName(), value.middleName(), value.address(), value.additionalInfo());
     }
 
     private SolutionContextView toAssembledView(List<SolutionCardRevision> revisions) {
@@ -293,6 +293,7 @@ public class SolutionService implements ManageSystem112CardUseCase {
         return new com.simulator112.contextmanager.application.model.system112.PersonInfoRequest(
                 next.phone() == null && previous != null ? previous.phone() : next.phone(),
                 next.contactPhone() == null && previous != null ? previous.contactPhone() : next.contactPhone(),
+                next.onScenePhone() == null && previous != null ? previous.onScenePhone() : next.onScenePhone(),
                 next.lastName() == null && previous != null ? previous.lastName() : next.lastName(),
                 next.firstName() == null && previous != null ? previous.firstName() : next.firstName(),
                 next.middleName() == null && previous != null ? previous.middleName() : next.middleName(),

@@ -15,6 +15,7 @@ public class PersonInfo {
 
     private String phone;
     private String contactPhone;
+    private String onScenePhone;
     private String lastName;
     private String firstName;
     private String middleName;

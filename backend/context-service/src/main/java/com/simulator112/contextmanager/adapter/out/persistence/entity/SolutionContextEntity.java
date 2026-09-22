@@ -61,6 +61,7 @@ public class SolutionContextEntity {
     @AttributeOverrides({
             @AttributeOverride(name = "phone", column = @Column(name = "applicant_phone", updatable = false)),
             @AttributeOverride(name = "contactPhone", column = @Column(name = "applicant_contact_phone", updatable = false)),
+            @AttributeOverride(name = "onScenePhone", column = @Column(name = "applicant_on_scene_phone", updatable = false)),
             @AttributeOverride(name = "lastName", column = @Column(name = "applicant_last_name", updatable = false)),
             @AttributeOverride(name = "firstName", column = @Column(name = "applicant_first_name", updatable = false)),
             @AttributeOverride(name = "middleName", column = @Column(name = "applicant_middle_name", updatable = false)),
