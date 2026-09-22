@@ -11,7 +11,12 @@ public record UserProfile(
         Instant updatedAt) {
 
     public static UserProfile create(UUID userId, String name, String surname) {
-        return new UserProfile(userId, name, surname, null, null);
+        return create(userId, name, surname, null);
+    }
+
+    public static UserProfile create(
+            UUID userId, String name, String surname, ProfessionalProfile professionalProfile) {
+        return new UserProfile(userId, name, surname, professionalProfile, null);
     }
 
     public UserProfile updatePersonalData(String newName, String newSurname) {

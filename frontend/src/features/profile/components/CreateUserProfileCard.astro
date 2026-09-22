@@ -11,6 +11,19 @@ const error = Astro.url.searchParams.get("error");
       </wa-input>
       <wa-input name="surname" label="Фамилия" required>
       </wa-input>
+      <wa-select name="trainingTrack" label="Профиль" placeholder="Выберите профиль" required>
+        <wa-option value="SYSTEM_112">Система-112</wa-option>
+        <wa-option value="DDS">ДДС</wa-option>
+      </wa-select>
+      <div id="dds-service-field" hidden>
+        <wa-select name="ddsService" label="Служба ДДС" placeholder="Выберите службу" disabled>
+          <wa-option value="FIRE">Пожарная охрана</wa-option>
+          <wa-option value="POLICE">Полиция</wa-option>
+          <wa-option value="AMBULANCE">Скорая помощь</wa-option>
+          <wa-option value="GAS">Аварийная газовая служба</wa-option>
+          <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+        </wa-select>
+      </div>
       <wa-button type="submit" variant="success">
         Сохранить профиль
       </wa-button>
@@ -26,3 +39,19 @@ const error = Astro.url.searchParams.get("error");
     </div>
   </form>
 </wa-card>
+
+<script>
+  const trainingTrack = document.querySelector<HTMLInputElement>("wa-select[name='trainingTrack']");
+  const ddsServiceField = document.querySelector<HTMLElement>("#dds-service-field");
+  const ddsService = document.querySelector<HTMLElement>("wa-select[name='ddsService']");
+
+  const updateDdsServiceField = () => {
+    const isDds = trainingTrack?.value === "DDS";
+    ddsServiceField?.toggleAttribute("hidden", !isDds);
+    ddsService?.toggleAttribute("disabled", !isDds);
+    ddsService?.toggleAttribute("required", isDds);
+  };
+
+  trainingTrack?.addEventListener("change", updateDdsServiceField);
+  updateDdsServiceField();
+</script>

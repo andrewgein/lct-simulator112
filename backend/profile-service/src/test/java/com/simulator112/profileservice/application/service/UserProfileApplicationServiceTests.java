@@ -34,6 +34,22 @@ class UserProfileApplicationServiceTests {
     }
 
     @Test
+    void createsProfileWithProfessionalProfile() {
+        UUID userId = UUID.randomUUID();
+        ProfessionalProfile professionalProfile =
+                new ProfessionalProfile(TrainingTrack.SYSTEM_112, null);
+        UserProfile profile = UserProfile.create(
+                userId, "Иван", "Иванов", professionalProfile);
+        when(repository.save(profile)).thenReturn(profile);
+
+        UserProfile result = service.createProfile(
+                userId, "Иван", "Иванов", professionalProfile);
+
+        assertEquals(professionalProfile, result.professionalProfile());
+        verify(repository).save(profile);
+    }
+
+    @Test
     void assignsDdsProfessionalProfile() {
         UUID userId = UUID.randomUUID();
         UserProfile user = UserProfile.create(userId, "Иван", "Иванов");

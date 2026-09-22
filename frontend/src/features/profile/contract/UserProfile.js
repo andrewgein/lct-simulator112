@@ -5,6 +5,8 @@
  * @typedef {Object} UserProfileRequest
  * @property {string} name
  * @property {string} surname
+ * @property {TrainingTrack} trainingTrack
+ * @property {DdsService} ddsService
  */
 
 /**

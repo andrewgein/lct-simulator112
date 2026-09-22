@@ -61,9 +61,14 @@ public class UserProfileApplicationService
 
     @Override
     @Transactional
-    public UserProfile createProfile(UUID userId, String name, String surname) {
-        UserProfile profile = repository.save(UserProfile.create(userId, name, surname));
-        log.info("Создан сотрудник с id {}", userId);
+    public UserProfile createProfile(
+            UUID userId, String name, String surname, ProfessionalProfile professionalProfile) {
+        UserProfile profile = repository.save(
+                UserProfile.create(userId, name, surname, professionalProfile));
+        log.info(
+                "Создан сотрудник с id {} и направлением обучения {}",
+                userId,
+                professionalProfile.trainingTrack());
         return profile;
     }
 
