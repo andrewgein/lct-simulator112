@@ -68,7 +68,7 @@ public class UserProfileApplicationService
         log.info(
                 "Создан сотрудник с id {} и направлением обучения {}",
                 userId,
-                professionalProfile.trainingTrack());
+                professionalProfile == null ? null : professionalProfile.trainingTrack());
         return profile;
     }
 

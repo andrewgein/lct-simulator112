@@ -7,21 +7,25 @@ export async function POST({ request, locals, cookies, redirect }) {
     const profileForm = await request.formData();
     const name = profileForm.get("name")?.toString().trim();
     const surname = profileForm.get("surname")?.toString().trim();
+    const isAdmin = cookies.get("role")?.value === "ADMIN";
     const trainingTrack = profileForm.get("trainingTrack")?.toString();
     const ddsService = profileForm.get("ddsService")?.toString() || null;
 
     if (!name || !surname) {
         return redirect("/profile/create?error=" + encodeURIComponent("Не указаны имя или фамилия"));
     }
-    if (trainingTrack !== "SYSTEM_112" && trainingTrack !== "DDS") {
+    if (!isAdmin && trainingTrack !== "SYSTEM_112" && trainingTrack !== "DDS") {
         return redirect("/profile/create?error=" + encodeURIComponent("Не выбран профиль"));
     }
     const ddsServices = new Set(["FIRE", "POLICE", "AMBULANCE", "GAS", "ANTI_TERROR"]);
-    if (trainingTrack === "DDS" && !ddsServices.has(ddsService)) {
+    if (!isAdmin && trainingTrack === "DDS" && !ddsServices.has(ddsService)) {
         return redirect("/profile/create?error=" + encodeURIComponent("Не выбрана служба ДДС"));
     }
 
-    const profileResponse = await createProfile({ name, surname, trainingTrack, ddsService: trainingTrack === "DDS" ? ddsService : null }, locals.accessToken);
+    const profile = isAdmin
+        ? { name, surname, trainingTrack: null, ddsService: null }
+        : { name, surname, trainingTrack, ddsService: trainingTrack === "DDS" ? ddsService : null };
+    const profileResponse = await createProfile(profile, locals.accessToken);
     if (!profileResponse.ok) {
         let message = "Не удалось создать профиль";
         try {
