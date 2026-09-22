@@ -11,6 +11,7 @@ public record SolutionContextRequest(
         Integer victimCount,
         Map<String, String> additionalInfo,
         List<String> incidentTypes,
+        List<String> services,
         UUID cardId,
         Long expectedVersion,
         SolutionContextOperation operation,

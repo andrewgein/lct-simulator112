@@ -66,7 +66,7 @@ class SolutionServiceTests {
         attachCall(activeCallId);
         SolutionCardRevision target = card(UUID.randomUUID());
         stub(target);
-        var request = new SolutionContextRequest(person(), null, Map.of(), List.of("FIRE"),
+        var request = new SolutionContextRequest(person(), null, Map.of(), List.of("FIRE"), List.of("101"),
                 null, null, SolutionContextOperation.LINK, target.getCardId());
 
         var response = service.createCardForCall(context.getId(), activeCallId, request);
@@ -81,8 +81,9 @@ class SolutionServiceTests {
         allowSave();
         SolutionCardRevision card = card(activeCallId);
         card.setMainCardId(UUID.randomUUID());
-        card.setApplicant(new PersonInfo("79990000000", null, null, "Иванов", "Иван", null, "Москва", null));
+        card.setApplicant(new PersonInfo("79990000000", null, null, "Иванов", "Иван", null, "очевидец", "Москва", null));
         card.setIncidentTypes(new java.util.ArrayList<>(List.of("FIRE", "GAS")));
+        card.setServices(new java.util.ArrayList<>(List.of("101", "104")));
         card.setAdditionalInfoProvided(true);
         card.getAdditionalInfo().put("floor", "3");
         stub(card);
@@ -97,6 +98,7 @@ class SolutionServiceTests {
         assertEquals("Иван", assembled.applicant().firstName());
         assertEquals(Map.of("floor", "3"), assembled.additionalInfo());
         assertEquals(List.of("FIRE", "GAS"), assembled.incidentTypes());
+        assertEquals(List.of("101", "104"), assembled.services());
     }
 
     @Test
@@ -129,12 +131,12 @@ class SolutionServiceTests {
 
     private SolutionContextRequest request(SolutionContextOperation operation,
                                            SolutionCardRevision card, UUID mainCardId) {
-        return new SolutionContextRequest(person(), null, Map.of("floor", "5"), List.of("FIRE"),
+        return new SolutionContextRequest(person(), null, Map.of("floor", "5"), List.of("FIRE"), List.of("101"),
                 card.getCardId(), card.getVersion(), operation, mainCardId);
     }
 
     private PersonInfoRequest person() {
-        return new PersonInfoRequest("79990000000", null, null, "Петров", "Пётр", null, "Москва", null);
+        return new PersonInfoRequest("79990000000", null, null, "Петров", "Пётр", null, "очевидец", "Москва", null);
     }
 
     private SolutionCardRevision card(UUID callId) {

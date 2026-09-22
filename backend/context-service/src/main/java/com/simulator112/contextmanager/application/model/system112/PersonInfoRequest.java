@@ -7,6 +7,7 @@ public record PersonInfoRequest(
         String lastName,
         String firstName,
         String middleName,
+        String status,
         String address,
         String additionalInfo) {
 }

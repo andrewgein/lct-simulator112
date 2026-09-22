@@ -17,6 +17,7 @@ message PersonInfo {
   string address = 6;
   string additional_info = 7;
   string on_scene_phone = 8;
+  string status = 9;
 }
 
 enum DialogProgressStatus {
@@ -123,8 +124,8 @@ message SolutionContext {
   string previous_revision_id = 10;
   int64 version = 11;
   string created_at = 13;
-  // Distinguishes an explicit empty replacement from an omitted map in a revision.
   optional bool additional_info_provided = 14;
+  repeated string services = 15;
 }
 
 message FullContext {

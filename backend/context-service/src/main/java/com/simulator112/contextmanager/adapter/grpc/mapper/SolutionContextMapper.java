@@ -12,6 +12,7 @@ public final class SolutionContextMapper {
         var builder = SolutionContext.newBuilder()
                 .setApplicant(toProto(revision.getApplicant()))
                 .addAllIncidentTypes(revision.getIncidentTypes())
+                .addAllServices(revision.getServices())
                 .putAllAdditionalInfo(revision.getAdditionalInfo())
                 .setAdditionalInfoProvided(revision.isAdditionalInfoProvided())
                 .setCallId(orEmpty(revision.getCallId()))
@@ -30,7 +31,7 @@ public final class SolutionContextMapper {
         return com.simulator112.context.grpc.contract.PersonInfo.newBuilder()
                 .setPhone(orEmpty(person.phone())).setContactPhone(orEmpty(person.contactPhone()))
                 .setOnScenePhone(orEmpty(person.onScenePhone())).setLastName(orEmpty(person.lastName())).setFirstName(orEmpty(person.firstName()))
-                .setMiddleName(orEmpty(person.middleName())).setAddress(orEmpty(person.address()))
+                .setMiddleName(orEmpty(person.middleName())).setStatus(orEmpty(person.status())).setAddress(orEmpty(person.address()))
                 .setAdditionalInfo(orEmpty(person.additionalInfo())).build();
     }
 

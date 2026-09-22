@@ -24,5 +24,6 @@ public class SolutionCardRevision {
     private Map<String, String> additionalInfo = new HashMap<>();
     private boolean additionalInfoProvided;
     private List<String> incidentTypes = new ArrayList<>();
+    private List<String> services = new ArrayList<>();
     private Instant createdAt;
 }
