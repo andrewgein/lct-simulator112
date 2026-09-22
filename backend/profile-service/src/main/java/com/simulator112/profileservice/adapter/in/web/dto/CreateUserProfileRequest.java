@@ -4,15 +4,17 @@ import com.simulator112.profileservice.domain.model.DdsService;
 import com.simulator112.profileservice.domain.model.ProfessionalProfile;
 import com.simulator112.profileservice.domain.model.TrainingTrack;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 public record CreateUserProfileRequest(
         @NotBlank String name,
         @NotBlank String surname,
-        @NotNull TrainingTrack trainingTrack,
+        TrainingTrack trainingTrack,
         DdsService ddsService) {
 
     public ProfessionalProfile toProfessionalProfile() {
+        if (trainingTrack == null && ddsService == null) {
+            return null;
+        }
         return new ProfessionalProfile(trainingTrack, ddsService);
     }
 }

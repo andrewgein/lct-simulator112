@@ -4,6 +4,8 @@ import com.simulator112.profileservice.adapter.in.web.dto.CreateUserProfileReque
 import com.simulator112.profileservice.adapter.in.web.dto.UpdateUserProfileRequest;
 import com.simulator112.profileservice.adapter.in.web.dto.UserProfileResponse;
 import com.simulator112.profileservice.application.port.in.UserProfileUseCase;
+import com.simulator112.profileservice.domain.exception.InvalidProfessionalProfileException;
+import com.simulator112.profileservice.domain.model.ProfessionalProfile;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -36,13 +38,18 @@ public class UserProfileController {
     @PostMapping
     public UserProfileResponse createProfile(
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Role") String role,
             @Valid @RequestBody CreateUserProfileRequest request) {
+        ProfessionalProfile professionalProfile = request.toProfessionalProfile();
+        if (!"ADMIN".equals(role) && professionalProfile == null) {
+            throw new InvalidProfessionalProfileException("Направление обучения обязательно");
+        }
         return UserProfileWebMapper.toResponse(
                 userProfiles.createProfile(
                         userId,
                         request.name(),
                         request.surname(),
-                        request.toProfessionalProfile()));
+                        professionalProfile));
     }
 
     @PatchMapping("/{userId}")
