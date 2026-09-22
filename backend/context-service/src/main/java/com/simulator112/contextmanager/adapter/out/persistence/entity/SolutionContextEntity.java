@@ -65,6 +65,7 @@ public class SolutionContextEntity {
             @AttributeOverride(name = "lastName", column = @Column(name = "applicant_last_name", updatable = false)),
             @AttributeOverride(name = "firstName", column = @Column(name = "applicant_first_name", updatable = false)),
             @AttributeOverride(name = "middleName", column = @Column(name = "applicant_middle_name", updatable = false)),
+            @AttributeOverride(name = "status", column = @Column(name = "applicant_status", updatable = false)),
             @AttributeOverride(name = "address", column = @Column(name = "applicant_address", updatable = false)),
             @AttributeOverride(name = "additionalInfo", column = @Column(name = "applicant_additional_info", columnDefinition = "text", updatable = false))
     })
@@ -87,6 +88,12 @@ public class SolutionContextEntity {
     @OrderColumn(name = "position")
     @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> incidentTypes = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "solution_context_services", joinColumns = @JoinColumn(name = "solution_context_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "service_code", nullable = false, length = 100)
+    private List<String> services = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -140,7 +140,8 @@ final class ContextPersistenceMapper {
         target.setCallId(source.getCallId()); target.setMainCardId(source.getMainCardId());
         target.setApplicant(toDomain(source.getApplicant())); target.setVictimCount(source.getVictimCount());
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
-        target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes())); target.setCreatedAt(source.getCreatedAt());
+        target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes())); target.setServices(new ArrayList<>(source.getServices()));
+        target.setCreatedAt(source.getCreatedAt());
         return target;
     }
 
@@ -151,7 +152,7 @@ final class ContextPersistenceMapper {
         target.setMainCardId(source.getMainCardId());
         target.setApplicant(toEntity(source.getApplicant())); target.setVictimCount(source.getVictimCount());
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
-        target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes()));
+        target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes())); target.setServices(new ArrayList<>(source.getServices()));
         return target;
     }
 
@@ -182,12 +183,12 @@ final class ContextPersistenceMapper {
     }
     private static com.simulator112.contextmanager.domain.system112.PersonInfo toDomain(com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo value) {
         return value == null ? null : new com.simulator112.contextmanager.domain.system112.PersonInfo(value.getPhone(), value.getContactPhone(),
-                value.getOnScenePhone(), value.getLastName(), value.getFirstName(), value.getMiddleName(), value.getAddress(),
-                value.getAdditionalInfo());
+                value.getOnScenePhone(), value.getLastName(), value.getFirstName(), value.getMiddleName(), value.getStatus(),
+                value.getAddress(), value.getAdditionalInfo());
     }
     private static com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo toEntity(com.simulator112.contextmanager.domain.system112.PersonInfo value) {
         return value == null ? null : new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo(value.phone(), value.contactPhone(),
-                value.onScenePhone(), value.lastName(), value.firstName(), value.middleName(), value.address(),
+                value.onScenePhone(), value.lastName(), value.firstName(), value.middleName(), value.status(), value.address(),
                 value.additionalInfo());
     }
 }

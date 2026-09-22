@@ -19,6 +19,7 @@ public class PersonInfo {
     private String lastName;
     private String firstName;
     private String middleName;
+    private String status;
     private String address;
     private String additionalInfo;
 }

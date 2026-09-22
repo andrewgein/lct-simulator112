@@ -16,6 +16,7 @@ public record SolutionContextView(
         int victimCount,
         Map<String, String> additionalInfo,
         List<String> incidentTypes,
+        List<String> services,
         Instant createdAt
 ) {
 }
