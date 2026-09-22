@@ -8,7 +8,7 @@ import LevelCommandBar from "./LevelCommandBar.jsx";
 import LevelCompletionNotice from "./LevelCompletionNotice.jsx";
 
 const emptyCall = () => ({ phase: "idle", activeCallId: null, phone: "" });
-const emptyEditor = (values = {}) => ({ open: false, operation: "CREATE", editingCardId: null, selectedCardId: "", applicant: emptyPerson(), victim: emptyPerson(), isApplicantVictim: false, incidentType: "", additionalInfo: {}, cardSaved: false, saving: false, ...values });
+const emptyEditor = (values = {}) => ({ open: false, operation: "CREATE", editingCardId: null, selectedCardId: "", applicant: emptyPerson(), victim: emptyPerson(), isApplicantVictim: false, incidentTypes: [""], additionalInfo: {}, cardSaved: false, saving: false, ...values });
 const editorFor = (card, phone) => emptyEditor({
   open: true,
   operation: card ? "SAVE" : "CREATE",
@@ -17,7 +17,7 @@ const editorFor = (card, phone) => emptyEditor({
   applicant: { ...normalizePerson(card?.applicant), phone: card?.applicant?.phone || phone },
   victim: normalizePerson(card?.victim),
   isApplicantVictim: !!card?.applicant?.isApplicantVictim,
-  incidentType: card?.incidentType || "",
+  incidentTypes: card?.incidentTypes?.length ? card.incidentTypes : [""],
   additionalInfo: card?.additionalInfo || {}
 });
 

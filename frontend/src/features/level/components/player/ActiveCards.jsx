@@ -15,7 +15,8 @@ function arrangeCards(cards) {
 
 function createRow(card, kind, depth, relationCount, expanded, classifierState) {
   const complete = cardIsComplete(card, classifierState.classifier);
-  const incident = findIncident(classifierState.classifier, card.incidentType);
+  const incidents = (card.incidentTypes || []).map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
+  const incident = incidents[0];
   const victim = card.victim || {};
   const victimName = [victim.lastName, victim.firstName, victim.middleName].filter(Boolean).join(" ") || "Не указан";
   const additionalInfo = (incident?.fields || []).map((field) => `${field.name}: ${card.additionalInfo?.[field.id] ?? "—"}`).join(" · ");
@@ -26,7 +27,7 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState) 
     kind,
     relationCount,
     expanded,
-    incident: incident?.finalName || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
+    incident: incidents.map((item) => item.finalName).join(" · ") || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
     applicant: applicantName(card),
     applicantPhone: card.applicant?.phone || "Не указан",
     victim: victimName,
