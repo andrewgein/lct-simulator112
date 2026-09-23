@@ -9,20 +9,16 @@ option java_multiple_files = true;
 
 service ReviewService {
   rpc sendOnReview(SendOnReviewRequest) returns (ReviewStatusResponse);
-  rpc getReview(GetReviewRequest) returns (ReviewStatusResponse);
 }
 
 message SendOnReviewRequest {
   context.FullContext context = 1;
 }
 
-message GetReviewRequest {
-  string uuid = 1;
-}
-
 message ReviewStatusResponse {
   ReviewStatus status = 1;
 }
+
 
 enum ReviewStatus {
   CREATED = 0;

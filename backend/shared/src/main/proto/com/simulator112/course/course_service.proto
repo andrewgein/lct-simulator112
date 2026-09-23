@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package course;
+
+option java_package = "com.simulator112.course.grpc.contract";
+option java_multiple_files = true;
+
+service CourseService {
+  rpc GetAssignmentForUser(GetAssignmentForUserRequest) returns (AssignmentForUserResponse);
+}
+
+message GetAssignmentForUserRequest {
+  string user_id = 1;
+  string assignment_id = 2;
+}
+
+message AssignmentForUserResponse {
+  CourseTargetType course_target_type = 1;
+  Assignment assignment = 2;
+}
+
+message Assignment {
+  string id = 1;
+  int32 position = 2;
+  string title = 3;
+  string description = 4;
+  AssignmentDifficulty difficulty = 5;
+  AssignmentExecutionMode execution_mode = 6;
+  repeated string incident_ids = 7;
+}
+
+enum CourseTargetType {
+  COURSE_TARGET_TYPE_UNSPECIFIED = 0;
+  COURSE_TARGET_TYPE_SYSTEM_112 = 1;
+  COURSE_TARGET_TYPE_DDS = 2;
+}
+
+enum AssignmentDifficulty {
+  ASSIGNMENT_DIFFICULTY_UNSPECIFIED = 0;
+  ASSIGNMENT_DIFFICULTY_EASY = 1;
+  ASSIGNMENT_DIFFICULTY_NORMAL = 2;
+  ASSIGNMENT_DIFFICULTY_HARD = 3;
+}
+
+enum AssignmentExecutionMode {
+  ASSIGNMENT_EXECUTION_MODE_UNSPECIFIED = 0;
+  ASSIGNMENT_EXECUTION_MODE_SEQUENTIAL = 1;
+  ASSIGNMENT_EXECUTION_MODE_PARALLEL = 2;
+}
