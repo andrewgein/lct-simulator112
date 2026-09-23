@@ -18,7 +18,7 @@ spring:
                 - name: JwtAuthFilter
                 - name: RoleAuthorization
                   args:
-                    roles: ADMIN
+                    roles: ADMIN,SUPERVISOR
 
             #Auth service
             - id: auth-service-getrole
@@ -42,6 +42,18 @@ spring:
               uri: ${AUTH_SERVICE_URL:http://localhost:8081}
               predicates:
                 - Path=/api/v1/auth/**
+
+            #Profile service — чтение списка профилей преподавателями
+            - id: profile-service-profiles-read
+              uri: ${PROFILE_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/admin/profiles
+                - Method=GET
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN,SUPERVISOR
 
             #Profile service — назначение профессионального профиля администратором
             - id: profile-service-admin
