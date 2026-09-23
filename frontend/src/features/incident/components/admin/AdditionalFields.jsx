@@ -9,8 +9,6 @@ export default function AdditionalFields({ fields, values, onChange }) {
           <wa-option value="true">Да</wa-option>
           <wa-option value="false">Нет</wa-option>
         </wa-select>
-      ) : field.type.toLowerCase() === "textarea" ? (
-        <wa-textarea key={field.id} value={values[field.id] || ""} label={field.name} hint={field.hint} required={field.required} resize="vertical" onInput={(event) => onChange(field.id, event.currentTarget.value)}></wa-textarea>
       ) : (
         <wa-input key={field.id} value={values[field.id] || ""} type={["number", "email", "tel", "url"].includes(field.type.toLowerCase()) ? field.type.toLowerCase() : "text"} label={field.name} required={field.required} onInput={(event) => onChange(field.id, event.currentTarget.value)}>
         </wa-input>
