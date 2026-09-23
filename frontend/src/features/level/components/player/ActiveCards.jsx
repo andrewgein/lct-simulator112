@@ -19,7 +19,8 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
   const incidents = (card.incidentTypes || []).map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
   const incident = incidents[0];
   const victimSummary = card.victimCount > 0 ? `Есть · ${card.victimCount}` : "Нет";
-  const additionalInfo = (incident?.fields || []).map((field) => `${field.name}: ${formatAdditionalInfoValue(field, card.additionalInfo?.[field.id])}`).join(" · ");
+  const classifierFeatures = incident ? [incident.feature1Name, incident.feature2Name, incident.feature3Name, incident.additionalFeatures].filter(Boolean) : [];
+  const additionalInfo = [...classifierFeatures, ...(incident?.fields || []).map((field) => `${field.name}: ${formatAdditionalInfoValue(field, card.additionalInfo?.[field.id])}`)].join(" · ");
   return {
     id: card.cardId,
     card,

@@ -73,6 +73,10 @@ const styles = `
 .incident-details-header button:hover { background: rgba(255, 255, 255, .12); }
 .incident-details-content { padding: var(--wa-space-m); }
 .incident-details-empty { color: var(--wa-color-text-quiet); }
+.incident-classifier-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--wa-space-s); margin: 0; }
+.incident-classifier-details div { min-width: 0; }
+.incident-classifier-details dt { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+.incident-classifier-details dd { margin: var(--wa-space-3xs) 0 0; overflow-wrap: anywhere; font-weight: var(--wa-font-weight-semibold); }
 .incident-details-instructions { border-block-start: var(--wa-border-width-s) solid #b8c1c5; padding-block-start: var(--wa-space-m); }
 .workspace-link-dialog { --width: min(92vw, 72rem); }
 .workspace-link-table-wrap { max-height: min(60vh, 36rem); overflow: auto; border: var(--wa-border-width-s) solid #b8c1c5; }
@@ -99,6 +103,14 @@ const styles = `
 
 function formatTime(seconds) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function classifierDetails(incident, values) {
+  const features = [incident.feature1Name, incident.feature2Name, incident.feature3Name]
+    .map((value, index) => value ? { name: `Признак ${index + 1}`, value } : null)
+    .filter(Boolean);
+  if (incident.additionalFeatures) features.push({ name: "Дополнительные признаки", value: incident.additionalFeatures });
+  return [...features, ...(incident.fields || []).map((field) => ({ name: field.name, value: formatAdditionalInfoValue(field, values[field.id]) }))];
 }
 
 export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyActions }) {
@@ -218,7 +230,20 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о происшествии">
           <VictimStatusBar victimCount={editor.victimCount} readonly />
-          {incidents.map((item) => <div class="wa-stack wa-gap-0" key={item.code}><div class="saved-incident-heading"><strong>{item.finalName}</strong></div><div class="saved-card-panel"><span class="saved-label">Состояние происшествия</span><ul class="saved-details-list wa-stack wa-gap-xs">{(item.fields || []).map((field) => <li class="wa-cluster wa-gap-s" key={field.id}><span>{field.name}:</span><strong>{formatAdditionalInfoValue(field, editor.additionalInfo[field.id])}</strong></li>)}</ul>{!item.fields?.length && <p>Дополнительные сведения не предусмотрены.</p>}</div><div class="saved-card-panel"><span class="saved-label">Инструкции</span>{item.instructions?.length ? <ul>{item.instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}</ul> : <p>Инструкции не указаны.</p>}</div></div>)}
+          {incidents.map((item) => { const details = classifierDetails(item, editor.additionalInfo); return <div class="wa-stack wa-gap-0" key={item.code}>
+            <div class="saved-incident-heading">
+              <strong>{item.finalName}</strong>
+            </div>
+            <div class="saved-card-panel">
+              <span class="saved-label">Признаки классификации</span>
+              {!!details.length && <ul class="saved-details-list wa-stack wa-gap-xs">{details.map((detail, index) => <li class="wa-cluster wa-gap-s" key={`${index}-${detail.name}`}><span>{detail.name}:</span><strong>{detail.value}</strong></li>)}</ul>}
+              {!details.length && <p>Уточняющие признаки не указаны.</p>}
+            </div>
+            <div class="saved-card-panel">
+              <span class="saved-label">Инструкции</span>
+              {item.instructions?.length ? <ul>{item.instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}</ul> : <p>Инструкции не указаны.</p>}
+            </div>
+          </div>; })}
           {!incidents.length && <div class="saved-card-panel">Тип происшествия не выбран.</div>}
           {readonlyDetails}
           <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Статус</span><p><strong>{readonlyStatus}</strong></p></div>
