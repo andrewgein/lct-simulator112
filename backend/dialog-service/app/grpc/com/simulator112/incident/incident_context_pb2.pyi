@@ -79,22 +79,6 @@ COUNTERPARTY_TYPE_UNSPECIFIED: CounterpartyType
 COUNTERPARTY_TYPE_CALLER: CounterpartyType
 COUNTERPARTY_TYPE_BRIGADE: CounterpartyType
 
-class LevelContext(_message.Message):
-    __slots__ = ("id", "title", "target_type", "difficulty", "execution_mode", "incidents")
-    ID_FIELD_NUMBER: _ClassVar[int]
-    TITLE_FIELD_NUMBER: _ClassVar[int]
-    TARGET_TYPE_FIELD_NUMBER: _ClassVar[int]
-    DIFFICULTY_FIELD_NUMBER: _ClassVar[int]
-    EXECUTION_MODE_FIELD_NUMBER: _ClassVar[int]
-    INCIDENTS_FIELD_NUMBER: _ClassVar[int]
-    id: str
-    title: str
-    target_type: IncidentTargetType
-    difficulty: Difficulty
-    execution_mode: ExecutionMode
-    incidents: _containers.RepeatedCompositeFieldContainer[IncidentContext]
-    def __init__(self, id: _Optional[str] = ..., title: _Optional[str] = ..., target_type: _Optional[_Union[IncidentTargetType, str]] = ..., difficulty: _Optional[_Union[Difficulty, str]] = ..., execution_mode: _Optional[_Union[ExecutionMode, str]] = ..., incidents: _Optional[_Iterable[_Union[IncidentContext, _Mapping]]] = ...) -> None: ...
-
 class IncidentContext(_message.Message):
     __slots__ = ("id", "title", "address", "difficulty", "target_type", "stages", "criteria", "prepared_card_template", "initial_assignment", "dds_initial_stage_id", "dds_stage_transitions")
     ID_FIELD_NUMBER: _ClassVar[int]

@@ -1,6 +1,8 @@
 package com.simulator112.course.adapter.out.incident;
 
 import com.simulator112.course.application.port.out.IncidentCatalogPort;
+import com.simulator112.course.domain.course.AssignmentDifficulty;
+import com.simulator112.course.domain.course.CourseTargetType;
 import com.simulator112.course.domain.exception.IncidentNotFoundException;
 import com.simulator112.incident.grpc.contract.GetIncidentRequest;
 import com.simulator112.incident.grpc.contract.IncidentGrpcServiceGrpc;
@@ -23,10 +25,13 @@ public class IncidentGrpcAdapter implements IncidentCatalogPort {
     private final IncidentGrpcServiceGrpc.IncidentGrpcServiceBlockingStub stub;
 
     @Override
-    public void requireIncident(UUID incidentId) {
+    public IncidentDescriptor requireIncident(UUID incidentId) {
         try {
-            stub.withDeadlineAfter(2, TimeUnit.SECONDS).getIncident(
+            var incident = stub.withDeadlineAfter(2, TimeUnit.SECONDS).getIncident(
                     GetIncidentRequest.newBuilder().setIncidentId(incidentId.toString()).build());
+            return new IncidentDescriptor(incidentId,
+                    CourseTargetType.valueOf(incident.getTargetType().name().replace("INCIDENT_TARGET_TYPE_", "")),
+                    AssignmentDifficulty.valueOf(incident.getDifficulty().name().replace("DIFFICULTY_", "")));
         } catch (StatusRuntimeException exception) {
             if (exception.getStatus().getCode() == Status.Code.NOT_FOUND) {
                 throw new IncidentNotFoundException(incidentId);

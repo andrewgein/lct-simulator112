@@ -4,17 +4,19 @@ import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
 import com.simulator112.course.application.port.out.EnrollmentRepository;
 import com.simulator112.course.domain.course.Assignment;
+import com.simulator112.course.domain.course.AssignmentDifficulty;
+import com.simulator112.course.domain.course.AssignmentExecutionMode;
 import com.simulator112.course.domain.course.Course;
 import com.simulator112.course.domain.course.CourseMaterial;
+import com.simulator112.course.domain.course.CourseTargetType;
 import com.simulator112.course.domain.enrollment.Enrollment;
-import com.simulator112.course.domain.enrollment.EnrollmentStatus;
-import com.simulator112.course.domain.exception.AssignmentLockedException;
 import com.simulator112.course.domain.exception.CourseAccessDeniedException;
-import org.junit.jupiter.api.Test;
-
+import com.simulator112.course.domain.exception.EnrollmentNotFoundException;
+import com.simulator112.course.domain.group.StudyGroup;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,39 +25,38 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class EnrollmentApplicationServiceTest {
-    private final EnrollmentRepository enrollmentRepository = mock(EnrollmentRepository.class);
+    private final EnrollmentRepository repository = mock(EnrollmentRepository.class);
     private final GetCourseUseCase getCourse = mock(GetCourseUseCase.class);
-    private final GetStudyGroupUseCase getStudyGroup = mock(GetStudyGroupUseCase.class);
-    private final EnrollmentApplicationService service =
-            new EnrollmentApplicationService(enrollmentRepository, getCourse, getStudyGroup);
-
+    private final GetStudyGroupUseCase getGroup = mock(GetStudyGroupUseCase.class);
+    private final EnrollmentApplicationService service = new EnrollmentApplicationService(repository, getCourse, getGroup);
     private final UUID teacherId = UUID.randomUUID();
     private final UUID studentId = UUID.randomUUID();
     private final UUID groupId = UUID.randomUUID();
-    private final Assignment first = new Assignment(UUID.randomUUID(), "Первое", null, List.of(UUID.randomUUID()));
-    private final Assignment second = new Assignment(UUID.randomUUID(), "Второе", null, List.of(UUID.randomUUID()));
-    private final Course course = new Course(UUID.randomUUID(), "Курс", null, teacherId,
-            List.of(new CourseMaterial(UUID.randomUUID(), "Лекция", "# Лекция")), List.of(first, second));
+    private final Assignment assignment = new Assignment(UUID.randomUUID(), "Задание", null,
+            AssignmentDifficulty.NORMAL, AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID()));
+    private final Course course = new Course(UUID.randomUUID(), "Курс", null, CourseTargetType.SYSTEM_112, teacherId,
+            List.of(new CourseMaterial(UUID.randomUUID(), "Лекция", "materials/test/lecture.md", "lecture.md",
+                    "text/markdown", 10L)), List.of(assignment));
 
     @Test
     void assignsCourseToEveryGroupStudent() {
         UUID otherStudentId = UUID.randomUUID();
         when(getCourse.getCourse(course.id())).thenReturn(course);
-        when(getStudyGroup.getStudyGroup(groupId)).thenReturn(new com.simulator112.course.domain.group.StudyGroup(
+        when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(
                 groupId, "Группа", teacherId, List.of(studentId, otherStudentId)));
-        when(enrollmentRepository.findByCourseIdAndStudentId(any(), any())).thenReturn(Optional.empty());
-        when(enrollmentRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.findByCourseIdAndStudentId(any(), any())).thenReturn(Optional.empty());
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         var enrollments = service.assignCourseToGroup(course.id(), groupId, teacherId);
 
         assertThat(enrollments).hasSize(2);
-        assertThat(enrollments).allMatch(enrollment -> enrollment.status() == EnrollmentStatus.MATERIALS);
+        assertThat(enrollments).allMatch(value -> value.courseId().equals(course.id()));
     }
 
     @Test
     void rejectsAssignmentByForeignTeacher() {
         when(getCourse.getCourse(course.id())).thenReturn(course);
-        when(getStudyGroup.getStudyGroup(groupId)).thenReturn(new com.simulator112.course.domain.group.StudyGroup(
+        when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(
                 groupId, "Группа", UUID.randomUUID(), List.of(studentId)));
 
         assertThatThrownBy(() -> service.assignCourseToGroup(course.id(), groupId, teacherId))
@@ -63,42 +64,13 @@ class EnrollmentApplicationServiceTest {
     }
 
     @Test
-    void requiresMaterialsBeforeAssignments() {
-        stubEnrollment(enrollment(null, List.of()));
-
-        assertThatThrownBy(() -> service.completeAssignment(course.id(), first.id(), studentId))
-                .isInstanceOf(AssignmentLockedException.class)
-                .hasMessageContaining("вводными материалами");
-    }
-
-    @Test
-    void requiresSequentialAssignments() {
-        stubEnrollment(enrollment(java.time.Instant.now(), List.of()));
-
-        assertThatThrownBy(() -> service.completeAssignment(course.id(), second.id(), studentId))
-                .isInstanceOf(AssignmentLockedException.class)
-                .hasMessageContaining("последовательно");
-    }
-
-    @Test
-    void completesCourseAfterLastAssignment() {
-        stubEnrollment(enrollment(java.time.Instant.now(), List.of(first.id())));
-        when(enrollmentRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Enrollment completed = service.completeAssignment(course.id(), second.id(), studentId);
-
-        assertThat(completed.completedAssignmentIds()).containsExactly(first.id(), second.id());
-        assertThat(completed.status()).isEqualTo(EnrollmentStatus.COMPLETED);
-    }
-
-    private void stubEnrollment(Enrollment enrollment) {
+    void resolvesAssignmentOnlyForEnrolledStudent() {
+        Enrollment enrollment = new Enrollment(UUID.randomUUID(), course.id(), studentId, groupId);
+        when(repository.findAllByStudentId(studentId)).thenReturn(List.of(enrollment));
         when(getCourse.getCourse(course.id())).thenReturn(course);
-        when(enrollmentRepository.findByCourseIdAndStudentId(course.id(), studentId))
-                .thenReturn(Optional.of(enrollment));
-    }
 
-    private Enrollment enrollment(java.time.Instant materialsCompletedAt, List<UUID> completedAssignmentIds) {
-        return new Enrollment(UUID.randomUUID(), course.id(), studentId, groupId, materialsCompletedAt,
-                completedAssignmentIds, null);
+        assertThat(service.getEnrollmentForAssignment(assignment.id(), studentId)).isEqualTo(enrollment);
+        assertThatThrownBy(() -> service.getEnrollmentForAssignment(UUID.randomUUID(), studentId))
+                .isInstanceOf(EnrollmentNotFoundException.class);
     }
 }

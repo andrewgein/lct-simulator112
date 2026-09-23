@@ -27,6 +27,15 @@ public class CourseMaterialJpaEntity {
     @Column(nullable = false)
     private String title;
 
-    @Column(name = "content_markdown", nullable = false, columnDefinition = "text")
-    private String contentMarkdown;
+    @Column(name = "file_object_key", nullable = false, length = 512)
+    private String fileObjectKey;
+
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "file_content_type")
+    private String fileContentType;
+
+    @Column(name = "file_size")
+    private Long fileSize;
 }

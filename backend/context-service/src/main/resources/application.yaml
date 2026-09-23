@@ -24,6 +24,8 @@ spring:
           target: ${INCIDENT_SERVICE_GRPC_TARGET:static://localhost:9091}
         review-service:
           target: ${REVIEW_SERVICE_GRPC_TARGET:static://localhost:9092}
+        course-service:
+          target: ${COURSE_SERVICE_GRPC_TARGET:static://localhost:9095}
 context:
   dds:
     timeout-check-delay-ms: ${DDS_TIMEOUT_CHECK_DELAY_MS:1000}

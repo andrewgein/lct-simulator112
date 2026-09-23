@@ -42,7 +42,7 @@ public class ContextController {
 
     @PostMapping
     public ResponseEntity<UUID> create(@RequestHeader("X-User-Id") UUID userId, @RequestBody CreateContextDto body) {
-        UUID contextId = contextService.createContext(userId, body.levelId());
+        UUID contextId = contextService.createContext(userId, body.assignmentId());
         log.info("Контекст {} для пользователя {} создан", contextId, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(contextId);
     }

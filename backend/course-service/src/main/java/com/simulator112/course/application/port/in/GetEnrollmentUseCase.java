@@ -6,4 +6,6 @@ import java.util.UUID;
 
 public interface GetEnrollmentUseCase {
     Enrollment getEnrollment(UUID courseId, UUID studentId);
+
+    Enrollment getEnrollmentForAssignment(UUID assignmentId, UUID studentId);
 }

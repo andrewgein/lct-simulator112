@@ -18,7 +18,7 @@ import java.util.ArrayList;
 public class CoursePersistenceMapper {
 
     public Course toDomain(CourseJpaEntity entity) {
-        return new Course(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getAuthorId(),
+        return new Course(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getTargetType(), entity.getAuthorId(),
                 entity.getMaterials().stream().map(this::toDomain).toList(),
                 entity.getAssignments().stream().map(this::toDomain).toList());
     }
@@ -28,6 +28,7 @@ public class CoursePersistenceMapper {
         entity.setId(course.id());
         entity.setTitle(course.title());
         entity.setDescription(course.description());
+        entity.setTargetType(course.targetType());
         entity.setAuthorId(course.authorId());
         course.materials().stream().map(this::toEntity).forEach(entity::addMaterial);
         course.assignments().stream().map(this::toEntity).forEach(entity::addAssignment);
@@ -48,8 +49,7 @@ public class CoursePersistenceMapper {
     }
 
     public Enrollment toDomain(EnrollmentJpaEntity entity) {
-        return new Enrollment(entity.getId(), entity.getCourseId(), entity.getStudentId(), entity.getGroupId(),
-                entity.getMaterialsCompletedAt(), entity.getCompletedAssignmentIds(), entity.getCompletedAt());
+        return new Enrollment(entity.getId(), entity.getCourseId(), entity.getStudentId(), entity.getGroupId());
     }
 
     public EnrollmentJpaEntity toEntity(Enrollment enrollment) {
@@ -58,26 +58,28 @@ public class CoursePersistenceMapper {
         entity.setCourseId(enrollment.courseId());
         entity.setStudentId(enrollment.studentId());
         entity.setGroupId(enrollment.groupId());
-        entity.setMaterialsCompletedAt(enrollment.materialsCompletedAt());
-        entity.setCompletedAssignmentIds(new ArrayList<>(enrollment.completedAssignmentIds()));
-        entity.setCompletedAt(enrollment.completedAt());
         return entity;
     }
 
     private CourseMaterial toDomain(CourseMaterialJpaEntity entity) {
-        return new CourseMaterial(entity.getId(), entity.getTitle(), entity.getContentMarkdown());
+        return new CourseMaterial(entity.getId(), entity.getTitle(), entity.getFileObjectKey(),
+                entity.getFileName(), entity.getFileContentType(), entity.getFileSize());
     }
 
     private CourseMaterialJpaEntity toEntity(CourseMaterial material) {
         CourseMaterialJpaEntity entity = new CourseMaterialJpaEntity();
         entity.setId(material.id());
         entity.setTitle(material.title());
-        entity.setContentMarkdown(material.contentMarkdown());
+        entity.setFileObjectKey(material.fileObjectKey());
+        entity.setFileName(material.fileName());
+        entity.setFileContentType(material.fileContentType());
+        entity.setFileSize(material.fileSize());
         return entity;
     }
 
     private Assignment toDomain(AssignmentJpaEntity entity) {
-        return new Assignment(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getIncidentIds());
+        return new Assignment(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getDifficulty(),
+                entity.getExecutionMode(), entity.getIncidentIds());
     }
 
     private AssignmentJpaEntity toEntity(Assignment assignment) {
@@ -85,6 +87,8 @@ public class CoursePersistenceMapper {
         entity.setId(assignment.id());
         entity.setTitle(assignment.title());
         entity.setDescription(assignment.description());
+        entity.setDifficulty(assignment.difficulty());
+        entity.setExecutionMode(assignment.executionMode());
         entity.setIncidentIds(new ArrayList<>(assignment.incidentIds()));
         return entity;
     }

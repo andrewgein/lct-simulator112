@@ -9,7 +9,7 @@ final class ReviewRestMapper {
     }
 
     static ReviewResponse toResponse(Review review) {
-        return new ReviewResponse(review.contextId(), review.levelId(), review.createdAt(),
+        return new ReviewResponse(review.contextId(), review.userId(), review.assignmentId(), review.createdAt(),
                 review.results().stream().map(value -> new CriterionResultResponse(value.incidentId(),
                                 value.incidentOrder(), value.criterionName(), value.score(), value.maxScore(), value.feedback()))
                         .toList(), review.status().name());

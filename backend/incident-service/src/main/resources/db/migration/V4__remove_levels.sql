@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS level_incidents;
+DROP TABLE IF EXISTS levels;

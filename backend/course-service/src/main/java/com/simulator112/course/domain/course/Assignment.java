@@ -7,6 +7,8 @@ public record Assignment(
         UUID id,
         String title,
         String description,
+        AssignmentDifficulty difficulty,
+        AssignmentExecutionMode executionMode,
         List<UUID> incidentIds) {
     public Assignment {
         incidentIds = incidentIds == null ? List.of() : List.copyOf(incidentIds);

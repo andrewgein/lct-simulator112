@@ -128,13 +128,24 @@ message SolutionContext {
   repeated string services = 15;
 }
 
+message AssignmentContext {
+  reserved 1;
+  string assignment_id = 2;
+  string user_id = 3;
+  string title = 4;
+  incident.IncidentTargetType target_type = 5;
+  incident.Difficulty difficulty = 6;
+  incident.ExecutionMode execution_mode = 7;
+  repeated incident.IncidentContext incidents = 8;
+}
+
 message FullContext {
   string uuid = 1;
   string user_id = 2;
   incident.IncidentContext incident_context = 3;
   DialogContext dialog_context = 4;
   SolutionContext solution_context = 5;
-  incident.LevelContext level_context = 6;
+  AssignmentContext assignment_context = 6;
   repeated SolutionContext solution_context_revisions = 7;
   LevelProgress level_progress = 8;
 }

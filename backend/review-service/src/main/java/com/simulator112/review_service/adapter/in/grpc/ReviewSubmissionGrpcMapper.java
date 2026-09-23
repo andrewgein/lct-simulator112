@@ -14,14 +14,14 @@ final class ReviewSubmissionGrpcMapper {
     }
 
     static ReviewSubmission toDomain(FullContext source) {
-        if (!source.hasLevelContext() || !source.hasLevelProgress()) {
-            throw new IllegalArgumentException("Для проверки требуется снимок уровня и runtime-прогресс");
+        if (!source.hasAssignmentContext() || !source.hasLevelProgress()) {
+            throw new IllegalArgumentException("Для проверки требуется снимок задания и runtime-прогресс");
         }
-        var level = source.getLevelContext();
+        var assignment = source.getAssignmentContext();
         var target = ReviewSubmission.TargetType.valueOf(
-                level.getTargetType().name().replace("INCIDENT_TARGET_TYPE_", ""));
-        var incidents = IntStream.range(0, level.getIncidentsCount())
-                .mapToObj(index -> incident(level.getIncidents(index), index + 1)).toList();
+                assignment.getTargetType().name().replace("INCIDENT_TARGET_TYPE_", ""));
+        var incidents = IntStream.range(0, assignment.getIncidentsCount())
+                .mapToObj(index -> incident(assignment.getIncidents(index), index + 1)).toList();
         var runtime = source.getLevelProgress().getIncidentsList().stream().map(value ->
                         new ReviewSubmission.IncidentRuntime(value.getIncidentId(),
                                 value.getStatus().name().replace("INCIDENT_PROGRESS_STATUS_", ""),
@@ -29,8 +29,8 @@ final class ReviewSubmissionGrpcMapper {
                                         .map(stage -> new ReviewSubmission.StageRuntime(stage.getStageId(),
                                                 stage.getStageType(), stage.getStatus())).toList() : java.util.List.of()))
                 .toList();
-        return new ReviewSubmission(uuid(source.getUuid()), optionalUuid(source.getUserId()), uuid(level.getId()),
-                target, incidents, source.getSolutionContextRevisionsList().stream()
+        return new ReviewSubmission(uuid(source.getUuid()), optionalUuid(source.getUserId()),
+                uuid(assignment.getAssignmentId()), target, incidents, source.getSolutionContextRevisionsList().stream()
                 .map(ReviewSubmissionGrpcMapper::card).toList(), runtime);
     }
 

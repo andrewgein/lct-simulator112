@@ -27,26 +27,25 @@ class ReviewApplicationServiceTests {
         when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         UUID contextId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
-        UUID levelId = UUID.randomUUID();
-        var submission = new ReviewSubmission(contextId, userId, levelId,
+        UUID assignmentId = UUID.randomUUID();
+        var submission = new ReviewSubmission(contextId, userId, assignmentId,
                 ReviewSubmission.TargetType.SYSTEM_112, List.of(), List.of(), List.of());
 
         Review result = service.submit(submission);
 
         assertThat(result.contextId()).isEqualTo(contextId);
         assertThat(result.userId()).isEqualTo(userId);
-        assertThat(result.levelId()).isEqualTo(levelId);
-        assertThat(result.status()).isEqualTo(ReviewStatus.IN_REVIEW);
+        assertThat(result.assignmentId()).isEqualTo(assignmentId);
+        assertThat(result.status()).isEqualTo(ReviewStatus.DONE);
     }
 
     @Test
-    void marksReviewDoneWhenRequested() {
+    void returnsStoredReviewByContext() {
         UUID contextId = UUID.randomUUID();
         Review review = new Review(contextId, null, UUID.randomUUID(), ReviewStatus.IN_REVIEW,
                 List.of(), Instant.now(), Instant.now());
         when(store.findByContextId(contextId)).thenReturn(Optional.of(review));
-        when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThat(service.getByContextId(contextId).status()).isEqualTo(ReviewStatus.DONE);
+        assertThat(service.getByContextId(contextId).status()).isEqualTo(ReviewStatus.IN_REVIEW);
     }
 }

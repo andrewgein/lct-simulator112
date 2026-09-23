@@ -5,5 +5,13 @@ import java.util.UUID;
 public record CourseMaterial(
         UUID id,
         String title,
-        String contentMarkdown) {
+        String fileObjectKey,
+        String fileName,
+        String fileContentType,
+        Long fileSize) {
+
+    public boolean hasFile() {
+        return fileObjectKey != null && !fileObjectKey.isBlank();
+    }
+
 }

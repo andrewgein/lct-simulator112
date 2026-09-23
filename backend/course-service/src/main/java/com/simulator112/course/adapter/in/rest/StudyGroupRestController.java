@@ -6,10 +6,8 @@ import com.simulator112.course.adapter.in.rest.dto.StudyGroupView;
 import com.simulator112.course.application.port.in.AssignCourseToGroupUseCase;
 import com.simulator112.course.application.port.in.CreateStudyGroupUseCase;
 import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
-import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
 import com.simulator112.course.application.port.in.UpdateStudyGroupUseCase;
-import com.simulator112.course.domain.course.Course;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,7 +25,6 @@ public class StudyGroupRestController {
     private final GetStudyGroupUseCase getStudyGroup;
     private final FindOwnedStudyGroupsUseCase findOwnedStudyGroups;
     private final AssignCourseToGroupUseCase assignCourseToGroup;
-    private final GetCourseUseCase getCourse;
     private final CourseRestMapper mapper;
 
     @PostMapping
@@ -58,9 +55,8 @@ public class StudyGroupRestController {
     @ResponseStatus(HttpStatus.CREATED)
     public List<EnrollmentView> assignCourse(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId,
                                              @PathVariable UUID courseId) {
-        Course course = getCourse.getCourse(courseId);
         return assignCourseToGroup.assignCourseToGroup(courseId, groupId, userId).stream()
-                .map(enrollment -> mapper.toView(enrollment, course))
+                .map(mapper::toView)
                 .toList();
     }
 }

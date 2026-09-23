@@ -36,7 +36,7 @@ class ContextPersistenceAdapterTests {
     @Test
     void roundTripsDomainAggregateWithoutLeakingJpaEntities() {
         TrainingContext context = new TrainingContext();
-        context.setLevelId(UUID.randomUUID());
+        context.setAssignmentId(UUID.randomUUID());
         context.setLevelTitle("Проверочный уровень");
         context.setUserId(UUID.randomUUID());
         context.setTargetType(IncidentTargetType.SYSTEM_112);

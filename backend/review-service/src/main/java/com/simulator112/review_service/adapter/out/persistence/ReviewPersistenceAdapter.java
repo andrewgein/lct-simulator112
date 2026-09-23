@@ -22,7 +22,7 @@ public class ReviewPersistenceAdapter implements ReviewStore {
         ReviewJpaEntity target = new ReviewJpaEntity();
         target.setContextId(source.contextId());
         target.setUserId(source.userId());
-        target.setLevelId(source.levelId());
+        target.setAssignmentId(source.assignmentId());
         target.setStatus(source.status());
         target.setResults(source.results().stream().map(ReviewPersistenceAdapter::toEntity).toList());
         target.setCreatedAt(source.createdAt());
@@ -44,7 +44,7 @@ public class ReviewPersistenceAdapter implements ReviewStore {
     }
 
     private static Review toDomain(ReviewJpaEntity source) {
-        return new Review(source.getContextId(), source.getUserId(), source.getLevelId(), source.getStatus(),
+        return new Review(source.getContextId(), source.getUserId(), source.getAssignmentId(), source.getStatus(),
                 source.getResults().stream().map(ReviewPersistenceAdapter::toDomain).toList(),
                 source.getCreatedAt(), source.getUpdatedAt());
     }

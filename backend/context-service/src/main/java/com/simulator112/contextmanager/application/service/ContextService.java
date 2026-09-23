@@ -11,13 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.simulator112.contextmanager.application.port.in.ContextUseCase;
-import com.simulator112.contextmanager.application.port.out.LevelCatalogPort;
+import com.simulator112.contextmanager.application.port.out.CourseAssignmentPort;
 import com.simulator112.contextmanager.application.port.out.ReviewPort;
 import com.simulator112.contextmanager.application.port.out.ContextStore;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
 import com.simulator112.contextmanager.domain.common.CallSnapshot;
-import com.simulator112.contextmanager.domain.common.LevelScenario;
+import com.simulator112.contextmanager.domain.common.CallStatus;
 import com.simulator112.contextmanager.domain.common.ContextStatus;
 import com.simulator112.contextmanager.domain.common.DialogProgressStatus;
 import com.simulator112.contextmanager.domain.common.ExecutionMode;
@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ContextService implements ContextUseCase {
     private final ContextStore contextStore;
     private final ReviewPort reviewService;
-    private final LevelCatalogPort incidentService;
+    private final CourseAssignmentPort courseAssignments;
 
     @Override
     @Transactional(readOnly = true)
@@ -73,29 +73,23 @@ public class ContextService implements ContextUseCase {
 
     @Override
     @Transactional
-    public UUID createContext(UUID userId, UUID levelId) {
-        return create(userId, levelId).getId();
+    public UUID createContext(UUID userId, UUID assignmentId) {
+        return create(userId, assignmentId).getId();
     }
 
     @Transactional
-    public TrainingContext create(UUID userId, UUID levelId) {
+    public TrainingContext create(UUID userId, UUID assignmentId) {
+        var assignment = courseAssignments.getAssignmentForUser(assignmentId, userId);
         TrainingContext context = new TrainingContext();
-        context.setLevelId(levelId);
+        context.setAssignmentId(assignmentId);
+        context.setLevelTitle(assignment.title());
         context.setUserId(userId);
         context.setStatus(ContextStatus.CREATED);
         context.setDialogStatus(DialogProgressStatus.IDLE);
-
-        LevelScenario level = incidentService.getLevel(levelId);
-        context.setLevelTitle(level.title());
-        context.setDifficulty(level.difficulty());
-        context.setTargetType(level.targetType());
-        context.setExecutionMode(level.executionMode());
-        if (level.incidents().size() == 0) {
-            throw new IllegalStateException("На уровне " + levelId + " нет инцидентов");
-        }
-        for (int index = 0; index < level.incidents().size(); index++) {
-            context.getIncidents().add(level.incidents().get(index));
-        }
+        context.setDifficulty(assignment.difficulty());
+        context.setTargetType(assignment.targetType());
+        context.setExecutionMode(assignment.executionMode());
+        context.getIncidents().addAll(assignment.incidents());
         initializeProgress(context);
         return contextStore.save(context);
     }
@@ -203,7 +197,11 @@ public class ContextService implements ContextUseCase {
                     incident.getStatus() == IncidentProgressStatus.COMPLETED
                             || incident.getStatus() == IncidentProgressStatus.FAILED);
         }
-        return context.getDialog() != null && !context.getSolutionCards().isEmpty();
+        return context.getDialog() != null && !context.getSolutionCards().isEmpty()
+                && context.getIncidents().stream().allMatch(incident ->
+                        incident.getStatus() == IncidentProgressStatus.COMPLETED
+                        && incident.getStages().stream().flatMap(stage -> stage.getCalls().stream())
+                        .allMatch(call -> call.getStatus() == CallStatus.COMPLETED));
     }
 
     private void sendOnReview(TrainingContext context) {
@@ -214,6 +212,7 @@ public class ContextService implements ContextUseCase {
             log.info("Контекст {} отправлен на ревью", context.getId());
         } catch (Exception e) {
             log.error("Не удалось получить ревью, причина: {}", e.getMessage());
+            throw new IllegalStateException("Не удалось отправить результат на проверку", e);
         }
     }
 

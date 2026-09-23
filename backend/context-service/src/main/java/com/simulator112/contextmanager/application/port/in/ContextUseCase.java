@@ -4,7 +4,7 @@ import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
 import java.util.UUID;
 
 public interface ContextUseCase {
-    UUID createContext(UUID userId, UUID levelId);
+    UUID createContext(UUID userId, UUID assignmentId);
 
     IncidentSnapshot getIncidentContext(String contextId);
 

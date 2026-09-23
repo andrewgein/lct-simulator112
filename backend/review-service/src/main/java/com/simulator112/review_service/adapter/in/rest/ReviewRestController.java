@@ -20,7 +20,12 @@ public class ReviewRestController {
     }
 
     @GetMapping("/{contextId}")
-    public ReviewResponse getReview(@PathVariable UUID contextId) {
-        return ReviewRestMapper.toResponse(getReview.getByContextId(contextId));
+    public ReviewResponse getReview(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID contextId) {
+        var review = getReview.getByContextId(contextId);
+        if (!userId.equals(review.userId())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Результат недоступен пользователю");
+        }
+        return ReviewRestMapper.toResponse(review);
     }
 }
