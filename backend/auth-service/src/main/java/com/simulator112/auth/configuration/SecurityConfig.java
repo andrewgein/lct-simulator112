@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -42,7 +43,9 @@ public class SecurityConfig {
                         "/api/v1/auth/reset-password",
                         "/actuator/**")
                     .permitAll()
-                    .requestMatchers("/api/v1/auth/change-role/**", "/api/v1/admin/users")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/admin/users")
+                    .hasAnyAuthority("ADMIN", "SUPERVISOR")
+                    .requestMatchers("/api/v1/auth/change-role/**")
                     .hasAuthority("ADMIN")
                     .anyRequest()
                     .denyAll())
