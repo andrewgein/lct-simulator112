@@ -120,6 +120,23 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
         if (incident.initialStageId() == null || !stageIds.contains(incident.initialStageId())) {
             throw new IllegalArgumentException("Начальный этап ДДС не найден");
         }
+        var initialStage = incident.stages().stream()
+                .filter(stage -> stage.id().equals(incident.initialStageId()))
+                .findFirst()
+                .orElseThrow();
+        if (initialStage.type() != com.simulator112.incident.domain.dds.DdsStageType.ASSIGN_BRIGADE) {
+            throw new IllegalArgumentException("Первый этап ДДС должен подтверждать принятие карточки");
+        }
+        if (initialStage.timeLimitSeconds() != 30) {
+            throw new IllegalArgumentException("На принятие карточки ДДС должно отводиться 30 секунд");
+        }
+        long acceptanceStages = incident.stages().stream()
+                .filter(stage -> stage.type()
+                        == com.simulator112.incident.domain.dds.DdsStageType.ASSIGN_BRIGADE)
+                .count();
+        if (acceptanceStages != 1) {
+            throw new IllegalArgumentException("Этап принятия карточки ДДС должен быть только первым");
+        }
 
         var routes = new java.util.HashMap<UUID, com.simulator112.incident.domain.dds.DdsStageTransition>();
         var incoming = new java.util.HashMap<UUID, Integer>();

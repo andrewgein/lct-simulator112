@@ -70,7 +70,7 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
         }
         StageSnapshot stage = activeStage(incident);
         boolean success = expectedSignal(stage.getDdsStageType()) == signal;
-        advance(context, incident, stage, success, now);
+        advance(context, incident, stage, success, false, now);
         return toProgress(contextStore.save(context));
     }
 
@@ -80,14 +80,14 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
                 .forEach(incident -> {
                     StageSnapshot stage = activeStage(incident);
                     if (stage.getDeadlineAt() != null && !stage.getDeadlineAt().isAfter(now)) {
-                        advance(context, incident, stage, false, now);
+                        advance(context, incident, stage, false, true, now);
                     }
                 });
     }
 
     private void advance(TrainingContext context, IncidentSnapshot incident, StageSnapshot stage,
-                         boolean success, Instant now) {
-        stage.setStatus(success ? StageStatus.SUCCEEDED : StageStatus.FAILED);
+                         boolean success, boolean timedOut, Instant now) {
+        stage.setStatus(success ? StageStatus.SUCCEEDED : timedOut ? StageStatus.TIMED_OUT : StageStatus.FAILED);
         UUID nextStageId = incident.getTransitions().stream()
                 .filter(value -> value.stageId().equals(stage.getSourceId()))
                 .findFirst()

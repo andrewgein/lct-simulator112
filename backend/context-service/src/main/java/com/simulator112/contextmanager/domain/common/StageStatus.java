@@ -5,5 +5,6 @@ public enum StageStatus {
     ACTIVE,
     SUCCEEDED,
     FAILED,
+    TIMED_OUT,
     SKIPPED
 }
