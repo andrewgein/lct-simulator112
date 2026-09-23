@@ -1,20 +1,50 @@
 import { useEffect, useState } from "preact/hooks";
 import AdditionalInfoCard from "./AdditionalInfoCard.jsx";
-import InstructionsCard from "./InstructionsCard.jsx";
+import ApplicantHeader from "./ApplicantHeader.jsx";
+import DispatchServicesPanel, { automaticServices } from "./DispatchServicesPanel.jsx";
+import IncidentTypeSearch from "./IncidentTypeSearch.jsx";
+import LinkCardDialog from "./LinkCardDialog.jsx";
 import PersonCard from "./PersonCard.jsx";
-import VictimFields from "../VictimFields.jsx";
-import ReactionPlanCard from "./ReactionPlanCard.jsx";
-import { applicantName, cardAddress, emptyPerson, findIncident, normalizePerson } from "./editorHelpers";
+import PhoneField from "./PhoneField.jsx";
+import VictimStatusBar from "./VictimStatusBar.jsx";
+import { cardAddress, emptyPerson, findIncident } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
+import IncidentWorkspace from "../../../level/components/common/IncidentWorkspace.jsx";
 
 const styles = `
 .incident-workspace { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 48rem; background: #c8d1d5; color: var(--wa-color-text-normal); }
-.workspace-callbar { display: grid; grid-template-columns: minmax(16rem, 1fr) minmax(22rem, 1.5fr) minmax(16rem, 1fr) auto; box-sizing: border-box; width: auto; height: auto; min-height: 6rem; padding: 0; border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
+.workspace-callbar { display: grid; grid-template-columns: minmax(13rem, 0.8fr) repeat(3, minmax(15rem, 1fr)) auto; box-sizing: border-box; width: auto; height: auto; min-height: 6rem; padding: 0; border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
 .workspace-callbar > div { display: flex; box-sizing: border-box; min-width: 0; padding: var(--wa-space-m) var(--wa-space-l); border-inline-end: var(--wa-border-width-s) solid #b8c1c5; }
+.workspace-applicant-summary { display: flex; box-sizing: border-box; min-height: 4.5rem; align-items: end; gap: var(--wa-space-m); padding: var(--wa-space-m); border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
+.workspace-applicant-name { display: flex; flex: 1; min-width: 0; gap: var(--wa-space-xs); }
+.workspace-applicant-name-input, .workspace-applicant-status { min-width: 0; padding: var(--wa-space-2xs) 0; border: 0; border-block-end: 2px solid #b1bbc0; outline: 0; background: transparent; color: #35434a; font: inherit; }
+.workspace-applicant-name-input { width: 50%; }
+.workspace-applicant-name-input::placeholder, .workspace-applicant-status:invalid { color: #7b8b93; }
+.workspace-applicant-name-input:focus, .workspace-applicant-status:focus { border-block-end-color: #008dca; }
+.workspace-applicant-status { flex: 0 0 9.5rem; cursor: pointer; }
+.workspace-applicant-readonly { flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--wa-space-2xs); }
+.workspace-applicant-readonly strong { font-size: var(--wa-font-size-l); }
+.workspace-victim-status { display: flex; box-sizing: border-box; min-height: 4.5rem; align-items: center; gap: var(--wa-space-m); padding: var(--wa-space-m); border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
+.workspace-victim-status-label { color: #35434a; font-size: var(--wa-font-size-l); }
+.workspace-victim-button { min-width: 5rem; padding: var(--wa-space-xs) var(--wa-space-m); border: var(--wa-border-width-s) solid #9ba8ae; background: transparent; color: #26343b; font: inherit; font-weight: var(--wa-font-weight-semibold); cursor: pointer; }
+.workspace-victim-button--selected { border-color: #008dca; background: #008dca; color: #ffffff; }
+.workspace-victim-count { width: 6rem; padding: var(--wa-space-xs); border: var(--wa-border-width-s) solid #9ba8ae; background: #ffffff; color: #26343b; font: inherit; }
+.workspace-victim-readonly { font-size: var(--wa-font-size-l); font-weight: var(--wa-font-weight-semibold); }
 .workspace-connection { align-items: center; gap: var(--wa-space-l); }
 .workspace-connection wa-icon { color: #35434a; font-size: var(--wa-font-size-2xl); }
 .workspace-connection-copy, .workspace-phone, .workspace-incident-meta { display: flex; flex-direction: column; justify-content: center; gap: var(--wa-space-2xs); }
-.workspace-phone strong { font-size: var(--wa-font-size-xl); font-variant-numeric: tabular-nums; }
+.workspace-phone { position: relative; flex-direction: row; align-items: center; gap: var(--wa-space-s); }
+.workspace-phone > wa-icon { flex: 0 0 auto; color: #687880; font-size: var(--wa-font-size-l); }
+.workspace-phone-content { display: flex; flex: 1; min-width: 0; flex-direction: column; justify-content: center; gap: var(--wa-space-2xs); }
+.workspace-phone strong { overflow: hidden; font-size: var(--wa-font-size-xl); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.workspace-phone-control { display: flex; min-width: 0; align-items: end; gap: var(--wa-space-xs); }
+.workspace-phone-input { flex: 1; min-width: 0; padding: var(--wa-space-2xs) 0; border: 0; border-block-end: 2px solid #9ba8ae; outline: 0; background: transparent; color: #26343b; font: inherit; font-size: var(--wa-font-size-xl); font-variant-numeric: tabular-nums; }
+.workspace-phone-input::placeholder { color: #aeb8bd; }
+.workspace-phone-input:focus { border-block-end-color: #008dca; }
+.workspace-aoh-button { flex: 0 0 auto; min-width: 4.25rem; padding: var(--wa-space-xs) var(--wa-space-s); border: var(--wa-border-width-s) solid #87969d; background: transparent; color: #35434a; font: inherit; font-weight: var(--wa-font-weight-semibold); cursor: pointer; }
+.workspace-aoh-button:hover:not(:disabled) { border-color: #008dca; color: #007bad; }
+.workspace-aoh-button:focus-visible { outline: 2px solid #008dca; outline-offset: 2px; }
+.workspace-aoh-button:disabled { cursor: not-allowed; opacity: .45; }
 .workspace-call-label, .workspace-incident-meta span { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
 .workspace-incident-meta strong { overflow: hidden; font-size: var(--wa-font-size-l); text-overflow: ellipsis; white-space: nowrap; }
 .workspace-timer { align-items: center; justify-content: center; min-width: 8rem; background: #293238; color: #ffffff; font-size: var(--wa-font-size-2xl); font-weight: var(--wa-font-weight-bold); font-variant-numeric: tabular-nums; }
@@ -36,46 +66,58 @@ const styles = `
 .workspace-column wa-card { --spacing: var(--wa-space-m); }
 .workspace-column wa-card::part(base) { border-color: #b8c1c5; border-radius: 0; box-shadow: none; }
 .workspace-column .wa-stack { --wa-content-spacing: var(--wa-space-s); }
-.incident-type-row > wa-select { flex: 1; min-width: 0; }
-.workspace-reference { display: grid; grid-template-columns: minmax(12rem, 1fr) auto; align-items: end; gap: var(--wa-space-s); padding: var(--wa-space-m); background: #e8ecec; border-block-end: var(--wa-border-width-s) solid #b8c1c5; }
-.workspace-reference:has(> wa-select[hidden]) { grid-template-columns: 1fr; }
+.incident-details-panel { border: var(--wa-border-width-s) solid #b8c1c5; background: #f4f6f6; }
+.incident-details-header { display: flex; min-height: 3.5rem; box-sizing: border-box; align-items: center; justify-content: space-between; gap: var(--wa-space-m); padding: var(--wa-space-s) var(--wa-space-m); background: #293238; color: #ffffff; font-size: var(--wa-font-size-l); }
+.incident-details-header strong { text-decoration: underline; text-underline-offset: var(--wa-space-xs); }
+.incident-details-header button { display: grid; width: 2.5rem; height: 2.5rem; place-items: center; border: 0; background: transparent; color: #ffffff; font-size: var(--wa-font-size-xl); cursor: pointer; }
+.incident-details-header button:hover { background: rgba(255, 255, 255, .12); }
+.incident-details-content { padding: var(--wa-space-m); }
+.incident-details-empty { color: var(--wa-color-text-quiet); }
+.incident-details-instructions { border-block-start: var(--wa-border-width-s) solid #b8c1c5; padding-block-start: var(--wa-space-m); }
+.workspace-link-dialog { --width: min(92vw, 72rem); }
+.workspace-link-table-wrap { max-height: min(60vh, 36rem); overflow: auto; border: var(--wa-border-width-s) solid #b8c1c5; }
+.workspace-link-table { width: 100%; border-collapse: collapse; }
+.workspace-link-table th, .workspace-link-table td { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid #d4dadd; text-align: start; vertical-align: middle; }
+.workspace-link-table th { position: sticky; z-index: 1; inset-block-start: 0; background: #e8ecec; color: #45525a; }
+.workspace-link-table tbody tr { cursor: pointer; }
+.workspace-link-table tbody tr:hover { background: #edf7fb; }
+.workspace-link-table tbody tr:has(input:checked) { background: #d9f0fa; }
+.workspace-link-table td:first-child { width: 3rem; text-align: center; }
+.workspace-link-empty { padding: var(--wa-space-xl); color: var(--wa-color-text-quiet); text-align: center; }
 .workspace-section-title { margin: 0; padding: var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid #b8c1c5; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-xl); font-weight: var(--wa-font-weight-normal); }
-.workspace-footer { min-height: 6rem; background: #293238; color: #ffffff; }
+.workspace-footer { min-height: 6rem; color: #ffffff; }
+.workspace-footer--editable { background: #ff5b2d; }
+.workspace-footer--readonly { background: #45525a; }
 .workspace-actions { padding: var(--wa-space-m); }
 .workspace-actions wa-button::part(button) { min-width: 8rem; border-color: #ffffff; color: #ffffff; }
 .workspace-actions .workspace-save::part(button) { min-width: 13rem; }
 .workspace-actions .workspace-link::part(button), .workspace-actions .workspace-close::part(button) { min-width: 4rem; }
 .workspace-actions .workspace-link[appearance='filled']::part(button) { background: #ffffff; color: #ff5b2d; }
-@media (max-width: 70rem) { .workspace-callbar { grid-template-columns: 1fr 1.3fr auto; } .workspace-incident-meta { display: none !important; } }
-@media (max-width: 48rem) { .incident-workspace { min-width: 0; } .workspace-callbar { grid-template-columns: 1fr auto; } .workspace-phone { display: none !important; } .workspace-body, .saved-card-body { grid-template-columns: 1fr; overflow-y: auto; } .workspace-column { overflow: visible; } }
+@media (max-width: 70rem) { .workspace-callbar { grid-template-columns: repeat(3, minmax(13rem, 1fr)) auto; } .workspace-connection { display: none !important; } }
+@media (max-width: 48rem) { .incident-workspace { min-width: 0; } .workspace-callbar { grid-template-columns: repeat(3, minmax(12rem, 1fr)) auto; overflow-x: auto; } .workspace-body, .saved-card-body { grid-template-columns: 1fr; overflow-y: auto; } .workspace-column { overflow: visible; } }
 `;
 
 function formatTime(seconds) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-function formatPhone(phone) {
-  const digits = phone?.replace(/\D/g, "") || "";
-  if (digits.length === 11 && /^[78]/.test(digits)) return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9)}`;
-  return phone || "Номер не определён";
-}
-
-export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose }) {
-  const classifierState = useClassifier();
+export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyActions }) {
+  const loadedClassifierState = useClassifier();
+  const classifierState = classifier ? { classifier, loading: false, error: null } : loadedClassifierState;
   const [seconds, setSeconds] = useState(0);
   const [savedEditMode, setSavedEditMode] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkTargetId, setLinkTargetId] = useState("");
   const incidentTypes = editor.incidentTypes.filter(Boolean);
   const incidents = incidentTypes.map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
-  const incident = incidents[0];
-  const incidentNames = incidents.map((item) => item.finalName).join(" · ");
   const editingCard = cards.find((card) => card.cardId === editor.editingCardId);
-  const relationCards = cards.filter((card) => card.cardId !== editor.editingCardId && !card.mainCardId);
-  const selectedCard = relationCards.find((card) => card.cardId === editor.selectedCardId);
-  const referenceVisible = editor.operation === "LINK";
+  const linkCards = cards.filter((card) => card.cardId !== editor.editingCardId);
+  const selectedCard = linkCards.find((card) => card.cardId === editor.selectedCardId);
   const relatedCard = !!editingCard?.mainCardId;
   const canUnlink = relatedCard && call.phase === "active" && call.activeCallId === editingCard.callId;
   const relationLocked = relatedCard || call.phase === "finished";
   const canSave = !editor.cardSaved && Number.isInteger(editor.victimCount) && editor.victimCount >= 0 && incidentTypes.length === editor.incidentTypes.length && incidentTypes.length > 0 && (editor.operation !== "LINK" || !!selectedCard);
+  const aoh = call.phone || editor.applicant.phone;
 
   useEffect(() => setSavedEditMode(false), [editor.editingCardId, editor.open]);
 
@@ -89,16 +131,23 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   }, [editor.open, call.phase]);
 
   const setApplicant = (applicant) => onChange({ ...editor, applicant });
-  const selectOperation = (operation) => {
-    if (relationLocked) return;
-    const fallback = editor.editingCardId ? "SAVE" : "CREATE";
-    const nextOperation = editor.operation === operation ? fallback : operation;
-    const selectedCardId = relationCards.some((card) => card.cardId === editor.selectedCardId) ? editor.selectedCardId : relationCards[0]?.cardId || "";
-    onChange({ ...editor, operation: nextOperation, selectedCardId });
+  const addIncidentType = (code) => {
+    const nextIncidentTypes = [...incidentTypes, code];
+    onChange({ ...editor, incidentTypes: nextIncidentTypes, services: [...new Set([...(editor.services || []), ...automaticServices(classifierState.classifier, nextIncidentTypes)])] });
   };
-  const selectReference = (cardId) => {
-    const card = cards.find((item) => item.cardId === cardId);
-    onChange(editor.operation === "SAVE" && card ? { ...editor, selectedCardId: cardId, applicant: normalizePerson(card.applicant), victimCount: card.victimCount ?? 0, incidentTypes: card.incidentTypes?.length ? card.incidentTypes : [""], additionalInfo: card.additionalInfo || {} } : { ...editor, selectedCardId: cardId });
+  const removeIncidentType = (removedIncident) => {
+    const removedFields = new Set((removedIncident.fields || []).map((field) => field.id));
+    onChange({ ...editor, incidentTypes: incidentTypes.filter((code) => code !== removedIncident.code), additionalInfo: Object.fromEntries(Object.entries(editor.additionalInfo).filter(([key]) => !removedFields.has(key))) });
+  };
+  const openLinkDialog = () => {
+    if (relationLocked || !linkCards.length) return;
+    setLinkTargetId(linkCards.some((card) => card.cardId === editor.selectedCardId) ? editor.selectedCardId : "");
+    setLinkDialogOpen(true);
+  };
+  const confirmLink = () => {
+    if (!linkTargetId) return;
+    onChange({ ...editor, operation: "LINK", selectedCardId: linkTargetId });
+    setLinkDialogOpen(false);
   };
   const autofill = () => {
     const firstIncident = classifierState.classifier.flatMap((category) => category.entries)[0];
@@ -109,7 +158,8 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       applicant: { ...emptyPerson(), phone: "79001234567", contactPhone: "79001234567", onScenePhone: "79001234567", lastName: "Иванов", firstName: "Иван", middleName: "Иванович", address: "г. Москва, ул. Тверская, д. 1", additionalInfo: "Тестовый заявитель" },
       victimCount: 1,
       incidentTypes: [firstIncident.code],
-      additionalInfo: Object.fromEntries((firstIncident.fields || []).map((field) => [field.id, values[field.type.toLowerCase()] || "Тестовое значение"]))
+      additionalInfo: Object.fromEntries((firstIncident.fields || []).map((field) => [field.id, values[field.type.toLowerCase()] || "Тестовое значение"])),
+      services: automaticServices(classifierState.classifier, [firstIncident.code])
     });
   };
   const unlink = async () => {
@@ -135,7 +185,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operation, cardId: revisingCard ? editingCard.cardId : null, expectedVersion: revisingCard ? editingCard.version : null, mainCardId: operation === "LINK" ? selectedCard.cardId : null, applicant: editor.applicant, victimCount: editor.victimCount, incidentTypes, additionalInfo: editor.additionalInfo })
+        body: JSON.stringify({ operation, cardId: revisingCard ? editingCard.cardId : null, expectedVersion: revisingCard ? editingCard.version : null, mainCardId: operation === "LINK" ? selectedCard.cardId : null, applicant: editor.applicant, victimCount: editor.victimCount, incidentTypes, additionalInfo: editor.additionalInfo, services: editor.services })
       });
       if (!response.ok) throw new Error(await response.text());
       onClose(call.phase === "finished");
@@ -147,86 +197,82 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const cancel = () => onChange({ ...editor, open: false, saving: false });
 
   if (!editor.open) return null;
-  if (editingCard && !savedEditMode) return (
-    <div class="incident-workspace" role="dialog" aria-modal="true" aria-label={`Просмотр карточки ${editingCard.cardId}`}>
+  if (editingCard && (!savedEditMode || readOnly)) return (
+    <IncidentWorkspace label={`Просмотр карточки ${editingCard.cardId}`}>
       <style>{styles}</style>
       <header class="workspace-callbar">
         <div class="workspace-connection">
           <wa-icon name="phone" aria-hidden="true"></wa-icon>
-          <div class="workspace-connection-copy"><strong>Карточка сохранена</strong><span class="workspace-call-label">режим просмотра</span></div>
+          <div class="workspace-connection-copy"><strong>{readonlyTitle}</strong><span class="workspace-call-label">{readonlyHint}</span></div>
         </div>
-        <div class="workspace-phone"><span class="workspace-call-label">АОН</span><strong>{formatPhone(editor.applicant.phone)}</strong></div>
-        <div class="workspace-incident-meta"><strong>Происшествие {editingCard.cardId}</strong><span>{incidentNames || "Тип происшествия не выбран"}</span></div>
-        <div class="workspace-timer saved-view-label">Просмотр</div>
+        <PhoneField label="АОН" value={editor.applicant.phone} readonly />
+        <PhoneField label="Предоставленный" value={editor.applicant.contactPhone} readonly />
+        <PhoneField label="Телефон на месте" value={editor.applicant.onScenePhone} readonly />
+        <div class="workspace-timer saved-view-label">{readonlyTimer}</div>
       </header>
       <div class="saved-card-body">
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о заявителе">
-          <div class="saved-card-panel saved-person-heading wa-cluster wa-gap-l wa-align-items-baseline"><strong>{applicantName(editingCard)}</strong><span>заявитель</span></div>
+          <ApplicantHeader person={editor.applicant} readonly />
           <div class="saved-card-panel saved-address wa-stack wa-gap-s"><span class="saved-label">Адрес</span><strong>{cardAddress(editingCard)}</strong>{editor.applicant.additionalInfo && <span>{editor.applicant.additionalInfo}</span>}</div>
-          <div class="saved-card-panel"><span class="saved-label">Пострадавшие</span><p><strong>{editor.victimCount > 0 ? `Есть · ${editor.victimCount}` : "Нет"}</strong></p></div>
           <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Описание со слов заявителя</span><p>{editor.applicant.additionalInfo || "Описание не заполнено"}</p></div>
         </section>
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о происшествии">
-          <div class="saved-incident-heading"><strong>{incidentNames || "Тип происшествия не выбран"}</strong></div>
-          <div class="saved-card-panel"><span class="saved-label">Состояние происшествия</span><ul class="saved-details-list wa-stack wa-gap-xs">{(incident?.fields || []).map((field) => <li class="wa-cluster wa-gap-s" key={field.id}><span>{field.name}:</span><strong>{String(editor.additionalInfo[field.id] ?? "—")}</strong></li>)}</ul>{!incident?.fields?.length && <p>Дополнительные сведения не предусмотрены.</p>}</div>
-          <div class="saved-card-panel"><span class="saved-label">Инструкции</span>{incident?.instructions?.length ? <ul>{incident.instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}</ul> : <p>Инструкции не указаны.</p>}</div>
-          <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Статус</span><p><strong>Карточка сохранена</strong></p></div>
+          <VictimStatusBar victimCount={editor.victimCount} readonly />
+          {incidents.map((item) => <div class="wa-stack wa-gap-0" key={item.code}><div class="saved-incident-heading"><strong>{item.finalName}</strong></div><div class="saved-card-panel"><span class="saved-label">Состояние происшествия</span><ul class="saved-details-list wa-stack wa-gap-xs">{(item.fields || []).map((field) => <li class="wa-cluster wa-gap-s" key={field.id}><span>{field.name}:</span><strong>{String(editor.additionalInfo[field.id] ?? "—")}</strong></li>)}</ul>{!item.fields?.length && <p>Дополнительные сведения не предусмотрены.</p>}</div><div class="saved-card-panel"><span class="saved-label">Инструкции</span>{item.instructions?.length ? <ul>{item.instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}</ul> : <p>Инструкции не указаны.</p>}</div></div>)}
+          {!incidents.length && <div class="saved-card-panel">Тип происшествия не выбран.</div>}
+          {readonlyDetails}
+          <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Статус</span><p><strong>{readonlyStatus}</strong></p></div>
         </section>
       </div>
-      <footer class="workspace-footer wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
+      <footer class="workspace-footer workspace-footer--readonly wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
+        <DispatchServicesPanel classifier={classifierState.classifier} services={editor.services} readonly onChange={() => {}} />
+        {readonlyActions}
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
-          <wa-button class="workspace-save" size="l" type="button" appearance="outlined" variant="neutral" onClick={() => setSavedEditMode(true)}><wa-icon slot="start" name="pencil"></wa-icon>Редактировать</wa-button>
-          {relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button>}
+          {!readOnly && <wa-button class="workspace-save" size="l" type="button" appearance="outlined" variant="neutral" onClick={() => setSavedEditMode(true)}><wa-icon slot="start" name="pencil"></wa-icon>Редактировать</wa-button>}
+          {!readOnly && relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button>}
           <wa-button class="workspace-close" type="button" size="l" appearance="outlined" variant="neutral" onClick={cancel}><wa-icon name="xmark" label="Закрыть карточку"></wa-icon></wa-button>
         </div>
       </footer>
-    </div>
+    </IncidentWorkspace>
   );
   return (
-    <div class="incident-workspace" role="dialog" aria-modal="true" aria-label="Карточка происшествия">
+    <IncidentWorkspace label="Карточка происшествия">
       <style>{styles}</style>
       <header class="workspace-callbar">
         <div class="workspace-connection">
           <wa-icon name={call.phase === "active" ? "phone-volume" : "phone"} aria-hidden="true"></wa-icon>
           <div class="workspace-connection-copy"><strong>{call.phase === "active" ? "На линии" : "Карточка происшествия"}</strong><span class="workspace-call-label">{call.phase === "active" ? "активное соединение" : "редактирование"}</span></div>
         </div>
-        <div class="workspace-phone"><span class="workspace-call-label">АОН</span><strong>{formatPhone(call.phone || editor.applicant.phone)}</strong></div>
-        <div class="workspace-incident-meta"><strong>{editingCard ? `Происшествие ${editingCard.cardId}` : "Новое происшествие"}</strong><span>{incidentNames || "Тип происшествия не выбран"}</span></div>
+        <PhoneField label="АОН" value={aoh} readonly />
+        <PhoneField label="Предоставленный" value={editor.applicant.contactPhone} aoh={aoh} onChange={(contactPhone) => setApplicant({ ...editor.applicant, contactPhone })} />
+        <PhoneField label="Телефон на месте" value={editor.applicant.onScenePhone} aoh={aoh} onChange={(onScenePhone) => setApplicant({ ...editor.applicant, onScenePhone })} />
         <div class="workspace-timer" aria-label={`Время звонка: ${formatTime(seconds)}`}>{formatTime(seconds)}</div>
       </header>
       <div class="workspace-body">
         <section class="workspace-column" aria-label="Заявитель и пострадавшие">
-          <h2 class="workspace-section-title">Данные вызова</h2>
+          <ApplicantHeader person={editor.applicant} onChange={setApplicant} />
           <div class="workspace-column-inner wa-stack wa-gap-m">
-            <PersonCard title="Информация о заявителе" kind="applicant" person={editor.applicant} addressRequired dadataApiKey={dadataApiKey} onChange={setApplicant} />
-            <wa-card><VictimFields victimCount={editor.victimCount} required onChange={(victimCount) => onChange({ ...editor, victimCount })} /></wa-card>
+            <PersonCard kind="applicant" person={editor.applicant} addressRequired dadataApiKey={dadataApiKey} onChange={setApplicant} />
           </div>
         </section>
         <section class="workspace-column" aria-label="Классификация происшествия">
-          <div class="workspace-reference">
-            <wa-select label="Связанная карточка" hidden={!referenceVisible} value={editor.selectedCardId} onChange={(event) => selectReference(event.currentTarget.value)}>
-              {relationCards.map((card) => <wa-option key={card.cardId} value={card.cardId}>{applicantName(card)} / {cardAddress(card)}</wa-option>)}
-            </wa-select>
-            <div class="workspace-operation-buttons wa-cluster wa-gap-xs wa-justify-content-end">
-              {!relatedCard && <wa-button type="button" appearance={editor.operation === "LINK" ? "filled" : "outlined"} variant={editor.operation === "LINK" ? "brand" : "neutral"} disabled={relationLocked || !relationCards.length} onClick={() => selectOperation("LINK")}><wa-icon slot="start" name="link"></wa-icon>Связать</wa-button>}
-            </div>
-          </div>
-          <h2 class="workspace-section-title">Добавить тип происшествия</h2>
+          <VictimStatusBar victimCount={editor.victimCount} onChange={(victimCount) => onChange({ ...editor, victimCount })} />
+          <LinkCardDialog open={linkDialogOpen} cards={linkCards} selectedId={linkTargetId} onSelect={setLinkTargetId} onCancel={() => setLinkDialogOpen(false)} onConfirm={confirmLink} />
+          <IncidentTypeSearch classifierState={classifierState} selectedCodes={incidentTypes} onAdd={addIncidentType} />
           <div class="workspace-column-inner wa-stack wa-gap-m">
-            <ReactionPlanCard classifierState={classifierState} values={editor.incidentTypes} required onChange={(incidentTypes) => onChange({ ...editor, incidentTypes })} />
-            <AdditionalInfoCard incident={incident} values={editor.additionalInfo} onChange={(additionalInfo) => onChange({ ...editor, additionalInfo })} />
-            <InstructionsCard incident={incident} />
+            {incidents.map((item) => <AdditionalInfoCard key={item.code} incident={item} values={editor.additionalInfo} onChange={(additionalInfo) => onChange({ ...editor, additionalInfo })} onRemove={() => removeIncidentType(item)} />)}
           </div>
         </section>
       </div>
-      <footer class="workspace-footer wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
+      <footer class={`workspace-footer ${editingCard ? "workspace-footer--readonly" : "workspace-footer--editable"} wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap`}>
+        <DispatchServicesPanel classifier={classifierState.classifier} services={editor.services} readonly={!!editingCard} onChange={(services) => onChange({ ...editor, services })} />
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {isDev && <wa-button size="l" type="button" appearance="outlined" onClick={autofill}><wa-icon name="wand-magic-sparkles" label="Автозаполнение"></wa-icon></wa-button>}
           <wa-button class="workspace-save" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canSave} loading={editor.saving} onClick={save}>Сохранить</wa-button>
-          {relatedCard ? <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button> : <wa-button class="workspace-link" type="button" size="l" appearance={editor.operation === "LINK" ? "filled" : "outlined"} variant="neutral" disabled={relationLocked || !relationCards.length} aria-label="Связать карточку" onClick={() => selectOperation("LINK")}><wa-icon name="link"></wa-icon></wa-button>}
+          {relatedCard ? <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button> : <wa-button class="workspace-link" type="button" size="l" appearance={editor.operation === "LINK" ? "filled" : "outlined"} variant="neutral" disabled={relationLocked || !linkCards.length} aria-label="Связать карточку" onClick={openLinkDialog}><wa-icon name="link"></wa-icon></wa-button>}
           {editingCard && <wa-button class="workspace-close" type="button" size="l" appearance="outlined" variant="neutral" aria-label="Закрыть карточку" onClick={cancel}><wa-icon name="xmark" aria-hidden="true"></wa-icon></wa-button>}
         </div>
       </footer>
-    </div>
+    </IncidentWorkspace>
   );
 }

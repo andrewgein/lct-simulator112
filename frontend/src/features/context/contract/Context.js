@@ -12,6 +12,7 @@
  * @property {string} lastName
  * @property {string} firstName
  * @property {string} middleName
+ * @property {string} status
  * @property {string} address
  * @property {string} additionalInfo
  */
@@ -22,6 +23,7 @@
  * @property {number} victimCount
  * @property {Object.<string, string> | null} additionalInfo
  * @property {string[] | null} incidentTypes
+ * @property {string[] | null} services
  * @property {string | null} cardId
  * @property {number | null} expectedVersion
  * @property {SolutionContextOperation} operation
@@ -47,6 +49,7 @@
  * @property {number} victimCount
  * @property {Object.<string, string>} additionalInfo
  * @property {string[]} incidentTypes
+ * @property {string[]} services
  * @property {string} createdAt
  */
 
