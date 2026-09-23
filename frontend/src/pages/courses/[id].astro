@@ -1,0 +1,172 @@
+---
+import Page from "../../layouts/Page.astro";
+import Header from "../../layouts/Header.astro";
+import MainHeader from "../../layouts/MainHeader.astro";
+import { getCourse } from "../../features/course/api/CourseApi";
+import { getEnrollment } from "../../features/course/api/EnrollmentApi";
+import { getUserReviews } from "../../features/review/api/ReviewApi";
+
+export const prerender = false;
+let course;
+let enrollment;
+let reviews = [];
+let error = null;
+try {
+  const [courseResponse, enrollmentResponse, reviewsResponse] = await Promise.all([
+    getCourse(Astro.params.id, Astro.locals.accessToken),
+    getEnrollment(Astro.params.id, Astro.locals.accessToken),
+    getUserReviews(Astro.locals.accessToken)
+  ]);
+  if (!courseResponse.ok || !enrollmentResponse.ok || !reviewsResponse.ok) throw new Error();
+  course = await courseResponse.json();
+  enrollment = await enrollmentResponse.json();
+  reviews = (await reviewsResponse.json()).reviews || [];
+} catch {
+  error = "Не удалось загрузить курс";
+}
+
+const materials = course?.materials || [];
+const assignments = course?.assignments || [];
+const completed = new Set(reviews.filter((review) => review.status === "DONE").map((review) => String(review.assignmentId)));
+const currentAssignment = assignments.find((assignment) => !completed.has(String(assignment.id)));
+const requestedMaterial = Astro.url.searchParams.get("material");
+const requestedAssignment = Astro.url.searchParams.get("assignment");
+const materialKey = (material, index) => String(material.id ?? index);
+const selectedAssignment = requestedAssignment ? assignments.find((assignment) => String(assignment.id) === requestedAssignment) : null;
+const requestedMaterialIndex = requestedMaterial ? materials.findIndex((material, index) => materialKey(material, index) === requestedMaterial) : 0;
+const selectedMaterial = !selectedAssignment ? materials[requestedMaterialIndex >= 0 ? requestedMaterialIndex : 0] : null;
+const fallbackAssignment = !selectedMaterial && !selectedAssignment ? assignments[0] : null;
+const activeAssignment = selectedAssignment || fallbackAssignment;
+const selectedMaterialIndex = selectedMaterial ? materials.indexOf(selectedMaterial) : -1;
+const contentType = selectedMaterial?.fileContentType?.toLowerCase() || "";
+const fileName = selectedMaterial?.fileName?.toLowerCase() || "";
+const isMarkdown = contentType.includes("markdown") || fileName.endsWith(".md");
+const isPdf = contentType.includes("pdf") || fileName.endsWith(".pdf");
+const activeAssignmentDone = activeAssignment ? completed.has(String(activeAssignment.id)) : false;
+const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id) === String(activeAssignment.id);
+---
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="subheader" title={course?.title || "Курс"}>
+    <wa-button href="/" appearance="outlined"><wa-icon slot="start" name="arrow-left"></wa-icon>К курсам</wa-button>
+  </MainHeader>
+  {course && enrollment && (
+    <wa-card slot="navigation" class="course-navigation-card" appearance="filled-outlined">
+      <nav class="course-navigation wa-stack wa-gap-l" aria-label="Содержание курса">
+        <section class="wa-stack wa-gap-xs" aria-labelledby="materials-menu-heading">
+        <h2 id="materials-menu-heading">Вводные материалы</h2>
+        {materials.length ? (
+          <div class="wa-stack wa-gap-3xs">
+            {materials.map((material, index) => {
+              const active = index === selectedMaterialIndex;
+              return <wa-button class="course-menu-button" href={`/courses/${course.id}?material=${encodeURIComponent(materialKey(material, index))}`} appearance={active ? "filled" : "plain"} variant={active ? "brand" : "neutral"} aria-current={active ? "page" : undefined} with-start><wa-icon slot="start" name={material.fileContentType?.toLowerCase().includes("pdf") ? "file-pdf" : "file-lines"}></wa-icon>{material.title || material.fileName}</wa-button>;
+            })}
+          </div>
+        ) : <p class="menu-empty wa-caption-s">Материалы не добавлены</p>}
+      </section>
+      <wa-divider></wa-divider>
+      <section class="wa-stack wa-gap-xs" aria-labelledby="assignments-menu-heading">
+        <h2 id="assignments-menu-heading">Задания</h2>
+        {assignments.length ? (
+          <div class="wa-stack wa-gap-3xs">
+            {assignments.map((assignment, index) => {
+              const done = completed.has(String(assignment.id));
+              const current = String(currentAssignment?.id) === String(assignment.id);
+              const active = String(activeAssignment?.id) === String(assignment.id);
+              return <wa-button class="course-menu-button" href={`/courses/${course.id}?assignment=${encodeURIComponent(assignment.id)}`} appearance={active ? "filled" : "plain"} variant={active ? "brand" : "neutral"} aria-current={active ? "page" : undefined} with-start with-end={!done && !current}><wa-badge slot="start" appearance="outlined" variant={done ? "success" : "neutral"}>{done ? <wa-icon name="check"></wa-icon> : index + 1}</wa-badge>{assignment.title}{!done && !current && <wa-icon slot="end" name="lock"></wa-icon>}</wa-button>;
+            })}
+          </div>
+        ) : <p class="menu-empty wa-caption-s">Задания не добавлены</p>}
+        </section>
+      </nav>
+    </wa-card>
+  )}
+  {course && enrollment && (
+    <section class="course-content" aria-live="polite">
+      {selectedMaterial && (
+        <div class="material-view wa-stack wa-gap-m">
+          <div class="content-heading wa-stack wa-gap-m">
+            <div class="wa-stack wa-gap-2xs">
+              <span class="wa-caption-s">Вводный материал</span>
+              <h2>{selectedMaterial.title || selectedMaterial.fileName}</h2>
+            </div>
+            <wa-divider></wa-divider>
+          </div>
+          {isMarkdown && selectedMaterial.downloadUrl && <div id="markdown-viewer" class="document-viewer markdown-viewer wa-prose" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
+          {isPdf && selectedMaterial.downloadUrl && <iframe class="document-viewer pdf-viewer" src={selectedMaterial.downloadUrl} title={selectedMaterial.title || selectedMaterial.fileName}></iframe>}
+          {!selectedMaterial.downloadUrl && <wa-callout>Файл материала недоступен.</wa-callout>}
+          {selectedMaterial.downloadUrl && !isMarkdown && !isPdf && <wa-callout>Предпросмотр этого формата пока недоступен. <a href={selectedMaterial.downloadUrl} download>Скачать файл</a></wa-callout>}
+        </div>
+      )}
+      {activeAssignment && (
+        <div class="assignment-view wa-stack wa-gap-m">
+          <div class="content-heading wa-stack wa-gap-m">
+            <div class="wa-stack wa-gap-2xs">
+              <span class="wa-caption-s">Задание</span>
+              <h2>{activeAssignment.title}</h2>
+            </div>
+            <wa-divider></wa-divider>
+          </div>
+          <wa-card class="assignment-card" appearance="filled-outlined">
+            <article class="assignment-body wa-stack wa-gap-l">
+              <div class="assignment-description wa-prose">
+                <p>{activeAssignment.description || "Описание задания не добавлено."}</p>
+              </div>
+              {activeAssignmentDone && <wa-callout variant="success"><wa-icon slot="icon" name="circle-check"></wa-icon>Задание выполнено.</wa-callout>}
+              {!activeAssignmentCurrent && !activeAssignmentDone && <wa-callout><wa-icon slot="icon" name="lock"></wa-icon>Сначала выполните предыдущие задания.</wa-callout>}
+            </article>
+          </wa-card>
+          {activeAssignmentCurrent && <wa-button class="start-assignment" variant="brand" size="large" data-course-id={course.id} data-assignment-id={activeAssignment.id}>Начать</wa-button>}
+        </div>
+      )}
+      {!selectedMaterial && !activeAssignment && <wa-callout>В курсе пока нет вводных материалов и заданий.</wa-callout>}
+    </section>
+  )}
+</Page>
+<script>
+  import { marked } from 'marked';
+  import DOMPurify from 'dompurify';
+
+  const viewer = document.querySelector('#markdown-viewer');
+  if (viewer) {
+    fetch(viewer.dataset.source)
+      .then((response) => {
+        if (!response.ok) throw new Error();
+        return response.text();
+      })
+      .then((markdown) => {
+        viewer.innerHTML = DOMPurify.sanitize(marked.parse(markdown));
+      })
+      .catch(() => {
+        viewer.innerHTML = '<p>Не удалось загрузить материал.</p>';
+      });
+  }
+
+  document.querySelectorAll('.start-assignment').forEach((button) => button.addEventListener('click', async () => {
+    button.loading = true;
+    const response = await fetch('/api/v1/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignmentId: button.dataset.assignmentId }) });
+    if (!response.ok) {
+      button.loading = false;
+      alert('Не удалось начать задание');
+      return;
+    }
+    const { contextId } = await response.json();
+    location.href = `/courses/${button.dataset.courseId}/assignments/${button.dataset.assignmentId}?context=${contextId}`;
+  }));
+</script>
+<style>
+  .course-content { min-width: 0; }
+  .course-navigation-card { width: 100%; --spacing: var(--wa-space-l); }
+  .course-navigation h2 { margin: 0; font-size: var(--wa-font-size-m); }
+  .course-menu-button { width: 100%; }
+  .course-menu-button::part(button) { justify-content: flex-start; text-align: start; }
+  .menu-empty { margin: 0; }
+  .content-heading h2 { margin: 0; }
+  .document-viewer { box-sizing: border-box; width: 100%; min-height: 65vh; border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .markdown-viewer { max-width: none; padding: var(--wa-space-xl); }
+  .markdown-viewer > :first-child { margin-block-start: 0; }
+  .markdown-viewer > :last-child { margin-block-end: 0; }
+  .assignment-card { width: 100%; --spacing: var(--wa-space-xl); }
+  .assignment-description p { margin-block-start: 0; white-space: pre-wrap; }
+  .start-assignment { align-self: stretch; }
+</style>

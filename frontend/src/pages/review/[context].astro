@@ -13,7 +13,7 @@ const groupedIncidents = review.criterionResults.reduce((acc, current) => {
   const key = current.incidentId ? `incident:${current.incidentId}` : `legacy:${current.criterionName}`;
   if (!acc[key]) {
     acc[key] = {
-      label: current.incidentOrder ? `Инцидент ${current.incidentOrder}` : current.criterionName,
+      label: current.incidentOrder ? `Сценарий ${current.incidentOrder}` : current.criterionName,
       criteria: {},
     };
   }

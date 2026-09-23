@@ -1,4 +1,5 @@
 import { refreshToken } from "../../../../features/auth/api/AuthApi";
+import { clearProfileSnapshot } from "../../../../features/profile/profileSnapshot";
 
 export const prerender = false;
 const isDev = import.meta.env.DEV;
@@ -8,6 +9,7 @@ function clearSession(cookies) {
     cookies.delete("refreshToken", { path: "/api/v1/auth" });
     cookies.delete("role", { path: "/" });
     cookies.delete("profileCompleted", { path: "/" });
+    clearProfileSnapshot(cookies);
 }
 
 export async function GET({ request, cookies, redirect }) {

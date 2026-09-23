@@ -17,7 +17,8 @@ const PUBLIC_PATHS = [
 export async function apiCall(path, method, body, accessToken, cookies) {
     const headers = {};
     const hasBody = (method == "POST" || method == "PUT" || method == "PATCH");
-    if (hasBody) {
+    const multipart = typeof FormData !== "undefined" && body instanceof FormData;
+    if (hasBody && !multipart) {
         headers["Content-Type"] = "application/json";
     }
     if (accessToken) {
@@ -36,7 +37,7 @@ export async function apiCall(path, method, body, accessToken, cookies) {
     const response = await fetch(API_ENDPOINT + path, {
         method,
         headers,
-        body: hasBody ? JSON.stringify(body) : undefined
+        body: hasBody ? (multipart ? body : JSON.stringify(body)) : undefined
     });
 
     if (response.status == 401 && !PUBLIC_PATHS.includes(path)) {

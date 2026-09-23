@@ -1,0 +1,29 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import CourseForm from "../../../features/course/components/CourseForm.astro";
+import { getIncidentLibrary } from "../../../features/incident/api/AdminIncidentApi";
+
+export const prerender = false;
+if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
+let incidents = [];
+const professionalProfile = Astro.locals.profile;
+let error = null;
+try {
+  incidents = await getIncidentLibrary(Astro.locals.accessToken);
+} catch {
+  error = "Не удалось загрузить сценарии";
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Новый курс">
+    <div class="wa-cluster">
+      <wa-button href="/teacher/courses" appearance="outlined">Отмена</wa-button>
+      <wa-button type="submit" form="course-form" variant="success">Сохранить курс</wa-button>
+    </div>
+  </MainHeader>
+  {!error && <CourseForm {incidents} {professionalProfile} />}
+</Page>

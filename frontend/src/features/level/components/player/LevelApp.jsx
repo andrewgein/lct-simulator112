@@ -96,7 +96,7 @@ export default function LevelApp({ contextId, dialogEndpoint, dadataApiKey, isDe
       "dialog:session_restored": receiveCall,
       "dialog:call_started": setPhase("active"),
       "dialog:call_finished": callFinished,
-      "dialog:no_more_dialups": setPhase("completed"),
+      "dialog:no_more_calls": setPhase("completed"),
       "dialog:error": setPhase("error")
     };
     Object.entries(listeners).forEach(([name, listener]) => window.addEventListener(name, listener));

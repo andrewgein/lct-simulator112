@@ -1,47 +1,58 @@
 ---
-import LevelApp from "../../features/level/components/player/LevelApp.jsx";
-import DdsLevelApp from "../../features/level/components/player/DdsLevelApp.jsx";
-import { getLevel } from "../../features/level/api/LevelApi";
-import { getIncidentClassifier } from "../../features/incident/api/IncidentApi";
-import { normalizeClassifier } from "../../features/incident/storage/classifierHelpers";
-import { getProfile } from "../../features/profile/api/UserProfileApi";
-import Page from "../../layouts/Page.astro";
+import LevelApp from "../../../../features/level/components/player/LevelApp.jsx";
+import DdsLevelApp from "../../../../features/level/components/player/DdsLevelApp.jsx";
+import { getEnrollment } from "../../../../features/course/api/EnrollmentApi";
+import { getCourse } from "../../../../features/course/api/CourseApi";
+import { getUserReviews } from "../../../../features/review/api/ReviewApi";
+import { getIncident, getIncidentClassifier } from "../../../../features/incident/api/IncidentApi";
+import { normalizeClassifier } from "../../../../features/incident/storage/classifierHelpers";
+import Page from "../../../../layouts/Page.astro";
 
 export const prerender = false;
-
+const { id: courseId, assignment: assignmentId } = Astro.params;
 const contextId = Astro.url.searchParams.get("context");
 const dialogEndpoint = import.meta.env.PUBLIC_DIALOG_ENDPOINT || "";
 const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
 const isDev = import.meta.env.DEV;
-let level = null;
+let targetType = null;
 let incidents = [];
 let classifier = [];
-let profile = null;
-let error = contextId ? null : "Не указан контекст прохождения уровня";
+const profile = Astro.locals.profile;
+let error = contextId ? null : "Не указан контекст прохождения задания";
 if (!error) {
-  const response = await getLevel(Astro.params.level, Astro.locals.accessToken);
-  if (response.ok) {
-    level = await response.json();
-    if (level.targetType === "DDS") {
-      try {
-        const [classifierResponse, profileResponse] = await Promise.all([
-          getIncidentClassifier(Astro.locals.accessToken),
-          getProfile(Astro.locals.accessToken)
-        ]);
-        if (!classifierResponse.ok || !profileResponse.ok) throw new Error("DDS data request failed");
-        classifier = normalizeClassifier(await classifierResponse.json());
-        profile = await profileResponse.json();
-      } catch (requestError) {
-        console.error(requestError);
-        error = "Не удалось загрузить рабочее поле ДДС";
-      }
+  try {
+    const [enrollmentResponse, courseResponse, reviewsResponse] = await Promise.all([
+      getEnrollment(courseId, Astro.locals.accessToken), getCourse(courseId, Astro.locals.accessToken),
+      getUserReviews(Astro.locals.accessToken)
+    ]);
+    if (!enrollmentResponse.ok || !courseResponse.ok || !reviewsResponse.ok) throw new Error("Курс недоступен");
+    const course = await courseResponse.json();
+    const reviews = (await reviewsResponse.json()).reviews || [];
+    const completed = new Set(reviews.filter((review) => review.status === "DONE").map((review) => review.assignmentId));
+    const assignment = course.assignments.find((item) => item.id === assignmentId);
+    const current = course.assignments.find((item) => !completed.has(item.id));
+    if (!assignment || current?.id !== assignmentId) throw new Error("Задание недоступно");
+    const responses = await Promise.all(assignment.incidentIds.map((incidentId) =>
+      getIncident(incidentId, Astro.locals.accessToken)));
+    if (responses.some((item) => !item.ok)) throw new Error("Не удалось загрузить сценарии");
+    incidents = await Promise.all(responses.map((item) => item.json()));
+    targetType = course.targetType;
+    if (!targetType || incidents.some((item) => item.targetType !== targetType)) {
+      throw new Error("Сценарии не соответствуют профилю курса");
     }
-  } else error = "Не удалось загрузить уровень";
+    if (targetType === "DDS") {
+      const classifierResponse = await getIncidentClassifier(Astro.locals.accessToken);
+      if (!classifierResponse.ok || !profile) throw new Error("Не удалось загрузить рабочее поле ДДС");
+      classifier = normalizeClassifier(await classifierResponse.json());
+    }
+  } catch (requestError) {
+    error = requestError.message || "Не удалось загрузить задание";
+  }
 }
 ---
 <Page {error}>
-  {contextId && level?.targetType === "SYSTEM_112" && <LevelApp contextId={contextId} dialogEndpoint={dialogEndpoint} dadataApiKey={dadataApiKey} isDev={isDev} client:load />}
-  {contextId && level?.targetType === "DDS" && !error && <DdsLevelApp contextId={contextId} level={level} incidents={incidents} classifier={classifier} userService={profile?.ddsService} client:load />}
+  {!error && targetType === "SYSTEM_112" && <LevelApp {contextId} {dialogEndpoint} {dadataApiKey} {isDev} client:load />}
+  {!error && targetType === "DDS" && <DdsLevelApp {contextId} {incidents} {classifier} userService={profile?.ddsService} client:load />}
 </Page>
 <style is:global>
   wa-page:has(.level-app)::part(main-content) { padding: 0; background: #899ba4; }

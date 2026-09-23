@@ -13,7 +13,7 @@
 /**
  * @typedef {Object} Review
  * @property {string} contextId
- * @property {string} levelId
+ * @property {string} assignmentId
  * @property {string} createdAt
  * @property {CriterionResult[]} criterionResults
  * @property {ReviewStatus} status

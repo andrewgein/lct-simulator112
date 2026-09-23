@@ -69,7 +69,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
             <tbody>
               {users.map((user) => {
                 const profile = profilesByUserId.get(String(user.id));
-                const fullName = profile ? `${profile.name} ${profile.surname}` : "Профиль не создан";
+                const fullName = profile ? [profile.surname, profile.name, profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
                 const trainingTrack = profile?.trainingTrack || "";
                 const isDds = trainingTrack === "DDS";
                 const canEditTrainingTrack = Boolean(profile) && user.role === "STUDENT";

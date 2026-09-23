@@ -1,4 +1,5 @@
 import { login } from "../../../../features/auth/api/AuthApi"
+import { clearProfileSnapshot } from "../../../../features/profile/profileSnapshot";
 
 export const prerender = false;
 const isDev = import.meta.env.DEV;
@@ -31,6 +32,7 @@ export async function POST({ request, cookies, redirect }) {
     };
 
     cookies.delete('profileCompleted', { path: '/' });
+    clearProfileSnapshot(cookies);
     cookies.set('accessToken', accessToken, cookieOptions);
     cookies.set('role', role, cookieOptions);
 

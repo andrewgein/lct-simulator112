@@ -32,6 +32,7 @@ interface Props {
   error?: string
 }
 const { error = null } = Astro.props;
+const hasNavigation = Astro.slots.has('navigation');
 ---
 <!DOCTYPE html>
 <html>
@@ -42,9 +43,25 @@ const { error = null } = Astro.props;
   <title>Учебный смулятор</title>
 </head>
 <body>
-  <wa-page>
+  <wa-page class:list={{ 'has-navigation': hasNavigation }}>
         {Astro.slots.has('header') ? (
-          <div slot="header" style="display: contents;"><slot name="header" /></div>
+          <div slot="header" class="contents-slot"><slot name="header" /></div>
+        ) : null}
+
+        {Astro.slots.has('subheader') ? (
+          <div slot="subheader" class="subheader-slot"><slot name="subheader" /></div>
+        ) : null}
+
+        {Astro.slots.has('navigation-header') ? (
+          <div slot="navigation-header" class="navigation-header-slot"><slot name="navigation-header" /></div>
+        ) : null}
+
+        {Astro.slots.has('navigation') ? (
+          <div slot="navigation" class="navigation-slot"><slot name="navigation" /></div>
+        ) : null}
+
+        {Astro.slots.has('navigation-footer') ? (
+          <div slot="navigation-footer" class="navigation-footer-slot"><slot name="navigation-footer" /></div>
         ) : null}
 
         {Astro.slots.has('main-header') ? (
@@ -52,7 +69,7 @@ const { error = null } = Astro.props;
         ) : null}
 
         {Astro.slots.has('footer') ? (
-          <div slot="footer" style="display: contents;"><slot name="footer" /></div>
+          <div slot="footer" class="contents-slot"><slot name="footer" /></div>
         ) : null}
     <main>
       <slot />

@@ -3,9 +3,13 @@ import LogoutButton from "../features/auth/components/LogoutButton.astro";
 
 const role = Astro.cookies.get("role")?.value;
 const isAdmin = role === "ADMIN";
-const canManageScenarios = isAdmin || role === "SUPERVISOR";
+const isTeacher = role === "SUPERVISOR";
+const isStudent = role === "STUDENT";
+const canManageTraining = isAdmin || isTeacher;
 const pathname = Astro.url.pathname;
 const isActive = (href: string) => href === "/" ? pathname === href : pathname.startsWith(href);
+const profile = Astro.locals.profile;
+const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || profile.surname)?.[0] || ""}`.toUpperCase() : "";
 ---
 
 <header slot="header">
@@ -14,31 +18,60 @@ const isActive = (href: string) => href === "/" ? pathname === href : pathname.s
       <img src="/assets/simulator-logo.svg" alt="" />
     </a>
     <div class="wa-split">
-    <div class="wa-cluster">
       <div class="wa-cluster">
-        <wa-button class:list={{ 'header-nav-active': isActive('/') }}
-                   appearance="plain" variant="neutral" href="/"
-                   aria-current={isActive('/') ? 'page' : undefined}>
-          Уровни
-        </wa-button>
-        <wa-button class:list={{ 'header-nav-active': isActive('/map') }} appearance="plain" variant="neutral" href="/map" aria-current={isActive('/map') ? 'page' : undefined}>Карта</wa-button>
+        {isStudent && (
+          <div class="wa-cluster">
+            <wa-button class:list={{ 'header-nav-active': isActive('/') }} appearance="plain" variant="neutral" href="/" aria-current={isActive('/') ? 'page' : undefined}>Мои курсы</wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/map') }} appearance="plain" variant="neutral" href="/map" aria-current={isActive('/map') ? 'page' : undefined}>Карта</wa-button>
+          </div>
+        )}
+        {canManageTraining && (
+          <div class="wa-cluster">
+            <wa-button class:list={{ 'header-nav-active': isActive('/teacher/courses') }} appearance="plain" variant="brand" href="/teacher/courses" aria-current={isActive('/teacher/courses') ? 'page' : undefined}>Курсы</wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/teacher/groups') }} appearance="plain" variant="brand" href="/teacher/groups" aria-current={isActive('/teacher/groups') ? 'page' : undefined}>Группы</wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/admin/incidents') }} appearance="plain" variant="brand" href="/admin/incidents" aria-current={isActive('/admin/incidents') ? 'page' : undefined}>Сценарии</wa-button>
+            {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/users') }} appearance="plain" variant="brand" href="/admin/users" aria-current={isActive('/admin/users') ? 'page' : undefined}>Пользователи</wa-button>}
+          </div>
+        )}
       </div>
-      {canManageScenarios && (
-        <div class="wa-cluster">
-          <wa-divider orientation="vertical" />
-          <wa-button class:list={{ 'header-nav-active': isActive('/admin/incidents') }} appearance="plain" variant="brand" href="/admin/incidents" aria-current={isActive('/admin/incidents') ? 'page' : undefined}>Управление сценариями</wa-button>
-          {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/levels') }} appearance="plain" variant="brand" href="/admin/levels" aria-current={isActive('/admin/levels') ? 'page' : undefined}>Управление уровнями</wa-button>}
-          {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/users') }} appearance="plain" variant="brand" href="/admin/users" aria-current={isActive('/admin/users') ? 'page' : undefined}>Пользователи</wa-button>}
-        </div>
-      )}
-    </div>
-      <div class="wa-cluster">
-        <wa-button class:list={{ 'header-nav-active': isActive('/profile') }} appearance="plain" variant="neutral" href="/profile" aria-current={isActive('/profile') ? 'page' : undefined}>
-          Профиль
+      <div class="profile-menu-wrap">
+        <wa-button id="profile-menu-trigger" class:list={{ 'header-nav-active': isActive('/profile') }} appearance="plain" variant="neutral" aria-label="Открыть меню профиля">
+          <wa-avatar slot="start" initials={initials} label="Аватар пользователя">
+          </wa-avatar>
+          <span class="profile-menu-name">Профиль
+          </span>
+          <wa-icon slot="end" name="chevron-down" aria-hidden="true">
+          </wa-icon>
         </wa-button>
-        <LogoutButton />
+        <wa-popover class="profile-menu-popover" for="profile-menu-trigger" placement="bottom-end" without-arrow>
+          <nav class="profile-menu wa-stack wa-gap-3xs" aria-label="Меню пользователя">
+            <wa-button appearance="plain" variant="neutral" href="/profile" data-popover="close">
+              <wa-icon slot="start" name="chart-line">
+              </wa-icon>
+              Статистика
+            </wa-button>
+            <wa-button appearance="plain" variant="neutral" href="/profile/settings" data-popover="close">
+              <wa-icon slot="start" name="user-gear">
+              </wa-icon>
+              Настройки профиля
+            </wa-button>
+            <wa-divider>
+            </wa-divider>
+            <LogoutButton />
+          </nav>
+        </wa-popover>
       </div>
     </div>
   </div>
 </header>
 
+<style>
+  .profile-menu-wrap { flex: 0 0 auto; }
+  #profile-menu-trigger wa-avatar { --size: 2rem; --wa-color-neutral-fill-normal: var(--wa-color-neutral-90); --wa-color-neutral-on-normal: var(--wa-color-neutral-05); font-weight: var(--wa-font-weight-bold); }
+  .profile-menu-popover { --max-width: 18rem; color: var(--wa-color-text-normal); }
+  .profile-menu-popover::part(body) { padding: var(--wa-space-2xs); }
+  .profile-menu { box-sizing: border-box; inline-size: 14rem; }
+  .profile-menu wa-button { box-sizing: border-box; width: 100%; margin-inline-start: 0; --wa-color-neutral-on-quiet: var(--wa-color-text-normal); }
+  .profile-menu wa-button::part(button) { justify-content: flex-start; }
+  .profile-menu wa-button[variant='neutral']::part(button):hover { background: var(--wa-color-neutral-fill-normal); color: var(--wa-color-text-normal); }
+</style>

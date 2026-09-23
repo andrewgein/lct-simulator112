@@ -1,208 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import CardEditor from "../../../incident/components/editor/CardEditor.jsx";
-import { emptyPerson, normalizePerson } from "../../../incident/components/editor/editorHelpers.js";
 import LevelCompletionNotice from "../common/LevelCompletionNotice.jsx";
 import LevelSearchInput from "../common/LevelSearchInput.jsx";
 import { useLevelClock } from "../../hooks/useLevelClock.js";
 import ActiveCards from "./ActiveCards.jsx";
+import DdsProgressDetails from "./DdsProgressDetails.jsx";
+import DdsStageActions from "./DdsStageActions.jsx";
 import LevelCommandBar from "./LevelCommandBar.jsx";
+import RemainingTime from "./RemainingTime.jsx";
+import { editorFor, incidentCard, notificationStatus, reactionForService, READONLY_CALL, REACTION_STATUS_OPTIONS, serviceInfo, serviceStatusHistory } from "./ddsLevelHelpers.js";
 
 const styles = `
 .dds-level-message { margin: var(--wa-space-l) var(--wa-space-l) 0; }
-.dds-time--urgent { color: #ffb49f; }
+.dds-time--urgent { color: var(--wa-color-danger-on-quiet); }
 .dds-progress { flex: 1; }
 .dds-progress > p { margin: 0; }
 .dds-progress ol { margin: var(--wa-space-xs) 0 0; padding: 0; list-style: none; }
 .dds-progress li { display: grid; grid-template-columns: auto 1fr; gap: var(--wa-space-s); padding: var(--wa-space-xs) 0; }
-.dds-progress li + li { border-block-start: var(--wa-border-width-s) solid #d4dadd; }
+.dds-progress li + li { border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
 .dds-progress li > div { display: flex; flex-direction: column; }
 .dds-progress li span { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-xs); }
 .dds-progress li p { margin: var(--wa-space-2xs) 0 0; }
-.dds-progress-mark { width: .7rem; height: .7rem; margin-block-start: .35rem; border-radius: 50%; background: #89999f; }
-.dds-progress-mark--active { background: #008dca; }
-.dds-progress-mark--succeeded { background: #168448; }
-.dds-progress-mark--failed, .dds-progress-mark--timed_out { background: #c94225; }
+.dds-progress-mark { width: var(--wa-space-s); height: var(--wa-space-s); margin-block-start: var(--wa-space-2xs); border-radius: var(--wa-border-radius-circle); background: var(--wa-color-neutral-fill-loud); }
+.dds-progress-mark--active { background: var(--wa-color-brand-fill-loud); }
+.dds-progress-mark--succeeded { background: var(--wa-color-success-fill-loud); }
+.dds-progress-mark--failed, .dds-progress-mark--timed_out { background: var(--wa-color-danger-fill-loud); }
 .dds-stage-actions { display: grid; grid-template-columns: minmax(11rem, .8fr) minmax(16rem, 1.2fr); gap: var(--wa-space-m); width: min(42rem, calc(100vw - 5rem)); align-items: end; }
-.dds-stage-buttons { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: var(--wa-space-xs); }
+.dds-stage-buttons { grid-column: 1 / -1; }
 .dds-stage-buttons wa-button::part(button) { min-width: 8rem; }
 .dds-stage-cancel::part(button) { min-width: 3.5rem; }
 @media (max-width: 40rem) { .dds-stage-actions { grid-template-columns: 1fr; width: min(24rem, calc(100vw - 5rem)); } .dds-stage-buttons { grid-column: 1; } }
 @media (max-width: 48rem) { .dds-level-message { margin: var(--wa-space-s) var(--wa-space-s) 0; } }
 `;
 
-const SERVICES = [
-  { value: "FIRE", short: "101", label: "Пожарная охрана" },
-  { value: "POLICE", short: "102", label: "Полиция" },
-  { value: "AMBULANCE", short: "103", label: "Скорая помощь" },
-  { value: "GAS", short: "104", label: "Газовая служба" },
-  { value: "ANTI_TERROR", short: "АТК", label: "Антитеррор" }
-];
-
-const STAGE_ACTIONS = {
-  ASSIGN_BRIGADE: { label: "Принята", signal: "BRIGADE_ASSIGNED" },
-  WAIT_FOR_BRIGADE_STATUS_CHANGE: { label: "Начало реагирования", signal: "BRIGADE_STATUS_CHANGED" },
-  CALL_BRIGADE_FOR_STATUS: { label: "Статус бригады получен", signal: "STATUS_CALL_COMPLETED" },
-  REQUEST_ADDITIONAL_SERVICE: { label: "Дополнительная служба оповещена", signal: "ADDITIONAL_SERVICE_REQUESTED" },
-  COMPLETE_INCIDENT: { label: "Работы завершены", signal: "INCIDENT_COMPLETED" }
-};
-
-const REACTION_STATUS_LABELS = {
-  ADDED: "Добавлена",
-  RECEIVED_BY_SERVICE: "Получена службой",
-  ACCEPTED: "Принята",
-  NOT_ACCEPTED: "Не принята",
-  RESPONSE_STARTED: "Начало реагирования",
-  ARRIVED: "Прибытие",
-  WORK_IN_PROGRESS: "Проведение работ",
-  WORK_COMPLETED: "Работы завершены",
-  WORK_REFUSED: "Отказ от выполнения работ"
-};
-
-const REACTION_STATUS_OPTIONS = {
-  RECEIVED_BY_SERVICE: ["ACCEPTED", "NOT_ACCEPTED"],
-  NOT_ACCEPTED: ["ACCEPTED"],
-  ACCEPTED: ["RESPONSE_STARTED", "WORK_REFUSED"],
-  RESPONSE_STARTED: ["ARRIVED", "WORK_REFUSED"],
-  ARRIVED: ["WORK_IN_PROGRESS", "WORK_REFUSED"],
-  WORK_IN_PROGRESS: ["WORK_COMPLETED", "WORK_REFUSED"]
-};
-
-const INCIDENT_STATUSES = {
-  PENDING: "Ожидает обработки",
-  ACTIVE: "В работе",
-  COMPLETED: "Завершено",
-  FAILED: "Не выполнено"
-};
-
-const STAGE_STATUSES = {
-  ACTIVE: "В работе",
-  SUCCEEDED: "Выполнено",
-  FAILED: "Не выполнено",
-  TIMED_OUT: "Время истекло",
-  SKIPPED: "Пропущено",
-  PENDING: "Ожидает"
-};
-
-const READONLY_CALL = { phase: "idle", activeCallId: null, phone: "" };
-const serviceInfo = (value) => SERVICES.find((service) => service.value === value) || { short: "ДДС", label: value || "Служба не указана" };
-const addressText = (address = {}) => [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(", ") || "Адрес не указан";
-const dateTime = (value) => value ? new Date(value).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
-const timeOnly = (value) => value ? new Date(value).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
-
-function reactionForService(progress, serviceCode) {
-  return progress?.serviceReactions?.find((item) => item.serviceCode === serviceCode) || null;
-}
-
-function serviceStatusHistory(incident, progress, serviceCode) {
-  const history = reactionForService(progress, serviceCode)?.history || [];
-  if (history.length) return history.map((item) => ({ label: REACTION_STATUS_LABELS[item.status] || item.status, time: timeOnly(item.changedAt), dateTime: item.changedAt, comment: item.comment }));
-  const stages = (progress?.dds?.stages || []).filter((stage) => stage.status !== "PENDING").sort((left, right) => new Date(left.startedAt || 0) - new Date(right.startedAt || 0));
-  return stages.map((stage) => ({ label: stage.type === "ASSIGN_BRIGADE" ? "Получена службой" : STAGE_ACTIONS[stage.type]?.label || stage.type, time: timeOnly(stage.startedAt), dateTime: stage.startedAt }));
-}
-
-function incidentCard(incident) {
-  const template = incident.preparedCardTemplate || {};
-  const applicant = { ...normalizePerson(template.applicant || emptyPerson()), address: addressText(incident.address) };
-  applicant.additionalInfo ||= incident.initialAssignment?.instructions || incident.title;
-  return {
-    cardId: String(incident.id),
-    mainCardId: null,
-    applicant,
-    victimCount: template.victimCount ?? 0,
-    incidentTypes: template.classifierCodes || [],
-    additionalInfo: template.additionalInfo || {},
-    services: incident.initialAssignment?.emergencyService ? [incident.initialAssignment.emergencyService] : [],
-    incident
-  };
-}
-
-function editorFor(card) {
-  return {
-    open: true,
-    operation: "SAVE",
-    editingCardId: card.cardId,
-    selectedCardId: card.cardId,
-    applicant: card.applicant,
-    victimCount: card.victimCount,
-    incidentTypes: card.incidentTypes,
-    additionalInfo: card.additionalInfo,
-    services: card.services,
-    cardSaved: true,
-    saving: false
-  };
-}
-
-function activeStageFor(incident, progress) {
-  const activeId = progress?.dds?.activeStageId;
-  return incident?.stages?.find((stage) => String(stage.id) === String(activeId)) || null;
-}
-
-function notificationStatus(incident, progress, serviceCode = incident?.initialAssignment?.emergencyService) {
-  const reactionStatus = reactionForService(progress, serviceCode)?.currentStatus;
-  if (reactionStatus) return REACTION_STATUS_LABELS[reactionStatus] || reactionStatus;
-  const initial = progress?.dds?.stages?.find((stage) => String(stage.stageId) === String(incident?.initialStageId));
-  if (initial?.type !== "ASSIGN_BRIGADE") return INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
-  return { PENDING: "Ожидает направления", ACTIVE: "Ожидает подтверждения", SUCCEEDED: "Принята", FAILED: "Не принята", TIMED_OUT: "Не оповещено" }[initial.status] || INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
-}
-
-function RemainingTime({ deadline, now }) {
-  if (!deadline) return <span>Без таймера</span>;
-  const seconds = Math.max(0, Math.ceil((new Date(deadline).getTime() - now.getTime()) / 1000));
-  return <span class={seconds < 30 ? "dds-time--urgent" : ""}>{String(Math.floor(seconds / 60)).padStart(2, "0")}:{String(seconds % 60).padStart(2, "0")}</span>;
-}
-
-function DdsProgressDetails({ incident, progress, comments }) {
-  const activeStage = activeStageFor(incident, progress);
-  const history = (progress?.dds?.stages || []).filter((stage) => stage.status !== "PENDING");
-  return (
-    <div class="saved-card-panel dds-progress wa-stack wa-gap-s">
-      <span class="saved-label">Ход реагирования</span>
-      <strong>{activeStage?.title || INCIDENT_STATUSES[progress?.status] || "Ожидает обработки"}</strong>
-      {activeStage?.description && <p>{activeStage.description}</p>}
-      {!!history.length && <ol>{history.map((item) => { const definition = incident.stages?.find((stage) => String(stage.id) === String(item.stageId)); return <li key={item.stageId}><span class={`dds-progress-mark dds-progress-mark--${item.status.toLowerCase()}`}></span><div><strong>{definition?.title || STAGE_ACTIONS[item.type]?.label || item.type}</strong><span>{STAGE_STATUSES[item.status] || item.status} · {dateTime(item.startedAt)}</span>{comments[item.stageId] && <p>{comments[item.stageId]}</p>}</div></li>; })}</ol>}
-    </div>
-  );
-}
-
-function DdsStageActions({ incidentId, serviceCode, currentStatus, onApply }) {
-  const options = REACTION_STATUS_OPTIONS[currentStatus] || [];
-  const [status, setStatus] = useState(options[0] || "");
-  const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    setStatus(options[0] || "");
-    setComment("");
-  }, [currentStatus]);
-
-  if (!options.length) return null;
-  const commentRequired = status === "NOT_ACCEPTED" || status === "WORK_REFUSED";
-  const submit = async (event) => {
-    if (commentRequired && !comment.trim()) return;
-    const popover = event.currentTarget.closest("wa-popover");
-    setSubmitting(true);
-    const saved = await onApply(incidentId, serviceCode, status, comment);
-    if (saved) {
-      setComment("");
-      popover?.hide();
-    }
-    setSubmitting(false);
-  };
-  return (
-    <div class="dds-stage-actions">
-      <wa-select label="Статус реагирования" size="s" value={status} onChange={(event) => setStatus(event.currentTarget.value)}>
-        {options.map((value) => <wa-option key={value} value={value}>{REACTION_STATUS_LABELS[value]}</wa-option>)}
-      </wa-select>
-      <wa-input label="Комментарий" size="s" placeholder={commentRequired ? "Укажите причину отказа" : "Комментарий"} required={commentRequired} value={comment} onInput={(event) => setComment(event.currentTarget.value)}></wa-input>
-      <div class="dds-stage-buttons">
-        <wa-button type="button" size="m" appearance="filled" variant="brand" disabled={commentRequired && !comment.trim()} loading={submitting} onClick={submit}><wa-icon slot="start" name="check"></wa-icon>Подтвердить</wa-button>
-        <wa-button class="dds-stage-cancel" type="button" size="m" appearance="outlined" variant="neutral" disabled={submitting} data-popover="close" aria-label="Отменить изменение статуса"><wa-icon name="xmark" aria-hidden="true"></wa-icon></wa-button>
-      </div>
-    </div>
-  );
-}
-
-export default function DdsLevelApp({ contextId, level, incidents, classifier, userService }) {
+export default function DdsLevelApp({ contextId, incidents, classifier, userService }) {
   const [progress, setProgress] = useState(null);
   const [incidentDefinitions, setIncidentDefinitions] = useState(incidents);
   const [editor, setEditor] = useState({ open: false });
