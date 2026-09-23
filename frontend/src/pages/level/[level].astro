@@ -3,6 +3,7 @@ import LevelApp from "../../features/level/components/player/LevelApp.jsx";
 import DdsLevelApp from "../../features/level/components/player/DdsLevelApp.jsx";
 import { getLevel } from "../../features/level/api/LevelApi";
 import { getIncidentClassifier } from "../../features/incident/api/IncidentApi";
+import { normalizeClassifier } from "../../features/incident/storage/classifierHelpers";
 import { getProfile } from "../../features/profile/api/UserProfileApi";
 import Page from "../../layouts/Page.astro";
 
@@ -28,7 +29,7 @@ if (!error) {
           getProfile(Astro.locals.accessToken)
         ]);
         if (!classifierResponse.ok || !profileResponse.ok) throw new Error("DDS data request failed");
-        classifier = await classifierResponse.json();
+        classifier = normalizeClassifier(await classifierResponse.json());
         profile = await profileResponse.json();
       } catch (requestError) {
         console.error(requestError);

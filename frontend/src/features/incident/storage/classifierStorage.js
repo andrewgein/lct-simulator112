@@ -1,4 +1,5 @@
 import { createReactiveState } from "../../../../public/state";
+import { normalizeClassifier } from "./classifierHelpers";
 
 /** @typedef {import("../../incident/contract/Classifier").IncidentClassifier} IncidentClassifier */
 export const classifierInfo = createReactiveState({
@@ -20,7 +21,7 @@ export function loadClassifier() {
         })
         .then((classifier) => {
             if (!Array.isArray(classifier)) throw new Error("Некорректный формат классификатора");
-            const typedClassifier = /** @type {IncidentClassifier} */ (classifier);
+            const typedClassifier = /** @type {IncidentClassifier} */ (normalizeClassifier(classifier));
             classifierInfo.state.classifier = typedClassifier;
             classifierInfo.state.error = "";
             return typedClassifier;
