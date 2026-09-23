@@ -50,14 +50,13 @@ public class CoursePersistenceMapper {
     }
 
     public Enrollment toDomain(EnrollmentJpaEntity entity) {
-        return new Enrollment(entity.getId(), entity.getCourseId(), entity.getStudentId(), entity.getGroupId());
+        return new Enrollment(entity.getId(), entity.getCourseId(), entity.getGroupId());
     }
 
     public EnrollmentJpaEntity toEntity(Enrollment enrollment) {
         EnrollmentJpaEntity entity = new EnrollmentJpaEntity();
         entity.setId(enrollment.id());
         entity.setCourseId(enrollment.courseId());
-        entity.setStudentId(enrollment.studentId());
         entity.setGroupId(enrollment.groupId());
         return entity;
     }

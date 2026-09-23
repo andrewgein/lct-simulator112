@@ -29,19 +29,15 @@ public class EnrollmentApplicationService implements AssignCourseToGroupUseCase,
 
     @Override
     @Transactional
-    public List<Enrollment> assignCourseToGroup(UUID courseId, UUID groupId, UUID requesterId) {
+    public Enrollment assignCourseToGroup(UUID courseId, UUID groupId, UUID requesterId) {
         Course course = getCourse.getCourse(courseId);
         StudyGroup group = getStudyGroup.getStudyGroup(groupId);
         if (!course.authorId().equals(requesterId) || !group.ownerId().equals(requesterId)) {
             throw new CourseAccessDeniedException("Назначить курс группе может только преподаватель, "
                     + "которому принадлежат и курс, и группа");
         }
-        if (group.studentIds().isEmpty()) throw new IllegalArgumentException("В группе нет слушателей");
-        return group.studentIds().stream()
-                .map(studentId -> enrollmentRepository.findByCourseIdAndStudentId(courseId, studentId)
-                        .orElseGet(() -> enrollmentRepository.save(
-                                new Enrollment(null, courseId, studentId, groupId))))
-                .toList();
+        return enrollmentRepository.findByCourseIdAndGroupId(courseId, groupId)
+                .orElseGet(() -> enrollmentRepository.save(new Enrollment(null, courseId, groupId)));
     }
 
     @Override
@@ -77,6 +73,12 @@ public class EnrollmentApplicationService implements AssignCourseToGroupUseCase,
     @Override
     @Transactional(readOnly = true)
     public List<Enrollment> findStudentEnrollments(UUID studentId) {
-        return enrollmentRepository.findAllByStudentId(studentId);
+        return enrollmentRepository.findAllByStudentId(studentId).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Enrollment::courseId,
+                        enrollment -> enrollment,
+                        (first, duplicate) -> first,
+                        java.util.LinkedHashMap::new))
+                .values().stream().toList();
     }
 }

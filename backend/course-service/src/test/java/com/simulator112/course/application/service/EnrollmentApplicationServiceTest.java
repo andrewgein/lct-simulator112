@@ -39,30 +39,36 @@ class EnrollmentApplicationServiceTest {
                     "text/markdown", 10L)), List.of(assignment));
 
     @Test
-    void assignsCourseToEveryGroupStudent() {
-        UUID otherStudentId = UUID.randomUUID();
+    void assignsCourseToGroupOnce() {
         when(getCourse.getCourse(course.id())).thenReturn(course);
         when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(
-                groupId, "Группа", teacherId, List.of(studentId, otherStudentId)));
-        when(repository.findByCourseIdAndStudentId(any(), any())).thenReturn(Optional.empty());
+                groupId, "Группа", teacherId, List.of(studentId)));
+        when(repository.findByCourseIdAndGroupId(course.id(), groupId)).thenReturn(Optional.empty());
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var enrollments = service.assignCourseToGroup(course.id(), groupId, teacherId);
+        var enrollment = service.assignCourseToGroup(course.id(), groupId, teacherId);
 
-        assertThat(enrollments).hasSize(2);
-        assertThat(enrollments).allMatch(value -> value.courseId().equals(course.id()));
+        assertThat(enrollment).isEqualTo(new Enrollment(null, course.id(), groupId));
     }
 
     @Test
     void findsDistinctCoursesAssignedToOwnedGroup() {
-        Enrollment first = new Enrollment(UUID.randomUUID(), course.id(), studentId, groupId);
-        Enrollment second = new Enrollment(UUID.randomUUID(), course.id(), UUID.randomUUID(), groupId);
+        Enrollment enrollment = new Enrollment(UUID.randomUUID(), course.id(), groupId);
         when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(
                 groupId, "Группа", teacherId, List.of(studentId)));
-        when(repository.findAllByGroupId(groupId)).thenReturn(List.of(first, second));
+        when(repository.findAllByGroupId(groupId)).thenReturn(List.of(enrollment));
         when(getCourse.getCourse(course.id())).thenReturn(course);
 
         assertThat(service.findGroupCourses(groupId, teacherId)).containsExactly(course);
+    }
+
+    @Test
+    void returnsEachCourseOnceWhenStudentHasItThroughSeveralGroups() {
+        Enrollment first = new Enrollment(UUID.randomUUID(), course.id(), groupId);
+        Enrollment second = new Enrollment(UUID.randomUUID(), course.id(), UUID.randomUUID());
+        when(repository.findAllByStudentId(studentId)).thenReturn(List.of(first, second));
+
+        assertThat(service.findStudentEnrollments(studentId)).containsExactly(first);
     }
 
     @Test
@@ -85,8 +91,8 @@ class EnrollmentApplicationServiceTest {
     }
 
     @Test
-    void resolvesAssignmentOnlyForEnrolledStudent() {
-        Enrollment enrollment = new Enrollment(UUID.randomUUID(), course.id(), studentId, groupId);
+    void resolvesAssignmentOnlyForStudentInEnrolledGroup() {
+        Enrollment enrollment = new Enrollment(UUID.randomUUID(), course.id(), groupId);
         when(repository.findAllByStudentId(studentId)).thenReturn(List.of(enrollment));
         when(getCourse.getCourse(course.id())).thenReturn(course);
 

@@ -44,7 +44,7 @@ public class CourseRestMapper {
     }
 
     public EnrollmentView toView(Enrollment enrollment) {
-        return new EnrollmentView(enrollment.id(), enrollment.courseId(), enrollment.studentId(), enrollment.groupId());
+        return new EnrollmentView(enrollment.id(), enrollment.courseId(), enrollment.groupId());
     }
 
     public AssignmentView toView(Assignment assignment, int position) {

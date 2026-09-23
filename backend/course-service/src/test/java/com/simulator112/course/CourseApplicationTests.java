@@ -69,11 +69,17 @@ class CourseApplicationTests {
                         AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))));
 
         Enrollment enrollment = enrollmentRepository.save(
-                new Enrollment(null, course.id(), studentId, group.id()));
+                new Enrollment(null, course.id(), group.id()));
 
         assertThat(enrollmentRepository.findByCourseIdAndStudentId(course.id(), studentId))
                 .get().extracting(Enrollment::id).isEqualTo(enrollment.id());
         assertThat(enrollmentRepository.findAllByStudentId(studentId)).hasSize(1);
+
+        UUID newStudentId = UUID.randomUUID();
+        studyGroupRepository.save(new StudyGroup(group.id(), group.title(), ownerId, List.of(newStudentId)));
+
+        assertThat(enrollmentRepository.findAllByStudentId(studentId)).isEmpty();
+        assertThat(enrollmentRepository.findByCourseIdAndStudentId(course.id(), newStudentId)).isPresent();
         assertThat(studyGroupRepository.findAllByOwnerId(ownerId)).hasSize(1);
     }
 }
