@@ -29,8 +29,8 @@ final class ReviewSubmissionGrpcMapper {
                                         .map(stage -> new ReviewSubmission.StageRuntime(stage.getStageId(),
                                                 stage.getStageType(), stage.getStatus())).toList() : java.util.List.of()))
                 .toList();
-        return new ReviewSubmission(uuid(source.getUuid()), optionalUuid(source.getUserId()), uuid(level.getId()),
-                target, incidents, source.getSolutionContextRevisionsList().stream()
+        return new ReviewSubmission(uuid(source.getUuid()), optionalUuid(source.getUserId()),
+                uuid(level.getAssignmentId()), target, incidents, source.getSolutionContextRevisionsList().stream()
                 .map(ReviewSubmissionGrpcMapper::card).toList(), runtime);
     }
 

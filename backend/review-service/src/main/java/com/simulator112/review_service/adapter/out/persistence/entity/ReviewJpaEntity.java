@@ -20,7 +20,7 @@ public class ReviewJpaEntity {
     @Id
     private UUID contextId;
     private UUID userId;
-    private UUID levelId;
+    private UUID assignmentId;
     @Enumerated(EnumType.STRING)
     private ReviewStatus status;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)

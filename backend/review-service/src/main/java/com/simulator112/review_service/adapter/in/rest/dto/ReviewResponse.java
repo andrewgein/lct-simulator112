@@ -4,6 +4,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-public record ReviewResponse(UUID contextId, UUID levelId, Instant createdAt,
+public record ReviewResponse(UUID contextId, UUID userId, UUID assignmentId, Instant createdAt,
                              List<CriterionResultResponse> criterionResults, String status) {
 }

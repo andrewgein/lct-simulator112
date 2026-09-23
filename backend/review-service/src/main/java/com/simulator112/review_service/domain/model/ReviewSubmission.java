@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public record ReviewSubmission(UUID contextId, UUID userId, UUID levelId, TargetType targetType,
+public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, TargetType targetType,
                                List<IncidentScenario> incidents, List<CardRevision> cardRevisions,
                                List<IncidentRuntime> runtime) {
     public ReviewSubmission {

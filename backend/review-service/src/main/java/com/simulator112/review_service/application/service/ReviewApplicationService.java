@@ -25,20 +25,16 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
     public Review submit(ReviewSubmission submission) {
         ReviewRubric rubric = rubrics.stream().filter(value -> value.supports(submission)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Не найдена рубрика для " + submission.targetType()));
-        Review review = new Review(submission.contextId(), submission.userId(), submission.levelId(),
-                ReviewStatus.IN_REVIEW, rubric.evaluate(submission), null, null);
+        Review review = new Review(submission.contextId(), submission.userId(), submission.assignmentId(),
+                ReviewStatus.DONE, rubric.evaluate(submission), null, null);
         return store.save(review);
     }
 
     @Override
     @Transactional
     public Review getByContextId(UUID contextId) {
-        Review review = store.findByContextId(contextId)
+        return store.findByContextId(contextId)
                 .orElseThrow(() -> new IllegalArgumentException("Проверка не найдена: " + contextId));
-        if (review.status() == ReviewStatus.IN_REVIEW) {
-            review = store.save(review.completed());
-        }
-        return review;
     }
 
     @Override
