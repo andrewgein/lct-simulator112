@@ -23,10 +23,17 @@ public class ReviewJpaEntity {
     private UUID assignmentId;
     @Enumerated(EnumType.STRING)
     private ReviewStatus status;
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "review_id")
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("incidentOrder ASC, criterionName ASC")
     private List<CriterionResultJpaEntity> results = new ArrayList<>();
+
+    public void setResults(List<CriterionResultJpaEntity> results) {
+        this.results.clear();
+        results.forEach(result -> {
+            result.setReview(this);
+            this.results.add(result);
+        });
+    }
     @CreationTimestamp
     private Instant createdAt;
     @UpdateTimestamp
