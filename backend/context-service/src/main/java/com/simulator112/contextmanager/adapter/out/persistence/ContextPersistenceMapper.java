@@ -29,7 +29,8 @@ final class ContextPersistenceMapper {
 
     static TrainingContext toDomain(Context source) {
         TrainingContext target = new TrainingContext();
-        target.setId(source.getUuid()); target.setLevelId(source.getLevelId()); target.setLevelTitle(source.getLevelTitle());
+        target.setId(source.getUuid()); target.setAssignmentId(source.getAssignmentId());
+        target.setLevelTitle(source.getLevelTitle());
         target.setTargetType(source.getTargetType()); target.setDifficulty(source.getDifficulty());
         target.setExecutionMode(source.getExecutionMode()); target.setUserId(source.getUserId());
         target.setStatus(source.getStatus()); target.setActiveCallId(source.getActiveCallId());
@@ -45,7 +46,8 @@ final class ContextPersistenceMapper {
 
     static Context toEntity(TrainingContext source) {
         Context target = new Context();
-        target.setUuid(source.getId()); target.setLevelId(source.getLevelId()); target.setLevelTitle(source.getLevelTitle());
+        target.setUuid(source.getId()); target.setAssignmentId(source.getAssignmentId());
+        target.setLevelTitle(source.getLevelTitle());
         target.setTargetType(source.getTargetType()); target.setDifficulty(source.getDifficulty());
         target.setExecutionMode(source.getExecutionMode()); target.setUserId(source.getUserId());
         target.setStatus(source.getStatus()); target.setActiveCallId(source.getActiveCallId()); target.setDialogStatus(source.getDialogStatus());

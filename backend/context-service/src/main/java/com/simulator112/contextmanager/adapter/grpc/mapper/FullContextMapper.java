@@ -12,8 +12,10 @@ public final class FullContextMapper {
         var builder = FullContext.newBuilder().setUuid(context.getId().toString()).setUserId(context.getUserId().toString());
         if (!context.getIncidents().isEmpty()) {
             builder.setIncidentContext(IncidentContextMapper.toProto(context.getIncidents().getFirst()));
-            var level = com.simulator112.incident.grpc.contract.LevelContext.newBuilder()
-                    .setId(context.getLevelId().toString()).setTitle(context.getLevelTitle())
+            var level = com.simulator112.context.grpc.contract.LevelContext.newBuilder()
+                    .setAssignmentId(context.getAssignmentId().toString())
+                    .setUserId(context.getUserId().toString())
+                    .setTitle(context.getLevelTitle())
                     .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.valueOf(
                             "INCIDENT_TARGET_TYPE_" + context.getTargetType().name()))
                     .setExecutionMode(com.simulator112.incident.grpc.contract.ExecutionMode.valueOf(

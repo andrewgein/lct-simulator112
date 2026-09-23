@@ -13,7 +13,7 @@ import lombok.Setter;
 @Setter
 public class TrainingContext {
     private UUID id;
-    private UUID levelId;
+    private UUID assignmentId;
     private String levelTitle;
     private IncidentTargetType targetType;
     private Difficulty difficulty;

@@ -37,7 +37,7 @@ public class Context {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID uuid;
 
-    private UUID levelId;
+    private UUID assignmentId;
 
     private String levelTitle;
 
