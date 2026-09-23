@@ -6,6 +6,15 @@
  */
 
 /**
+ * @typedef {Object} ClassifierField
+ * @property {string} id
+ * @property {string} name
+ * @property {string} type
+ * @property {boolean} required
+ * @property {string | undefined} hint
+ */
+
+/**
  * @typedef {Object} ClassifierEntry
  * @property {string} id
  * @property {string} code
@@ -22,6 +31,7 @@
  * @property {string} finalName
  * @property {string | null} ekp35Name
  * @property {DispatchService[]} primaryServices
+ * @property {ClassifierField[]} fields
  */
 
 /**
