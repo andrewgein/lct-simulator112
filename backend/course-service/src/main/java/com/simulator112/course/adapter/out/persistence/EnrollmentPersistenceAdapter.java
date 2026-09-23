@@ -40,4 +40,10 @@ public class EnrollmentPersistenceAdapter implements EnrollmentRepository {
     public List<Enrollment> findAllByCourseId(UUID courseId) {
         return repository.findAllByCourseId(courseId).stream().map(mapper::toDomain).toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Enrollment> findAllByGroupId(UUID groupId) {
+        return repository.findAllByGroupId(groupId).stream().map(mapper::toDomain).toList();
+    }
 }

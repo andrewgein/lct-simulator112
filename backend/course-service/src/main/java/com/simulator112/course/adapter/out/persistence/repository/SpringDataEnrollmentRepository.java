@@ -13,4 +13,6 @@ public interface SpringDataEnrollmentRepository extends JpaRepository<Enrollment
     List<EnrollmentJpaEntity> findAllByStudentId(UUID studentId);
 
     List<EnrollmentJpaEntity> findAllByCourseId(UUID courseId);
+
+    List<EnrollmentJpaEntity> findAllByGroupId(UUID groupId);
 }

@@ -22,7 +22,7 @@ import java.util.UUID;
 public class CourseRestMapper {
 
     public Course toDomain(UUID courseId, CourseRequest request, UUID authorId) {
-        return new Course(courseId, request.title(), request.description(), request.targetType(), authorId,
+        return new Course(courseId, request.title(), request.description(), request.targetType(), request.ddsService(), authorId,
                 request.materials().stream()
                         .map(material -> new CourseMaterial(material.id(), material.title(),
                                 material.fileObjectKey(), material.fileName(), material.fileContentType(), material.fileSize()))
@@ -35,8 +35,8 @@ public class CourseRestMapper {
     }
 
     public CourseView toView(Course course) {
-        return new CourseView(course.id(), course.title(), course.description(), course.targetType(), course.authorId(),
-                materials(course), assignments(course));
+        return new CourseView(course.id(), course.title(), course.description(), course.targetType(), course.ddsService(),
+                course.authorId(), materials(course), assignments(course));
     }
 
     public StudyGroupView toView(StudyGroup studyGroup) {

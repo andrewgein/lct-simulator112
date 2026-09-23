@@ -1,6 +1,7 @@
 package com.simulator112.course.application.service;
 
 import com.simulator112.course.application.port.in.AssignCourseToGroupUseCase;
+import com.simulator112.course.application.port.in.FindGroupCoursesUseCase;
 import com.simulator112.course.application.port.in.FindStudentEnrollmentsUseCase;
 import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.GetEnrollmentUseCase;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class EnrollmentApplicationService implements AssignCourseToGroupUseCase, GetEnrollmentUseCase,
-        FindStudentEnrollmentsUseCase {
+        FindStudentEnrollmentsUseCase, FindGroupCoursesUseCase {
 
     private final EnrollmentRepository enrollmentRepository;
     private final GetCourseUseCase getCourse;
@@ -40,6 +41,20 @@ public class EnrollmentApplicationService implements AssignCourseToGroupUseCase,
                 .map(studentId -> enrollmentRepository.findByCourseIdAndStudentId(courseId, studentId)
                         .orElseGet(() -> enrollmentRepository.save(
                                 new Enrollment(null, courseId, studentId, groupId))))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Course> findGroupCourses(UUID groupId, UUID requesterId) {
+        StudyGroup group = getStudyGroup.getStudyGroup(groupId);
+        if (!group.ownerId().equals(requesterId)) {
+            throw new CourseAccessDeniedException("Просматривать назначенные курсы может только владелец группы");
+        }
+        return enrollmentRepository.findAllByGroupId(groupId).stream()
+                .map(Enrollment::courseId)
+                .distinct()
+                .map(getCourse::getCourse)
                 .toList();
     }
 

@@ -9,12 +9,18 @@ public record Course(
         String title,
         String description,
         CourseTargetType targetType,
+        DdsService ddsService,
         UUID authorId,
         List<CourseMaterial> materials,
         List<Assignment> assignments) {
     public Course {
         materials = materials == null ? List.of() : List.copyOf(materials);
         assignments = assignments == null ? List.of() : List.copyOf(assignments);
+    }
+
+    public Course(UUID id, String title, String description, CourseTargetType targetType, UUID authorId,
+            List<CourseMaterial> materials, List<Assignment> assignments) {
+        this(id, title, description, targetType, null, authorId, materials, assignments);
     }
 
     public Optional<Assignment> assignment(UUID assignmentId) {

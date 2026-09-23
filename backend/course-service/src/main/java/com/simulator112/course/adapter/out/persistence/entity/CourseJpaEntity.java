@@ -1,6 +1,7 @@
 package com.simulator112.course.adapter.out.persistence.entity;
 
 import com.simulator112.course.domain.course.CourseTargetType;
+import com.simulator112.course.domain.course.DdsService;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,6 +32,10 @@ public class CourseJpaEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false)
     private CourseTargetType targetType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dds_service")
+    private DdsService ddsService;
 
     @Column(name = "author_id", nullable = false)
     private UUID authorId;
