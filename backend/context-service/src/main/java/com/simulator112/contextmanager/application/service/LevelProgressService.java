@@ -19,6 +19,10 @@ import com.simulator112.contextmanager.domain.dds.DdsStageType;
 import com.simulator112.contextmanager.domain.common.ExecutionMode;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;
+import com.simulator112.contextmanager.domain.common.ReactionStatus;
+import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
+import com.simulator112.contextmanager.domain.common.ServiceReaction;
+import com.simulator112.contextmanager.domain.common.ServiceReactionProgress;
 import com.simulator112.contextmanager.domain.common.StageStatus;
 import java.time.Instant;
 import java.util.Comparator;
@@ -49,7 +53,9 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
     public LevelProgress getProgress(UUID contextId) {
         TrainingContext context = requireContext(contextId);
         if (context.getTargetType() == IncidentTargetType.DDS) {
-            refreshExpired(context, Instant.now());
+            Instant now = Instant.now();
+            ensureReactionHistory(context, now);
+            refreshExpired(context, now);
             context = contextStore.save(context);
         }
         return toProgress(context);
@@ -74,6 +80,95 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
         return toProgress(contextStore.save(context));
     }
 
+    @Override
+    @Transactional
+    public LevelProgress applyReactionStatus(UUID contextId, UUID incidentId, String serviceCode,
+                                             ReactionStatus status, String comment) {
+        TrainingContext context = requireDdsContext(contextId);
+        Instant now = Instant.now();
+        ensureReactionHistory(context, now);
+        IncidentSnapshot incident = context.getIncidents().stream()
+                .filter(value -> value.getSourceId().equals(incidentId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Инцидент не относится к контексту: " + incidentId));
+        if (incident.getStatus() != IncidentProgressStatus.ACTIVE) {
+            throw new IllegalStateException("Инцидент не активен: " + incidentId);
+        }
+        if (!serviceCode.equals(incident.getInitialAssignmentService())) {
+            throw new IllegalArgumentException("Служба не относится к DDS-инциденту: " + serviceCode);
+        }
+        ServiceReaction reaction = requireServiceReaction(incident, serviceCode);
+        ReactionStatus current = reaction.currentStatus();
+        if (!isAllowedReactionTransition(current, status)) {
+            throw new IllegalStateException("Недопустимый переход статуса реагирования: " + current + " -> " + status);
+        }
+        String normalizedComment = comment == null ? null : comment.trim();
+        if ((status == ReactionStatus.NOT_ACCEPTED || status == ReactionStatus.WORK_REFUSED)
+                && (normalizedComment == null || normalizedComment.isEmpty())) {
+            throw new IllegalArgumentException("Для отказа необходимо указать комментарий");
+        }
+        reaction.getHistory().add(new ReactionStatusEvent(status, now, normalizedComment));
+        applyReactionToStage(context, incident, status, now);
+        return toProgress(contextStore.save(context));
+    }
+
+    private void ensureReactionHistory(TrainingContext context, Instant now) {
+        context.getIncidents().stream()
+                .filter(incident -> incident.getStatus() == IncidentProgressStatus.ACTIVE)
+                .filter(incident -> incident.getServiceReactions().isEmpty())
+                .forEach(incident -> {
+                    Instant changedAt = activeStage(incident).getStartedAt() == null ? now : activeStage(incident).getStartedAt();
+                    ServiceReaction reaction = new ServiceReaction(incident.getInitialAssignmentService());
+                    reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, changedAt, null));
+                    reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.RECEIVED_BY_SERVICE, changedAt, null));
+                    incident.getServiceReactions().add(reaction);
+                });
+    }
+
+    private ServiceReaction requireServiceReaction(IncidentSnapshot incident, String serviceCode) {
+        return incident.getServiceReactions().stream()
+                .filter(value -> value.getServiceCode().equals(serviceCode))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Реагирование службы не найдено: " + serviceCode));
+    }
+
+    private boolean isAllowedReactionTransition(ReactionStatus current, ReactionStatus next) {
+        return switch (current) {
+            case ADDED -> next == ReactionStatus.RECEIVED_BY_SERVICE;
+            case RECEIVED_BY_SERVICE -> next == ReactionStatus.ACCEPTED || next == ReactionStatus.NOT_ACCEPTED;
+            case NOT_ACCEPTED -> next == ReactionStatus.ACCEPTED;
+            case ACCEPTED -> next == ReactionStatus.RESPONSE_STARTED || next == ReactionStatus.WORK_REFUSED;
+            case RESPONSE_STARTED -> next == ReactionStatus.ARRIVED || next == ReactionStatus.WORK_REFUSED;
+            case ARRIVED -> next == ReactionStatus.WORK_IN_PROGRESS || next == ReactionStatus.WORK_REFUSED;
+            case WORK_IN_PROGRESS -> next == ReactionStatus.WORK_COMPLETED || next == ReactionStatus.WORK_REFUSED;
+            case WORK_COMPLETED, WORK_REFUSED -> false;
+        };
+    }
+
+    private void applyReactionToStage(TrainingContext context, IncidentSnapshot incident,
+                                      ReactionStatus status, Instant now) {
+        if (status == ReactionStatus.NOT_ACCEPTED || status == ReactionStatus.WORK_IN_PROGRESS) {
+            return;
+        }
+        if (status == ReactionStatus.WORK_REFUSED) {
+            StageSnapshot stage = activeStage(incident);
+            stage.setStatus(StageStatus.FAILED);
+            finishIncident(context, incident, false, now);
+            return;
+        }
+        DdsStageType expectedType = switch (status) {
+            case ACCEPTED -> DdsStageType.ASSIGN_BRIGADE;
+            case RESPONSE_STARTED -> DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE;
+            case ARRIVED -> DdsStageType.CALL_BRIGADE_FOR_STATUS;
+            case WORK_COMPLETED -> activeStage(incident).getDdsStageType();
+            default -> null;
+        };
+        if (expectedType == null || activeStage(incident).getDdsStageType() != expectedType) {
+            throw new IllegalStateException("Статус не соответствует текущему этапу сценария");
+        }
+        advance(context, incident, activeStage(incident), true, false, now);
+    }
+
     private void refreshExpired(TrainingContext context, Instant now) {
         context.getIncidents().stream()
                 .filter(incident -> incident.getStatus() == IncidentProgressStatus.ACTIVE)
@@ -94,17 +189,21 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
                 .map(value -> success ? value.successStageId() : value.failureStageId())
                 .orElse(null);
         if (nextStageId == null) {
-            incident.setActiveStageId(null);
-            incident.setStatus(success ? IncidentProgressStatus.COMPLETED : IncidentProgressStatus.FAILED);
-            activateNextSequentialIncident(context, now);
-            if (context.getIncidents().stream().allMatch(value ->
-                    value.getStatus() == IncidentProgressStatus.COMPLETED
-                            || value.getStatus() == IncidentProgressStatus.FAILED)) {
-                context.setStatus(ContextStatus.FILLED);
-            }
+            finishIncident(context, incident, success, now);
             return;
         }
         activateStage(incident, nextStageId, now);
+    }
+
+    private void finishIncident(TrainingContext context, IncidentSnapshot incident, boolean success, Instant now) {
+        incident.setActiveStageId(null);
+        incident.setStatus(success ? IncidentProgressStatus.COMPLETED : IncidentProgressStatus.FAILED);
+        activateNextSequentialIncident(context, now);
+        if (context.getIncidents().stream().allMatch(value ->
+                value.getStatus() == IncidentProgressStatus.COMPLETED
+                        || value.getStatus() == IncidentProgressStatus.FAILED)) {
+            context.setStatus(ContextStatus.FILLED);
+        }
     }
 
     private void activateNextSequentialIncident(TrainingContext context, Instant now) {
@@ -116,6 +215,10 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
                 .min(Comparator.comparingInt(IncidentSnapshot::getPosition))
                 .ifPresent(value -> {
                     value.setStatus(IncidentProgressStatus.ACTIVE);
+                    ServiceReaction reaction = new ServiceReaction(value.getInitialAssignmentService());
+                    reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, now, null));
+                    reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.RECEIVED_BY_SERVICE, now, null));
+                    value.getServiceReactions().add(reaction);
                     activateStage(value, value.getInitialStageId(), now);
                 });
     }
@@ -176,11 +279,16 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
 
     private IncidentProgress toDdsProgress(IncidentSnapshot incident) {
         Instant deadline = incident.getActiveStageId() == null ? null : activeStage(incident).getDeadlineAt();
-        return new IncidentProgress(incident.getSourceId(), incident.getStatus(), null,
-                new DdsProgress(incident.getActiveStageId(), deadline, incident.getStages().stream()
-                        .map(stage -> new DdsStageProgress(stage.getSourceId(), stage.getDdsStageType(),
-                                stage.getStatus(), stage.getStartedAt(), stage.getDeadlineAt()))
-                        .toList()));
+        return new IncidentProgress(incident.getSourceId(), incident.getStatus(), serviceReactionProgress(incident), null,
+                new DdsProgress(incident.getActiveStageId(), deadline,
+                        incident.getStages().stream()
+                                .map(stage -> new DdsStageProgress(stage.getSourceId(), stage.getDdsStageType(),
+                                        stage.getStatus(), stage.getStartedAt(), stage.getDeadlineAt()))
+                                .toList()));
+    }
+
+    private java.util.List<ServiceReactionProgress> serviceReactionProgress(IncidentSnapshot incident) {
+        return incident.getServiceReactions().stream().map(ServiceReactionProgress::from).toList();
     }
 
     private IncidentProgress toSystem112Progress(IncidentSnapshot incident) {
@@ -191,7 +299,7 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
                 .findFirst()
                 .orElse(null);
         int completedCalls = (int) calls.stream().filter(call -> call.getStatus() == CallStatus.COMPLETED).count();
-        return new IncidentProgress(incident.getSourceId(), incident.getStatus(),
+        return new IncidentProgress(incident.getSourceId(), incident.getStatus(), serviceReactionProgress(incident),
                 new System112Progress(activeCallId, completedCalls, calls.size()), null);
     }
 }

@@ -4,15 +4,19 @@ import com.simulator112.contextmanager.adapter.out.persistence.entity.CallContex
 import com.simulator112.contextmanager.adapter.out.persistence.entity.Context;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.DialogContextEntity;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.IncidentContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.ServiceReactionEntity;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.SolutionContextEntity;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.StageContextEntity;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Applicant;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.ReactionStatusEventSnapshot;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DdsStageTransitionSnapshot;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DispatcherCriteria;
 import com.simulator112.contextmanager.domain.common.CallSnapshot;
 import com.simulator112.contextmanager.domain.common.DialogTranscript;
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
 import com.simulator112.contextmanager.domain.common.Phrase;
+import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
+import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
 import com.simulator112.contextmanager.domain.dds.DdsStageTransition;
@@ -72,6 +76,8 @@ final class ContextPersistenceMapper {
         target.setInitialAssignmentInstructions(source.getInitialAssignmentInstructions());
         target.setTransitions(source.getTransitions().stream().map(value -> new DdsStageTransition(
                 value.getStageId(), value.getSuccessStageId(), value.getFailureStageId())).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+        target.setServiceReactions(source.getServiceReactions().stream().map(ContextPersistenceMapper::toDomain)
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         target.setStages(source.getStages().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return target;
     }
@@ -89,7 +95,22 @@ final class ContextPersistenceMapper {
         target.setInitialAssignmentInstructions(source.getInitialAssignmentInstructions());
         target.setTransitions(source.getTransitions().stream().map(value -> new DdsStageTransitionSnapshot(
                 value.stageId(), value.successStageId(), value.failureStageId())).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+        source.getServiceReactions().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addServiceReaction);
         source.getStages().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addStage);
+        return target;
+    }
+
+    private static ServiceReaction toDomain(ServiceReactionEntity source) {
+        return new ServiceReaction(source.getId(), source.getServiceCode(), source.getHistory().stream()
+                .map(value -> new ReactionStatusEvent(value.getStatus(), value.getChangedAt(), value.getComment())).toList());
+    }
+
+    private static ServiceReactionEntity toEntity(ServiceReaction source) {
+        ServiceReactionEntity target = new ServiceReactionEntity();
+        target.setId(source.getPersistenceId());
+        target.setServiceCode(source.getServiceCode());
+        target.setHistory(source.getHistory().stream().map(value -> new ReactionStatusEventSnapshot(
+                value.status(), value.changedAt(), value.comment())).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return target;
     }
 

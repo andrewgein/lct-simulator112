@@ -15,7 +15,9 @@ public final class LevelProgressGrpcMapper {
             if (context.getTargetType() == com.simulator112.contextmanager.domain.common.IncidentTargetType.DDS) {
                 var active = incident.getStages().stream()
                         .filter(stage -> stage.getSourceId().equals(incident.getActiveStageId())).findFirst().orElse(null);
-                return new com.simulator112.contextmanager.domain.common.IncidentProgress(incident.getSourceId(), incident.getStatus(), null,
+                return new com.simulator112.contextmanager.domain.common.IncidentProgress(
+                        incident.getSourceId(), incident.getStatus(), incident.getServiceReactions().stream()
+                                .map(com.simulator112.contextmanager.domain.common.ServiceReactionProgress::from).toList(), null,
                         new com.simulator112.contextmanager.domain.dds.DdsProgress(incident.getActiveStageId(),
                                 active == null ? null : active.getDeadlineAt(), incident.getStages().stream()
                                 .map(stage -> new com.simulator112.contextmanager.domain.dds.DdsStageProgress(
@@ -27,7 +29,9 @@ public final class LevelProgressGrpcMapper {
                             || call.getStatus() == com.simulator112.contextmanager.domain.common.CallStatus.DISCONNECTED)
                     .map(com.simulator112.contextmanager.domain.common.CallSnapshot::getSourceId).findFirst().orElse(null);
             int completed = (int) calls.stream().filter(call -> call.getStatus() == com.simulator112.contextmanager.domain.common.CallStatus.COMPLETED).count();
-            return new com.simulator112.contextmanager.domain.common.IncidentProgress(incident.getSourceId(), incident.getStatus(),
+            return new com.simulator112.contextmanager.domain.common.IncidentProgress(
+                    incident.getSourceId(), incident.getStatus(), incident.getServiceReactions().stream()
+                            .map(com.simulator112.contextmanager.domain.common.ServiceReactionProgress::from).toList(),
                     new com.simulator112.contextmanager.domain.system112.System112Progress(activeCall, completed, calls.size()), null);
         }).toList();
         return toProto(new com.simulator112.contextmanager.domain.common.LevelProgress(context.getId(), context.getTargetType(),

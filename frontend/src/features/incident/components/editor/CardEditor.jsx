@@ -120,7 +120,7 @@ function classifierDetails(incident, values) {
   return [...features, ...(incident.fields || []).map((field) => ({ name: field.name, value: formatAdditionalInfoValue(field, values[field.id]) }))];
 }
 
-export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceEditor }) {
+export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor }) {
   const loadedClassifierState = useClassifier();
   const classifierState = classifier ? { classifier, loading: false, error: null } : loadedClassifierState;
   const [seconds, setSeconds] = useState(0);
@@ -271,7 +271,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
       </div>
       <footer class="workspace-footer workspace-footer--readonly wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
-        <DispatchServicesPanel classifier={classifierState.classifier} services={editor.services} readonly status={readonlyServiceStatus} statusEditor={readonlyServiceEditor} onChange={() => {}} />
+        <DispatchServicesPanel classifier={classifierState.classifier} services={editor.services} readonly status={readonlyServiceStatus} statusHistory={readonlyServiceHistory} statusEditor={readonlyServiceEditor} onChange={() => {}} />
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {!readOnly && <wa-button class="workspace-save" size="l" type="button" appearance="outlined" variant="neutral" onClick={() => setSavedEditMode(true)}><wa-icon slot="start" name="pencil"></wa-icon>Редактировать</wa-button>}
           {!readOnly && relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button>}

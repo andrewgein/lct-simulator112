@@ -32,5 +32,6 @@ public class IncidentSnapshot {
     private String initialAssignmentClassifierCode;
     private String initialAssignmentInstructions;
     private List<DdsStageTransition> transitions = new ArrayList<>();
+    private List<ServiceReaction> serviceReactions = new ArrayList<>();
     private List<StageSnapshot> stages = new ArrayList<>();
 }
