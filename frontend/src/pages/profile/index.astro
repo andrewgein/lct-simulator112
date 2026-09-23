@@ -2,196 +2,73 @@
 import Page from "../../layouts/Page.astro";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
-import { getProfile } from "../../features/profile/api/UserProfileApi";
 import { getUserReviews } from "../../features/review/api/ReviewApi";
-import { getLevels } from "../../features/level/api/LevelApi";
+import { getMyEnrollments } from "../../features/course/api/EnrollmentApi";
+import { getCourse } from "../../features/course/api/CourseApi";
 
 export const prerender = false;
-
 let error = null;
-let profile = null;
+const profile = Astro.locals.profile;
 let reviews = [];
-let levels = [];
-
+let courses = [];
 try {
-  const [profileResponse, reviewsResponse, levelsResponse] = await Promise.all([
-    getProfile(Astro.locals.accessToken),
+  if (!profile) throw new Error();
+  const responses = await Promise.all([
     getUserReviews(Astro.locals.accessToken),
-    getLevels(Astro.locals.accessToken)
+    getMyEnrollments(Astro.locals.accessToken)
   ]);
-
-  if (!profileResponse.ok || !reviewsResponse.ok || !levelsResponse.ok) {
-    throw new Error("Profile data request failed");
-  }
-
-  profile = await profileResponse.json();
-  reviews = (await reviewsResponse.json()).reviews || [];
-  levels = await levelsResponse.json();
-} catch (requestError) {
-  console.error(requestError);
-  error = "Не удалось загрузить данные профиля";
-}
-
-const levelsById = new Map(levels.map((level) => [String(level.id), level]));
-const initials = profile ? `${profile.name?.[0] || ""}${profile.surname?.[0] || ""}`.toUpperCase() : "";
-const trainingTrackLabels = {
-  SYSTEM_112: "Система-112",
-  DDS: "ДДС"
-};
-const difficultyLabels = {
-  EASY: "Лёгкий",
-  NORMAL: "Средний",
-  HARD: "Сложный"
-};
-const difficultyColors = {
-  EASY: "var(--wa-color-success-fill-loud)",
-  NORMAL: "var(--wa-color-warning-fill-loud)",
-  HARD: "var(--wa-color-danger-fill-loud)"
-};
-const difficultyVariants = {
-  EASY: "success",
-  NORMAL: "warning",
-  HARD: "danger"
-};
-const difficultyOrder = ["EASY", "NORMAL", "HARD"];
+  if (responses.some((response) => !response.ok)) throw new Error();
+  reviews = (await responses[0].json()).reviews || [];
+  const enrollments = await responses[1].json();
+  courses = (await Promise.all(enrollments.map(async (enrollment) => {
+    const response = await getCourse(enrollment.courseId, Astro.locals.accessToken);
+    return response.ok ? { enrollment, course: await response.json() } : null;
+  }))).filter(Boolean);
+} catch { error = "Не удалось загрузить данные профиля"; }
+const assignments = courses.flatMap(({ course }) => course.assignments.map((assignment) =>
+  [String(assignment.id), { ...assignment, courseTitle: course.title }]));
+const assignmentsById = new Map(assignments);
+const completedAssignmentIds = new Set(reviews.filter((review) => review.status === "DONE")
+  .map((review) => String(review.assignmentId)));
+const done = assignments.filter(([assignmentId]) => completedAssignmentIds.has(assignmentId)).length;
+const overallProgress = assignments.length ? Math.round(done / assignments.length * 100) : 0;
+const reviewDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 const reviewResults = reviews.map((review) => {
   const criteria = review.criterionResults || [];
-  const totalScore = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
-  const maxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
-  return {
-    ...review,
-    level: levelsById.get(String(review.levelId)),
-    totalScore,
-    maxScore,
-    percentage: maxScore > 0 ? Math.round(totalScore / maxScore * 100) : null
-  };
-});
-const completedLevelIds = new Set(reviewResults.filter((review) => review.status === "DONE" && review.level).map((review) => String(review.level.id)));
-const overallProgress = levels.length > 0 ? Math.round(completedLevelIds.size / levels.length * 100) : 0;
-const reviewDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
-const difficultyProgress = difficultyOrder.map((difficulty) => {
-  const availableLevels = levels.filter((level) => level.difficulty === difficulty);
-  const completed = availableLevels.filter((level) => completedLevelIds.has(String(level.id))).length;
-  return {
-    difficulty,
-    completed,
-    total: availableLevels.length,
-    percentage: availableLevels.length > 0 ? Math.round(completed / availableLevels.length * 100) : 0
-  };
+  const score = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
+  const max = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+  return { ...review, score, max, assignment: assignmentsById.get(String(review.assignmentId)) };
 });
 ---
-
 <Page {error}>
   <Header slot="header" />
   <MainHeader slot="main-header" title="Профиль" />
-
-  {profile && (
-    <div class="wa-stack wa-gap-xl">
-      <wa-card appearance="filled-outlined">
-        <div class="wa-stack wa-gap-l">
-          <div class="wa-cluster wa-gap-m">
-            <wa-avatar initials={initials} label={`Профиль пользователя ${profile.name} ${profile.surname}`}></wa-avatar>
-            <div class="wa-stack wa-gap-2xs">
-              <h2 class="profile-name wa-heading-l">{profile.name} {profile.surname}</h2>
-              <span>{trainingTrackLabels[profile.trainingTrack] || "Профиль обучения не назначен"}</span>
-            </div>
-          </div>
-          <wa-divider></wa-divider>
-          <div class="wa-flank wa-gap-xl">
-            <div class="wa-cluster wa-gap-l">
-              <wa-progress-ring class="profile-progress-ring" value={overallProgress} label={`Завершено ${completedLevelIds.size} / ${levels.length} уровней`}>{overallProgress}%</wa-progress-ring>
-              <div class="wa-stack wa-gap-2xs">
-                <strong class="wa-heading-m">Общий прогресс</strong>
-                <span>Завершено уровней: {completedLevelIds.size} / {levels.length}</span>
-              </div>
-            </div>
-            <div class="wa-stack wa-gap-m">
-              <strong class="wa-heading-m">Прогресс по сложности</strong>
-              {difficultyProgress.map((progress) => (
-                <div class="wa-stack wa-gap-xs">
-                  <div class="wa-split">
-                    <span>{difficultyLabels[progress.difficulty]}</span>
-                    <strong>{progress.completed} / {progress.total}</strong>
-                  </div>
-                  <wa-progress-bar value={progress.percentage} label={`${difficultyLabels[progress.difficulty]}: завершено ${progress.completed} / ${progress.total}`} style={`--indicator-color: ${difficultyColors[progress.difficulty]};`}></wa-progress-bar>
-                </div>
-              ))}
-            </div>
+  {profile && <div class="wa-stack wa-gap-xl">
+    <wa-card appearance="filled-outlined">
+      <div class="wa-stack wa-gap-l">
+        <div class="wa-cluster wa-gap-m">
+          <wa-avatar initials={`${profile.name?.[0] || ""}${profile.surname?.[0] || ""}`.toUpperCase()} label="Профиль пользователя"></wa-avatar>
+          <div class="wa-stack wa-gap-2xs">
+            <h2>{[profile.surname, profile.name, profile.patronymic].filter(Boolean).join(" ")}</h2>
+            <span>{profile.trainingTrack === "DDS" ? "ДДС" : profile.trainingTrack === "SYSTEM_112" ? "Система-112" : "Профиль обучения не назначен"}</span>
           </div>
         </div>
-      </wa-card>
-
-      <section class="wa-stack wa-gap-m" aria-labelledby="review-history-title">
-        <div class="wa-split wa-align-items-center">
-          <h2 id="review-history-title" class="wa-heading-xl">История прохождений</h2>
+        <wa-divider></wa-divider>
+        <div class="wa-cluster wa-gap-l">
+          <wa-progress-ring value={overallProgress} label={`Завершено ${done} из ${assignments.length} заданий`}>{overallProgress}%</wa-progress-ring>
+          <div class="wa-stack wa-gap-xs"><strong>Прогресс по курсам</strong><span>Завершено заданий: {done} / {assignments.length}</span></div>
         </div>
-
-        {reviewResults.length === 0 ? (
-          <wa-card appearance="outlined">
-            <div class="wa-stack wa-gap-s">
-              <strong class="wa-heading-m">Здесь пока нет результатов</strong>
-              <span>Пройдите первый уровень, и его результат появится в профиле.</span>
-              <wa-button href="/" variant="brand">Перейти к уровням</wa-button>
-            </div>
-          </wa-card>
-        ) : (
-          <wa-scroller>
-            <table class="wa-zebra-rows wa-hover-rows wa-tabular-nums">
-              <thead>
-                <tr>
-                  <th scope="col" class="wa-heading-l">Дата</th>
-                  <th scope="col" class="wa-heading-l">Уровень</th>
-                  <th scope="col" class="wa-heading-l">Результат</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reviewResults.map((review) => (
-                  <tr data-review-href={`/review/${encodeURIComponent(review.contextId)}`} tabindex="0" role="link" aria-label={`Открыть результат уровня ${review.level?.title || "Уровень недоступен"}`}>
-                    <td>{review.createdAt ? reviewDateFormatter.format(new Date(review.createdAt)) : "Дата недоступна"}</td>
-                    <th scope="row">
-                      <div class="wa-cluster wa-gap-s">
-                        <span>{review.level?.title || "Уровень недоступен"}</span>
-                        <wa-badge variant={difficultyVariants[review.level?.difficulty] || "neutral"}>{difficultyLabels[review.level?.difficulty] || "Недоступно"}</wa-badge>
-                      </div>
-                    </th>
-                    <td>{review.percentage === null ? "Формируется" : `${review.totalScore} / ${review.maxScore} (${review.percentage}%)`}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </wa-scroller>
-        )}
-      </section>
-    </div>
-  )}
+      </div>
+    </wa-card>
+    <section class="wa-stack wa-gap-m">
+      <h2>История прохождений</h2>
+      {!reviewResults.length ? <wa-card>Пройдите первое задание, чтобы увидеть результат. <a href="/">К курсам</a></wa-card> :
+        <wa-scroller><table class="wa-zebra-rows wa-hover-rows wa-tabular-nums"><thead><tr><th>Дата</th><th>Курс / задание</th><th>Результат</th></tr></thead><tbody>
+          {reviewResults.map((review) => <tr><td>{review.createdAt ? reviewDateFormatter.format(new Date(review.createdAt)) : "—"}</td>
+            <td><a href={`/review/${encodeURIComponent(review.contextId)}`}>{review.assignment?.courseTitle || "Курс недоступен"} · {review.assignment?.title || "Задание недоступно"}</a></td>
+            <td>{review.status === "DONE" ? `${review.score} / ${review.max}` : "Формируется"}</td></tr>)}
+        </tbody></table></wa-scroller>}
+    </section>
+  </div>}
 </Page>
-
-<script>
-  document.querySelectorAll<HTMLElement>("[data-review-href]").forEach((row) => {
-    const openReview = () => {
-      const href = row.dataset.reviewHref;
-      if (href) window.location.href = href;
-    };
-    row.addEventListener("click", openReview);
-    row.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openReview();
-      }
-    });
-  });
-</script>
-
-<style>
-  .profile-name {
-    margin: 0;
-  }
-
-  .profile-progress-ring {
-    --size: 8rem;
-  }
-
-  [data-review-href] {
-    cursor: pointer;
-  }
-</style>
+<style>h2 { margin: 0; }</style>

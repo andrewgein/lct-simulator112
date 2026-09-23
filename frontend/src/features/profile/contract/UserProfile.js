@@ -5,6 +5,7 @@
  * @typedef {Object} UserProfileRequest
  * @property {string} name
  * @property {string} surname
+ * @property {string | null} patronymic
  * @property {TrainingTrack | null} trainingTrack
  * @property {DdsService} ddsService
  */
@@ -15,6 +16,7 @@
  * @property {string} authId
  * @property {string} name
  * @property {string} surname
+ * @property {string | null} patronymic
  * @property {TrainingTrack | null} trainingTrack
  * @property {DdsService} ddsService
  * @property {string | null} updatedAt

@@ -1,0 +1,126 @@
+---
+import Page from "../../layouts/Page.astro";
+import Header from "../../layouts/Header.astro";
+import MainHeader from "../../layouts/MainHeader.astro";
+
+export const prerender = false;
+const isTeacher = Astro.cookies.get("role")?.value === "SUPERVISOR";
+const profile = Astro.locals.profile;
+const error = profile ? null : "Не удалось загрузить профиль";
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Настройки профиля">
+    <wa-button type="submit" form="profile-settings-form" variant="success">Сохранить</wa-button>
+  </MainHeader>
+  {profile && (
+    <form id="profile-settings-form" class="profile-settings-form wa-stack wa-gap-l">
+      <wa-callout id="profile-settings-result" hidden></wa-callout>
+      <div class:list={["profile-settings-grid", { "profile-settings-grid--single": !isTeacher }]}>
+        <section class="profile-settings-section wa-stack wa-gap-m" aria-labelledby="personal-data-heading">
+          <h2 id="personal-data-heading" class="wa-heading-l">Личные данные</h2>
+          <wa-input name="surname" label="Фамилия" value={profile.surname || ""} required></wa-input>
+          <wa-input name="name" label="Имя" value={profile.name || ""} required></wa-input>
+          <wa-input name="patronymic" label="Отчество" value={profile.patronymic || ""}></wa-input>
+        </section>
+        {isTeacher && (
+          <>
+            <wa-divider class="profile-settings-divider profile-settings-divider--vertical" orientation="vertical"></wa-divider>
+            <wa-divider class="profile-settings-divider profile-settings-divider--horizontal"></wa-divider>
+            <section class="profile-settings-section wa-stack wa-gap-m" aria-labelledby="professional-profile-heading">
+              <div class="wa-stack wa-gap-2xs">
+                <h2 id="professional-profile-heading" class="wa-heading-l">Профессиональный профиль</h2>
+                <p>Направление необязательно. Если его выбрать, сценарии, курсы и обучающиеся будут отфильтрованы по профилю.</p>
+              </div>
+              <wa-select name="trainingTrack" label="Направление" value={profile.trainingTrack || ""} placeholder="Не выбрано" with-clear>
+                <wa-option value="SYSTEM_112">Система-112</wa-option>
+                <wa-option value="DDS">ДДС</wa-option>
+              </wa-select>
+              <div id="settings-dds-service-field" hidden={profile.trainingTrack !== "DDS"}>
+                <wa-select name="ddsService" label="Служба ДДС" value={profile.ddsService || ""} placeholder="Выберите службу" disabled={profile.trainingTrack !== "DDS"} required={profile.trainingTrack === "DDS"}>
+                  <wa-option value="FIRE">Пожарная охрана</wa-option>
+                  <wa-option value="POLICE">Полиция</wa-option>
+                  <wa-option value="AMBULANCE">Скорая помощь</wa-option>
+                  <wa-option value="GAS">Аварийная газовая служба</wa-option>
+                  <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+                </wa-select>
+              </div>
+            </section>
+          </>
+        )}
+      </div>
+    </form>
+  )}
+</Page>
+
+<script>
+  const form = document.querySelector('#profile-settings-form');
+  const submit = document.querySelector('[type="submit"][form="profile-settings-form"]');
+  const result = document.querySelector('#profile-settings-result');
+  const trainingTrack = form?.querySelector('[name="trainingTrack"]');
+  const ddsServiceField = form?.querySelector('#settings-dds-service-field');
+  const ddsService = form?.querySelector('[name="ddsService"]');
+
+  function syncProfessionalProfile() {
+    const isDds = trainingTrack?.value === 'DDS';
+    ddsServiceField?.toggleAttribute('hidden', !isDds);
+    ddsService?.toggleAttribute('disabled', !isDds);
+    ddsService?.toggleAttribute('required', isDds);
+    if (!isDds && ddsService) ddsService.value = '';
+  }
+
+  trainingTrack?.addEventListener('change', syncProfessionalProfile);
+  syncProfessionalProfile();
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    submit.loading = true;
+    result.hidden = true;
+    try {
+      const response = await fetch('/api/v1/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          surname: form.querySelector('[name="surname"]').value.trim(),
+          name: form.querySelector('[name="name"]').value.trim(),
+          patronymic: form.querySelector('[name="patronymic"]').value.trim(),
+          trainingTrack: trainingTrack?.value || null,
+          ddsService: trainingTrack?.value === 'DDS' ? ddsService?.value || null : null
+        })
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.detail || 'Не удалось сохранить профиль.');
+      }
+      const profile = await response.json();
+      const avatar = document.querySelector('#profile-menu-trigger wa-avatar');
+      if (avatar) avatar.initials = `${profile.name?.[0] || ''}${(profile.patronymic || profile.surname)?.[0] || ''}`.toUpperCase();
+      result.variant = 'success';
+      result.textContent = 'Профиль сохранён.';
+    } catch (requestError) {
+      result.variant = 'danger';
+      result.textContent = requestError.message;
+    } finally {
+      result.hidden = false;
+      submit.loading = false;
+    }
+  });
+</script>
+
+<style>
+  .profile-settings-form { width: 100%; }
+  .profile-settings-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--wa-space-xl); align-items: stretch; }
+  .profile-settings-grid--single { grid-template-columns: minmax(0, 36rem); }
+  .profile-settings-section { min-width: 0; }
+  .profile-settings-form h2, .profile-settings-form p { margin: 0; }
+  .profile-settings-form p { max-width: 42rem; color: var(--wa-color-text-quiet); }
+  .profile-settings-divider { --spacing: 0; }
+  .profile-settings-divider--horizontal { display: none; }
+  @media (max-width: 64rem) {
+    .profile-settings-grid { grid-template-columns: minmax(0, 1fr); }
+    .profile-settings-divider--vertical { display: none; }
+    .profile-settings-divider--horizontal { display: block; }
+  }
+</style>

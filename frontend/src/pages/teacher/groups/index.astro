@@ -1,0 +1,45 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { getStudyGroups } from "../../../features/course/api/CourseApi";
+
+export const prerender = false;
+if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
+let groups = [];
+let error = null;
+try {
+  const response = await getStudyGroups(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  groups = await response.json();
+} catch {
+  error = "Не удалось загрузить учебные группы";
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Учебные группы">
+    <wa-button href="/teacher/groups/new" variant="brand"><wa-icon slot="start" name="plus"></wa-icon>Новая группа</wa-button>
+  </MainHeader>
+  {!error && !groups.length && <wa-callout>Учебных групп пока нет. Создайте группу, чтобы назначать курсы нескольким обучающимся.</wa-callout>}
+  {!error && groups.length > 0 && (
+    <div class="wa-grid wa-gap-m">
+      {groups.map((group) => (
+        <wa-card with-header>
+          <h2 slot="header" class="group-title wa-heading-l">{group.title}</h2>
+          <div class="wa-stack wa-gap-l">
+            <div class="wa-cluster wa-gap-xs">
+              <wa-badge variant="neutral" appearance="outlined">{group.studentIds?.length || 0} участников</wa-badge>
+            </div>
+            <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined">Открыть группу</wa-button>
+          </div>
+        </wa-card>
+      ))}
+    </div>
+  )}
+</Page>
+
+<style>
+  .group-title { margin: 0; }
+</style>

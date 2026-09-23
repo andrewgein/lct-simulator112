@@ -1,0 +1,30 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import StudyGroupForm from "../../../features/course/components/StudyGroupForm.astro";
+import { getStudents } from "../../../features/course/api/StudentApi";
+import { filterStudentsByProfessionalProfile } from "../../../features/profile/professionalProfile";
+
+export const prerender = false;
+if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
+let students = [];
+let error = null;
+try {
+  const studentList = await getStudents(Astro.locals.accessToken);
+  students = filterStudentsByProfessionalProfile(studentList, Astro.locals.profile);
+} catch {
+  error = "Не удалось загрузить обучающихся";
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Новая учебная группа">
+    <div class="wa-cluster">
+      <wa-button href="/teacher/groups" appearance="outlined">Отмена</wa-button>
+      <wa-button type="submit" form="group-form" variant="success">Создать группу</wa-button>
+    </div>
+  </MainHeader>
+  {!error && <StudyGroupForm {students} />}
+</Page>

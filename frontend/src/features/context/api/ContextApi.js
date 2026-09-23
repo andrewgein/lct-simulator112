@@ -3,9 +3,9 @@ import { apiCall } from "../../../services/ApiClient";
 const API_PREFIX = "/api/v1/context";
 const segment = encodeURIComponent;
 
-/** @param {string} levelId @param {string} token */
-export function createContext(levelId, token) {
-    return apiCall(API_PREFIX, "POST", { levelId }, token);
+/** @param {string} assignmentId @param {string} token */
+export function createContext(assignmentId, token) {
+    return apiCall(API_PREFIX, "POST", { assignmentId }, token);
 }
 
 /** @param {string} contextId @param {string} callId @param {import("../contract/Context").SolutionCardRequest} card @param {string} token */

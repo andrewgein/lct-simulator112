@@ -1,0 +1,48 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { getCourses } from "../../../features/course/api/CourseApi";
+
+export const prerender = false;
+if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
+let courses = [];
+let error = null;
+try {
+  const response = await getCourses(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  courses = await response.json();
+} catch {
+  error = "Не удалось загрузить курсы";
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Курсы">
+    <wa-button href="/teacher/courses/new" variant="brand"><wa-icon slot="start" name="plus"></wa-icon>Новый курс</wa-button>
+  </MainHeader>
+  {!error && !courses.length && <wa-callout>Курсов пока нет. Создайте программу из вводных материалов и практических заданий.</wa-callout>}
+  {!error && courses.length > 0 && (
+    <div class="course-list wa-stack wa-gap-m">
+      {courses.map((course) => (
+        <wa-card orientation="horizontal">
+          <div class="course-summary wa-stack wa-gap-xs">
+            <div class="wa-cluster wa-gap-xs">
+              <h2 class="wa-heading-l">{course.title}</h2>
+              <wa-badge variant="neutral" appearance="outlined">{course.materials?.length || 0} материалов</wa-badge>
+              <wa-badge variant="brand" appearance="outlined">{course.assignments?.length || 0} заданий</wa-badge>
+            </div>
+            <p>{course.description || "Описание не добавлено"}</p>
+          </div>
+          <wa-button slot="actions" href={`/teacher/courses/${course.id}`} appearance="outlined" aria-label={`Редактировать курс ${course.title}`}><wa-icon name="pen"></wa-icon></wa-button>
+        </wa-card>
+      ))}
+    </div>
+  )}
+</Page>
+
+<style>
+  .course-summary h2, .course-summary p { margin: 0; }
+  .course-summary p { color: var(--wa-color-text-quiet); }
+</style>

@@ -14,7 +14,7 @@ export async function getIncidentLibrary(token) {
             findAvailableIncidents(targetType, difficulty, token)))
     );
     if (responses.some((response) => !response.ok)) {
-        throw new Error("Не удалось загрузить библиотеку происшествий");
+        throw new Error("Не удалось загрузить сценарии");
     }
     const incidents = (await Promise.all(responses.map((response) => response.json()))).flat();
     return [...new Map(incidents.map((incident) => [incident.id, incident])).values()];

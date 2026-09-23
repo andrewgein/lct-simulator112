@@ -1,0 +1,37 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import CourseForm from "../../../features/course/components/CourseForm.astro";
+import { getCourse } from "../../../features/course/api/CourseApi";
+import { getIncidentLibrary } from "../../../features/incident/api/AdminIncidentApi";
+
+export const prerender = false;
+if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
+let course = null;
+let incidents = [];
+const professionalProfile = Astro.locals.profile;
+let error = null;
+try {
+  const [courseResponse, library] = await Promise.all([
+    getCourse(Astro.params.id, Astro.locals.accessToken),
+    getIncidentLibrary(Astro.locals.accessToken)
+  ]);
+  if (!courseResponse.ok) throw new Error();
+  course = await courseResponse.json();
+  incidents = library;
+} catch {
+  error = "Не удалось загрузить курс";
+}
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title={course?.title || "Редактирование курса"}>
+    <div class="wa-cluster">
+      <wa-button href="/teacher/courses" appearance="outlined">Отмена</wa-button>
+      <wa-button type="submit" form="course-form" variant="success">Сохранить изменения</wa-button>
+    </div>
+  </MainHeader>
+  {course && <CourseForm {course} {incidents} {professionalProfile} />}
+</Page>

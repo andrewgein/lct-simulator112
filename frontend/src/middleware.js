@@ -1,4 +1,5 @@
 import { getProfile } from "./features/profile/api/UserProfileApi";
+import { clearProfileSnapshot, readProfileSnapshot, setProfileSnapshot } from "./features/profile/profileSnapshot";
 
 const isDev = import.meta.env.DEV;
 const PUBLIC_PATHS = [
@@ -22,14 +23,16 @@ export async function onRequest(context, next) {
     }
     const accessToken = cookies.get("accessToken").value;
     locals.accessToken = accessToken;
+    locals.profile = readProfileSnapshot(cookies);
     try {
-        const shouldCheckProfile = request.method === "GET" && !url.pathname.startsWith("/api/") && url.pathname !== "/profile/create" && !cookies.has("profileCompleted");
-        if (shouldCheckProfile) {
+        const shouldLoadProfile = request.method === "GET" && !url.pathname.startsWith("/api/") && url.pathname !== "/profile/create" && !locals.profile;
+        if (shouldLoadProfile) {
             const profileResponse = await getProfile(accessToken);
             if (profileResponse.status === 404) {
                 return redirect("/profile/create");
             }
             if (profileResponse.ok) {
+                locals.profile = setProfileSnapshot(cookies, await profileResponse.json(), !isDev);
                 cookies.set("profileCompleted", "true", {
                     httpOnly: true,
                     secure: !isDev,
@@ -45,6 +48,7 @@ export async function onRequest(context, next) {
             cookies.delete('accessToken');
             cookies.delete('role');
             cookies.delete('profileCompleted');
+            clearProfileSnapshot(cookies);
             return redirect("/login");
         }
         throw error;
