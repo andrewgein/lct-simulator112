@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import DataGrid from "../../../../components/DataGrid.jsx";
-import { applicantName, cardAddress, cardIsComplete, findIncident } from "../../../incident/components/editor/editorHelpers";
+import { applicantName, cardAddress, cardIsComplete, findIncident, formatAdditionalInfoValue } from "../../../incident/components/editor/editorHelpers";
 
 function arrangeCards(cards) {
   const childrenByMain = new Map();
@@ -19,7 +19,7 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
   const incidents = (card.incidentTypes || []).map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
   const incident = incidents[0];
   const victimSummary = card.victimCount > 0 ? `Есть · ${card.victimCount}` : "Нет";
-  const additionalInfo = (incident?.fields || []).map((field) => `${field.name}: ${card.additionalInfo?.[field.id] ?? "—"}`).join(" · ");
+  const additionalInfo = (incident?.fields || []).map((field) => `${field.name}: ${formatAdditionalInfoValue(field, card.additionalInfo?.[field.id])}`).join(" · ");
   return {
     id: card.cardId,
     card,

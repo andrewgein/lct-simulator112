@@ -11,7 +11,6 @@
  * @property {string} name
  * @property {string} type
  * @property {boolean} required
- * @property {string | undefined} hint
  */
 
 /**

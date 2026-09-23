@@ -8,6 +8,12 @@ export const formatPhone = (phone) => {
   return phone || "Номер не определён";
 };
 
+export function formatAdditionalInfoValue(field, value) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (field.type.toLowerCase() !== "boolean") return String(value);
+  return value === true || value === "true" ? "Да" : "Нет";
+}
+
 export function findIncident(classifier, code) {
   for (const category of classifier) {
     const incident = category.entries.find((entry) => entry.code === code);

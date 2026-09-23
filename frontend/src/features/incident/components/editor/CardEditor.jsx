@@ -7,7 +7,7 @@ import LinkCardDialog from "./LinkCardDialog.jsx";
 import PersonCard from "./PersonCard.jsx";
 import PhoneField from "./PhoneField.jsx";
 import VictimStatusBar from "./VictimStatusBar.jsx";
-import { cardAddress, emptyPerson, findIncident } from "./editorHelpers";
+import { cardAddress, emptyPerson, findIncident, formatAdditionalInfoValue } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
 import IncidentWorkspace from "../../../level/components/common/IncidentWorkspace.jsx";
 
@@ -218,7 +218,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о происшествии">
           <VictimStatusBar victimCount={editor.victimCount} readonly />
-          {incidents.map((item) => <div class="wa-stack wa-gap-0" key={item.code}><div class="saved-incident-heading"><strong>{item.finalName}</strong></div><div class="saved-card-panel"><span class="saved-label">Состояние происшествия</span><ul class="saved-details-list wa-stack wa-gap-xs">{(item.fields || []).map((field) => <li class="wa-cluster wa-gap-s" key={field.id}><span>{field.name}:</span><strong>{String(editor.additionalInfo[field.id] ?? "—")}</strong></li>)}</ul>{!item.fields?.length && <p>Дополнительные сведения не предусмотрены.</p>}</div><div class="saved-card-panel"><span class="saved-label">Инструкции</span>{item.instructions?.length ? <ul>{item.instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}</ul> : <p>Инструкции не указаны.</p>}</div></div>)}
+          {incidents.map((item) => <div class="wa-stack wa-gap-0" key={item.code}><div class="saved-incident-heading"><strong>{item.finalName}</strong></div><div class="saved-card-panel"><span class="saved-label">Состояние происшествия</span><ul class="saved-details-list wa-stack wa-gap-xs">{(item.fields || []).map((field) => <li class="wa-cluster wa-gap-s" key={field.id}><span>{field.name}:</span><strong>{formatAdditionalInfoValue(field, editor.additionalInfo[field.id])}</strong></li>)}</ul>{!item.fields?.length && <p>Дополнительные сведения не предусмотрены.</p>}</div><div class="saved-card-panel"><span class="saved-label">Инструкции</span>{item.instructions?.length ? <ul>{item.instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}</ul> : <p>Инструкции не указаны.</p>}</div></div>)}
           {!incidents.length && <div class="saved-card-panel">Тип происшествия не выбран.</div>}
           {readonlyDetails}
           <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Статус</span><p><strong>{readonlyStatus}</strong></p></div>
