@@ -52,6 +52,9 @@ public class CourseJpaEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     public void addMaterial(CourseMaterialJpaEntity material) {
         material.setPosition(materials.size());
         materials.add(material);

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,6 +57,18 @@ class CourseApplicationTests {
         assertThat(loaded.assignments()).extracting(Assignment::title)
                 .containsExactly("Первое задание", "Второе задание");
         assertThat(courseRepository.findAllByAuthorId(authorId)).hasSize(1);
+    }
+
+    @Test
+    void excludesArchivedCourseFromAuthorListButKeepsItAvailableById() {
+        UUID authorId = UUID.randomUUID();
+        Course saved = courseRepository.save(new Course(null, "Архивный курс", null, CourseTargetType.SYSTEM_112,
+                authorId, List.of(), List.of()));
+
+        courseRepository.save(saved.archive(Instant.now()));
+
+        assertThat(courseRepository.findAllByAuthorId(authorId)).isEmpty();
+        assertThat(courseRepository.findById(saved.id())).get().extracting(Course::deletedAt).isNotNull();
     }
 
     @Test
