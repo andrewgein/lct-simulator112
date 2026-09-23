@@ -19,8 +19,10 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CourseApplicationServiceTest {
@@ -91,14 +93,37 @@ class CourseApplicationServiceTest {
     @Test
     void rejectsUpdateByForeignAuthor() {
         UUID courseId = UUID.randomUUID();
-        Course existing = new Course(courseId, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
-                List.of(new CourseMaterial(null, "Лекция", "materials/owner/lecture.md", "lecture.md", "text/markdown", 10L)),
-                List.of(new Assignment(null, "Задание", null, AssignmentDifficulty.NORMAL,
-                        AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID()))));
+        Course existing = course(courseId);
         when(repository.findById(courseId)).thenReturn(Optional.of(existing));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThatThrownBy(() -> service.updateCourse(courseId, existing, UUID.randomUUID()))
                 .isInstanceOf(CourseAccessDeniedException.class);
+    }
+
+    @Test
+    void deletesCourseByAuthor() {
+        UUID courseId = UUID.randomUUID();
+        when(repository.findById(courseId)).thenReturn(Optional.of(course(courseId)));
+
+        service.deleteCourse(courseId, authorId);
+
+        verify(repository).save(argThat(course -> courseId.equals(course.id()) && course.deletedAt() != null));
+    }
+
+    @Test
+    void rejectsDeleteByForeignAuthor() {
+        UUID courseId = UUID.randomUUID();
+        when(repository.findById(courseId)).thenReturn(Optional.of(course(courseId)));
+
+        assertThatThrownBy(() -> service.deleteCourse(courseId, UUID.randomUUID()))
+                .isInstanceOf(CourseAccessDeniedException.class);
+    }
+
+    private Course course(UUID courseId) {
+        return new Course(courseId, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(new CourseMaterial(null, "Лекция", "materials/owner/lecture.md", "lecture.md", "text/markdown", 10L)),
+                List.of(new Assignment(null, "Задание", null, AssignmentDifficulty.NORMAL,
+                        AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID()))));
     }
 }

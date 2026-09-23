@@ -20,7 +20,7 @@ public class CoursePersistenceMapper {
     public Course toDomain(CourseJpaEntity entity) {
         return new Course(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getTargetType(), entity.getDdsService(),
                 entity.getAuthorId(), entity.getMaterials().stream().map(this::toDomain).toList(),
-                entity.getAssignments().stream().map(this::toDomain).toList());
+                entity.getAssignments().stream().map(this::toDomain).toList(), entity.getDeletedAt());
     }
 
     public CourseJpaEntity toEntity(Course course) {
@@ -31,6 +31,7 @@ public class CoursePersistenceMapper {
         entity.setTargetType(course.targetType());
         entity.setDdsService(course.ddsService());
         entity.setAuthorId(course.authorId());
+        entity.setDeletedAt(course.deletedAt());
         course.materials().stream().map(this::toEntity).forEach(entity::addMaterial);
         course.assignments().stream().map(this::toEntity).forEach(entity::addAssignment);
         return entity;

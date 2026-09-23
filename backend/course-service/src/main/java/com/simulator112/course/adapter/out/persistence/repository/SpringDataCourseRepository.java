@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SpringDataCourseRepository extends JpaRepository<CourseJpaEntity, UUID> {
-    List<CourseJpaEntity> findAllByAuthorId(UUID authorId);
+    List<CourseJpaEntity> findAllByAuthorIdAndDeletedAtIsNull(UUID authorId);
 }

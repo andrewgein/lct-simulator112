@@ -32,6 +32,6 @@ public class CoursePersistenceAdapter implements CourseRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Course> findAllByAuthorId(UUID authorId) {
-        return repository.findAllByAuthorId(authorId).stream().map(mapper::toDomain).toList();
+        return repository.findAllByAuthorIdAndDeletedAtIsNull(authorId).stream().map(mapper::toDomain).toList();
     }
 }

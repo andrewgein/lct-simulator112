@@ -8,6 +8,7 @@ import com.simulator112.course.adapter.out.storage.MaterialFileStorage;
 import com.simulator112.course.application.port.out.EnrollmentRepository;
 import com.simulator112.course.domain.exception.CourseAccessDeniedException;
 import com.simulator112.course.application.port.in.CreateCourseUseCase;
+import com.simulator112.course.application.port.in.DeleteCourseUseCase;
 import com.simulator112.course.application.port.in.FindAuthoredCoursesUseCase;
 import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.UpdateCourseUseCase;
@@ -33,6 +34,7 @@ import java.util.UUID;
 public class CourseRestController {
     private final CreateCourseUseCase createCourse;
     private final UpdateCourseUseCase updateCourse;
+    private final DeleteCourseUseCase deleteCourse;
     private final GetCourseUseCase getCourse;
     private final FindAuthoredCoursesUseCase findAuthoredCourses;
     private final CourseRestMapper mapper;
@@ -50,6 +52,12 @@ public class CourseRestController {
     public CourseView update(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID courseId,
                              @Valid @RequestBody CourseRequest request) {
         return mapper.toView(updateCourse.updateCourse(courseId, mapper.toDomain(courseId, request, userId), userId));
+    }
+
+    @DeleteMapping("/{courseId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID courseId) {
+        deleteCourse.deleteCourse(courseId, userId);
     }
 
     @GetMapping("/{courseId}")

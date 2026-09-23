@@ -1,6 +1,7 @@
 package com.simulator112.course.application.service;
 
 import com.simulator112.course.application.port.in.CreateCourseUseCase;
+import com.simulator112.course.application.port.in.DeleteCourseUseCase;
 import com.simulator112.course.application.port.in.FindAuthoredCoursesUseCase;
 import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.UpdateCourseUseCase;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -24,7 +26,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class CourseApplicationService implements CreateCourseUseCase, UpdateCourseUseCase, GetCourseUseCase,
-        FindAuthoredCoursesUseCase {
+        FindAuthoredCoursesUseCase, DeleteCourseUseCase {
 
     private final CourseRepository courseRepository;
     private final IncidentCatalogPort incidentCatalog;
@@ -48,7 +50,7 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
             throw new IllegalArgumentException("Идентификатор курса нельзя изменить");
         }
         Course updated = new Course(courseId, course.title(), course.description(), course.targetType(), course.ddsService(),
-                existing.authorId(), course.materials(), course.assignments());
+                existing.authorId(), course.materials(), course.assignments(), existing.deletedAt());
         validate(updated);
         return courseRepository.save(updated);
     }
@@ -63,6 +65,16 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
     @Transactional(readOnly = true)
     public List<Course> findAuthoredCourses(UUID authorId) {
         return courseRepository.findAllByAuthorId(authorId);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCourse(UUID courseId, UUID requesterId) {
+        Course course = getCourse(courseId);
+        if (!course.authorId().equals(requesterId)) {
+            throw new CourseAccessDeniedException("Удалить курс может только его автор");
+        }
+        courseRepository.save(course.archive(Instant.now()));
     }
 
     private void validate(Course course) {
