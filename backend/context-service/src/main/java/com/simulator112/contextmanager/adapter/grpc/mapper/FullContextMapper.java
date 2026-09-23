@@ -12,7 +12,7 @@ public final class FullContextMapper {
         var builder = FullContext.newBuilder().setUuid(context.getId().toString()).setUserId(context.getUserId().toString());
         if (!context.getIncidents().isEmpty()) {
             builder.setIncidentContext(IncidentContextMapper.toProto(context.getIncidents().getFirst()));
-            var level = com.simulator112.context.grpc.contract.LevelContext.newBuilder()
+            var assignment = com.simulator112.context.grpc.contract.AssignmentContext.newBuilder()
                     .setAssignmentId(context.getAssignmentId().toString())
                     .setUserId(context.getUserId().toString())
                     .setTitle(context.getLevelTitle())
@@ -20,10 +20,10 @@ public final class FullContextMapper {
                             "INCIDENT_TARGET_TYPE_" + context.getTargetType().name()))
                     .setExecutionMode(com.simulator112.incident.grpc.contract.ExecutionMode.valueOf(
                             "EXECUTION_MODE_" + context.getExecutionMode().name()));
-            if (context.getDifficulty() != null) level.setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.valueOf(
+            if (context.getDifficulty() != null) assignment.setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.valueOf(
                     "DIFFICULTY_" + context.getDifficulty().name()));
-            context.getIncidents().forEach(value -> level.addIncidents(IncidentContextMapper.toProto(value)));
-            builder.setLevelContext(level);
+            context.getIncidents().forEach(value -> assignment.addIncidents(IncidentContextMapper.toProto(value)));
+            builder.setAssignmentContext(assignment);
         }
         builder.setLevelProgress(LevelProgressGrpcMapper.fromContext(context));
         if (context.getDialog() != null) builder.setDialogContext(DialogContextMapper.toProto(context.getDialog()));

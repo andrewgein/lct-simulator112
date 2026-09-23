@@ -128,7 +128,7 @@ message SolutionContext {
   repeated string services = 15;
 }
 
-message LevelContext {
+message AssignmentContext {
   reserved 1;
   string assignment_id = 2;
   string user_id = 3;
@@ -145,7 +145,7 @@ message FullContext {
   incident.IncidentContext incident_context = 3;
   DialogContext dialog_context = 4;
   SolutionContext solution_context = 5;
-  LevelContext level_context = 6;
+  AssignmentContext assignment_context = 6;
   repeated SolutionContext solution_context_revisions = 7;
   LevelProgress level_progress = 8;
 }

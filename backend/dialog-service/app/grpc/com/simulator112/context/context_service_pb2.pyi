@@ -215,7 +215,7 @@ class SolutionContext(_message.Message):
     services: _containers.RepeatedScalarFieldContainer[str]
     def __init__(self, applicant: _Optional[_Union[PersonInfo, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ..., incident_types: _Optional[_Iterable[str]] = ..., call_id: _Optional[str] = ..., main_card_id: _Optional[str] = ..., revision_id: _Optional[str] = ..., card_id: _Optional[str] = ..., previous_revision_id: _Optional[str] = ..., version: _Optional[int] = ..., created_at: _Optional[str] = ..., additional_info_provided: _Optional[bool] = ..., services: _Optional[_Iterable[str]] = ...) -> None: ...
 
-class LevelContext(_message.Message):
+class AssignmentContext(_message.Message):
     __slots__ = ("assignment_id", "user_id", "title", "target_type", "difficulty", "execution_mode", "incidents")
     ASSIGNMENT_ID_FIELD_NUMBER: _ClassVar[int]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
@@ -234,13 +234,13 @@ class LevelContext(_message.Message):
     def __init__(self, assignment_id: _Optional[str] = ..., user_id: _Optional[str] = ..., title: _Optional[str] = ..., target_type: _Optional[_Union[_incident_context_pb2.IncidentTargetType, str]] = ..., difficulty: _Optional[_Union[_incident_context_pb2.Difficulty, str]] = ..., execution_mode: _Optional[_Union[_incident_context_pb2.ExecutionMode, str]] = ..., incidents: _Optional[_Iterable[_Union[_incident_context_pb2.IncidentContext, _Mapping]]] = ...) -> None: ...
 
 class FullContext(_message.Message):
-    __slots__ = ("uuid", "user_id", "incident_context", "dialog_context", "solution_context", "level_context", "solution_context_revisions", "level_progress")
+    __slots__ = ("uuid", "user_id", "incident_context", "dialog_context", "solution_context", "assignment_context", "solution_context_revisions", "level_progress")
     UUID_FIELD_NUMBER: _ClassVar[int]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     INCIDENT_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     DIALOG_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     SOLUTION_CONTEXT_FIELD_NUMBER: _ClassVar[int]
-    LEVEL_CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    ASSIGNMENT_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     SOLUTION_CONTEXT_REVISIONS_FIELD_NUMBER: _ClassVar[int]
     LEVEL_PROGRESS_FIELD_NUMBER: _ClassVar[int]
     uuid: str
@@ -248,10 +248,10 @@ class FullContext(_message.Message):
     incident_context: _incident_context_pb2.IncidentContext
     dialog_context: DialogContext
     solution_context: SolutionContext
-    level_context: LevelContext
+    assignment_context: AssignmentContext
     solution_context_revisions: _containers.RepeatedCompositeFieldContainer[SolutionContext]
     level_progress: LevelProgress
-    def __init__(self, uuid: _Optional[str] = ..., user_id: _Optional[str] = ..., incident_context: _Optional[_Union[_incident_context_pb2.IncidentContext, _Mapping]] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ..., solution_context: _Optional[_Union[SolutionContext, _Mapping]] = ..., level_context: _Optional[_Union[LevelContext, _Mapping]] = ..., solution_context_revisions: _Optional[_Iterable[_Union[SolutionContext, _Mapping]]] = ..., level_progress: _Optional[_Union[LevelProgress, _Mapping]] = ...) -> None: ...
+    def __init__(self, uuid: _Optional[str] = ..., user_id: _Optional[str] = ..., incident_context: _Optional[_Union[_incident_context_pb2.IncidentContext, _Mapping]] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ..., solution_context: _Optional[_Union[SolutionContext, _Mapping]] = ..., assignment_context: _Optional[_Union[AssignmentContext, _Mapping]] = ..., solution_context_revisions: _Optional[_Iterable[_Union[SolutionContext, _Mapping]]] = ..., level_progress: _Optional[_Union[LevelProgress, _Mapping]] = ...) -> None: ...
 
 class GetIncidentContextRequest(_message.Message):
     __slots__ = ("uuid",)
