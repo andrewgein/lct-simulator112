@@ -53,14 +53,17 @@ class CourseApplicationServiceTest {
     }
 
     @Test
-    void requiresMaterials() {
+    void allowsCourseWithoutMaterials() {
+        UUID incidentId = UUID.randomUUID();
+        when(incidents.requireIncident(incidentId)).thenReturn(new IncidentCatalogPort.IncidentDescriptor(
+                incidentId, CourseTargetType.SYSTEM_112, AssignmentDifficulty.NORMAL));
         Course course = new Course(null, "Курс", null, CourseTargetType.SYSTEM_112, authorId, List.of(),
                 List.of(new Assignment(null, "Задание", null, AssignmentDifficulty.NORMAL,
-                        AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID()))));
+                        AssignmentExecutionMode.SEQUENTIAL, List.of(incidentId))));
 
-        assertThatThrownBy(() -> service.createCourse(course))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("вводный материал");
+        service.createCourse(course);
+
+        verify(repository).save(course);
     }
 
     @Test

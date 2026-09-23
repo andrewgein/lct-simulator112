@@ -14,6 +14,6 @@ public record CourseRequest(
         String description,
         @NotNull CourseTargetType targetType,
         DdsService ddsService,
-        @NotEmpty List<@Valid CourseMaterialRequest> materials,
+        @NotNull List<@Valid CourseMaterialRequest> materials,
         @NotEmpty List<@Valid AssignmentRequest> assignments) {
 }

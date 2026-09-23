@@ -96,9 +96,6 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         if (course.targetType() == CourseTargetType.SYSTEM_112 && course.ddsService() != null) {
             throw new IllegalArgumentException("Специализация ДДС недоступна для курса Системы-112");
         }
-        if (course.materials().isEmpty()) {
-            throw new IllegalArgumentException("Курс должен содержать хотя бы один вводный материал");
-        }
         if (course.assignments().isEmpty()) {
             throw new IllegalArgumentException("Курс должен содержать хотя бы одно задание");
         }
