@@ -9,6 +9,7 @@ import com.simulator112.course.domain.course.AssignmentExecutionMode;
 import com.simulator112.course.domain.course.Course;
 import com.simulator112.course.domain.course.CourseTargetType;
 import com.simulator112.course.domain.course.CourseMaterial;
+import com.simulator112.course.domain.course.DdsService;
 import com.simulator112.course.domain.exception.CourseAccessDeniedException;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +30,25 @@ class CourseApplicationServiceTest {
     private final CourseApplicationService service = new CourseApplicationService(repository, incidents, fileStorage);
 
     private final UUID authorId = UUID.randomUUID();
+
+    @Test
+    void requiresDdsSpecialization() {
+        Course course = new Course(null, "Курс ДДС", null, CourseTargetType.DDS, authorId, List.of(), List.of());
+
+        assertThatThrownBy(() -> service.createCourse(course))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("специализацию");
+    }
+
+    @Test
+    void rejectsDdsSpecializationForSystem112() {
+        Course course = new Course(null, "Курс 112", null, CourseTargetType.SYSTEM_112, DdsService.FIRE,
+                authorId, List.of(), List.of());
+
+        assertThatThrownBy(() -> service.createCourse(course))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("недоступна");
+    }
 
     @Test
     void requiresMaterials() {
@@ -66,21 +86,6 @@ class CourseApplicationServiceTest {
         assertThatThrownBy(() -> service.createCourse(course))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("профилю курса");
-    }
-
-    @Test
-    void rejectsIncidentWithAnotherDifficulty() {
-        UUID incidentId = UUID.randomUUID();
-        when(incidents.requireIncident(eq(incidentId))).thenReturn(new IncidentCatalogPort.IncidentDescriptor(
-                incidentId, CourseTargetType.SYSTEM_112, AssignmentDifficulty.HARD));
-        Course course = new Course(null, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
-                List.of(new CourseMaterial(null, "Лекция", "materials/owner/lecture.md", "lecture.md", "text/markdown", 10L)),
-                List.of(new Assignment(null, "Задание", null, AssignmentDifficulty.NORMAL,
-                        AssignmentExecutionMode.SEQUENTIAL, List.of(incidentId))));
-
-        assertThatThrownBy(() -> service.createCourse(course))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("сложности задания");
     }
 
     @Test

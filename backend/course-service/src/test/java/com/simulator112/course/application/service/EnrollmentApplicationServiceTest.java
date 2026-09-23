@@ -54,6 +54,27 @@ class EnrollmentApplicationServiceTest {
     }
 
     @Test
+    void findsDistinctCoursesAssignedToOwnedGroup() {
+        Enrollment first = new Enrollment(UUID.randomUUID(), course.id(), studentId, groupId);
+        Enrollment second = new Enrollment(UUID.randomUUID(), course.id(), UUID.randomUUID(), groupId);
+        when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(
+                groupId, "Группа", teacherId, List.of(studentId)));
+        when(repository.findAllByGroupId(groupId)).thenReturn(List.of(first, second));
+        when(getCourse.getCourse(course.id())).thenReturn(course);
+
+        assertThat(service.findGroupCourses(groupId, teacherId)).containsExactly(course);
+    }
+
+    @Test
+    void rejectsReadingCoursesOfForeignGroup() {
+        when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(
+                groupId, "Группа", UUID.randomUUID(), List.of(studentId)));
+
+        assertThatThrownBy(() -> service.findGroupCourses(groupId, teacherId))
+                .isInstanceOf(CourseAccessDeniedException.class);
+    }
+
+    @Test
     void rejectsAssignmentByForeignTeacher() {
         when(getCourse.getCourse(course.id())).thenReturn(course);
         when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(

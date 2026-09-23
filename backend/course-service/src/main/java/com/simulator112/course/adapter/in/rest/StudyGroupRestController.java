@@ -1,10 +1,12 @@
 package com.simulator112.course.adapter.in.rest;
 
+import com.simulator112.course.adapter.in.rest.dto.CourseView;
 import com.simulator112.course.adapter.in.rest.dto.EnrollmentView;
 import com.simulator112.course.adapter.in.rest.dto.StudyGroupRequest;
 import com.simulator112.course.adapter.in.rest.dto.StudyGroupView;
 import com.simulator112.course.application.port.in.AssignCourseToGroupUseCase;
 import com.simulator112.course.application.port.in.CreateStudyGroupUseCase;
+import com.simulator112.course.application.port.in.FindGroupCoursesUseCase;
 import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
 import com.simulator112.course.application.port.in.UpdateStudyGroupUseCase;
@@ -25,6 +27,7 @@ public class StudyGroupRestController {
     private final GetStudyGroupUseCase getStudyGroup;
     private final FindOwnedStudyGroupsUseCase findOwnedStudyGroups;
     private final AssignCourseToGroupUseCase assignCourseToGroup;
+    private final FindGroupCoursesUseCase findGroupCourses;
     private final CourseRestMapper mapper;
 
     @PostMapping
@@ -49,6 +52,11 @@ public class StudyGroupRestController {
     @GetMapping
     public List<StudyGroupView> findOwned(@RequestHeader("X-User-Id") UUID userId) {
         return findOwnedStudyGroups.findOwnedStudyGroups(userId).stream().map(mapper::toView).toList();
+    }
+
+    @GetMapping("/{groupId}/courses")
+    public List<CourseView> findCourses(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId) {
+        return findGroupCourses.findGroupCourses(groupId, userId).stream().map(mapper::toView).toList();
     }
 
     @PostMapping("/{groupId}/courses/{courseId}")

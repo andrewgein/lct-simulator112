@@ -42,9 +42,8 @@ public class CourseAssignmentGrpcClient implements CourseAssignmentPort {
                     .replace("COURSE_TARGET_TYPE_", ""));
             var difficulty = Difficulty.valueOf(assignment.getDifficulty().name()
                     .replace("ASSIGNMENT_DIFFICULTY_", ""));
-            if (snapshots.stream().anyMatch(value -> value.getTargetType() != targetType
-                    || value.getDifficulty() != difficulty)) {
-                throw new IllegalArgumentException("Инциденты не соответствуют профилю или сложности задания");
+            if (snapshots.stream().anyMatch(value -> value.getTargetType() != targetType)) {
+                throw new IllegalArgumentException("Инциденты не соответствуют профилю задания");
             }
             return new AssignmentScenario(assignmentId, userId, assignment.getTitle(), targetType, difficulty,
                     ExecutionMode.valueOf(assignment.getExecutionMode().name()

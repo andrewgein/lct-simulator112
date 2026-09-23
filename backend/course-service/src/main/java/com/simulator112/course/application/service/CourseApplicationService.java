@@ -9,6 +9,7 @@ import com.simulator112.course.application.port.out.IncidentCatalogPort;
 import com.simulator112.course.domain.course.Assignment;
 import com.simulator112.course.domain.course.Course;
 import com.simulator112.course.domain.course.CourseMaterial;
+import com.simulator112.course.domain.course.CourseTargetType;
 import com.simulator112.course.domain.exception.CourseAccessDeniedException;
 import com.simulator112.course.domain.exception.CourseNotFoundException;
 import com.simulator112.course.adapter.out.storage.MaterialFileStorage;
@@ -46,7 +47,7 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         if (course.id() != null && !courseId.equals(course.id())) {
             throw new IllegalArgumentException("Идентификатор курса нельзя изменить");
         }
-        Course updated = new Course(courseId, course.title(), course.description(), course.targetType(),
+        Course updated = new Course(courseId, course.title(), course.description(), course.targetType(), course.ddsService(),
                 existing.authorId(), course.materials(), course.assignments());
         validate(updated);
         return courseRepository.save(updated);
@@ -76,6 +77,12 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         }
         if (course.targetType() == null) {
             throw new IllegalArgumentException("Профиль курса обязателен");
+        }
+        if (course.targetType() == CourseTargetType.DDS && course.ddsService() == null) {
+            throw new IllegalArgumentException("Для курса ДДС выберите специализацию");
+        }
+        if (course.targetType() == CourseTargetType.SYSTEM_112 && course.ddsService() != null) {
+            throw new IllegalArgumentException("Специализация ДДС недоступна для курса Системы-112");
         }
         if (course.materials().isEmpty()) {
             throw new IllegalArgumentException("Курс должен содержать хотя бы один вводный материал");
@@ -119,10 +126,6 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
             if (incident.targetType() != course.targetType()) {
                 throw new IllegalArgumentException("Инцидент «" + incidentId
                         + "» не соответствует профилю курса " + course.targetType());
-            }
-            if (incident.difficulty() != assignment.difficulty()) {
-                throw new IllegalArgumentException("Сложность инцидента «" + incidentId
-                        + "» не соответствует сложности задания " + assignment.difficulty());
             }
         });
     }

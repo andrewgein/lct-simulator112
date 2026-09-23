@@ -18,8 +18,8 @@ import java.util.ArrayList;
 public class CoursePersistenceMapper {
 
     public Course toDomain(CourseJpaEntity entity) {
-        return new Course(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getTargetType(), entity.getAuthorId(),
-                entity.getMaterials().stream().map(this::toDomain).toList(),
+        return new Course(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getTargetType(), entity.getDdsService(),
+                entity.getAuthorId(), entity.getMaterials().stream().map(this::toDomain).toList(),
                 entity.getAssignments().stream().map(this::toDomain).toList());
     }
 
@@ -29,6 +29,7 @@ public class CoursePersistenceMapper {
         entity.setTitle(course.title());
         entity.setDescription(course.description());
         entity.setTargetType(course.targetType());
+        entity.setDdsService(course.ddsService());
         entity.setAuthorId(course.authorId());
         course.materials().stream().map(this::toEntity).forEach(entity::addMaterial);
         course.assignments().stream().map(this::toEntity).forEach(entity::addAssignment);
