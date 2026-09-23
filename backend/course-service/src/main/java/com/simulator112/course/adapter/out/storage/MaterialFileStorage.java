@@ -1,6 +1,8 @@
 package com.simulator112.course.adapter.out.storage;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -64,8 +66,11 @@ public class MaterialFileStorage {
         if (bytes.length == 0) throw new IllegalArgumentException("Нельзя загрузить пустой файл");
         String objectKey = "materials/" + userId + "/" + UUID.randomUUID() + "." + extension;
         String contentType = CONTENT_TYPES.get(extension);
+        String encodedOriginalName = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(originalName.getBytes(StandardCharsets.UTF_8));
         s3.putObject(PutObjectRequest.builder().bucket(bucket).key(objectKey).contentType(contentType)
-                        .metadata(Map.of("original-name", originalName)).build(), RequestBody.fromBytes(bytes));
+                        .metadata(Map.of("original-name-base64url", encodedOriginalName)).build(),
+                RequestBody.fromBytes(bytes));
         return new StoredMaterialFile(objectKey, originalName, contentType, bytes.length);
     }
 
