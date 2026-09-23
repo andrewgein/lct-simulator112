@@ -62,9 +62,9 @@ public class UserProfileApplicationService
     @Override
     @Transactional
     public UserProfile createProfile(
-            UUID userId, String name, String surname, ProfessionalProfile professionalProfile) {
+            UUID userId, String name, String surname, String patronymic, ProfessionalProfile professionalProfile) {
         UserProfile profile = repository.save(
-                UserProfile.create(userId, name, surname, professionalProfile));
+                UserProfile.create(userId, name, surname, patronymic, professionalProfile));
         log.info(
                 "Создан сотрудник с id {} и направлением обучения {}",
                 userId,
@@ -74,8 +74,16 @@ public class UserProfileApplicationService
 
     @Override
     @Transactional
-    public UserProfile updateProfile(UUID userId, String name, String surname) {
-        UserProfile updated = repository.save(getProfileOrThrow(userId).updatePersonalData(name, surname));
+    public UserProfile updateProfile(
+            UUID userId,
+            String name,
+            String surname,
+            String patronymic,
+            ProfessionalProfile professionalProfile) {
+        UserProfile updated = repository.save(
+                getProfileOrThrow(userId)
+                        .updatePersonalData(name, surname, patronymic)
+                        .assignProfessionalProfile(professionalProfile));
         log.info("Обновлены данные сотрудника с id {}", userId);
         return updated;
     }

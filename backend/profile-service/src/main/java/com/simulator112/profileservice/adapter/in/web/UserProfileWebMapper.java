@@ -14,6 +14,7 @@ final class UserProfileWebMapper {
                 null,
                 profile.name(),
                 profile.surname(),
+                profile.patronymic(),
                 profile.professionalProfile() == null
                         ? null
                         : profile.professionalProfile().trainingTrack(),

@@ -35,7 +35,7 @@ public class UserProfileController {
             @RequestHeader("X-User-Role") String role,
             @Valid @RequestBody CreateUserProfileRequest request) {
         ProfessionalProfile professionalProfile = request.toProfessionalProfile();
-        if (!"ADMIN".equals(role) && professionalProfile == null) {
+        if ("STUDENT".equals(role) && professionalProfile == null) {
             throw new InvalidProfessionalProfileException("Направление обучения обязательно");
         }
         return UserProfileWebMapper.toResponse(
@@ -43,20 +43,22 @@ public class UserProfileController {
                         userId,
                         request.name(),
                         request.surname(),
+                        request.patronymic(),
                         professionalProfile));
     }
 
     @PatchMapping("/{userId}")
     public UserProfileResponse updateUserProfile(
             @PathVariable UUID userId, @RequestBody UpdateUserProfileRequest request) {
-        return update(userId, request);
+        return update(userId, request, false);
     }
 
     @PatchMapping
     public UserProfileResponse updateProfile(
             @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Role") String role,
             @RequestBody UpdateUserProfileRequest request) {
-        return update(userId, request);
+        return update(userId, request, "SUPERVISOR".equals(role));
     }
 
     @DeleteMapping("/{userId}")
@@ -64,8 +66,17 @@ public class UserProfileController {
         userProfiles.deleteProfile(userId);
     }
 
-    private UserProfileResponse update(UUID userId, UpdateUserProfileRequest request) {
+    private UserProfileResponse update(
+            UUID userId, UpdateUserProfileRequest request, boolean updateProfessionalProfile) {
+        ProfessionalProfile professionalProfile = updateProfessionalProfile
+                ? request.toProfessionalProfile()
+                : userProfiles.getProfile(userId).professionalProfile();
         return UserProfileWebMapper.toResponse(
-                userProfiles.updateProfile(userId, request.name(), request.surname()));
+                userProfiles.updateProfile(
+                        userId,
+                        request.name(),
+                        request.surname(),
+                        request.patronymic(),
+                        professionalProfile));
     }
 }

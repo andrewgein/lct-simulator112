@@ -28,6 +28,8 @@ class UserProfileJpaEntity {
     @Column(nullable = false)
     private String surname;
 
+    private String patronymic;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "training_track")
     private TrainingTrack trainingTrack;

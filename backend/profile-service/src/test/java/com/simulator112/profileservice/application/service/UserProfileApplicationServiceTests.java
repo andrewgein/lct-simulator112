@@ -43,7 +43,7 @@ class UserProfileApplicationServiceTests {
         when(repository.save(profile)).thenReturn(profile);
 
         UserProfile result = service.createProfile(
-                userId, "Иван", "Иванов", professionalProfile);
+                userId, "Иван", "Иванов", null, professionalProfile);
 
         assertEquals(professionalProfile, result.professionalProfile());
         verify(repository).save(profile);
@@ -62,6 +62,20 @@ class UserProfileApplicationServiceTests {
         UserProfile result = service.assignProfessionalProfile(userId, professionalProfile);
 
         assertEquals(professionalProfile, result.professionalProfile());
+        verify(repository).save(updated);
+    }
+
+    @Test
+    void updatesAndClearsPatronymic() {
+        UUID userId = UUID.randomUUID();
+        UserProfile user = UserProfile.create(userId, "Иван", "Иванов", "Иванович", null);
+        UserProfile updated = user.updatePersonalData("Иван", "Иванов", "");
+        when(repository.findById(userId)).thenReturn(Optional.of(user));
+        when(repository.save(updated)).thenReturn(updated);
+
+        UserProfile result = service.updateProfile(userId, "Иван", "Иванов", "", null);
+
+        assertEquals("", result.patronymic());
         verify(repository).save(updated);
     }
 

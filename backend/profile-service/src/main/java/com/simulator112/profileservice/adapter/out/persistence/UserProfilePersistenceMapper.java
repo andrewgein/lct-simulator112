@@ -16,6 +16,7 @@ final class UserProfilePersistenceMapper {
                 entity.getUserId(),
                 entity.getName(),
                 entity.getSurname(),
+                entity.getPatronymic(),
                 professionalProfile,
                 entity.getUpdatedAt());
     }
@@ -30,6 +31,7 @@ final class UserProfilePersistenceMapper {
     static void updateEntity(UserProfileJpaEntity entity, UserProfile profile) {
         entity.setName(profile.name());
         entity.setSurname(profile.surname());
+        entity.setPatronymic(profile.patronymic());
         entity.setTrainingTrack(
                 profile.professionalProfile() == null
                         ? null
