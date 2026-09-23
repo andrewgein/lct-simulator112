@@ -1,0 +1,46 @@
+---
+import CourseAssignmentCard from "./CourseAssignmentCard.astro";
+
+const { assignments = [], incidents = [] } = Astro.props;
+---
+
+<section class="course-form-section course-editor-assignments wa-stack wa-gap-l" aria-labelledby="assignments-heading">
+  <div class="section-heading">
+    <h2 id="assignments-heading" class="wa-heading-xl">Задания</h2>
+  </div>
+  <div id="assignments-list" class="wa-stack wa-gap-m">
+    {assignments.map((assignment, index) => <CourseAssignmentCard {assignment} {incidents} {index} />)}
+  </div>
+  <wa-card class="add-assignment-card">
+    <wa-button id="add-assignment" type="button" appearance="plain" variant="brand">+ Добавить задание</wa-button>
+  </wa-card>
+</section>
+
+<template id="assignment-template">
+  <CourseAssignmentCard {incidents} isTemplate />
+</template>
+
+<style is:global>
+  .course-editor-assignments, .course-form-section { min-width: 0; }
+  .section-heading h2 { margin: 0; }
+  .assignment-dialog { --width: 52rem; }
+  .assignment-description-summary { overflow: hidden; margin: 0; color: var(--wa-color-text-quiet); text-overflow: ellipsis; white-space: nowrap; }
+  .assignment-summary small { color: var(--wa-color-text-quiet); }
+  .add-assignment-card { display: grid; height: 5rem; border: var(--wa-border-width-s) dashed var(--wa-color-surface-border); text-align: center; place-items: center; }
+  .add-assignment-card::part(body) { width: 100%; height: 100%; padding: 0; }
+  .add-assignment-card wa-button { width: 100%; height: 100%; }
+  .add-assignment-card wa-button::part(button) { width: 100%; height: 100%; }
+  .assignment-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wa-space-m); }
+  .incident-picker { min-width: 0; padding: 0; border: 0; margin: 0; }
+  .incident-picker legend { margin-block-end: var(--wa-space-s); font-weight: var(--wa-font-weight-semibold); }
+  .incident-validation { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .incident-picker-summary { padding: var(--wa-space-s) var(--wa-space-m); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-default); }
+  .incident-selection-summary { margin: 0; color: var(--wa-color-text-quiet); }
+  .incident-options { padding-block: var(--wa-space-xs); }
+  .incident-option-label { display: grid; gap: var(--wa-space-3xs); }
+  .incident-option-label small { color: var(--wa-color-text-quiet); }
+  @media (max-width: 48rem) {
+    .incident-picker-summary.wa-split { align-items: stretch; }
+    .assignment-settings { grid-template-columns: 1fr; }
+  }
+</style>

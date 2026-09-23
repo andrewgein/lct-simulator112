@@ -1,0 +1,44 @@
+---
+const { materials = [] } = Astro.props;
+---
+
+<section class="course-form-section wa-stack wa-gap-m" aria-labelledby="materials-heading">
+  <div class="section-heading wa-split wa-align-items-end">
+    <h2 id="materials-heading" class="wa-heading-xl">Вводные материалы</h2>
+  </div>
+  <input id="material-file-input" type="file" accept=".md,.pdf,.doc,.docx,.xls,.xlsx" multiple>
+  <input id="materials-validation" class="material-file-validation" type="text" required value={materials.length ? "uploaded" : ""} aria-label="Вводные материалы">
+  <p id="materials-empty" class="materials-empty" hidden={materials.length > 0}>Файлы не добавлены</p>
+  <div id="materials-list" class="wa-stack wa-gap-xs">
+    {materials.map((material) => (
+      <div class="material-item wa-split wa-align-items-center" data-id={material.id || ""} data-title={material.title || ""} data-file-object-key={material.fileObjectKey || ""} data-file-name={material.fileName || ""} data-file-content-type={material.fileContentType || ""} data-file-size={material.fileSize ?? ""}>
+        <div class="material-info wa-cluster wa-align-items-center">
+          <wa-icon name="file-lines"></wa-icon>
+          <div class="wa-stack wa-gap-3xs"><strong class="material-file-name">{material.fileName}</strong><small class="material-upload-status">Загружен</small></div>
+        </div>
+        <wa-button class="remove-material" type="button" appearance="plain" variant="danger" aria-label={`Удалить ${material.fileName}`}><wa-icon name="trash"></wa-icon></wa-button>
+      </div>
+    ))}
+  </div>
+</section>
+
+<template id="material-template">
+  <div class="material-item wa-split wa-align-items-center">
+    <div class="material-info wa-cluster wa-align-items-center">
+      <wa-icon name="file-lines"></wa-icon>
+      <div class="wa-stack wa-gap-3xs"><strong class="material-file-name"></strong><small class="material-upload-status">Загрузка…</small></div>
+    </div>
+    <wa-button class="remove-material" type="button" appearance="plain" variant="danger" aria-label="Удалить документ"><wa-icon name="trash"></wa-icon></wa-button>
+  </div>
+</template>
+
+<style is:global>
+  .course-form-section { min-width: 0; }
+  .section-heading h2 { margin: 0; }
+  .material-item { padding: var(--wa-space-xs) var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-default); }
+  .material-info { min-width: 0; }
+  .material-file-name { overflow-wrap: anywhere; }
+  .material-file-validation { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .material-upload-status, .materials-empty { color: var(--wa-color-text-quiet); }
+  .materials-empty { margin: 0; }
+</style>

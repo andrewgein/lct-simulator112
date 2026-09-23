@@ -1,0 +1,33 @@
+---
+const { course = {}, targetType = "SYSTEM_112", ddsService = "" } = Astro.props;
+---
+
+<section class="course-form-section wa-stack wa-gap-l" aria-labelledby="course-info-heading">
+  <div class="section-heading">
+    <h2 id="course-info-heading" class="wa-heading-xl">О курсе</h2>
+  </div>
+  <wa-input name="title" label="Название курса" value={course.title || ""} required></wa-input>
+  <wa-textarea name="description" label="Описание" value={course.description || ""} rows="3"></wa-textarea>
+  <div class="course-profile-fields">
+    <wa-select name="targetType" data-field="courseTargetType" label="Профиль курса" value={targetType} required>
+      <wa-option value="SYSTEM_112">Система-112</wa-option>
+      <wa-option value="DDS">ДДС</wa-option>
+    </wa-select>
+    <wa-select name="ddsService" data-field="courseDdsService" label="Специализация ДДС" value={ddsService} placeholder="Выберите службу" hidden disabled>
+      <wa-option value="FIRE">Пожарная охрана</wa-option>
+      <wa-option value="POLICE">Полиция</wa-option>
+      <wa-option value="AMBULANCE">Скорая помощь</wa-option>
+      <wa-option value="GAS">Аварийная газовая служба</wa-option>
+      <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+    </wa-select>
+  </div>
+</section>
+
+<style>
+  .course-form-section { min-width: 0; }
+  .section-heading h2 { margin: 0; }
+  .course-profile-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wa-space-m); }
+  @media (max-width: 48rem) {
+    .course-profile-fields { grid-template-columns: 1fr; }
+  }
+</style>

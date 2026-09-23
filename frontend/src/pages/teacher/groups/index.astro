@@ -3,15 +3,21 @@ import Page from "../../../layouts/Page.astro";
 import Header from "../../../layouts/Header.astro";
 import MainHeader from "../../../layouts/MainHeader.astro";
 import { getStudyGroups } from "../../../features/course/api/CourseApi";
+import { getStudents } from "../../../features/course/api/StudentApi";
 
 export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
 let groups = [];
+let studentsById = new Map();
 let error = null;
 try {
-  const response = await getStudyGroups(Astro.locals.accessToken);
+  const [response, students] = await Promise.all([
+    getStudyGroups(Astro.locals.accessToken),
+    getStudents(Astro.locals.accessToken)
+  ]);
   if (!response.ok) throw new Error();
   groups = await response.json();
+  studentsById = new Map(students.map((student) => [String(student.id), student]));
 } catch {
   error = "Не удалось загрузить учебные группы";
 }
@@ -25,21 +31,36 @@ try {
   {!error && !groups.length && <wa-callout>Учебных групп пока нет. Создайте группу, чтобы назначать курсы нескольким обучающимся.</wa-callout>}
   {!error && groups.length > 0 && (
     <div class="wa-grid wa-gap-m">
-      {groups.map((group) => (
-        <wa-card with-header>
-          <h2 slot="header" class="group-title wa-heading-l">{group.title}</h2>
-          <div class="wa-stack wa-gap-l">
-            <div class="wa-cluster wa-gap-xs">
-              <wa-badge variant="neutral" appearance="outlined">{group.studentIds?.length || 0} участников</wa-badge>
+      {groups.map((group) => {
+        const students = (group.studentIds || []).map((id) => studentsById.get(String(id))).filter(Boolean);
+        return (
+          <wa-card with-header>
+            <h2 slot="header" class="group-title wa-heading-l">{group.title}</h2>
+            <div class="wa-stack wa-gap-l">
+              <wa-accordion>
+                <wa-accordion-item label={`Участники (${students.length})`}>
+                  {students.length ? (
+                    <ul class="student-list wa-stack wa-gap-xs">
+                      {students.map((student) => {
+                        const fullName = student.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
+                        return <li><strong>{fullName}</strong></li>;
+                      })}
+                    </ul>
+                  ) : (
+                    <p class="empty-students">В группе пока нет обучающихся.</p>
+                  )}
+                </wa-accordion-item>
+              </wa-accordion>
+              <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined">Открыть группу</wa-button>
             </div>
-            <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined">Открыть группу</wa-button>
-          </div>
-        </wa-card>
-      ))}
+          </wa-card>
+        );
+      })}
     </div>
   )}
 </Page>
 
 <style>
-  .group-title { margin: 0; }
+  .group-title, .student-list, .empty-students { margin: 0; }
+  .student-list { padding: 0; list-style: none; }
 </style>

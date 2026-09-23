@@ -1,0 +1,71 @@
+---
+import { DifficultyOptions } from "../../incident/contract/Difficulty";
+
+const { assignment = {}, incidents = [], index = 0, isTemplate = false } = Astro.props;
+const number = index + 1;
+const title = assignment.title || `Задание ${number}`;
+const difficulty = assignment.difficulty || "NORMAL";
+const executionMode = assignment.executionMode || "SEQUENTIAL";
+const incidentIds = assignment.incidentIds || [];
+const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value === value)?.label || value;
+---
+
+<wa-card class="assignment-item" data-id={assignment.id || undefined} with-header>
+  <div slot="header" class="wa-split wa-align-items-center">
+    <strong class="item-title">{isTemplate ? "" : title}</strong>
+    <div class="wa-cluster wa-gap-xs">
+      <wa-button class="edit-assignment" type="button" appearance="outlined" variant="neutral" aria-label={isTemplate ? "Редактировать задание" : `Редактировать задание ${number}`}><wa-icon name="pen"></wa-icon></wa-button>
+      <wa-button class="remove-item" type="button" appearance="outlined" variant="danger" aria-label={isTemplate ? "Удалить задание" : `Удалить задание ${number}`}><wa-icon name="trash"></wa-icon></wa-button>
+    </div>
+  </div>
+  <div class="assignment-summary wa-stack wa-gap-2xs">
+    <p class="assignment-description-summary">{isTemplate ? "Инструкция не указана" : assignment.description || "Инструкция не указана"}</p>
+    <small><span class="assignment-difficulty-summary">{isTemplate ? "Средняя" : difficultyLabel(difficulty)}</span> · <span class="assignment-mode-summary">{executionMode === "PARALLEL" ? "Параллельно" : "Последовательно"}</span> · <span class="assignment-incidents-summary">Сценариев: {isTemplate ? 0 : incidentIds.length}</span></small>
+  </div>
+  <wa-dialog class="assignment-dialog" label={isTemplate ? "Редактирование задания" : `Редактирование: ${title}`} with-footer>
+    <div class="wa-stack wa-gap-l">
+      <wa-input data-field="title" label="Название задания" value={isTemplate ? undefined : assignment.title || ""} required></wa-input>
+      <wa-textarea data-field="description" label="Инструкция обучающемуся" value={isTemplate ? undefined : assignment.description || ""} rows="3" required></wa-textarea>
+      <div class="assignment-settings">
+        <wa-select data-field="difficulty" label="Сложность" value={difficulty} required>
+          <wa-option value="EASY">Лёгкая</wa-option>
+          <wa-option value="NORMAL">Средняя</wa-option>
+          <wa-option value="HARD">Сложная</wa-option>
+        </wa-select>
+        <wa-select data-field="executionMode" label="Режим выполнения" value={executionMode} required>
+          <wa-option value="SEQUENTIAL">Последовательно</wa-option>
+          <wa-option value="PARALLEL">Параллельно</wa-option>
+        </wa-select>
+      </div>
+      <fieldset class="incident-picker wa-stack wa-gap-s">
+        <legend>Сценарии</legend>
+        <input class="incident-validation" type="text" required aria-label={isTemplate ? "Сценарии задания" : `Сценарии задания ${number}`}>
+        {isTemplate || incidents.length ? (
+          <>
+            <div class="incident-picker-summary wa-split wa-align-items-center">
+              <p class="incident-selection-summary">Ничего не выбрано</p>
+              <wa-button class="open-incident-picker" type="button" appearance="outlined"><wa-icon slot="start" name="list-check"></wa-icon>Выбрать сценарии</wa-button>
+            </div>
+            <wa-dialog class="incident-dialog" label={isTemplate ? "Сценарии задания" : `Сценарии задания ${number}`} with-footer>
+              <div class="incident-options wa-stack wa-gap-xs">
+                {incidents.map((incident) => (
+                  <wa-checkbox value={incident.id} data-target-type={incident.targetType} data-dds-service={incident.initialAssignment?.emergencyService || ""} data-difficulty={incident.difficulty} data-selected={!isTemplate && incidentIds.includes(incident.id) ? "true" : "false"}>
+                    <span class="incident-option-label"><strong>{incident.title}</strong><small>{incident.targetType === "DDS" ? "ДДС" : "Система-112"} · {difficultyLabel(incident.difficulty)}</small></span>
+                  </wa-checkbox>
+                ))}
+              </div>
+              <wa-callout class="incident-empty" variant="warning" hidden>Для выбранного профиля нет сценариев.</wa-callout>
+              <wa-button slot="footer" type="button" variant="brand" data-dialog="close">Готово</wa-button>
+            </wa-dialog>
+          </>
+        ) : (
+          <wa-callout variant="warning">Сценариев пока нет. <a href="/admin/incidents/new">Создайте сценарий</a>, затем вернитесь к курсу.</wa-callout>
+        )}
+      </fieldset>
+    </div>
+    <div slot="footer" class="wa-cluster wa-gap-s">
+      <wa-button class="cancel-assignment" type="button" appearance="outlined" variant="neutral">Отменить</wa-button>
+      <wa-button class="save-assignment" type="button" variant="brand">Сохранить</wa-button>
+    </div>
+  </wa-dialog>
+</wa-card>
