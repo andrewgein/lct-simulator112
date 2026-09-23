@@ -12,19 +12,22 @@ export const DDS_STAGE_TYPES = [
 ];
 
 const stageLabel = (type) => DDS_STAGE_TYPES.find((item) => item.value === type)?.label || "Действие не выбрано";
+const stageTimeLimit = (stage) => stage.type === "ASSIGN_BRIGADE" ? 30 : stage.timeLimitSeconds;
 const newStage = (pending = false) => ({ id: crypto.randomUUID(), title: "", description: "", type: "", timeLimitSeconds: 60, calls: [], success: null, failure: null, _pending: pending });
+const newInitialStage = () => ({ ...newStage(), title: "Подтверждение получения карточки", description: "Принять или не принять карточку в течение 30 секунд после направления в службу.", type: "ASSIGN_BRIGADE", timeLimitSeconds: 30 });
 
 function normalizeStages(incident) {
   const stages = incident?.stages || [];
   if (!stages.length) return null;
-  const byId = new Map(stages.map((stage) => [stage.id, { ...stage, calls: (stage.calls || []).map((call) => normalizeDdsCall(call)), success: null, failure: null }]));
+  const byId = new Map(stages.map((stage) => [stage.id, { ...stage, timeLimitSeconds: stageTimeLimit(stage), calls: (stage.calls || []).map((call) => normalizeDdsCall(call)), success: null, failure: null }]));
   for (const transition of incident.transitions || []) {
     const stage = byId.get(transition.stageId);
     if (!stage) continue;
     stage.success = byId.get(transition.successStageId) || null;
     stage.failure = byId.get(transition.failureStageId) || null;
   }
-  return byId.get(incident.initialStageId) || byId.values().next().value || null;
+  const root = byId.get(incident.initialStageId) || byId.values().next().value || null;
+  return root ? { ...root, type: "ASSIGN_BRIGADE", timeLimitSeconds: 30, calls: [] } : null;
 }
 
 function updateStage(node, id, updater) {
@@ -88,7 +91,7 @@ export function ddsTreeValue(root) {
       title: node.title.trim(),
       description: node.description.trim() || null,
       type: node.type,
-      timeLimitSeconds: Number(node.timeLimitSeconds),
+      timeLimitSeconds: Number(stageTimeLimit(node)),
       calls: node.type === "CALL_BRIGADE_FOR_STATUS" ? node.calls.map(ddsCallValue) : []
     });
     if (node.success || node.failure) transitions.push({ stageId: node.id, successStageId: node.success?.id || null, failureStageId: node.failure?.id || null });
@@ -104,6 +107,7 @@ export function validateDdsTree(root) {
     const name = node.title.trim() || path;
     if (!node.title.trim()) throw new Error(`Укажите название этапа: ${path}`);
     if (!node.type) throw new Error(`Выберите тип этапа: ${name}`);
+    if (node.id !== root.id && node.type === "ASSIGN_BRIGADE") throw new Error("Этап «Принять / не принять» может быть только первым");
     if (!Number.isInteger(Number(node.timeLimitSeconds)) || Number(node.timeLimitSeconds) <= 0) throw new Error(`Укажите положительный лимит времени: ${name}`);
     if (node.type === "CALL_BRIGADE_FOR_STATUS" && !node.calls.length) throw new Error(`Добавьте исходящий звонок бригаде: ${name}`);
     if (node.success) walk(node.success, `${name} → успех`);
@@ -129,24 +133,24 @@ function DdsStageNode({ node, branch, root, incidentAddress, onUpdate, onRemove,
     <div class="dds-tree-node" style={style}>
       <wa-card class={`dds-stage-card ${root ? "dds-stage-card--root" : `dds-stage-card--${branch}`}`} appearance="filled-outlined">
         <div class="wa-stack wa-gap-xs">
-          <div class="wa-split">
+          <div class="wa-split wa-flex-nowrap">
             <h3 class="dds-stage-title">{node.title || "Этап без названия"}</h3>
             <div class="wa-cluster wa-gap-2xs">
               <wa-button type="button" size="xs" appearance="plain" onClick={edit}><wa-icon name="pencil" label="Редактировать этап"></wa-icon></wa-button>
               {!root && <wa-button type="button" size="xs" appearance="plain" variant="danger" onClick={onRemove}><wa-icon name="trash" label="Удалить ветку"></wa-icon></wa-button>}
             </div>
           </div>
-          <span class="dds-stage-meta">{stageLabel(node.type)} · {node.timeLimitSeconds || 0} сек.</span>
+          <span class="dds-stage-meta">{stageLabel(node.type)} · {stageTimeLimit(node) || 0} сек.</span>
         </div>
       </wa-card>
       <EditorDialog className="dds-stage-dialog" label={root ? "Начальный этап ДДС" : "Этап ДДС"} open={open} onCancel={cancel} onSave={save}>
         {draft && <div class="wa-stack wa-gap-l">
           <div class="wa-grid">
             <wa-input value={draft.title} label="Название этапа" required onInput={(event) => updateDraft("title", event.currentTarget.value)}></wa-input>
-            <wa-select value={draft.type} label="Действие этапа" required onChange={(event) => updateDraft("type", event.currentTarget.value)}>
-              {DDS_STAGE_TYPES.map((type) => <wa-option key={type.value} value={type.value}>{type.label}</wa-option>)}
+            <wa-select value={draft.type} label="Действие этапа" required disabled={root} onChange={(event) => { const type = event.currentTarget.value; setDraft((current) => ({ ...current, type, timeLimitSeconds: type === "ASSIGN_BRIGADE" ? 30 : current.timeLimitSeconds })); }}>
+              {DDS_STAGE_TYPES.filter((type) => root || type.value !== "ASSIGN_BRIGADE").map((type) => <wa-option key={type.value} value={type.value}>{type.label}</wa-option>)}
             </wa-select>
-            <wa-number-input value={draft.timeLimitSeconds} label="Лимит времени, секунд" min="1" step="1" required onInput={(event) => updateDraft("timeLimitSeconds", event.currentTarget.value)}></wa-number-input>
+            <wa-number-input value={stageTimeLimit(draft)} label="Лимит времени, секунд" min="1" step="1" required disabled={draft.type === "ASSIGN_BRIGADE"} helpText={draft.type === "ASSIGN_BRIGADE" ? "Подтверждение получения карточки выполняется в течение 30 секунд после направления в службу" : undefined} onInput={(event) => updateDraft("timeLimitSeconds", event.currentTarget.value)}></wa-number-input>
           </div>
           <wa-textarea value={draft.description} label="Описание ожидаемого действия" rows="4" onInput={(event) => updateDraft("description", event.currentTarget.value)}></wa-textarea>
           {draft.type === "CALL_BRIGADE_FOR_STATUS" && <section class="wa-stack wa-gap-m">
@@ -164,12 +168,8 @@ function DdsStageNode({ node, branch, root, incidentAddress, onUpdate, onRemove,
 }
 
 export default function DdsStageGraph({ initialIncident, incidentAddress, onChange }) {
-  const [root, setRoot] = useState(() => normalizeStages(initialIncident));
+  const [root, setRoot] = useState(() => normalizeStages(initialIncident) || newInitialStage());
   useEffect(() => onChange(root), []);
-  const replaceRoot = (next) => {
-    setRoot(next);
-    onChange(next);
-  };
   const update = (id, updater) => setRoot((current) => {
     const next = updateStage(current, id, updater);
     onChange(next);
@@ -181,7 +181,7 @@ export default function DdsStageGraph({ initialIncident, incidentAddress, onChan
     return next;
   });
   const add = (parentId, branch) => update(parentId, (current) => ({ ...current, [branch]: newStage(true) }));
-  const layout = root ? layoutTree(root) : null;
+  const layout = layoutTree(root);
   return (
     <section class="wa-stack wa-gap-m">
       <div class="dds-tree-heading wa-split wa-align-items-end">
@@ -189,10 +189,10 @@ export default function DdsStageGraph({ initialIncident, incidentAddress, onChan
           <h2 class="wa-heading-xl">Сценарий реагирования</h2>
           <p class="dds-section-hint">Постройте последовательность действий: каждый этап может продолжиться по ветке успеха или ошибки.</p>
         </div>
-        {root && <span class="dds-tree-note">Удаление этапа удалит всю ветку ниже</span>}
+        <span class="dds-tree-note">Удаление этапа удалит всю ветку ниже</span>
       </div>
-      <div class={`dds-tree-scroller ${root ? "" : "dds-tree-scroller--empty"}`}>
-        {root ? <div class="dds-tree" style={{ width: `${layout.width}px`, height: `${layout.height}px` }}>
+      <div class="dds-tree-scroller">
+        <div class="dds-tree" style={{ width: `${layout.width}px`, height: `${layout.height}px` }}>
           <svg class="dds-tree-links" width={layout.width} height={layout.height} aria-hidden="true">
             {layout.trunks.map((trunk) => <path key={trunk.id} class="dds-tree-link dds-tree-link--trunk" d={`M ${trunk.x} ${trunk.sourceY} V ${trunk.splitY}`}></path>)}
             {layout.links.map((link) => <path key={link.id} class={`dds-tree-link dds-tree-link--${link.branch}`} d={`M ${link.sourceX} ${link.splitY} C ${link.sourceX} ${(link.splitY + link.targetY) / 2}, ${link.targetX} ${(link.splitY + link.targetY) / 2}, ${link.targetX} ${link.targetY}`}></path>)}
@@ -200,13 +200,7 @@ export default function DdsStageGraph({ initialIncident, incidentAddress, onChan
           {layout.nodes.map((item) => item.kind === "stage" ? <DdsStageNode key={item.id} node={item.node} branch={item.branch} root={item.node.id === root.id} incidentAddress={incidentAddress} onUpdate={update} onRemove={() => remove(item.id)} style={{ left: `${item.x}px`, top: `${item.y}px` }} /> : <div key={item.id} class={`dds-add-node dds-add-node--${item.branch}`} style={{ left: `${item.x}px`, top: `${item.y}px` }}>
             <wa-button class="add-branch" type="button" size="small" appearance="filled" variant={item.branch === "success" ? "success" : "danger"} onClick={() => add(item.parentId, item.branch)}>{item.branch === "success" ? "Успех — добавить этап" : "Ошибка — добавить этап"}</wa-button>
           </div>)}
-        </div> : <div class="dds-tree-empty wa-stack wa-gap-m wa-align-items-center">
-          <div class="wa-stack wa-gap-2xs wa-text-center">
-            <h3 class="wa-heading-l">Сценарий пока пуст</h3>
-            <p>Добавьте начальный этап, а затем создайте две ветки развития события.</p>
-          </div>
-          <wa-button type="button" variant="brand" onClick={() => replaceRoot(newStage(true))}>Добавить начальный этап</wa-button>
-        </div>}
+        </div>
       </div>
     </section>
   );

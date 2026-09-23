@@ -21,10 +21,12 @@ const styles = `
 .dds-progress-mark { width: .7rem; height: .7rem; margin-block-start: .35rem; border-radius: 50%; background: #89999f; }
 .dds-progress-mark--active { background: #008dca; }
 .dds-progress-mark--succeeded { background: #168448; }
-.dds-progress-mark--failed { background: #c94225; }
-.dds-stage-actions { display: grid; flex: 2 1 38rem; grid-template-columns: minmax(12rem, .8fr) minmax(16rem, 1.2fr) auto; gap: var(--wa-space-s); align-items: end; min-width: 32rem; padding: var(--wa-space-s) var(--wa-space-m); border-inline-start: var(--wa-border-width-s) solid rgba(255, 255, 255, .35); }
-.dds-stage-actions wa-button::part(button) { border-color: #ffffff; color: #ffffff; }
-@media (max-width: 75rem) { .workspace-footer:has(.dds-stage-actions) { overflow-x: auto; } .workspace-footer:has(.dds-stage-actions) .dispatch-services { flex: 0 0 20rem; } .dds-stage-actions { flex: 0 0 38rem; } }
+.dds-progress-mark--failed, .dds-progress-mark--timed_out { background: #c94225; }
+.dds-stage-actions { display: grid; grid-template-columns: minmax(11rem, .8fr) minmax(16rem, 1.2fr); gap: var(--wa-space-m); width: min(42rem, calc(100vw - 5rem)); align-items: end; }
+.dds-stage-buttons { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: var(--wa-space-xs); }
+.dds-stage-buttons wa-button::part(button) { min-width: 8rem; }
+.dds-stage-cancel::part(button) { min-width: 3.5rem; }
+@media (max-width: 40rem) { .dds-stage-actions { grid-template-columns: 1fr; width: min(24rem, calc(100vw - 5rem)); } .dds-stage-buttons { grid-column: 1; } }
 @media (max-width: 48rem) { .dds-level-message { margin: var(--wa-space-s) var(--wa-space-s) 0; } }
 `;
 
@@ -37,7 +39,7 @@ const SERVICES = [
 ];
 
 const STAGE_ACTIONS = {
-  ASSIGN_BRIGADE: { label: "Принято", signal: "BRIGADE_ASSIGNED" },
+  ASSIGN_BRIGADE: { label: "Принята", signal: "BRIGADE_ASSIGNED" },
   WAIT_FOR_BRIGADE_STATUS_CHANGE: { label: "Начало реагирования", signal: "BRIGADE_STATUS_CHANGED" },
   CALL_BRIGADE_FOR_STATUS: { label: "Статус бригады получен", signal: "STATUS_CALL_COMPLETED" },
   REQUEST_ADDITIONAL_SERVICE: { label: "Дополнительная служба оповещена", signal: "ADDITIONAL_SERVICE_REQUESTED" },
@@ -55,6 +57,7 @@ const STAGE_STATUSES = {
   ACTIVE: "В работе",
   SUCCEEDED: "Выполнено",
   FAILED: "Не выполнено",
+  TIMED_OUT: "Время истекло",
   SKIPPED: "Пропущено",
   PENDING: "Ожидает"
 };
@@ -101,6 +104,12 @@ function activeStageFor(incident, progress) {
   return incident?.stages?.find((stage) => String(stage.id) === String(activeId)) || null;
 }
 
+function notificationStatus(incident, progress) {
+  const initial = progress?.dds?.stages?.find((stage) => String(stage.stageId) === String(incident?.initialStageId));
+  if (initial?.type !== "ASSIGN_BRIGADE") return INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
+  return { PENDING: "Ожидает направления", ACTIVE: "Ожидает подтверждения", SUCCEEDED: "Принята", FAILED: "Не принята", TIMED_OUT: "Не оповещено" }[initial.status] || INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
+}
+
 function RemainingTime({ deadline, now }) {
   if (!deadline) return <span>Без таймера</span>;
   const seconds = Math.max(0, Math.ceil((new Date(deadline).getTime() - now.getTime()) / 1000));
@@ -134,20 +143,27 @@ function DdsStageActions({ incident, progress, onApply }) {
   }, [activeStage?.id]);
 
   if (!active) return null;
-  const submit = async () => {
+  const submit = async (event) => {
+    const popover = event.currentTarget.closest("wa-popover");
     setSubmitting(true);
     const saved = await onApply(incident.id, action.signal, decision === "success", comment);
-    if (saved) setComment("");
+    if (saved) {
+      setComment("");
+      popover?.hide();
+    }
     setSubmitting(false);
   };
   return (
     <div class="dds-stage-actions">
       <wa-select label="Результат" size="s" value={decision} onChange={(event) => setDecision(event.currentTarget.value)}>
-        <wa-option value="success">{activeStage.type === "ASSIGN_BRIGADE" ? "Принято" : action.label}</wa-option>
-        <wa-option value="failure">{activeStage.type === "ASSIGN_BRIGADE" ? "Не принято" : "Отказ от выполнения"}</wa-option>
+        <wa-option value="success">{activeStage.type === "ASSIGN_BRIGADE" ? "Принята" : action.label}</wa-option>
+        <wa-option value="failure">{activeStage.type === "ASSIGN_BRIGADE" ? "Не принята" : "Отказ от выполнения"}</wa-option>
       </wa-select>
       <wa-input label="Комментарий" size="s" placeholder="Комментарий" value={comment} onInput={(event) => setComment(event.currentTarget.value)}></wa-input>
-      <wa-button type="button" size="l" appearance="outlined" variant="neutral" loading={submitting} onClick={submit}><wa-icon slot="start" name="check"></wa-icon>Подтвердить</wa-button>
+      <div class="dds-stage-buttons">
+        <wa-button type="button" size="m" appearance="filled" variant="brand" loading={submitting} onClick={submit}><wa-icon slot="start" name="check"></wa-icon>Подтвердить</wa-button>
+        <wa-button class="dds-stage-cancel" type="button" size="m" appearance="outlined" variant="neutral" disabled={submitting} data-popover="close" aria-label="Отменить изменение статуса"><wa-icon name="xmark" aria-hidden="true"></wa-icon></wa-button>
+      </div>
     </div>
   );
 }
@@ -204,7 +220,7 @@ export default function DdsLevelApp({ contextId, level, incidents, classifier, u
   const finished = !!progress?.incidents?.length && progress.incidents.every((item) => ["COMPLETED", "FAILED"].includes(item.status));
   const getCardMeta = useCallback((card) => {
     const item = progress?.incidents?.find((entry) => String(entry.incidentId) === card.cardId);
-    return { complete: item?.status === "COMPLETED", status: INCIDENT_STATUSES[item?.status] || "Ожидает обработки", kindLabel: "ДДС", className: item?.status === "COMPLETED" ? "is-complete" : "is-incomplete" };
+    return { complete: item?.status === "COMPLETED", status: notificationStatus(card.incident, item), kindLabel: "ДДС", className: item?.status === "COMPLETED" ? "is-complete" : "is-incomplete" };
   }, [progress]);
 
   const applyStage = async (incidentId, expectedSignal, success, comment) => {
@@ -241,6 +257,7 @@ export default function DdsLevelApp({ contextId, level, incidents, classifier, u
   };
 
   const activeStage = activeStageFor(selectedCard?.incident, selectedProgress);
+  const canEditStatus = selectedProgress?.status === "ACTIVE" && !!STAGE_ACTIONS[activeStage?.type];
   return (
     <div class="level-app wa-stack wa-gap-0">
       <style>{styles}</style>
@@ -249,7 +266,7 @@ export default function DdsLevelApp({ contextId, level, incidents, classifier, u
       </LevelCommandBar>
       {error && <wa-callout class="dds-level-message" variant="danger"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{error}</wa-callout>}
       {finished && <LevelCompletionNotice className="dds-level-message" complete ready finishing={finishing} completeMessage="Все происшествия обработаны. Завершите уровень, чтобы перейти к разбору." onFinish={finishLevel} />}
-      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={INCIDENT_STATUSES[selectedProgress?.status] || "Ожидает обработки"} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyActions={<DdsStageActions incident={selectedCard.incident} progress={selectedProgress} onApply={applyStage} />} onChange={setEditor} onClose={() => {}} />}
+      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incident={selectedCard.incident} progress={selectedProgress} onApply={applyStage} /> : null} onChange={setEditor} onClose={() => {}} />}
       <ActiveCards cards={cards} loading={!progress} error={false} classifierState={classifierState} searchQuery={query} onOpen={(card) => setEditor(editorFor(card))} getCardMeta={getCardMeta} heading="Список происшествий" emptyMessage="Карточки ДДС пока не поступили" statusLabel="Статус" />
     </div>
   );
