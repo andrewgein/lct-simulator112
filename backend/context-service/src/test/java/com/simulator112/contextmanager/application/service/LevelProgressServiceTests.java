@@ -5,6 +5,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.simulator112.contextmanager.domain.common.ReactionStatus;
+import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
+import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.dds.DdsStageSignal;
 import com.simulator112.contextmanager.domain.dds.DdsStageTransition;
 import com.simulator112.contextmanager.application.port.out.ContextStore;
@@ -110,6 +113,70 @@ class LevelProgressServiceTests {
 
         assertThat(incident.getStatus()).isEqualTo(IncidentProgressStatus.FAILED);
         assertThat(incident.getActiveStageId()).isNull();
+    }
+
+    @Test
+    void storesReactionStatusHistoryAndAdvancesMatchingStage() {
+        UUID contextId = UUID.randomUUID();
+        UUID incidentId = UUID.randomUUID();
+        UUID assignmentId = UUID.randomUUID();
+        UUID responseId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        IncidentSnapshot incident = incident(incidentId, assignmentId,
+                List.of(stage(assignmentId, DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE),
+                        stage(responseId, DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.PENDING)));
+        ServiceReaction reaction = new ServiceReaction("FIRE");
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, Instant.now(), null));
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.RECEIVED_BY_SERVICE, Instant.now(), null));
+        incident.getServiceReactions().add(reaction);
+        incident.setInitialAssignmentService("FIRE");
+        incident.setTransitions(new ArrayList<>(List.of(new DdsStageTransition(assignmentId, responseId, null))));
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var progress = service.applyReactionStatus(
+                contextId, incidentId, "FIRE", ReactionStatus.ACCEPTED, null);
+
+        assertThat(progress.incidents().getFirst().serviceReactions().getFirst().currentStatus())
+                .isEqualTo(ReactionStatus.ACCEPTED);
+        assertThat(progress.incidents().getFirst().serviceReactions().getFirst().history()).hasSize(3);
+        assertThat(incident.getActiveStageId()).isEqualTo(responseId);
+    }
+
+    @Test
+    void requiresCommentWhenReactionIsRejected() {
+        UUID contextId = UUID.randomUUID();
+        UUID incidentId = UUID.randomUUID();
+        UUID assignmentId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        IncidentSnapshot incident = incident(incidentId, assignmentId,
+                List.of(stage(assignmentId, DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE)));
+        ServiceReaction reaction = new ServiceReaction("FIRE");
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.RECEIVED_BY_SERVICE, Instant.now(), null));
+        incident.getServiceReactions().add(reaction);
+        incident.setInitialAssignmentService("FIRE");
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.applyReactionStatus(
+                contextId, incidentId, "FIRE", ReactionStatus.NOT_ACCEPTED, " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("комментарий");
+    }
+
+    @Test
+    void system112ContextCannotChangeReactionStatus() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = new TrainingContext();
+        context.setId(contextId);
+        context.setTargetType(IncidentTargetType.SYSTEM_112);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.applyReactionStatus(
+                contextId, UUID.randomUUID(), "FIRE", ReactionStatus.ACCEPTED, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("DDS");
     }
 
     @Test

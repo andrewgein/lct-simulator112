@@ -13,10 +13,14 @@ import com.simulator112.contextmanager.domain.common.ExecutionMode;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;
+import com.simulator112.contextmanager.domain.common.ReactionStatus;
+import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
+import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.StageStatus;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
 import com.simulator112.shared.dto.Difficulty;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +63,9 @@ class ContextPersistenceAdapterTests {
         call.setStatus(CallStatus.PENDING);
         stage.getCalls().add(call);
         incident.getStages().add(stage);
+        ServiceReaction reaction = new ServiceReaction("FIRE");
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, Instant.now(), null));
+        incident.getServiceReactions().add(reaction);
         context.getIncidents().add(incident);
 
         TrainingContext saved = store.save(context);
@@ -67,5 +74,13 @@ class ContextPersistenceAdapterTests {
         assertThat(restored.getIncidents()).hasSize(1);
         assertThat(restored.getIncidents().getFirst().getStages().getFirst().getCalls().getFirst().getSourceId())
                 .isEqualTo(call.getSourceId());
+        assertThat(restored.getIncidents().getFirst().getServiceReactions().getFirst().getServiceCode())
+                .isEqualTo("FIRE");
+        assertThat(restored.getIncidents().getFirst().getServiceReactions().getFirst().currentStatus())
+                .isEqualTo(ReactionStatus.ADDED);
+
+        store.save(restored);
+        assertThat(store.findById(saved.getId()).orElseThrow().getIncidents().getFirst().getServiceReactions())
+                .hasSize(1);
     }
 }

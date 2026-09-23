@@ -133,12 +133,21 @@ public class IncidentContextEntity {
     private List<DdsStageTransitionSnapshot> transitions = new ArrayList<>();
 
     @OneToMany(mappedBy = "incidentContext", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("serviceCode ASC")
+    private List<ServiceReactionEntity> serviceReactions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "incidentContext", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     private List<StageContextEntity> stages = new ArrayList<>();
 
     public void addStage(StageContextEntity stage) {
         stages.add(stage);
         stage.setIncidentContext(this);
+    }
+
+    public void addServiceReaction(ServiceReactionEntity reaction) {
+        serviceReactions.add(reaction);
+        reaction.setIncidentContext(this);
     }
 
 }

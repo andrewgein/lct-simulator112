@@ -6,6 +6,7 @@ import java.util.UUID;
 import com.simulator112.contextmanager.application.port.in.ContextUseCase;
 import com.simulator112.contextmanager.application.port.in.LevelProgressUseCase;
 import com.simulator112.contextmanager.application.port.in.ManageSystem112CardUseCase;
+import com.simulator112.contextmanager.adapter.in.rest.dto.request.ReactionStatusRequest;
 import com.simulator112.contextmanager.adapter.in.rest.dto.request.DdsStageSignalRequest;
 import com.simulator112.contextmanager.domain.common.LevelProgress;
 import jakarta.validation.Valid;
@@ -80,6 +81,15 @@ public class ContextController {
             @PathVariable UUID incidentId,
             @Valid @RequestBody DdsStageSignalRequest request) {
         return levelProgressService.applyDdsSignal(uuid, incidentId, request.signal());
+    }
+
+    @PostMapping("/{uuid}/dds/incidents/{incidentId}/reaction-status")
+    public LevelProgress applyReactionStatus(
+            @PathVariable UUID uuid,
+            @PathVariable UUID incidentId,
+            @Valid @RequestBody ReactionStatusRequest request) {
+        return levelProgressService.applyReactionStatus(
+                uuid, incidentId, request.serviceCode(), request.status(), request.comment());
     }
 
     @PostMapping("/{uuid}/close")

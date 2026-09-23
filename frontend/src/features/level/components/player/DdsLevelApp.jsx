@@ -46,6 +46,27 @@ const STAGE_ACTIONS = {
   COMPLETE_INCIDENT: { label: "Работы завершены", signal: "INCIDENT_COMPLETED" }
 };
 
+const REACTION_STATUS_LABELS = {
+  ADDED: "Добавлена",
+  RECEIVED_BY_SERVICE: "Получена службой",
+  ACCEPTED: "Принята",
+  NOT_ACCEPTED: "Не принята",
+  RESPONSE_STARTED: "Начало реагирования",
+  ARRIVED: "Прибытие",
+  WORK_IN_PROGRESS: "Проведение работ",
+  WORK_COMPLETED: "Работы завершены",
+  WORK_REFUSED: "Отказ от выполнения работ"
+};
+
+const REACTION_STATUS_OPTIONS = {
+  RECEIVED_BY_SERVICE: ["ACCEPTED", "NOT_ACCEPTED"],
+  NOT_ACCEPTED: ["ACCEPTED"],
+  ACCEPTED: ["RESPONSE_STARTED", "WORK_REFUSED"],
+  RESPONSE_STARTED: ["ARRIVED", "WORK_REFUSED"],
+  ARRIVED: ["WORK_IN_PROGRESS", "WORK_REFUSED"],
+  WORK_IN_PROGRESS: ["WORK_COMPLETED", "WORK_REFUSED"]
+};
+
 const INCIDENT_STATUSES = {
   PENDING: "Ожидает обработки",
   ACTIVE: "В работе",
@@ -66,6 +87,18 @@ const READONLY_CALL = { phase: "idle", activeCallId: null, phone: "" };
 const serviceInfo = (value) => SERVICES.find((service) => service.value === value) || { short: "ДДС", label: value || "Служба не указана" };
 const addressText = (address = {}) => [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(", ") || "Адрес не указан";
 const dateTime = (value) => value ? new Date(value).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+const timeOnly = (value) => value ? new Date(value).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
+
+function reactionForService(progress, serviceCode) {
+  return progress?.serviceReactions?.find((item) => item.serviceCode === serviceCode) || null;
+}
+
+function serviceStatusHistory(incident, progress, serviceCode) {
+  const history = reactionForService(progress, serviceCode)?.history || [];
+  if (history.length) return history.map((item) => ({ label: REACTION_STATUS_LABELS[item.status] || item.status, time: timeOnly(item.changedAt), dateTime: item.changedAt, comment: item.comment }));
+  const stages = (progress?.dds?.stages || []).filter((stage) => stage.status !== "PENDING").sort((left, right) => new Date(left.startedAt || 0) - new Date(right.startedAt || 0));
+  return stages.map((stage) => ({ label: stage.type === "ASSIGN_BRIGADE" ? "Получена службой" : STAGE_ACTIONS[stage.type]?.label || stage.type, time: timeOnly(stage.startedAt), dateTime: stage.startedAt }));
+}
 
 function incidentCard(incident) {
   const template = incident.preparedCardTemplate || {};
@@ -104,7 +137,9 @@ function activeStageFor(incident, progress) {
   return incident?.stages?.find((stage) => String(stage.id) === String(activeId)) || null;
 }
 
-function notificationStatus(incident, progress) {
+function notificationStatus(incident, progress, serviceCode = incident?.initialAssignment?.emergencyService) {
+  const reactionStatus = reactionForService(progress, serviceCode)?.currentStatus;
+  if (reactionStatus) return REACTION_STATUS_LABELS[reactionStatus] || reactionStatus;
   const initial = progress?.dds?.stages?.find((stage) => String(stage.stageId) === String(incident?.initialStageId));
   if (initial?.type !== "ASSIGN_BRIGADE") return INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
   return { PENDING: "Ожидает направления", ACTIVE: "Ожидает подтверждения", SUCCEEDED: "Принята", FAILED: "Не принята", TIMED_OUT: "Не оповещено" }[initial.status] || INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
@@ -129,24 +164,24 @@ function DdsProgressDetails({ incident, progress, comments }) {
   );
 }
 
-function DdsStageActions({ incident, progress, onApply }) {
-  const activeStage = activeStageFor(incident, progress);
-  const action = STAGE_ACTIONS[activeStage?.type];
-  const [decision, setDecision] = useState("success");
+function DdsStageActions({ incidentId, serviceCode, currentStatus, onApply }) {
+  const options = REACTION_STATUS_OPTIONS[currentStatus] || [];
+  const [status, setStatus] = useState(options[0] || "");
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const active = progress?.status === "ACTIVE" && action;
 
   useEffect(() => {
-    setDecision("success");
+    setStatus(options[0] || "");
     setComment("");
-  }, [activeStage?.id]);
+  }, [currentStatus]);
 
-  if (!active) return null;
+  if (!options.length) return null;
+  const commentRequired = status === "NOT_ACCEPTED" || status === "WORK_REFUSED";
   const submit = async (event) => {
+    if (commentRequired && !comment.trim()) return;
     const popover = event.currentTarget.closest("wa-popover");
     setSubmitting(true);
-    const saved = await onApply(incident.id, action.signal, decision === "success", comment);
+    const saved = await onApply(incidentId, serviceCode, status, comment);
     if (saved) {
       setComment("");
       popover?.hide();
@@ -155,13 +190,12 @@ function DdsStageActions({ incident, progress, onApply }) {
   };
   return (
     <div class="dds-stage-actions">
-      <wa-select label="Результат" size="s" value={decision} onChange={(event) => setDecision(event.currentTarget.value)}>
-        <wa-option value="success">{activeStage.type === "ASSIGN_BRIGADE" ? "Принята" : action.label}</wa-option>
-        <wa-option value="failure">{activeStage.type === "ASSIGN_BRIGADE" ? "Не принята" : "Отказ от выполнения"}</wa-option>
+      <wa-select label="Статус реагирования" size="s" value={status} onChange={(event) => setStatus(event.currentTarget.value)}>
+        {options.map((value) => <wa-option key={value} value={value}>{REACTION_STATUS_LABELS[value]}</wa-option>)}
       </wa-select>
-      <wa-input label="Комментарий" size="s" placeholder="Комментарий" value={comment} onInput={(event) => setComment(event.currentTarget.value)}></wa-input>
+      <wa-input label="Комментарий" size="s" placeholder={commentRequired ? "Укажите причину отказа" : "Комментарий"} required={commentRequired} value={comment} onInput={(event) => setComment(event.currentTarget.value)}></wa-input>
       <div class="dds-stage-buttons">
-        <wa-button type="button" size="m" appearance="filled" variant="brand" loading={submitting} onClick={submit}><wa-icon slot="start" name="check"></wa-icon>Подтвердить</wa-button>
+        <wa-button type="button" size="m" appearance="filled" variant="brand" disabled={commentRequired && !comment.trim()} loading={submitting} onClick={submit}><wa-icon slot="start" name="check"></wa-icon>Подтвердить</wa-button>
         <wa-button class="dds-stage-cancel" type="button" size="m" appearance="outlined" variant="neutral" disabled={submitting} data-popover="close" aria-label="Отменить изменение статуса"><wa-icon name="xmark" aria-hidden="true"></wa-icon></wa-button>
       </div>
     </div>
@@ -175,7 +209,7 @@ export default function DdsLevelApp({ contextId, level, incidents, classifier, u
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [finishing, setFinishing] = useState(false);
-  const [comments, setComments] = useState({});
+  const comments = {};
   const now = useLevelClock();
 
   const loadProgress = useCallback(async () => {
@@ -223,21 +257,15 @@ export default function DdsLevelApp({ contextId, level, incidents, classifier, u
     return { complete: item?.status === "COMPLETED", status: notificationStatus(card.incident, item), kindLabel: "ДДС", className: item?.status === "COMPLETED" ? "is-complete" : "is-incomplete" };
   }, [progress]);
 
-  const applyStage = async (incidentId, expectedSignal, success, comment) => {
-    const signals = Object.values(STAGE_ACTIONS).map((item) => item.signal);
-    const signal = success ? expectedSignal : signals.find((item) => item !== expectedSignal);
+  const applyReactionStatus = async (incidentId, serviceCode, status, comment) => {
     try {
-      const response = await fetch(`/api/v1/context/${encodeURIComponent(contextId)}/dds/incidents/${encodeURIComponent(incidentId)}/signals`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ signal }) });
+      const response = await fetch(`/api/v1/context/${encodeURIComponent(contextId)}/dds/incidents/${encodeURIComponent(incidentId)}/reaction-status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ serviceCode, status, comment: comment.trim() || null }) });
       if (!response.ok) throw new Error(await response.text());
-      const nextProgress = await response.json();
-      const previous = progress?.incidents?.find((item) => String(item.incidentId) === String(incidentId));
-      const completedStageId = previous?.dds?.activeStageId;
-      if (comment.trim() && completedStageId) setComments((current) => ({ ...current, [completedStageId]: comment.trim() }));
-      setProgress(nextProgress);
+      setProgress(await response.json());
       setError("");
       return true;
     } catch (requestError) {
-      console.error("Failed to apply DDS stage", requestError);
+      console.error("Failed to apply DDS reaction status", requestError);
       setError("Не удалось сохранить статус реагирования");
       return false;
     }
@@ -256,8 +284,9 @@ export default function DdsLevelApp({ contextId, level, incidents, classifier, u
     }
   };
 
-  const activeStage = activeStageFor(selectedCard?.incident, selectedProgress);
-  const canEditStatus = selectedProgress?.status === "ACTIVE" && !!STAGE_ACTIONS[activeStage?.type];
+  const selectedServiceCode = selectedCard?.services?.[0];
+  const reactionStatus = reactionForService(selectedProgress, selectedServiceCode)?.currentStatus;
+  const canEditStatus = selectedProgress?.status === "ACTIVE" && !!REACTION_STATUS_OPTIONS[reactionStatus]?.length;
   return (
     <div class="level-app wa-stack wa-gap-0">
       <style>{styles}</style>
@@ -266,7 +295,7 @@ export default function DdsLevelApp({ contextId, level, incidents, classifier, u
       </LevelCommandBar>
       {error && <wa-callout class="dds-level-message" variant="danger"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{error}</wa-callout>}
       {finished && <LevelCompletionNotice className="dds-level-message" complete ready finishing={finishing} completeMessage="Все происшествия обработаны. Завершите уровень, чтобы перейти к разбору." onFinish={finishLevel} />}
-      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incident={selectedCard.incident} progress={selectedProgress} onApply={applyStage} /> : null} onChange={setEditor} onClose={() => {}} />}
+      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} onApply={applyReactionStatus} /> : null} onChange={setEditor} onClose={() => {}} />}
       <ActiveCards cards={cards} loading={!progress} error={false} classifierState={classifierState} searchQuery={query} onOpen={(card) => setEditor(editorFor(card))} getCardMeta={getCardMeta} heading="Список происшествий" emptyMessage="Карточки ДДС пока не поступили" statusLabel="Статус" />
     </div>
   );

@@ -3,6 +3,7 @@
 /** @typedef {"PENDING" | "ACTIVE" | "COMPLETED" | "FAILED"} IncidentProgressStatus */
 /** @typedef {"PENDING" | "ACTIVE" | "SUCCEEDED" | "FAILED" | "TIMED_OUT" | "SKIPPED"} StageStatus */
 /** @typedef {"BRIGADE_ASSIGNED" | "BRIGADE_STATUS_CHANGED" | "STATUS_CALL_COMPLETED" | "ADDITIONAL_SERVICE_REQUESTED" | "INCIDENT_COMPLETED"} DdsStageSignal */
+/** @typedef {"ADDED" | "RECEIVED_BY_SERVICE" | "ACCEPTED" | "NOT_ACCEPTED" | "RESPONSE_STARTED" | "ARRIVED" | "WORK_IN_PROGRESS" | "WORK_COMPLETED" | "WORK_REFUSED"} ReactionStatus */
 
 /**
  * @typedef {Object} PersonInfo
@@ -70,6 +71,20 @@
  */
 
 /**
+ * @typedef {Object} ReactionStatusEvent
+ * @property {ReactionStatus} status
+ * @property {string} changedAt
+ * @property {string | null} comment
+ */
+
+/**
+ * @typedef {Object} ServiceReaction
+ * @property {string} serviceCode
+ * @property {ReactionStatus | null} currentStatus
+ * @property {ReactionStatusEvent[]} history
+ */
+
+/**
  * @typedef {Object} DdsProgress
  * @property {string | null} activeStageId
  * @property {string | null} deadline
@@ -80,6 +95,7 @@
  * @typedef {Object} IncidentProgress
  * @property {string} incidentId
  * @property {IncidentProgressStatus} status
+ * @property {ServiceReaction[]} serviceReactions
  * @property {System112Progress | null} system112
  * @property {DdsProgress | null} dds
  */

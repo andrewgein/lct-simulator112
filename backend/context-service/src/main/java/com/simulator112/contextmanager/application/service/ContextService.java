@@ -23,6 +23,9 @@ import com.simulator112.contextmanager.domain.common.DialogProgressStatus;
 import com.simulator112.contextmanager.domain.common.ExecutionMode;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;
+import com.simulator112.contextmanager.domain.common.ReactionStatus;
+import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
+import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.common.StageStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -123,6 +126,10 @@ public class ContextService implements ContextUseCase {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Начальный этап DDS не найден"));
         var now = java.time.Instant.now();
+        ServiceReaction reaction = new ServiceReaction(incident.getInitialAssignmentService());
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, now, null));
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.RECEIVED_BY_SERVICE, now, null));
+        incident.getServiceReactions().add(reaction);
         stage.setStatus(StageStatus.ACTIVE);
         stage.setStartedAt(now);
         stage.setDeadlineAt(now.plusSeconds(stage.getTimeLimitSeconds()));
