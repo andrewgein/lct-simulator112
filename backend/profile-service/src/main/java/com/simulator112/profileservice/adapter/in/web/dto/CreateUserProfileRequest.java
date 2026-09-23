@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 public record CreateUserProfileRequest(
         @NotBlank String name,
         @NotBlank String surname,
+        String patronymic,
         TrainingTrack trainingTrack,
         DdsService ddsService) {
 

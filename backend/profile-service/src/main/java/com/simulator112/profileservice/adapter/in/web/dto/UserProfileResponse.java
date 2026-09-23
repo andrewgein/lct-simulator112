@@ -11,6 +11,7 @@ public record UserProfileResponse(
         UUID authId,
         String name,
         String surname,
+        String patronymic,
         TrainingTrack trainingTrack,
         DdsService ddsService,
         Instant updatedAt) {

@@ -12,9 +12,9 @@ public interface UserProfileUseCase {
 
     List<UserProfile> getAllProfiles();
 
-    UserProfile createProfile(UUID userId, String name, String surname, ProfessionalProfile professionalProfile);
+    UserProfile createProfile(UUID userId, String name, String surname, String patronymic, ProfessionalProfile professionalProfile);
 
-    UserProfile updateProfile(UUID userId, String name, String surname);
+    UserProfile updateProfile(UUID userId, String name, String surname, String patronymic, ProfessionalProfile professionalProfile);
 
     void deleteProfile(UUID userId);
 }
