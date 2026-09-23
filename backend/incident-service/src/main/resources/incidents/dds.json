@@ -17,7 +17,7 @@
         "title": "Назначение бригады",
         "description": "Назначить ближайший пожарный расчёт.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -138,7 +138,7 @@
         "title": "Назначение бригады",
         "description": "Назначить аварийную газовую бригаду.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -258,7 +258,7 @@
         "title": "Назначение бригады",
         "description": "Назначить ближайшую бригаду СМП.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -378,7 +378,7 @@
         "title": "Назначение бригады",
         "description": "Назначить ближайший наряд полиции.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -498,7 +498,7 @@
         "title": "Назначение бригады",
         "description": "Направить наряд полиции для ограничения доступа.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -618,7 +618,7 @@
         "title": "Назначение бригады",
         "description": "Направить пожарный расчёт.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -737,7 +737,7 @@
         "title": "Назначение бригады",
         "description": "Направить аварийную газовую бригаду.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -856,7 +856,7 @@
         "title": "Назначение бригады",
         "description": "Назначить бригаду СМП.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -976,7 +976,7 @@
         "title": "Назначение бригады",
         "description": "Назначить пожарный расчёт.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {
@@ -1095,7 +1095,7 @@
         "title": "Назначение бригады",
         "description": "Назначить наряд полиции.",
         "type": "ASSIGN_BRIGADE",
-        "timeLimitSeconds": 60,
+        "timeLimitSeconds": 30,
         "calls": []
       },
       {

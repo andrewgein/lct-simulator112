@@ -70,7 +70,28 @@ class LevelProgressServiceTests {
         service.getProgress(contextId);
 
         assertThat(incident.getStatus()).isEqualTo(IncidentProgressStatus.FAILED);
-        assertThat(root.getStatus()).isEqualTo(StageStatus.FAILED);
+        assertThat(root.getStatus()).isEqualTo(StageStatus.TIMED_OUT);
+    }
+
+    @Test
+    void stageUsesConfiguredDeadline() {
+        UUID contextId = UUID.randomUUID();
+        UUID incidentId = UUID.randomUUID();
+        UUID rootId = UUID.randomUUID();
+        UUID nextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot root = stage(rootId, DdsStageType.COMPLETE_INCIDENT, StageStatus.ACTIVE);
+        IncidentSnapshot incident = incident(incidentId, rootId,
+                List.of(root, stage(nextId, DdsStageType.ASSIGN_BRIGADE, StageStatus.PENDING)));
+        incident.setTransitions(new ArrayList<>(List.of(new DdsStageTransition(rootId, nextId, null))));
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.applyDdsSignal(contextId, incidentId, DdsStageSignal.INCIDENT_COMPLETED);
+
+        StageSnapshot next = incident.getStages().get(1);
+        assertThat(next.getDeadlineAt()).isEqualTo(next.getStartedAt().plusSeconds(60));
     }
 
     @Test

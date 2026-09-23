@@ -62,7 +62,8 @@ class ContextServiceTests {
         assertThat(context.getIncidents())
                 .allMatch(incident -> incident.getStages().getFirst().getStatus() == StageStatus.ACTIVE);
         assertThat(context.getIncidents())
-                .allMatch(incident -> incident.getStages().getFirst().getDeadlineAt() != null);
+                .allMatch(incident -> incident.getStages().getFirst().getDeadlineAt()
+                        .equals(incident.getStages().getFirst().getStartedAt().plusSeconds(60)));
     }
 
     private IncidentContext ddsIncident() {
