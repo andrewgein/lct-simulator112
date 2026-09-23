@@ -10,7 +10,7 @@ const incidentIds = assignment.incidentIds || [];
 const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value === value)?.label || value;
 ---
 
-<wa-card class="assignment-item" data-id={assignment.id || undefined} with-header>
+<wa-card class="assignment-item" data-id={assignment.id || ""} with-header>
   <div slot="header" class="wa-split wa-align-items-center">
     <strong class="item-title">{isTemplate ? "" : title}</strong>
     <div class="wa-cluster wa-gap-xs">

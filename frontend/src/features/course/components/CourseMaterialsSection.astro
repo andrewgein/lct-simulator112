@@ -5,9 +5,10 @@ const { materials = [] } = Astro.props;
 <section class="course-form-section wa-stack wa-gap-m" aria-labelledby="materials-heading">
   <div class="section-heading wa-split wa-align-items-end">
     <h2 id="materials-heading" class="wa-heading-xl">Вводные материалы</h2>
+    <small class="optional-label">Необязательно</small>
   </div>
   <input id="material-file-input" type="file" accept=".md,.pdf,.doc,.docx,.xls,.xlsx" multiple>
-  <input id="materials-validation" class="material-file-validation" type="text" required value={materials.length ? "uploaded" : ""} aria-label="Вводные материалы">
+  <input id="materials-validation" class="material-file-validation" type="text" value={materials.length ? "uploaded" : ""} aria-label="Вводные материалы">
   <p id="materials-empty" class="materials-empty" hidden={materials.length > 0}>Файлы не добавлены</p>
   <div id="materials-list" class="wa-stack wa-gap-xs">
     {materials.map((material) => (
@@ -39,6 +40,6 @@ const { materials = [] } = Astro.props;
   .material-info { min-width: 0; }
   .material-file-name { overflow-wrap: anywhere; }
   .material-file-validation { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .material-upload-status, .materials-empty { color: var(--wa-color-text-quiet); }
+  .material-upload-status, .materials-empty, .optional-label { color: var(--wa-color-text-quiet); }
   .materials-empty { margin: 0; }
 </style>
