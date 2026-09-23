@@ -79,7 +79,7 @@ public class CourseRestController {
     @GetMapping("/materials/{materialId}/file")
     public ResponseEntity<byte[]> downloadMaterialFile(@RequestHeader("X-User-Id") UUID userId,
                                                         @PathVariable UUID materialId) {
-        var material = materialRepository.findById(materialId)
+        var material = materialRepository.findWithCourseById(materialId)
                 .orElseThrow(() -> new IllegalArgumentException("Материал не найден: " + materialId));
         var course = material.getCourse();
         if (!course.getAuthorId().equals(userId)
