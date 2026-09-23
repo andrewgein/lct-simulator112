@@ -25,6 +25,12 @@ public class EnrollmentPersistenceAdapter implements EnrollmentRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<Enrollment> findByCourseIdAndGroupId(UUID courseId, UUID groupId) {
+        return repository.findByCourseIdAndGroupId(courseId, groupId).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Enrollment> findByCourseIdAndStudentId(UUID courseId, UUID studentId) {
         return repository.findByCourseIdAndStudentId(courseId, studentId).map(mapper::toDomain);
     }

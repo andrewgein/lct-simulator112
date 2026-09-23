@@ -61,10 +61,8 @@ public class StudyGroupRestController {
 
     @PostMapping("/{groupId}/courses/{courseId}")
     @ResponseStatus(HttpStatus.CREATED)
-    public List<EnrollmentView> assignCourse(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId,
-                                             @PathVariable UUID courseId) {
-        return assignCourseToGroup.assignCourseToGroup(courseId, groupId, userId).stream()
-                .map(mapper::toView)
-                .toList();
+    public EnrollmentView assignCourse(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId,
+                                       @PathVariable UUID courseId) {
+        return mapper.toView(assignCourseToGroup.assignCourseToGroup(courseId, groupId, userId));
     }
 }
