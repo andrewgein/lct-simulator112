@@ -33,7 +33,6 @@ public class ReviewPersistenceAdapter implements ReviewStore {
     private static CriterionResultJpaEntity toEntity(CriterionResult source) {
         CriterionResultJpaEntity target = new CriterionResultJpaEntity();
         target.setId(source.id());
-        target.setReviewId(source.reviewId());
         target.setIncidentId(source.incidentId());
         target.setIncidentOrder(source.incidentOrder());
         target.setCriterionName(source.criterionName());
@@ -50,8 +49,9 @@ public class ReviewPersistenceAdapter implements ReviewStore {
     }
 
     private static CriterionResult toDomain(CriterionResultJpaEntity source) {
-        return new CriterionResult(source.getId(), source.getReviewId(), source.getIncidentId(), source.getIncidentOrder(),
-                source.getCriterionName(), source.getScore(), source.getMaxScore(), source.getFeedback());
+        return new CriterionResult(source.getId(), source.getReview().getContextId(), source.getIncidentId(),
+                source.getIncidentOrder(), source.getCriterionName(), source.getScore(), source.getMaxScore(),
+                source.getFeedback());
     }
 
     @Override

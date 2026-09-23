@@ -14,8 +14,9 @@ public class CriterionResultJpaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    @Column(name = "review_id", insertable = false, updatable = false)
-    private UUID reviewId;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "review_id", nullable = false)
+    private ReviewJpaEntity review;
     private String incidentId;
     private Integer incidentOrder;
     private String criterionName;
