@@ -3,21 +3,24 @@ import { initializeDialogSession, requestNextCall, startDialog, stopDialog } fro
 import CardEditor from "../../../incident/components/editor/CardEditor.jsx";
 import { cardIsComplete, emptyPerson, normalizePerson } from "../../../incident/components/editor/editorHelpers";
 import { useClassifier } from "../../../incident/hooks/useClassifier";
+import LevelCompletionNotice from "../common/LevelCompletionNotice.jsx";
+import LevelSearchInput from "../common/LevelSearchInput.jsx";
+import { useLevelClock } from "../../hooks/useLevelClock.js";
 import ActiveCards from "./ActiveCards.jsx";
 import LevelCommandBar from "./LevelCommandBar.jsx";
-import LevelCompletionNotice from "./LevelCompletionNotice.jsx";
 
 const emptyCall = () => ({ phase: "idle", activeCallId: null, phone: "" });
-const emptyEditor = (values = {}) => ({ open: false, operation: "CREATE", editingCardId: null, selectedCardId: "", applicant: emptyPerson(), victimCount: null, incidentTypes: [""], additionalInfo: {}, cardSaved: false, saving: false, ...values });
+const emptyEditor = (values = {}) => ({ open: false, operation: "CREATE", editingCardId: null, selectedCardId: "", applicant: emptyPerson(), victimCount: 0, incidentTypes: [""], additionalInfo: {}, services: [], cardSaved: false, saving: false, ...values });
 const editorFor = (card, phone) => emptyEditor({
   open: true,
   operation: card ? "SAVE" : "CREATE",
   editingCardId: card?.cardId || null,
   selectedCardId: card?.cardId || "",
   applicant: { ...normalizePerson(card?.applicant), phone: card?.applicant?.phone || phone },
-  victimCount: card?.victimCount ?? null,
+  victimCount: card?.victimCount ?? 0,
   incidentTypes: card?.incidentTypes?.length ? card.incidentTypes : [""],
-  additionalInfo: card?.additionalInfo || {}
+  additionalInfo: card?.additionalInfo || {},
+  services: card?.services || []
 });
 
 export default function LevelApp({ contextId, dialogEndpoint, dadataApiKey, isDev = false }) {
@@ -28,7 +31,7 @@ export default function LevelApp({ contextId, dialogEndpoint, dadataApiKey, isDe
   const [editor, setEditor] = useState(emptyEditor);
   const [finishing, setFinishing] = useState(false);
   const [cardSearch, setCardSearch] = useState("");
-  const [now, setNow] = useState(() => new Date());
+  const now = useLevelClock();
   const classifierState = useClassifier();
   const nextCallTimer = useRef();
   const firstCallRequested = useRef(false);
@@ -69,8 +72,6 @@ export default function LevelApp({ contextId, dialogEndpoint, dadataApiKey, isDe
 
   useEffect(() => {
     loadCards();
-    const clock = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(clock);
   }, [loadCards]);
 
   useEffect(() => {
@@ -128,9 +129,7 @@ export default function LevelApp({ contextId, dialogEndpoint, dadataApiKey, isDe
   return (
     <div class="level-app wa-stack wa-gap-0">
       <LevelCommandBar call={call} now={now} onAccept={acceptCall} onDrop={stopDialog}>
-        <wa-input type="search" size="l" aria-label="Поиск происшествий" placeholder="Поиск происшествий" hint="Поиск по номеру, типу, заявителю и адресу" value={cardSearch} with-clear onInput={(event) => setCardSearch(event.currentTarget.value)}>
-          <wa-icon slot="end" name="magnifying-glass"></wa-icon>
-        </wa-input>
+        <LevelSearchInput value={cardSearch} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setCardSearch(event.currentTarget.value)} />
       </LevelCommandBar>
       <CardEditor contextId={contextId} cards={cards} call={call} editor={editor} isDev={isDev} dadataApiKey={dadataApiKey} onChange={setEditor} onClose={closeEditor} />
       {call.phase === "completed" && <LevelCompletionNotice complete={allCardsComplete} ready={cardsReady} finishing={finishing} onFinish={finishLevel} />}

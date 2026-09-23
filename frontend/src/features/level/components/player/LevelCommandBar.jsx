@@ -1,6 +1,6 @@
 import CallControls from "./CallControls.jsx";
 
-export default function LevelCommandBar({ call, now, onAccept, onDrop, children }) {
+export default function LevelCommandBar({ call, now, onAccept, onDrop, modeLabel = "Учебный режим · АРМ оператора", idleLabel = "Ожидание вызова", idleIcon = "headset", children }) {
   const hasCall = ["incoming", "active"].includes(call.phase);
   return (
     <div class="level-command-bar">
@@ -10,14 +10,14 @@ export default function LevelCommandBar({ call, now, onAccept, onDrop, children 
       <div class="level-operator-status">
         <div class="level-current-date wa-stack wa-gap-xs wa-justify-content-center">
           <strong>{now.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</strong>
-          <span>Учебный режим · АРМ оператора</span>
+          <span>{modeLabel}</span>
         </div>
         {hasCall ? (
           <CallControls call={call} onAccept={onAccept} onDrop={onDrop} />
         ) : (
           <div class="level-connection wa-stack wa-gap-xs wa-align-items-center wa-justify-content-center">
-            <wa-icon name="headset" aria-hidden="true"></wa-icon>
-            <span>Ожидание вызова</span>
+            <wa-icon name={idleIcon} aria-hidden="true"></wa-icon>
+            <span>{idleLabel}</span>
           </div>
         )}
         <time datetime={now.toISOString()}>

@@ -13,8 +13,9 @@ function arrangeCards(cards) {
   return roots.map((card) => ({ card, children: childrenByMain.get(card.cardId) || [] }));
 }
 
-function createRow(card, kind, depth, relationCount, expanded, classifierState) {
-  const complete = cardIsComplete(card, classifierState.classifier);
+function createRow(card, kind, depth, relationCount, expanded, classifierState, getCardMeta) {
+  const meta = getCardMeta?.(card) || {};
+  const complete = meta.complete ?? cardIsComplete(card, classifierState.classifier);
   const incidents = (card.incidentTypes || []).map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
   const incident = incidents[0];
   const victimSummary = card.victimCount > 0 ? `Есть · ${card.victimCount}` : "Нет";
@@ -34,26 +35,27 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState) 
     victimSummary,
     address: cardAddress(card),
     additionalInfo: additionalInfo || "Дополнительная информация не заполнена",
-    kindLabel: kind === "child" ? "Связанная" : "Основная",
+    kindLabel: meta.kindLabel || (kind === "child" ? "Связанная" : "Основная"),
     complete,
-    status: complete ? "Заполнена" : "Заполнена не полностью"
+    rowClassName: meta.className || (complete ? "is-complete" : "is-incomplete"),
+    status: meta.status || (complete ? "Заполнена" : "Заполнена не полностью")
   };
 }
 
-function flattenBranches(branches, collapsed, classifierState) {
+function flattenBranches(branches, collapsed, classifierState, getCardMeta) {
   const rows = [];
   branches.forEach((branch) => {
     const expanded = !collapsed.has(branch.card.cardId);
-    rows.push(createRow(branch.card, "primary", 0, branch.children.length, expanded, classifierState));
-    if (expanded) branch.children.forEach((card) => rows.push(createRow(card, "child", 1, 0, false, classifierState)));
+    rows.push(createRow(branch.card, "primary", 0, branch.children.length, expanded, classifierState, getCardMeta));
+    if (expanded) branch.children.forEach((card) => rows.push(createRow(card, "child", 1, 0, false, classifierState, getCardMeta)));
   });
   return rows;
 }
 
-export default function ActiveCards({ cards, loading, error, classifierState, searchQuery = "", onOpen }) {
+export default function ActiveCards({ cards, loading, error, classifierState, searchQuery = "", onOpen, getCardMeta, heading = "Список происшествий", emptyMessage = "Активных карточек пока нет", statusLabel = "Заполнение" }) {
   const [collapsed, setCollapsed] = useState(() => new Set());
   const [expandedDetails, setExpandedDetails] = useState(() => new Set());
-  const rows = flattenBranches(arrangeCards(cards), collapsed, classifierState);
+  const rows = flattenBranches(arrangeCards(cards), collapsed, classifierState, getCardMeta);
   const toggle = (id) => setCollapsed((current) => {
     const next = new Set(current);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -93,20 +95,20 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
     { field: "applicant", label: "Заявитель", sortable: false },
     { field: "address", label: "Адрес", sortable: false },
     { field: "kindLabel", label: "Вид", sortable: false },
-    { field: "status", label: "Заполнение", sortable: false, render: (row) => <span class="card-status-content wa-cluster wa-gap-xs wa-flex-nowrap"><wa-icon name={row.complete ? "circle-check" : "triangle-exclamation"} aria-hidden="true"></wa-icon><span>{row.status}</span></span> }
+    { field: "status", label: statusLabel, sortable: false, render: (row) => <span class="card-status-content wa-cluster wa-gap-xs wa-flex-nowrap"><wa-icon name={row.complete ? "circle-check" : "triangle-exclamation"} aria-hidden="true"></wa-icon><span>{row.status}</span></span> }
   ];
   return (
     <section class="active-cards wa-stack wa-gap-0" aria-labelledby="active-cards-heading">
       {loading && <div>Загрузка...</div>}
       {error && <div>Не удалось загрузить карточки</div>}
-      {!loading && !error && !cards.length && <wa-callout variant="neutral">Активных карточек пока нет</wa-callout>}
+      {!loading && !error && !cards.length && <wa-callout variant="neutral">{emptyMessage}</wa-callout>}
       {!loading && !error && !!cards.length && (
         <>
           <div class="incident-list-heading wa-split wa-align-items-center">
-            <h2 id="active-cards-heading">Список происшествий</h2>
+            <h2 id="active-cards-heading">{heading}</h2>
             <span>{rows.length} {rows.length === 1 ? "карточка" : "карточек"}</span>
           </div>
-          <DataGrid data={rows} columns={columns} label="Список активных карточек происшествий" pageSize={Math.max(rows.length, 1)} searchable={false} searchValue={searchQuery} className="cards-grid" tableClassName="cards-table" onRowClick={(row) => onOpen(row.card)} getRowClassName={(row) => row.complete ? "is-complete" : "is-incomplete"} renderExpandedRow={(row) => expandedDetails.has(row.id) ? <div class="incident-row-details"><div><span>Заявитель:</span><strong>{row.applicant}</strong><span>АОН: {row.applicantPhone}</span><span>Предоставленный: {row.applicantContactPhone}</span><span>На место: {row.applicantOnScenePhone}</span></div><div><span>Пострадавшие:</span><strong>{row.victimSummary}</strong></div><div><span>Адрес:</span><strong>{row.address}</strong></div><div class="incident-row-information"><span>Информация:</span><strong>{row.additionalInfo}</strong></div><div><span>Карточка:</span><strong>{row.kindLabel} · {row.status}</strong></div></div> : null} />
+          <DataGrid data={rows} columns={columns} label={heading} pageSize={Math.max(rows.length, 1)} searchable={false} searchValue={searchQuery} className="cards-grid" tableClassName="cards-table" onRowClick={(row) => onOpen(row.card)} getRowClassName={(row) => row.rowClassName} renderExpandedRow={(row) => expandedDetails.has(row.id) ? <div class="incident-row-details"><div><span>Заявитель:</span><strong>{row.applicant}</strong><span>АОН: {row.applicantPhone}</span><span>Предоставленный: {row.applicantContactPhone}</span><span>На место: {row.applicantOnScenePhone}</span></div><div><span>Пострадавшие:</span><strong>{row.victimSummary}</strong></div><div><span>Адрес:</span><strong>{row.address}</strong></div><div class="incident-row-information"><span>Информация:</span><strong>{row.additionalInfo}</strong></div><div><span>Карточка:</span><strong>{row.kindLabel} · {row.status}</strong></div></div> : null} />
         </>
       )}
     </section>

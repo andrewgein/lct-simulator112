@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 
-export default function AddressField({ id, value = "", label = "Адрес", required = false, disabled = false, dadataApiKey = "", withMap = false, onChange }) {
+export default function AddressField({ id, value = "", label = "Адрес", required = false, disabled = false, dadataApiKey = "", withMap = false, onChange, onSelect }) {
   const [inputValue, setInputValue] = useState(value);
   const [suggestions, setSuggestions] = useState([]);
   const [focused, setFocused] = useState(false);
@@ -53,6 +53,7 @@ export default function AddressField({ id, value = "", label = "Адрес", req
     setFocused(false);
     setSuggestions([]);
     updateValue(suggestion.value);
+    onSelect?.(suggestion);
     emit("address-selected", { suggestion });
   };
   const openMap = () => {

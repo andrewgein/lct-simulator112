@@ -1,6 +1,9 @@
 ---
 import LevelApp from "../../features/level/components/player/LevelApp.jsx";
+import DdsLevelApp from "../../features/level/components/player/DdsLevelApp.jsx";
 import { getLevel } from "../../features/level/api/LevelApi";
+import { getIncidentClassifier } from "../../features/incident/api/IncidentApi";
+import { getProfile } from "../../features/profile/api/UserProfileApi";
 import Page from "../../layouts/Page.astro";
 
 export const prerender = false;
@@ -10,16 +13,34 @@ const dialogEndpoint = import.meta.env.PUBLIC_DIALOG_ENDPOINT || "";
 const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
 const isDev = import.meta.env.DEV;
 let level = null;
+let incidents = [];
+let classifier = [];
+let profile = null;
 let error = contextId ? null : "Не указан контекст прохождения уровня";
 if (!error) {
   const response = await getLevel(Astro.params.level, Astro.locals.accessToken);
-  if (response.ok) level = await response.json();
-  else error = "Не удалось загрузить уровень";
+  if (response.ok) {
+    level = await response.json();
+    if (level.targetType === "DDS") {
+      try {
+        const [classifierResponse, profileResponse] = await Promise.all([
+          getIncidentClassifier(Astro.locals.accessToken),
+          getProfile(Astro.locals.accessToken)
+        ]);
+        if (!classifierResponse.ok || !profileResponse.ok) throw new Error("DDS data request failed");
+        classifier = await classifierResponse.json();
+        profile = await profileResponse.json();
+      } catch (requestError) {
+        console.error(requestError);
+        error = "Не удалось загрузить рабочее поле ДДС";
+      }
+    }
+  } else error = "Не удалось загрузить уровень";
 }
 ---
 <Page {error}>
   {contextId && level?.targetType === "SYSTEM_112" && <LevelApp contextId={contextId} dialogEndpoint={dialogEndpoint} dadataApiKey={dadataApiKey} isDev={isDev} client:load />}
-  {contextId && level?.targetType === "DDS" && <wa-callout variant="warning">Интерфейс прохождения уровней ДДС пока не реализован.</wa-callout>}
+  {contextId && level?.targetType === "DDS" && !error && <DdsLevelApp contextId={contextId} level={level} incidents={incidents} classifier={classifier} userService={profile?.ddsService} client:load />}
 </Page>
 <style is:global>
   wa-page:has(.level-app)::part(main-content) { padding: 0; background: #899ba4; }
@@ -74,4 +95,5 @@ if (!error) {
   .incident-row-information strong { font-weight: var(--wa-font-weight-normal); }
   @media (max-width: 70rem) { .level-command-bar { grid-template-columns: 1fr; } .level-operator-status { min-height: 6rem; } }
   @media (max-width: 40rem) { .level-command-bar { min-height: auto; } .level-search { padding: var(--wa-space-m); } .level-search wa-input::part(input) { font-size: var(--wa-font-size-xl); } .level-operator-status { grid-template-columns: 1fr auto; } .level-current-date { display: none; } .active-cards { padding: var(--wa-space-xs); } .cards-grid { margin-inline: calc(-1 * var(--wa-space-xs)); } }
+
 </style>
