@@ -6,10 +6,17 @@ const styles = `
 .dispatch-services-label, .dispatch-service { display: flex; flex: 0 0 auto; min-width: 8rem; min-height: 6rem; box-sizing: border-box; align-items: center; justify-content: center; padding: var(--wa-space-m); border-inline-end: var(--wa-border-width-s) solid rgba(255, 255, 255, .45); }
 .dispatch-services-label { min-width: 7rem; font-weight: var(--wa-font-weight-bold); }
 .dispatch-service { position: relative; flex-direction: column; gap: var(--wa-space-xs); }
+.dispatch-service--with-status { min-width: 14rem; padding-block-start: var(--wa-space-l); }
 .dispatch-service strong { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dispatch-service wa-icon { font-size: var(--wa-font-size-l); }
+.dispatch-service-status { max-width: 12rem; overflow: hidden; color: #d4dadd; font-size: var(--wa-font-size-xs); text-overflow: ellipsis; white-space: nowrap; }
 .dispatch-service-remove { position: absolute; inset-block-start: var(--wa-space-2xs); inset-inline-end: var(--wa-space-2xs); }
+.dispatch-service-status-edit { position: absolute; inset-block-start: var(--wa-space-2xs); inset-inline-start: var(--wa-space-2xs); }
+.dispatch-service-status-edit::part(button) { width: 2.25rem; min-width: 2.25rem; height: 2.25rem; padding: 0; border-color: transparent; color: #ffffff; }
+.dispatch-service-status-edit::part(button):hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .1); }
 .dispatch-service-remove::part(button), .dispatch-service-add::part(button) { border-color: #ffffff; color: #ffffff; }
+.dispatch-service-status-popover { --max-width: min(46rem, calc(100vw - 2rem)); }
+.dispatch-service-status-popover::part(body) { padding: var(--wa-space-m); border: var(--wa-border-width-s) solid #87969d; background: #f4f6f6; color: var(--wa-color-text-normal); box-shadow: 0 .5rem 1.5rem rgba(22, 31, 36, .3); }
 .dispatch-service-add { align-self: center; margin-inline: var(--wa-space-m); }
 .dispatch-services-dialog { --width: min(90vw, 38rem); }
 .dispatch-services-dialog-search { margin-block-end: var(--wa-space-l); }
@@ -30,7 +37,7 @@ export function automaticServices(classifier, incidentTypes) {
   return [...new Set(classifier.flatMap((category) => category.entries).filter((entry) => selectedTypes.has(entry.code)).flatMap((entry) => entry.primaryServices || []).map((service) => service.code))];
 }
 
-export default function DispatchServicesPanel({ classifier, services = [], readonly = false, onChange }) {
+export default function DispatchServicesPanel({ classifier, services = [], readonly = false, status, statusEditor, onChange }) {
   const dialogRef = useRef(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState([]);
@@ -64,12 +71,15 @@ export default function DispatchServicesPanel({ classifier, services = [], reado
       <style>{styles}</style>
       <div class={`dispatch-services ${readonly ? "dispatch-services--readonly" : ""}`} aria-label="Назначенные службы">
         <div class="dispatch-services-label">Службы:</div>
-        {services.map((code) => {
+        {services.map((code, index) => {
           const service = byCode.get(code);
           return (
-            <div class="dispatch-service" key={code}>
+            <div class={`dispatch-service ${status && index === 0 ? "dispatch-service--with-status" : ""}`} key={code}>
               <wa-icon name="phone" aria-hidden="true"></wa-icon>
               <strong title={service?.name || code}>{service?.name || code}</strong>
+              {status && index === 0 && <span class="dispatch-service-status" title={status}>{status}</span>}
+              {status && index === 0 && statusEditor && <wa-button id={`dispatch-service-status-${code}`} class="dispatch-service-status-edit" type="button" size="s" appearance="plain" variant="neutral" aria-label={`Изменить статус службы ${service?.name || code}`}><wa-icon name="pencil" aria-hidden="true"></wa-icon></wa-button>}
+              {status && index === 0 && statusEditor && <wa-popover class="dispatch-service-status-popover" for={`dispatch-service-status-${code}`} placement="top-start">{statusEditor}</wa-popover>}
               {!readonly && <wa-button class="dispatch-service-remove" type="button" size="xs" appearance="plain" variant="neutral" aria-label={`Удалить службу ${service?.name || code}`} onClick={() => onChange(services.filter((value) => value !== code))}><wa-icon name="xmark"></wa-icon></wa-button>}
             </div>
           );

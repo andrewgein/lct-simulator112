@@ -1,7 +1,7 @@
 /** @typedef {"CREATE" | "SAVE" | "LINK" | "UNLINK"} SolutionContextOperation */
 /** @typedef {"CREATED" | "FILLED" | "IN_REVIEW" | "DIALOG" | "DONE"} ContextStatus */
 /** @typedef {"PENDING" | "ACTIVE" | "COMPLETED" | "FAILED"} IncidentProgressStatus */
-/** @typedef {"PENDING" | "ACTIVE" | "SUCCEEDED" | "FAILED" | "SKIPPED"} StageStatus */
+/** @typedef {"PENDING" | "ACTIVE" | "SUCCEEDED" | "FAILED" | "TIMED_OUT" | "SKIPPED"} StageStatus */
 /** @typedef {"BRIGADE_ASSIGNED" | "BRIGADE_STATUS_CHANGED" | "STATUS_CALL_COMPLETED" | "ADDITIONAL_SERVICE_REQUESTED" | "INCIDENT_COMPLETED"} DdsStageSignal */
 
 /**
