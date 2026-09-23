@@ -7,8 +7,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -29,19 +27,6 @@ public class EnrollmentJpaEntity {
 
     @Column(name = "group_id")
     private UUID groupId;
-
-    @Column(name = "materials_completed_at")
-    private Instant materialsCompletedAt;
-
-    @ElementCollection
-    @CollectionTable(name = "course_enrollment_completed_assignments",
-            joinColumns = @JoinColumn(name = "enrollment_id"))
-    @OrderColumn(name = "position")
-    @Column(name = "assignment_id", nullable = false)
-    private List<UUID> completedAssignmentIds = new ArrayList<>();
-
-    @Column(name = "completed_at")
-    private Instant completedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

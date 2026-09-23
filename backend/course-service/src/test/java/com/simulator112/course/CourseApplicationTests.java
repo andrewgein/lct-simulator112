@@ -4,7 +4,10 @@ import com.simulator112.course.application.port.out.CourseRepository;
 import com.simulator112.course.application.port.out.EnrollmentRepository;
 import com.simulator112.course.application.port.out.StudyGroupRepository;
 import com.simulator112.course.domain.course.Assignment;
+import com.simulator112.course.domain.course.AssignmentDifficulty;
+import com.simulator112.course.domain.course.AssignmentExecutionMode;
 import com.simulator112.course.domain.course.Course;
+import com.simulator112.course.domain.course.CourseTargetType;
 import com.simulator112.course.domain.course.CourseMaterial;
 import com.simulator112.course.domain.enrollment.Enrollment;
 import com.simulator112.course.domain.group.StudyGroup;
@@ -36,15 +39,20 @@ class CourseApplicationTests {
     @Test
     void persistsCourseWithOrderedMaterialsAndAssignments() {
         UUID authorId = UUID.randomUUID();
-        Course saved = courseRepository.save(new Course(null, "Работа оператора 112", "Базовый курс", authorId,
-                List.of(new CourseMaterial(null, "Введение", "# Введение"),
-                        new CourseMaterial(null, "Регламент", "# Регламент")),
-                List.of(new Assignment(null, "Первое задание", null, List.of(UUID.randomUUID())),
-                        new Assignment(null, "Второе задание", null, List.of(UUID.randomUUID())))));
+        Course saved = courseRepository.save(new Course(null, "Работа оператора 112", "Базовый курс", CourseTargetType.SYSTEM_112, authorId,
+                List.of(new CourseMaterial(null, "Введение", "materials/test/introduction.md", "introduction.md", "text/markdown", 12L),
+                        new CourseMaterial(null, "Регламент", "materials/test/rules.md", "rules.md", "text/markdown", 12L)),
+                List.of(new Assignment(null, "Первое задание", null, AssignmentDifficulty.NORMAL,
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())),
+                        new Assignment(null, "Второе задание", null, AssignmentDifficulty.NORMAL,
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))));
 
         Course loaded = courseRepository.findById(saved.id()).orElseThrow();
 
+        assertThat(loaded.targetType()).isEqualTo(CourseTargetType.SYSTEM_112);
         assertThat(loaded.materials()).extracting(CourseMaterial::title).containsExactly("Введение", "Регламент");
+        assertThat(loaded.assignments()).allMatch(assignment -> assignment.difficulty() == AssignmentDifficulty.NORMAL
+                && assignment.executionMode() == AssignmentExecutionMode.SEQUENTIAL);
         assertThat(loaded.assignments()).extracting(Assignment::title)
                 .containsExactly("Первое задание", "Второе задание");
         assertThat(courseRepository.findAllByAuthorId(authorId)).hasSize(1);
@@ -55,12 +63,13 @@ class CourseApplicationTests {
         UUID ownerId = UUID.randomUUID();
         UUID studentId = UUID.randomUUID();
         StudyGroup group = studyGroupRepository.save(new StudyGroup(null, "Группа 1", ownerId, List.of(studentId)));
-        Course course = courseRepository.save(new Course(null, "Курс", null, ownerId,
-                List.of(new CourseMaterial(null, "Введение", "# Введение")),
-                List.of(new Assignment(null, "Задание", null, List.of(UUID.randomUUID())))));
+        Course course = courseRepository.save(new Course(null, "Курс", null, CourseTargetType.SYSTEM_112, ownerId,
+                List.of(new CourseMaterial(null, "Введение", "materials/test/other-introduction.md", "introduction.md", "text/markdown", 12L)),
+                List.of(new Assignment(null, "Задание", null, AssignmentDifficulty.NORMAL,
+                        AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))));
 
         Enrollment enrollment = enrollmentRepository.save(
-                new Enrollment(null, course.id(), studentId, group.id(), null, List.of(), null));
+                new Enrollment(null, course.id(), studentId, group.id()));
 
         assertThat(enrollmentRepository.findByCourseIdAndStudentId(course.id(), studentId))
                 .get().extracting(Enrollment::id).isEqualTo(enrollment.id());

@@ -8,6 +8,7 @@ public record Course(
         UUID id,
         String title,
         String description,
+        CourseTargetType targetType,
         UUID authorId,
         List<CourseMaterial> materials,
         List<Assignment> assignments) {
@@ -20,7 +21,4 @@ public record Course(
         return assignments.stream().filter(assignment -> assignment.id().equals(assignmentId)).findFirst();
     }
 
-    public Optional<Assignment> nextAssignment(List<UUID> completedAssignmentIds) {
-        return assignments.stream().filter(assignment -> !completedAssignmentIds.contains(assignment.id())).findFirst();
-    }
 }

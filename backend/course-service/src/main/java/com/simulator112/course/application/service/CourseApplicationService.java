@@ -11,6 +11,7 @@ import com.simulator112.course.domain.course.Course;
 import com.simulator112.course.domain.course.CourseMaterial;
 import com.simulator112.course.domain.exception.CourseAccessDeniedException;
 import com.simulator112.course.domain.exception.CourseNotFoundException;
+import com.simulator112.course.adapter.out.storage.MaterialFileStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
 
     private final CourseRepository courseRepository;
     private final IncidentCatalogPort incidentCatalog;
+    private final MaterialFileStorage fileStorage;
 
     @Override
     @Transactional
@@ -44,8 +46,8 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         if (course.id() != null && !courseId.equals(course.id())) {
             throw new IllegalArgumentException("Идентификатор курса нельзя изменить");
         }
-        Course updated = new Course(courseId, course.title(), course.description(), existing.authorId(),
-                course.materials(), course.assignments());
+        Course updated = new Course(courseId, course.title(), course.description(), course.targetType(),
+                existing.authorId(), course.materials(), course.assignments());
         validate(updated);
         return courseRepository.save(updated);
     }
@@ -72,28 +74,37 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         if (course.title() == null || course.title().isBlank()) {
             throw new IllegalArgumentException("Название курса обязательно");
         }
+        if (course.targetType() == null) {
+            throw new IllegalArgumentException("Профиль курса обязателен");
+        }
         if (course.materials().isEmpty()) {
             throw new IllegalArgumentException("Курс должен содержать хотя бы один вводный материал");
         }
         if (course.assignments().isEmpty()) {
             throw new IllegalArgumentException("Курс должен содержать хотя бы одно задание");
         }
-        course.materials().forEach(this::validate);
-        course.assignments().forEach(this::validate);
+        course.materials().forEach(material -> {
+            validate(material);
+            fileStorage.requireOwnedBy(material.fileObjectKey(), course.authorId());
+        });
+        course.assignments().forEach(assignment -> validate(assignment, course));
     }
 
     private void validate(CourseMaterial material) {
         if (material.title() == null || material.title().isBlank()) {
             throw new IllegalArgumentException("Название вводного материала обязательно");
         }
-        if (material.contentMarkdown() == null || material.contentMarkdown().isBlank()) {
-            throw new IllegalArgumentException("Вводный материал «" + material.title() + "» пуст");
+        if (!material.hasFile()) {
+            throw new IllegalArgumentException("Для вводного материала «" + material.title() + "» не загружен файл");
         }
     }
 
-    private void validate(Assignment assignment) {
+    private void validate(Assignment assignment, Course course) {
         if (assignment.title() == null || assignment.title().isBlank()) {
             throw new IllegalArgumentException("Название задания обязательно");
+        }
+        if (assignment.difficulty() == null || assignment.executionMode() == null) {
+            throw new IllegalArgumentException("Сложность и режим выполнения задания обязательны");
         }
         if (assignment.incidentIds().isEmpty()) {
             throw new IllegalArgumentException("Задание «" + assignment.title()
@@ -103,6 +114,16 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
             throw new IllegalArgumentException("Происшествие не может повторяться внутри задания «"
                     + assignment.title() + "»");
         }
-        assignment.incidentIds().forEach(incidentCatalog::requireIncident);
+        assignment.incidentIds().forEach(incidentId -> {
+            var incident = incidentCatalog.requireIncident(incidentId);
+            if (incident.targetType() != course.targetType()) {
+                throw new IllegalArgumentException("Инцидент «" + incidentId
+                        + "» не соответствует профилю курса " + course.targetType());
+            }
+            if (incident.difficulty() != assignment.difficulty()) {
+                throw new IllegalArgumentException("Сложность инцидента «" + incidentId
+                        + "» не соответствует сложности задания " + assignment.difficulty());
+            }
+        });
     }
 }

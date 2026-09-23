@@ -1,5 +1,7 @@
 package com.simulator112.course.adapter.out.persistence.entity;
 
+import com.simulator112.course.domain.course.AssignmentDifficulty;
+import com.simulator112.course.domain.course.AssignmentExecutionMode;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,6 +33,14 @@ public class AssignmentJpaEntity {
 
     @Column(columnDefinition = "text")
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AssignmentDifficulty difficulty;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "execution_mode", nullable = false)
+    private AssignmentExecutionMode executionMode;
 
     @ElementCollection
     @CollectionTable(name = "course_assignment_incidents", joinColumns = @JoinColumn(name = "assignment_id"))

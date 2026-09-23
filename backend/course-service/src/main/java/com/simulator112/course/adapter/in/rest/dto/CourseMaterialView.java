@@ -6,5 +6,9 @@ public record CourseMaterialView(
         UUID id,
         int position,
         String title,
-        String contentMarkdown) {
+        String fileObjectKey,
+        String fileName,
+        String fileContentType,
+        Long fileSize,
+        String downloadUrl) {
 }

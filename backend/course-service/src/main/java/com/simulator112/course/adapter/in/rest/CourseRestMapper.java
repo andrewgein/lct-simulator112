@@ -22,10 +22,10 @@ import java.util.UUID;
 public class CourseRestMapper {
 
     public Course toDomain(UUID courseId, CourseRequest request, UUID authorId) {
-        return new Course(courseId, request.title(), request.description(), authorId,
+        return new Course(courseId, request.title(), request.description(), request.targetType(), authorId,
                 request.materials().stream()
                         .map(material -> new CourseMaterial(material.id(), material.title(),
-                                material.contentMarkdown()))
+                                material.fileObjectKey(), material.fileName(), material.fileContentType(), material.fileSize()))
                         .toList(),
                 request.assignments().stream().map(this::toDomain).toList());
     }
@@ -35,7 +35,7 @@ public class CourseRestMapper {
     }
 
     public CourseView toView(Course course) {
-        return new CourseView(course.id(), course.title(), course.description(), course.authorId(),
+        return new CourseView(course.id(), course.title(), course.description(), course.targetType(), course.authorId(),
                 materials(course), assignments(course));
     }
 
@@ -43,26 +43,29 @@ public class CourseRestMapper {
         return new StudyGroupView(studyGroup.id(), studyGroup.title(), studyGroup.ownerId(), studyGroup.studentIds());
     }
 
-    public EnrollmentView toView(Enrollment enrollment, Course course) {
-        AssignmentView current = enrollment.materialsCompleted()
-                ? course.nextAssignment(enrollment.completedAssignmentIds())
-                .map(assignment -> toView(assignment, course.assignments().indexOf(assignment)))
-                .orElse(null)
-                : null;
-        return new EnrollmentView(enrollment.id(), enrollment.courseId(), enrollment.studentId(), enrollment.groupId(),
-                enrollment.status(), enrollment.materialsCompletedAt(), enrollment.completedAssignmentIds(),
-                current, enrollment.completedAt());
+    public EnrollmentView toView(Enrollment enrollment) {
+        return new EnrollmentView(enrollment.id(), enrollment.courseId(), enrollment.studentId(), enrollment.groupId());
+    }
+
+    public AssignmentView toView(Assignment assignment, int position) {
+        return new AssignmentView(assignment.id(), position, assignment.title(), assignment.description(),
+                assignment.difficulty(), assignment.executionMode(), assignment.incidentIds());
     }
 
     private Assignment toDomain(AssignmentRequest request) {
-        return new Assignment(request.id(), request.title(), request.description(), request.incidentIds());
+        return new Assignment(request.id(), request.title(), request.description(), request.difficulty(),
+                request.executionMode(), request.incidentIds());
     }
 
     private List<CourseMaterialView> materials(Course course) {
         List<CourseMaterial> materials = course.materials();
         return java.util.stream.IntStream.range(0, materials.size())
-                .mapToObj(position -> new CourseMaterialView(materials.get(position).id(), position,
-                        materials.get(position).title(), materials.get(position).contentMarkdown()))
+                .mapToObj(position -> {
+                    CourseMaterial material = materials.get(position);
+                    return new CourseMaterialView(material.id(), position, material.title(), material.fileObjectKey(), material.fileName(),
+                            material.fileContentType(), material.fileSize(), material.hasFile() && material.id() != null
+                                    ? "/api/v1/courses/materials/" + material.id() + "/file" : null);
+                })
                 .toList();
     }
 
@@ -73,8 +76,4 @@ public class CourseRestMapper {
                 .toList();
     }
 
-    private AssignmentView toView(Assignment assignment, int position) {
-        return new AssignmentView(assignment.id(), position, assignment.title(), assignment.description(),
-                assignment.incidentIds());
-    }
 }

@@ -2,6 +2,7 @@ CREATE TABLE courses (
     id UUID PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    target_type VARCHAR(32) NOT NULL DEFAULT 'SYSTEM_112',
     author_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -13,11 +14,15 @@ CREATE TABLE course_materials (
     course_id UUID NOT NULL REFERENCES courses (id) ON DELETE CASCADE,
     position INTEGER NOT NULL,
     title VARCHAR(255) NOT NULL,
-    content_markdown TEXT NOT NULL,
+    file_object_key VARCHAR(512) NOT NULL,
+    file_name VARCHAR(255),
+    file_content_type VARCHAR(255),
+    file_size BIGINT,
     CONSTRAINT uk_course_materials_position UNIQUE (course_id, position)
 );
 
 CREATE INDEX idx_course_materials_course_id ON course_materials (course_id);
+CREATE UNIQUE INDEX uk_course_material_file_object_key ON course_materials (file_object_key);
 
 CREATE TABLE course_assignments (
     id UUID PRIMARY KEY,
@@ -25,6 +30,8 @@ CREATE TABLE course_assignments (
     position INTEGER NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
+    difficulty VARCHAR(32) NOT NULL DEFAULT 'NORMAL',
+    execution_mode VARCHAR(32) NOT NULL DEFAULT 'SEQUENTIAL',
     CONSTRAINT uk_course_assignments_position UNIQUE (course_id, position)
 );
 
@@ -57,17 +64,8 @@ CREATE TABLE course_enrollments (
     course_id UUID NOT NULL REFERENCES courses (id) ON DELETE CASCADE,
     student_id UUID NOT NULL,
     group_id UUID REFERENCES study_groups (id) ON DELETE SET NULL,
-    materials_completed_at TIMESTAMP WITH TIME ZONE,
-    completed_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_course_enrollment_student UNIQUE (course_id, student_id)
 );
 
 CREATE INDEX idx_course_enrollments_student_id ON course_enrollments (student_id);
-
-CREATE TABLE course_enrollment_completed_assignments (
-    enrollment_id UUID NOT NULL REFERENCES course_enrollments (id) ON DELETE CASCADE,
-    position INTEGER NOT NULL,
-    assignment_id UUID NOT NULL,
-    PRIMARY KEY (enrollment_id, position)
-);
