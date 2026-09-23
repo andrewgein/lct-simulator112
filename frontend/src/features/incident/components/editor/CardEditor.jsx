@@ -13,7 +13,7 @@ import IncidentWorkspace from "../../../level/components/common/IncidentWorkspac
 
 const styles = `
 .incident-workspace { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 48rem; background: #c8d1d5; color: var(--wa-color-text-normal); }
-.workspace-callbar { display: grid; grid-template-columns: minmax(13rem, 0.8fr) repeat(3, minmax(15rem, 1fr)) auto; box-sizing: border-box; width: auto; height: auto; min-height: 6rem; padding: 0; border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
+.workspace-callbar { display: grid; grid-template-columns: minmax(13rem, 0.8fr) repeat(3, minmax(15rem, 1fr)) auto; box-sizing: border-box; width: auto; height: auto; min-height: 6rem; padding: 0; border-block-end: var(--wa-space-s) solid #c8d1d5; background: #f4f6f6; }
 .workspace-callbar > div { display: flex; box-sizing: border-box; min-width: 0; padding: var(--wa-space-m) var(--wa-space-l); border-inline-end: var(--wa-border-width-s) solid #b8c1c5; }
 .workspace-applicant-summary { display: flex; box-sizing: border-box; min-height: 4.5rem; align-items: end; gap: var(--wa-space-m); padding: var(--wa-space-m); border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
 .workspace-applicant-name { display: flex; flex: 1; min-width: 0; gap: var(--wa-space-xs); }
@@ -22,8 +22,9 @@ const styles = `
 .workspace-applicant-name-input::placeholder, .workspace-applicant-status:invalid { color: #7b8b93; }
 .workspace-applicant-name-input:focus, .workspace-applicant-status:focus { border-block-end-color: #008dca; }
 .workspace-applicant-status { flex: 0 0 9.5rem; cursor: pointer; }
-.workspace-applicant-readonly { flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--wa-space-2xs); }
-.workspace-applicant-readonly strong { font-size: var(--wa-font-size-l); }
+.workspace-applicant-readonly { flex-direction: row; align-items: center; justify-content: flex-start; gap: var(--wa-space-l); }
+.workspace-applicant-readonly strong { overflow: hidden; font-size: var(--wa-font-size-l); text-overflow: ellipsis; white-space: nowrap; }
+.workspace-applicant-readonly .workspace-call-label { flex: 0 0 auto; color: #687880; font-size: var(--wa-font-size-s); }
 .workspace-victim-status { display: flex; box-sizing: border-box; min-height: 4.5rem; align-items: center; gap: var(--wa-space-m); padding: var(--wa-space-m); border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
 .workspace-victim-status-label { color: #35434a; font-size: var(--wa-font-size-l); }
 .workspace-victim-button { min-width: 5rem; padding: var(--wa-space-xs) var(--wa-space-m); border: var(--wa-border-width-s) solid #9ba8ae; background: transparent; color: #26343b; font: inherit; font-weight: var(--wa-font-weight-semibold); cursor: pointer; }
@@ -50,12 +51,18 @@ const styles = `
 .workspace-timer { align-items: center; justify-content: center; min-width: 8rem; background: #293238; color: #ffffff; font-size: var(--wa-font-size-2xl); font-weight: var(--wa-font-weight-bold); font-variant-numeric: tabular-nums; }
 .saved-view-label { background: #008dca; font-size: var(--wa-font-size-m); text-transform: uppercase; }
 .workspace-body { display: grid; grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr); gap: 0.5rem; min-height: 0; padding: 0 0.5rem; }
-.saved-card-body { display: grid; grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr); gap: 0.5rem; min-height: 0; padding: 0 0.5rem 0.5rem; background: #c8d1d5; }
+.saved-card-body { display: grid; grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr); gap: var(--wa-space-s); min-height: 0; padding: 0 var(--wa-space-s) var(--wa-space-s); background: #c8d1d5; }
 .saved-card-column { min-width: 0; overflow-y: auto; }
+.saved-card-column.wa-stack { --wa-content-spacing: var(--wa-space-s); }
+.saved-card-column > .workspace-victim-status, .workspace-applicant-readonly { height: 4.5rem; min-height: 4.5rem; border: var(--wa-border-width-s) solid #b8c1c5; }
 .saved-card-panel { padding: var(--wa-space-m); background: #f4f6f6; border: var(--wa-border-width-s) solid #b8c1c5; }
 .saved-person-heading strong { font-size: var(--wa-font-size-xl); }
 .saved-person-heading span, .saved-label { color: var(--wa-color-text-quiet); }
-.saved-address strong { font-size: var(--wa-font-size-l); }
+.saved-address { display: flex; box-sizing: border-box; height: 4.5rem; min-height: 4.5rem; align-items: center; gap: var(--wa-space-m); }
+.saved-address strong { flex: 1; min-width: 0; overflow: hidden; font-size: var(--wa-font-size-l); text-overflow: ellipsis; white-space: nowrap; }
+.saved-address-map { flex: 0 0 auto; }
+.saved-address-map::part(button) { border-color: transparent; color: #35434a; font-size: var(--wa-font-size-xl); }
+.saved-address-map::part(button):hover { border-color: #87969d; background: #e8ecec; }
 .saved-card-spacer { flex: 1; min-height: 12rem; }
 .saved-incident-heading { padding: var(--wa-space-m); background: #293238; color: #ffffff; font-size: var(--wa-font-size-l); }
 .saved-incident-heading strong { text-decoration: underline dotted; text-underline-offset: var(--wa-space-xs); }
@@ -207,6 +214,20 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     }
   };
   const cancel = () => onChange({ ...editor, open: false, saving: false });
+  const openAddressMap = async () => {
+    const address = cardAddress(editingCard);
+    const mapWindow = window.open("about:blank", `AddressMap_${editingCard.cardId}`, "width=1000,height=700");
+    if (!mapWindow) return;
+    try {
+      const response = await fetch(`/api/v1/geocode?address=${encodeURIComponent(address)}`);
+      if (!response.ok) throw new Error(await response.text());
+      const { lat, lng } = await response.json();
+      mapWindow.location.href = `/map?address=${encodeURIComponent(address)}&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
+    } catch (error) {
+      console.error("OpenStreetMap address geocoding failed", error);
+      mapWindow.location.href = `/map?address=${encodeURIComponent(address)}&geocodeError=1`;
+    }
+  };
 
   if (!editor.open) return null;
   if (editingCard && (!savedEditMode || readOnly)) return (
@@ -225,7 +246,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       <div class="saved-card-body">
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о заявителе">
           <ApplicantHeader person={editor.applicant} readonly />
-          <div class="saved-card-panel saved-address wa-stack wa-gap-s"><span class="saved-label">Адрес</span><strong>{cardAddress(editingCard)}</strong>{editor.applicant.additionalInfo && <span>{editor.applicant.additionalInfo}</span>}</div>
+          <div class="saved-card-panel saved-address"><strong title={cardAddress(editingCard)}>{cardAddress(editingCard)}</strong><wa-button class="saved-address-map" type="button" size="m" appearance="plain" variant="neutral" aria-label="Показать адрес на карте" onClick={openAddressMap}><wa-icon name="map-location-dot" aria-hidden="true"></wa-icon></wa-button></div>
           <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Описание со слов заявителя</span><p>{editor.applicant.additionalInfo || "Описание не заполнено"}</p></div>
         </section>
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о происшествии">

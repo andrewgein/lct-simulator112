@@ -24,11 +24,30 @@ export const prerender = false;
   document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const targetInputId = urlParams.get("target");
+    const address = urlParams.get("address");
+    const latitude = Number(urlParams.get("lat"));
+    const longitude = Number(urlParams.get("lng"));
 
     const map = getMapFromId("location-map");
 
     if (map) {
       let currentMarker = null;
+
+      if (address && Number.isFinite(latitude) && Number.isFinite(longitude) && latitude && longitude) {
+        currentMarker = L.marker([latitude, longitude]).addTo(map).bindPopup(address).openPopup();
+        map.setView([latitude, longitude], 17);
+      } else if (address) {
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(address)}`)
+          .then((response) => response.json())
+          .then((results) => {
+            if (!results.length) return;
+            const lat = Number(results[0].lat);
+            const lng = Number(results[0].lon);
+            currentMarker = L.marker([lat, lng]).addTo(map).bindPopup(address).openPopup();
+            map.setView([lat, lng], 17);
+          })
+          .catch((error) => console.error("Address geocoding failed:", error));
+      }
 
       map.on("click", async (e) => {
         const { lat, lng } = e.latlng;
