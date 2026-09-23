@@ -1,159 +1,31 @@
 ---
-import { DifficultyOptions } from "../../incident/contract/Difficulty";
+import CourseDetailsSection from "./CourseDetailsSection.astro";
+import CourseMaterialsSection from "./CourseMaterialsSection.astro";
+import CourseAssignmentsSection from "./CourseAssignmentsSection.astro";
 
 const { course = {}, incidents = [], professionalProfile = null } = Astro.props;
 const materials = course.materials || [];
 const assignments = course.assignments?.length ? course.assignments : [{ title: "", description: "", difficulty: "NORMAL", executionMode: "SEQUENTIAL", incidentIds: [] }];
-const fixedProfile = Boolean(professionalProfile?.trainingTrack);
-const targetType = professionalProfile?.trainingTrack || course.targetType || "SYSTEM_112";
-const ddsService = targetType === "DDS" ? professionalProfile?.ddsService || course.ddsService || "" : "";
-const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value === value)?.label || value;
+const professionalTargetType = ["SYSTEM_112", "DDS"].includes(professionalProfile?.trainingTrack) ? professionalProfile.trainingTrack : null;
+const existingCourse = Boolean(course.id);
+const fixedProfile = existingCourse || Boolean(professionalTargetType);
+const targetType = existingCourse ? course.targetType : professionalTargetType || "SYSTEM_112";
+const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || "" : professionalProfile?.ddsService || "" : "";
 ---
 
 <form id="course-form" class="wa-stack wa-gap-xl" data-id={course.id || ""} data-fixed-profile={fixedProfile ? "true" : "false"}>
   <wa-callout id="course-error" variant="danger" hidden></wa-callout>
-  <section class="course-form-section wa-stack wa-gap-l" aria-labelledby="course-info-heading">
-    <div class="section-heading">
-      <h2 id="course-info-heading" class="wa-heading-xl">О курсе</h2>
+  <div class="course-editor-layout">
+    <div class="course-editor-sidebar wa-stack">
+      <CourseDetailsSection {course} {targetType} {ddsService} />
+      <wa-divider></wa-divider>
+      <CourseMaterialsSection {materials} />
     </div>
-    <wa-input name="title" label="Название курса" value={course.title || ""} required></wa-input>
-    <wa-textarea name="description" label="Описание" value={course.description || ""} rows="3"></wa-textarea>
-    <div class="course-profile-fields">
-      <wa-select name="targetType" data-field="courseTargetType" label="Профиль курса" value={targetType} required disabled={fixedProfile}>
-        <wa-option value="SYSTEM_112">Система-112</wa-option>
-        <wa-option value="DDS">ДДС</wa-option>
-      </wa-select>
-      <wa-select name="ddsService" data-field="courseDdsService" label="Специализация ДДС" value={ddsService} placeholder="Выберите службу" hidden disabled>
-        <wa-option value="FIRE">Пожарная охрана</wa-option>
-        <wa-option value="POLICE">Полиция</wa-option>
-        <wa-option value="AMBULANCE">Скорая помощь</wa-option>
-        <wa-option value="GAS">Аварийная газовая служба</wa-option>
-        <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
-      </wa-select>
-    </div>
-  </section>
-
-  <section class="course-form-section wa-stack wa-gap-m" aria-labelledby="materials-heading">
-    <div class="section-heading wa-split wa-align-items-end">
-      <h2 id="materials-heading" class="wa-heading-xl">Вводные материалы</h2>
-    </div>
-    <input id="material-file-input" type="file" accept=".md,.pdf,.doc,.docx,.xls,.xlsx" multiple>
-    <input id="materials-validation" class="material-file-validation" type="text" required value={materials.length ? "uploaded" : ""} aria-label="Вводные материалы">
-    <p id="materials-empty" class="materials-empty" hidden={materials.length > 0}>Файлы не добавлены</p>
-    <div id="materials-list" class="wa-stack wa-gap-xs">
-      {materials.map((material) => (
-        <div class="material-item wa-split wa-align-items-center" data-id={material.id || ""} data-title={material.title || ""} data-file-object-key={material.fileObjectKey || ""} data-file-name={material.fileName || ""} data-file-content-type={material.fileContentType || ""} data-file-size={material.fileSize ?? ""}>
-          <div class="material-info wa-cluster wa-align-items-center"><wa-icon name="file-lines"></wa-icon><div class="wa-stack wa-gap-3xs"><strong class="material-file-name">{material.fileName}</strong><small class="material-upload-status">Загружен</small></div></div>
-          <wa-button class="remove-material" type="button" appearance="plain" variant="danger" aria-label={`Удалить ${material.fileName}`}><wa-icon name="trash"></wa-icon></wa-button>
-        </div>
-      ))}
-    </div>
-  </section>
-
-  <section class="course-form-section wa-stack wa-gap-l" aria-labelledby="assignments-heading">
-    <div class="section-heading wa-split wa-align-items-end">
-      <h2 id="assignments-heading" class="wa-heading-xl">Задания</h2>
-      <wa-button id="add-assignment" type="button" appearance="outlined" variant="brand"><wa-icon slot="start" name="plus"></wa-icon>Добавить задание</wa-button>
-    </div>
-    <div id="assignments-list" class="wa-stack wa-gap-m">
-      {assignments.map((assignment, index) => (
-        <wa-card class="assignment-item" data-id={assignment.id || ""} with-header>
-          <div slot="header" class="wa-split wa-align-items-center">
-            <strong class="item-title">Задание {index + 1}</strong>
-            <wa-button class="remove-item" type="button" appearance="plain" variant="danger" aria-label={`Удалить задание ${index + 1}`}><wa-icon name="trash"></wa-icon></wa-button>
-          </div>
-          <div class="wa-stack wa-gap-l">
-            <wa-input data-field="title" label="Название задания" value={assignment.title || ""} required></wa-input>
-            <wa-textarea data-field="description" label="Инструкция обучающемуся" value={assignment.description || ""} rows="3"></wa-textarea>
-            <div class="assignment-settings">
-              <wa-select data-field="difficulty" label="Сложность" value={assignment.difficulty || "NORMAL"} required>
-                <wa-option value="EASY">Лёгкая</wa-option><wa-option value="NORMAL">Средняя</wa-option><wa-option value="HARD">Сложная</wa-option>
-              </wa-select>
-              <wa-select data-field="executionMode" label="Режим выполнения" value={assignment.executionMode || "SEQUENTIAL"} required>
-                <wa-option value="SEQUENTIAL">Последовательно</wa-option><wa-option value="PARALLEL">Параллельно</wa-option>
-              </wa-select>
-            </div>
-            <fieldset class="incident-picker wa-stack wa-gap-s">
-              <legend>Сценарии</legend>
-              <input class="incident-validation" type="text" required aria-label={`Сценарии задания ${index + 1}`}>
-              {incidents.length ? (
-                <>
-                  <div class="incident-picker-summary wa-split wa-align-items-center">
-                    <p class="incident-selection-summary">Ничего не выбрано</p>
-                    <wa-button class="open-incident-picker" type="button" appearance="outlined"><wa-icon slot="start" name="list-check"></wa-icon>Выбрать сценарии</wa-button>
-                  </div>
-                  <wa-dialog class="incident-dialog" label={`Сценарии задания ${index + 1}`} with-footer>
-                    <div class="incident-options wa-stack wa-gap-xs">
-                      {incidents.map((incident) => (
-                        <wa-checkbox value={incident.id} data-target-type={incident.targetType} data-dds-service={incident.initialAssignment?.emergencyService || ""} data-difficulty={incident.difficulty} data-selected={(assignment.incidentIds || []).includes(incident.id) ? "true" : "false"}>
-                          <span class="incident-option-label"><strong>{incident.title}</strong><small>{incident.targetType === "DDS" ? "ДДС" : "Система-112"} · {difficultyLabel(incident.difficulty)}</small></span>
-                        </wa-checkbox>
-                      ))}
-                    </div>
-                    <wa-callout class="incident-empty" variant="warning" hidden>Для выбранного профиля нет сценариев.</wa-callout>
-                    <wa-button slot="footer" type="button" variant="brand" data-dialog="close">Готово</wa-button>
-                  </wa-dialog>
-                </>
-              ) : (
-                <wa-callout variant="warning">Сценариев пока нет. <a href="/admin/incidents/new">Создайте сценарий</a>, затем вернитесь к курсу.</wa-callout>
-              )}
-            </fieldset>
-          </div>
-        </wa-card>
-      ))}
-    </div>
-  </section>
-</form>
-
-<template id="material-template">
-  <div class="material-item wa-split wa-align-items-center">
-    <div class="material-info wa-cluster wa-align-items-center">
-      <wa-icon name="file-lines"></wa-icon>
-      <div class="wa-stack wa-gap-3xs"><strong class="material-file-name"></strong><small class="material-upload-status">Загрузка…</small></div>
-    </div>
-    <wa-button class="remove-material" type="button" appearance="plain" variant="danger" aria-label="Удалить документ"><wa-icon name="trash"></wa-icon></wa-button>
+    <wa-divider class="course-editor-divider course-editor-divider--vertical" orientation="vertical"></wa-divider>
+    <wa-divider class="course-editor-divider course-editor-divider--horizontal"></wa-divider>
+    <CourseAssignmentsSection {assignments} {incidents} />
   </div>
-</template>
-
-<template id="assignment-template">
-  <wa-card class="assignment-item" with-header>
-    <div slot="header" class="wa-split wa-align-items-center">
-      <strong class="item-title"></strong>
-      <wa-button class="remove-item" type="button" appearance="plain" variant="danger" aria-label="Удалить задание"><wa-icon name="trash"></wa-icon></wa-button>
-    </div>
-    <div class="wa-stack wa-gap-l">
-      <wa-input data-field="title" label="Название задания" required></wa-input>
-      <wa-textarea data-field="description" label="Инструкция обучающемуся" rows="3"></wa-textarea>
-      <div class="assignment-settings">
-        <wa-select data-field="difficulty" label="Сложность" value="NORMAL" required>
-          <wa-option value="EASY">Лёгкая</wa-option><wa-option value="NORMAL">Средняя</wa-option><wa-option value="HARD">Сложная</wa-option>
-        </wa-select>
-        <wa-select data-field="executionMode" label="Режим выполнения" value="SEQUENTIAL" required>
-          <wa-option value="SEQUENTIAL">Последовательно</wa-option><wa-option value="PARALLEL">Параллельно</wa-option>
-        </wa-select>
-      </div>
-      <fieldset class="incident-picker wa-stack wa-gap-s">
-        <legend>Сценарии</legend>
-        <input class="incident-validation" type="text" required aria-label="Сценарии задания">
-        <div class="incident-picker-summary wa-split wa-align-items-center">
-          <p class="incident-selection-summary">Ничего не выбрано</p>
-          <wa-button class="open-incident-picker" type="button" appearance="outlined"><wa-icon slot="start" name="list-check"></wa-icon>Выбрать сценарии</wa-button>
-        </div>
-        <wa-dialog class="incident-dialog" label="Сценарии задания" with-footer>
-          <div class="incident-options wa-stack wa-gap-xs">
-            {incidents.map((incident) => (
-              <wa-checkbox value={incident.id} data-target-type={incident.targetType} data-dds-service={incident.initialAssignment?.emergencyService || ""} data-difficulty={incident.difficulty} data-selected="false">
-                <span class="incident-option-label"><strong>{incident.title}</strong><small>{incident.targetType === "DDS" ? "ДДС" : "Система-112"} · {difficultyLabel(incident.difficulty)}</small></span>
-              </wa-checkbox>
-            ))}
-          </div>
-          <wa-callout class="incident-empty" variant="warning" hidden>Для выбранного профиля нет сценариев.</wa-callout>
-          <wa-button slot="footer" type="button" variant="brand" data-dialog="close">Готово</wa-button>
-        </wa-dialog>
-      </fieldset>
-    </div>
-  </wa-card>
-</template>
+</form>
 
 <script>
   const form = document.querySelector('#course-form');
@@ -170,11 +42,27 @@ const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value =
   function syncItems(list, label) {
     const items = [...list.children];
     items.forEach((item, index) => {
-      item.querySelector('.item-title').textContent = `${label} ${index + 1}`;
       const remove = item.querySelector('.remove-item');
       remove.disabled = saving || items.length === 1;
       remove.setAttribute('aria-label', `Удалить ${label.toLowerCase()} ${index + 1}`);
+      item.querySelector('.edit-assignment').setAttribute('aria-label', `Редактировать ${label.toLowerCase()} ${index + 1}`);
+      syncAssignmentSummary(item, index);
     });
+  }
+
+  function syncAssignmentSummary(item, index = [...assignmentsList.children].indexOf(item)) {
+    const title = controlValue(item.querySelector('[data-field="title"]')).trim();
+    const description = controlValue(item.querySelector('[data-field="description"]')).trim();
+    const difficulty = controlValue(item.querySelector('[data-field="difficulty"]'));
+    const executionMode = controlValue(item.querySelector('[data-field="executionMode"]'));
+    const selectedCount = [...item.querySelectorAll('wa-checkbox')].filter((checkbox) => checkbox.checked && !checkbox.hidden).length;
+    const displayTitle = title || `Задание ${index + 1}`;
+    item.querySelector('.item-title').textContent = displayTitle;
+    item.querySelector('.assignment-dialog').label = `Редактирование: ${displayTitle}`;
+    item.querySelector('.assignment-description-summary').textContent = description || 'Инструкция не указана';
+    item.querySelector('.assignment-difficulty-summary').textContent = ({ EASY: 'Лёгкая', NORMAL: 'Средняя', HARD: 'Сложная' })[difficulty] || difficulty;
+    item.querySelector('.assignment-mode-summary').textContent = executionMode === 'PARALLEL' ? 'Параллельно' : 'Последовательно';
+    item.querySelector('.assignment-incidents-summary').textContent = `Сценариев: ${selectedCount}`;
   }
 
   function syncMaterials() {
@@ -193,9 +81,12 @@ const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value =
   }
 
   function syncCourseProfile() {
-    const isDds = controlValue(form.querySelector('[data-field="courseTargetType"]')) === 'DDS';
+    const targetType = form.querySelector('[data-field="courseTargetType"]');
+    const isDds = controlValue(targetType) === 'DDS';
     const ddsService = form.querySelector('[data-field="courseDdsService"]');
     const fixedProfile = form.dataset.fixedProfile === 'true';
+    targetType.toggleAttribute('disabled', fixedProfile);
+    targetType.disabled = fixedProfile;
     ddsService.hidden = !isDds;
     ddsService.disabled = !isDds || fixedProfile;
     ddsService.required = isDds && !fixedProfile;
@@ -222,6 +113,7 @@ const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value =
     if (summary) summary.textContent = selected.length ? `Выбрано: ${selected.length}` : 'Ничего не выбрано';
     const empty = item.querySelector('.incident-empty');
     if (empty) empty.hidden = visibleCount > 0;
+    syncAssignmentSummary(item);
   }
 
   async function uploadMaterialFile(file) {
@@ -275,28 +167,104 @@ const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value =
   }
 
   function bindAssignment(item) {
+    const dialog = item.querySelector('.assignment-dialog');
+    let snapshot = null;
+    let editing = false;
+    let saved = false;
+    let removeAfterClose = false;
+
+    function captureAssignment() {
+      return {
+        fields: Object.fromEntries([...item.querySelectorAll('[data-field]')].map((control) => [control.dataset.field, controlValue(control)])),
+        incidentIds: [...item.querySelectorAll('wa-checkbox')].filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value)
+      };
+    }
+
+    function restoreAssignment() {
+      if (!snapshot) return;
+      item.querySelectorAll('[data-field]').forEach((control) => {
+        control.value = snapshot.fields[control.dataset.field] || '';
+      });
+      item.querySelectorAll('wa-checkbox').forEach((checkbox) => {
+        checkbox.checked = snapshot.incidentIds.includes(checkbox.value);
+      });
+      syncAssignmentIncidents(item);
+    }
+
+    async function openAssignment() {
+      await customElements.whenDefined('wa-dialog');
+      snapshot = captureAssignment();
+      editing = true;
+      saved = false;
+      dialog.setAttribute('open', '');
+      dialog.open = true;
+    }
+
     item.querySelector('.remove-item').addEventListener('click', () => {
       if (saving || assignmentsList.children.length === 1) return;
       item.remove();
       syncItems(assignmentsList, 'Задание');
     });
+    item.querySelector('.edit-assignment').addEventListener('click', openAssignment);
+    item.querySelector('.cancel-assignment').addEventListener('click', () => {
+      dialog.open = false;
+    });
+    item.querySelector('.save-assignment').addEventListener('click', () => {
+      const controls = [...item.querySelectorAll('[data-field]')];
+      const invalidControl = controls.find((control) => !control.checkValidity());
+      if (invalidControl) {
+        invalidControl.reportValidity();
+        return;
+      }
+      if (!item.querySelector('.incident-validation').checkValidity()) {
+        item.querySelector('.incident-dialog')?.setAttribute('open', '');
+        return;
+      }
+      item.dataset.newAssignment = 'false';
+      saved = true;
+      syncAssignmentSummary(item);
+      dialog.open = false;
+    });
+    dialog.addEventListener('wa-hide', (event) => {
+      if (event.target !== dialog || !editing || saved) return;
+      if (item.dataset.newAssignment === 'true') removeAfterClose = true;
+      else restoreAssignment();
+    });
+    dialog.addEventListener('wa-after-hide', (event) => {
+      if (event.target !== dialog || !editing) return;
+      if (removeAfterClose) {
+        item.remove();
+        syncItems(assignmentsList, 'Задание');
+      }
+      snapshot = null;
+      editing = false;
+      saved = false;
+      removeAfterClose = false;
+    });
     item.querySelectorAll('wa-checkbox').forEach((checkbox) => {
       checkbox.checked = checkbox.dataset.selected === 'true';
       checkbox.addEventListener('change', () => syncAssignmentIncidents(item));
+    });
+    item.querySelectorAll('[data-field]').forEach((control) => {
+      control.addEventListener('input', () => syncAssignmentSummary(item));
+      control.addEventListener('change', () => syncAssignmentSummary(item));
     });
     item.querySelector('[data-field="difficulty"]').addEventListener('change', () => syncAssignmentIncidents(item));
     item.querySelector('.open-incident-picker')?.addEventListener('click', () => {
       item.querySelector('.incident-dialog').open = true;
     });
     syncAssignmentIncidents(item);
+    return openAssignment;
   }
 
-  function addAssignment() {
+  async function addAssignment() {
     const item = document.querySelector('#assignment-template').content.firstElementChild.cloneNode(true);
+    item.dataset.newAssignment = 'true';
     assignmentsList.append(item);
-    bindAssignment(item);
+    const openAssignment = bindAssignment(item);
     syncItems(assignmentsList, 'Задание');
-    item.querySelector('[data-field="title"]').focus();
+    item.querySelector('.assignment-dialog').addEventListener('wa-after-show', () => item.querySelector('[data-field="title"]').focus(), { once: true });
+    await openAssignment();
   }
 
   syncCourseProfile();
@@ -331,6 +299,18 @@ const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value =
       return;
     }
     [...assignmentsList.children].forEach(syncAssignmentIncidents);
+    const invalidAssignment = [...assignmentsList.children].find((item) => {
+      const controls = [...item.querySelectorAll('[data-field]'), item.querySelector('.incident-validation')];
+      return controls.some((control) => !control.checkValidity());
+    });
+    if (invalidAssignment) {
+      invalidAssignment.querySelector('.assignment-dialog').open = true;
+      setTimeout(() => {
+        const invalidControl = [...invalidAssignment.querySelectorAll('[data-field]'), invalidAssignment.querySelector('.incident-validation')].find((control) => !control.checkValidity());
+        invalidControl?.reportValidity();
+      });
+      return;
+    }
     if (!form.reportValidity()) return;
     saving = true;
     submit.loading = true;
@@ -386,28 +366,14 @@ const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value =
   });
 </script>
 
-<style is:global>
-  .course-form-section { padding-block-end: var(--wa-space-xl); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
-  .material-item { padding: var(--wa-space-xs) var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-default); }
-  .material-info { min-width: 0; }
-  .material-file-name { overflow-wrap: anywhere; }
-  .material-file-validation { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .material-upload-status, .materials-empty { color: var(--wa-color-text-quiet); }
-  .materials-empty { margin: 0; }
-  .course-form-section:last-child { border-block-end: 0; }
-  .section-heading h2, .section-heading p { margin: 0; }
-  .section-heading p { color: var(--wa-color-text-quiet); }
-  .course-profile-fields, .assignment-settings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--wa-space-m); }
-  .incident-picker { min-width: 0; padding: 0; border: 0; margin: 0; }
-  .incident-picker legend { margin-block-end: var(--wa-space-s); font-weight: var(--wa-font-weight-semibold); }
-  .incident-validation { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  .incident-picker-summary { padding: var(--wa-space-s) var(--wa-space-m); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-default); }
-  .incident-selection-summary { margin: 0; color: var(--wa-color-text-quiet); }
-  .incident-options { padding-block: var(--wa-space-xs); }
-  .incident-option-label { display: grid; gap: var(--wa-space-3xs); }
-  .incident-option-label small { color: var(--wa-color-text-quiet); }
-  @media (max-width: 48rem) {
-    .section-heading.wa-split, .incident-picker-summary.wa-split { align-items: stretch; }
-    .course-profile-fields, .assignment-settings { grid-template-columns: 1fr; }
+<style>
+  .course-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); min-block-size: calc(100dvh - 12rem); gap: var(--wa-space-xl); align-items: stretch; }
+  .course-editor-sidebar { min-width: 0; }
+  .course-editor-divider { --spacing: 0; }
+  .course-editor-divider--horizontal { display: none; }
+  @media (max-width: 64rem) {
+    .course-editor-layout { grid-template-columns: minmax(0, 1fr); }
+    .course-editor-divider--vertical { display: none; }
+    .course-editor-divider--horizontal { display: block; }
   }
 </style>
