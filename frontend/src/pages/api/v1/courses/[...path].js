@@ -13,9 +13,9 @@ export async function ALL({ params, request, cookies }) {
     if (upload && (!isEditor || request.method !== "POST")) return new Response(null, { status: isEditor ? 405 : 403 });
     if (download && request.method !== "GET") return new Response(null, { status: 405 });
     if (!upload && !download) {
-        const allowed = path === "" ? ["GET", "POST"] : courseId ? ["GET", "PUT"] : [];
+        const allowed = path === "" ? ["GET", "POST"] : courseId ? ["GET", "PUT", "DELETE"] : [];
         if (!allowed.includes(request.method)) return new Response(null, { status: 405 });
-        if (["POST", "PUT"].includes(request.method) && !isEditor) return new Response(null, { status: 403 });
+        if (["POST", "PUT", "DELETE"].includes(request.method) && !isEditor) return new Response(null, { status: 403 });
     }
 
     let body;

@@ -5,7 +5,7 @@ import CourseAssignmentsSection from "./CourseAssignmentsSection.astro";
 
 const { course = {}, incidents = [], professionalProfile = null } = Astro.props;
 const materials = course.materials || [];
-const assignments = course.assignments?.length ? course.assignments : [{ title: "", description: "", difficulty: "NORMAL", executionMode: "SEQUENTIAL", incidentIds: [] }];
+const assignments = course.assignments || [];
 const professionalTargetType = ["SYSTEM_112", "DDS"].includes(professionalProfile?.trainingTrack) ? professionalProfile.trainingTrack : null;
 const existingCourse = Boolean(course.id);
 const fixedProfile = existingCourse || Boolean(professionalTargetType);
@@ -43,11 +43,12 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
     const items = [...list.children];
     items.forEach((item, index) => {
       const remove = item.querySelector('.remove-item');
-      remove.disabled = saving || items.length === 1;
+      remove.disabled = saving;
       remove.setAttribute('aria-label', `Удалить ${label.toLowerCase()} ${index + 1}`);
       item.querySelector('.edit-assignment').setAttribute('aria-label', `Редактировать ${label.toLowerCase()} ${index + 1}`);
       syncAssignmentSummary(item, index);
     });
+    submit.setCustomValidity?.(items.length ? '' : 'Добавьте хотя бы одно задание.');
   }
 
   function syncAssignmentSummary(item, index = [...assignmentsList.children].indexOf(item)) {
@@ -69,7 +70,7 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
     const items = [...materialsList.children];
     const ready = items.length > 0 && items.every((item) => item.dataset.fileObjectKey);
     materialsValidation.value = ready ? 'uploaded' : '';
-    materialsValidation.setCustomValidity(ready ? '' : items.length ? 'Дождитесь загрузки документов или удалите файл с ошибкой.' : 'Добавьте хотя бы один документ.');
+    materialsValidation.setCustomValidity(ready || !items.length ? '' : 'Дождитесь загрузки документов или удалите файл с ошибкой.');
     materialsEmpty.hidden = items.length > 0;
     items.forEach((item) => {
       item.querySelector('.remove-material').disabled = saving || item.dataset.uploading === 'true';
@@ -201,7 +202,7 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
     }
 
     item.querySelector('.remove-item').addEventListener('click', () => {
-      if (saving || assignmentsList.children.length === 1) return;
+      if (saving) return;
       item.remove();
       syncItems(assignmentsList, 'Задание');
     });
@@ -258,6 +259,7 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
   }
 
   async function addAssignment() {
+    error.hidden = true;
     const item = document.querySelector('#assignment-template').content.firstElementChild.cloneNode(true);
     item.dataset.newAssignment = 'true';
     assignmentsList.append(item);
@@ -273,10 +275,12 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
   syncMaterials();
   syncItems(assignmentsList, 'Задание');
   Promise.all([
+    customElements.whenDefined('wa-button'),
     customElements.whenDefined('wa-select'),
     customElements.whenDefined('wa-checkbox')
   ]).then(() => {
     syncCourseProfile();
+    syncItems(assignmentsList, 'Задание');
     [...assignmentsList.children].forEach(syncAssignmentIncidents);
   });
 
@@ -318,8 +322,9 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
     syncMaterials();
     syncItems(assignmentsList, 'Задание');
     const courseId = form.dataset.id;
+    const validId = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value || '');
     const readItems = (list, fields) => [...list.children].map((item) => Object.fromEntries([
-      ...(item.dataset.id ? [['id', item.dataset.id]] : []),
+      ...(validId(item.dataset.id) ? [['id', item.dataset.id]] : []),
       ...fields.map((field) => [field, item.querySelector(`[data-field="${field}"]`).value.trim()])
     ]));
     try {
@@ -328,7 +333,7 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
         incidentIds: [...assignmentsList.children[index].querySelectorAll('wa-checkbox')].filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value)
       }));
       const materials = [...materialsList.children].map((item) => ({
-        ...(item.dataset.id ? { id: item.dataset.id } : {}),
+        ...(validId(item.dataset.id) ? { id: item.dataset.id } : {}),
         title: item.dataset.title || item.dataset.fileName.replace(/\.[^.]+$/, ''),
         fileObjectKey: item.dataset.fileObjectKey,
         fileName: item.dataset.fileName,
