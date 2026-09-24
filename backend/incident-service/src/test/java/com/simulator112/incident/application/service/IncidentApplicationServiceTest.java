@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class IncidentApplicationServiceTest {
@@ -139,6 +140,31 @@ class IncidentApplicationServiceTest {
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("не должны повторяться");
+    }
+
+    @Test
+    void validatesPreparedAndInitialAssignmentClassifierCodes() {
+        UUID root = UUID.randomUUID();
+        DdsIncident incident = incident(List.of(acceptanceStage(root)), root, List.of());
+        when(repository.save(incident)).thenReturn(incident);
+
+        service.createIncident(incident);
+
+        verify(classifier, org.mockito.Mockito.times(2)).requireEntry("101");
+    }
+
+    @Test
+    void rejectsEmptyInitialAssignmentClassifierCode() {
+        UUID root = UUID.randomUUID();
+        DdsIncident source = incident(List.of(stage(root)), root, List.of());
+        DdsIncident incident = new DdsIncident(
+                source.id(), source.title(), source.address(), source.difficulty(), source.stages(),
+                source.preparedCardTemplate(), new InitialAssignment(EmergencyService.FIRE, " ", null),
+                source.criteria(), source.initialStageId(), source.transitions());
+
+        assertThatThrownBy(() -> service.createIncident(incident))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Тип происшествия не может быть пустым");
     }
 
     private DdsIncident incident(List<DdsStage> stages, UUID initialStageId,

@@ -73,7 +73,11 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             if (dds.preparedCardTemplate() == null || dds.initialAssignment() == null) {
                 throw new IllegalArgumentException("Сценарий ДДС требует карточку и первичное назначение");
             }
+            if (dds.initialAssignment().emergencyService() == null) {
+                throw new IllegalArgumentException("Служба первичного назначения обязательна");
+            }
             requireClassifierCodes(dds.preparedCardTemplate().classifierCodes());
+            requireClassifierCode(dds.initialAssignment().classifierCode());
             validateDdsStageCalls(dds);
             validateDdsTree(dds);
         }
@@ -89,7 +93,14 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
         if (classifierCodes.stream().distinct().count() != classifierCodes.size()) {
             throw new IllegalArgumentException("Типы происшествия не должны повторяться");
         }
-        classifierCodes.forEach(classifierCatalog::requireEntry);
+        classifierCodes.forEach(this::requireClassifierCode);
+    }
+
+    private void requireClassifierCode(String classifierCode) {
+        if (classifierCode == null || classifierCode.isBlank()) {
+            throw new IllegalArgumentException("Тип происшествия не может быть пустым");
+        }
+        classifierCatalog.requireEntry(classifierCode);
     }
 
     private void validateDdsStageCalls(DdsIncident incident) {
