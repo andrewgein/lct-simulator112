@@ -330,6 +330,8 @@ services:
   frontend:
     image: ${FRONTEND_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/frontend:${IMAGE_TAG:?IMAGE_TAG is required}}
     container_name: ${COMPOSE_PROJECT_NAME}-frontend
+    environment:
+      DGIS_MAPGL_KEY: ${DGIS_MAPGL_KEY:-}
     networks: [default, edge]
     depends_on:
       - api-gateway
