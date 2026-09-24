@@ -26,6 +26,16 @@ public class ReviewJpaEntity {
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("incidentOrder ASC, criterionName ASC")
     private List<CriterionResultJpaEntity> results = new ArrayList<>();
+    private Integer automaticScore;
+    private Integer finalScore;
+    private Integer maxScore;
+    private Long durationSeconds;
+    private Long timeLimitSeconds;
+    private Long overtimeSeconds;
+    private UUID expertId;
+    @Column(columnDefinition = "text")
+    private String expertComment;
+    private Instant confirmedAt;
 
     public void setResults(List<CriterionResultJpaEntity> results) {
         this.results.clear();

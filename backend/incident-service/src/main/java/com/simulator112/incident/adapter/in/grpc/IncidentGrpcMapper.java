@@ -1,6 +1,7 @@
 package com.simulator112.incident.adapter.in.grpc;
 
 import com.simulator112.incident.domain.common.CallScenario;
+import com.simulator112.incident.domain.common.DialogueCriterion;
 import com.simulator112.incident.domain.common.Incident;
 import com.simulator112.incident.domain.common.IncidentStage;
 import com.simulator112.incident.domain.common.Person;
@@ -23,12 +24,9 @@ public class IncidentGrpcMapper {
 
         if (incident instanceof System112Incident system112) {
             builder.addAllStages(system112.stages().stream().map(this::toProto).toList());
-            builder.setCriteria(criteria(system112.criteria().requiredQuestions(),
-                    system112.criteria().expectedActions(), system112.criteria().criticalMistakes()));
+            builder.setCriteria(criteria(system112.criteria().dialogueCriteria()));
         } else if (incident instanceof DdsIncident dds) {
             builder.addAllStages(dds.stages().stream().map(this::toProto).toList());
-            builder.setCriteria(criteria(dds.criteria().requiredQuestions(),
-                    dds.criteria().expectedActions(), dds.criteria().criticalMistakes()));
             builder.setPreparedCardTemplate(toProto(dds.preparedCardTemplate()));
             builder.setInitialAssignment(toProto(dds.initialAssignment()));
             builder.setDdsInitialStageId(dds.initialStageId().toString());
@@ -119,10 +117,16 @@ public class IncidentGrpcMapper {
     }
 
     private com.simulator112.incident.grpc.contract.Criteria criteria(
-            java.util.List<String> questions, java.util.List<String> actions, java.util.List<String> mistakes) {
+            java.util.List<DialogueCriterion> criteria) {
         return com.simulator112.incident.grpc.contract.Criteria.newBuilder()
-                .addAllRequiredQuestions(questions).addAllExpectedActions(actions)
-                .addAllCriticalMistakes(mistakes).build();
+                .addAllDialogueCriteria(criteria.stream().map(value ->
+                        com.simulator112.incident.grpc.contract.DialogueCriterion.newBuilder()
+                                .setId(value.id().toString())
+                                .setName(value.name())
+                                .setHypothesis(value.hypothesis())
+                                .setWeight(value.weight())
+                                .build()).toList())
+                .build();
     }
 
     private com.simulator112.incident.grpc.contract.Address toProto(

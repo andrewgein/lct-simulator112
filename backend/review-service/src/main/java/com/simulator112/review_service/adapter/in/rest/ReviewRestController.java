@@ -1,8 +1,11 @@
 package com.simulator112.review_service.adapter.in.rest;
 
+import com.simulator112.review_service.adapter.in.rest.dto.ConfirmReviewRequest;
 import com.simulator112.review_service.adapter.in.rest.dto.ReviewResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.UserReviewsResponse;
+import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +20,7 @@ import java.util.UUID;
 public class ReviewRestController {
     private static final Set<String> REVIEWER_ROLES = Set.of("ADMIN", "SUPERVISOR");
     private final GetReviewUseCase getReview;
+    private final ConfirmReviewUseCase confirmReview;
 
     @GetMapping
     public UserReviewsResponse getUserReviews(@RequestHeader("X-User-Id") UUID userId) {
@@ -40,6 +44,19 @@ public class ReviewRestController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Результат недоступен пользователю");
         }
         return ReviewRestMapper.toResponse(review);
+    }
+
+    @PostMapping("/{contextId}/confirm")
+    public ReviewResponse confirmReview(@RequestHeader("X-User-Id") UUID expertId,
+                                        @RequestHeader("X-User-Role") String role,
+                                        @PathVariable UUID contextId,
+                                        @Valid @RequestBody ConfirmReviewRequest request) {
+        if (!"SUPERVISOR".equals(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Подтверждать оценку может только преподаватель");
+        }
+        return ReviewRestMapper.toResponse(confirmReview.confirm(
+                contextId, expertId, request.finalScore(), request.comment()));
     }
 
     private UserReviewsResponse reviewsFor(UUID userId) {

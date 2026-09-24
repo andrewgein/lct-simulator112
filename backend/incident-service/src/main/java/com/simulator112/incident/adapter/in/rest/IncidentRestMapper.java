@@ -1,8 +1,8 @@
 package com.simulator112.incident.adapter.in.rest;
 
+import com.simulator112.incident.domain.common.DialogueCriterion;
 import com.simulator112.incident.domain.common.Incident;
 import com.simulator112.incident.domain.common.IncidentTargetType;
-import com.simulator112.incident.domain.dds.DdsCriteria;
 import com.simulator112.incident.domain.dds.DdsIncident;
 import com.simulator112.incident.domain.dds.DdsStage;
 import com.simulator112.incident.domain.system112.System112Criteria;
@@ -16,8 +16,14 @@ import java.util.UUID;
 @Component
 public class IncidentRestMapper {
     public Incident toDomain(UUID id, IncidentRequest request) {
-        List<String> mistakes = request.criticalMistakes() == null ? List.of() : request.criticalMistakes();
+        var dialogueCriteria = (request.dialogueCriteria() == null
+                ? List.<DialogueCriterionRequest>of() : request.dialogueCriteria()).stream()
+                .map(value -> new DialogueCriterion(value.id(), value.name(), value.hypothesis(), value.weight()))
+                .toList();
         if (request.targetType() == IncidentTargetType.DDS) {
+            if (!dialogueCriteria.isEmpty()) {
+                throw new IllegalArgumentException("Критерии оценки диалога недоступны для ДДС");
+            }
             var stages = request.stages().stream()
                     .map(stage -> new DdsStage(stage.id(), stage.title(), stage.description(), stage.type(),
                             require(stage.timeLimitSeconds(), "Ограничение времени этапа ДДС обязательно"),
@@ -25,7 +31,6 @@ public class IncidentRestMapper {
                     .toList();
             return new DdsIncident(id, request.title(), request.address(), request.difficulty(), stages,
                     request.preparedCardTemplate(), request.initialAssignment(),
-                    new DdsCriteria(request.requiredQuestions(), request.expectedActions(), mistakes),
                     request.initialStageId(), request.transitions());
         }
         var stages = request.stages().stream()
@@ -34,7 +39,7 @@ public class IncidentRestMapper {
                         stage.classifierCodes(), requireVictimCount(stage.victimCount()), stage.description(), stage.calls()))
                 .toList();
         return new System112Incident(id, request.title(), request.address(), request.difficulty(), stages,
-                new System112Criteria(request.requiredQuestions(), request.expectedActions(), mistakes));
+                new System112Criteria(dialogueCriteria));
     }
 
     private int require(Integer value, String message) {

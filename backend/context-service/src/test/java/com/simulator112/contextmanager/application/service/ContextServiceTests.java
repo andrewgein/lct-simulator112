@@ -3,6 +3,7 @@ package com.simulator112.contextmanager.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.simulator112.contextmanager.application.port.out.ContextStore;
@@ -10,6 +11,7 @@ import com.simulator112.contextmanager.application.port.out.CourseAssignmentPort
 import com.simulator112.contextmanager.application.port.out.ReviewPort;
 import com.simulator112.contextmanager.adapter.grpc.mapper.IncidentContextMapper;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
+import com.simulator112.contextmanager.domain.common.ContextStatus;
 import com.simulator112.contextmanager.domain.common.AssignmentScenario;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.StageStatus;
@@ -20,6 +22,7 @@ import com.simulator112.incident.grpc.contract.ExecutionMode;
 import com.simulator112.incident.grpc.contract.IncidentContext;
 import com.simulator112.incident.grpc.contract.IncidentStage;
 import com.simulator112.incident.grpc.contract.IncidentTargetType;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -56,6 +59,26 @@ class ContextServiceTests {
         assertThat(context.getIncidents())
                 .allMatch(incident -> incident.getStages().getFirst().getDeadlineAt()
                         .equals(incident.getStages().getFirst().getStartedAt().plusSeconds(60)));
+    }
+
+    @Test
+    void automaticReviewCompletesContextWithoutExpertConfirmation() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = new TrainingContext();
+        context.setId(contextId);
+        context.setStatus(ContextStatus.FILLED);
+        context.setTargetType(com.simulator112.contextmanager.domain.common.IncidentTargetType.DDS);
+        var incident = new com.simulator112.contextmanager.domain.common.IncidentSnapshot();
+        incident.setStatus(IncidentProgressStatus.COMPLETED);
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(review.send(any())).thenReturn(true);
+
+        service.closeContext(contextId);
+
+        assertThat(context.getStatus()).isEqualTo(ContextStatus.DONE);
+        verify(review).send(any());
     }
 
     private IncidentContext ddsIncident() {

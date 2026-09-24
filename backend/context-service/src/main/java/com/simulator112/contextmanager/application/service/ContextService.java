@@ -64,6 +64,7 @@ public class ContextService implements ContextUseCase {
     @Transactional
     public void closeContext(UUID id) {
         TrainingContext context = find(id);
+        if (context.getStatus() == ContextStatus.IN_REVIEW || context.getStatus() == ContextStatus.DONE) return;
         if (!isComplete(context)) {
             throw new IllegalStateException("Контекст " + id + " нельзя закрыть: не хватает данных "
                     + "(инцидент/диалог/хотя бы одна карточка решения)");
@@ -208,7 +209,10 @@ public class ContextService implements ContextUseCase {
         context.setStatus(ContextStatus.IN_REVIEW);
         context = contextStore.save(context);
         try {
-            reviewService.send(context);
+            if (reviewService.send(context)) {
+                context.setStatus(ContextStatus.DONE);
+                contextStore.save(context);
+            }
             log.info("Контекст {} отправлен на ревью", context.getId());
         } catch (Exception e) {
             log.error("Не удалось получить ревью, причина: {}", e.getMessage());

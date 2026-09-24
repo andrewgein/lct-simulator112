@@ -203,14 +203,22 @@ class DdsStageTransition(_message.Message):
     def __init__(self, stage_id: _Optional[str] = ..., success_stage_id: _Optional[str] = ..., failure_stage_id: _Optional[str] = ...) -> None: ...
 
 class Criteria(_message.Message):
-    __slots__ = ("required_questions", "expected_actions", "critical_mistakes")
-    REQUIRED_QUESTIONS_FIELD_NUMBER: _ClassVar[int]
-    EXPECTED_ACTIONS_FIELD_NUMBER: _ClassVar[int]
-    CRITICAL_MISTAKES_FIELD_NUMBER: _ClassVar[int]
-    required_questions: _containers.RepeatedScalarFieldContainer[str]
-    expected_actions: _containers.RepeatedScalarFieldContainer[str]
-    critical_mistakes: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, required_questions: _Optional[_Iterable[str]] = ..., expected_actions: _Optional[_Iterable[str]] = ..., critical_mistakes: _Optional[_Iterable[str]] = ...) -> None: ...
+    __slots__ = ("dialogue_criteria",)
+    DIALOGUE_CRITERIA_FIELD_NUMBER: _ClassVar[int]
+    dialogue_criteria: _containers.RepeatedCompositeFieldContainer[DialogueCriterion]
+    def __init__(self, dialogue_criteria: _Optional[_Iterable[_Union[DialogueCriterion, _Mapping]]] = ...) -> None: ...
+
+class DialogueCriterion(_message.Message):
+    __slots__ = ("id", "name", "hypothesis", "weight")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    HYPOTHESIS_FIELD_NUMBER: _ClassVar[int]
+    WEIGHT_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    name: str
+    hypothesis: str
+    weight: int
+    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., hypothesis: _Optional[str] = ..., weight: _Optional[int] = ...) -> None: ...
 
 class Address(_message.Message):
     __slots__ = ("city", "street", "house", "building", "apartment", "floor")

@@ -10,6 +10,8 @@ public final class FullContextMapper {
 
     public static FullContext toProto(TrainingContext context) {
         var builder = FullContext.newBuilder().setUuid(context.getId().toString()).setUserId(context.getUserId().toString());
+        if (context.getCreatedAt() != null) builder.setStartedAt(context.getCreatedAt().toString());
+        builder.setSubmittedAt((context.getUpdatedAt() == null ? java.time.Instant.now() : context.getUpdatedAt()).toString());
         if (!context.getIncidents().isEmpty()) {
             builder.setIncidentContext(IncidentContextMapper.toProto(context.getIncidents().getFirst()));
             var assignment = com.simulator112.context.grpc.contract.AssignmentContext.newBuilder()

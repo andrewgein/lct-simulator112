@@ -11,7 +11,9 @@ import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable
 import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.ReactionStatusEventSnapshot;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DdsStageTransitionSnapshot;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DispatcherCriteria;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DialogueCriterionEmbeddable;
 import com.simulator112.contextmanager.domain.common.CallSnapshot;
+import com.simulator112.contextmanager.domain.common.DialogueCriterion;
 import com.simulator112.contextmanager.domain.common.DialogTranscript;
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
 import com.simulator112.contextmanager.domain.common.Phrase;
@@ -198,11 +200,14 @@ final class ContextPersistenceMapper {
     }
     private static com.simulator112.contextmanager.domain.common.Criteria toDomain(DispatcherCriteria value) {
         return value == null ? null : new com.simulator112.contextmanager.domain.common.Criteria(
-                value.getRequiredQuestions(), value.getExpectedActions(), value.getCriticalMistakes());
+                value.getDialogueCriteria().stream().map(criterion -> new DialogueCriterion(
+                        criterion.getId(), criterion.getName(), criterion.getHypothesis(), criterion.getWeight())).toList());
     }
     private static DispatcherCriteria toEntity(com.simulator112.contextmanager.domain.common.Criteria value) {
-        return value == null ? null : new DispatcherCriteria(new ArrayList<>(value.requiredQuestions()),
-                new ArrayList<>(value.expectedActions()), new ArrayList<>(value.criticalMistakes()));
+        return value == null ? null : new DispatcherCriteria(value.dialogueCriteria().stream()
+                .map(criterion -> new DialogueCriterionEmbeddable(
+                        criterion.id(), criterion.name(), criterion.hypothesis(), criterion.weight()))
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
     }
     private static com.simulator112.contextmanager.domain.system112.PersonInfo toDomain(com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo value) {
         return value == null ? null : new com.simulator112.contextmanager.domain.system112.PersonInfo(value.getPhone(), value.getContactPhone(),
