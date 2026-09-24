@@ -43,7 +43,7 @@ if (!error) {
     if (targetType === "DDS") {
       const classifierResponse = await getIncidentClassifier(Astro.locals.accessToken);
       if (!classifierResponse.ok || !profile) throw new Error("Не удалось загрузить рабочее поле ДДС");
-      classifier = normalizeClassifier(await classifierResponse.json());
+      classifier = normalizeClassifier(await classifierResponse.json()).classifier;
     }
   } catch (requestError) {
     error = requestError.message || "Не удалось загрузить задание";

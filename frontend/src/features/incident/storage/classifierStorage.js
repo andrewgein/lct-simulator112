@@ -4,6 +4,7 @@ import { normalizeClassifier } from "./classifierHelpers";
 /** @typedef {import("../../incident/contract/Classifier").IncidentClassifier} IncidentClassifier */
 export const classifierInfo = createReactiveState({
     classifier: [],
+    routingFacts: [],
     loading: false,
     error: ""
 });
@@ -19,10 +20,11 @@ export function loadClassifier() {
             if (!response.ok) throw new Error("Не удалось загрузить классификатор");
             return response.json();
         })
-        .then((classifier) => {
-            if (!Array.isArray(classifier)) throw new Error("Некорректный формат классификатора");
-            const typedClassifier = /** @type {IncidentClassifier} */ (normalizeClassifier(classifier));
+        .then((view) => {
+            const normalized = normalizeClassifier(view);
+            const typedClassifier = /** @type {IncidentClassifier} */ (normalized.classifier);
             classifierInfo.state.classifier = typedClassifier;
+            classifierInfo.state.routingFacts = normalized.routingFacts;
             classifierInfo.state.error = "";
             return typedClassifier;
         })
