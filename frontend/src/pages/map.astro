@@ -1,91 +1,200 @@
 ---
-import { Leaflet } from "astro-leaflet";
+import "leaflet/dist/leaflet.css";
 import Page from "../layouts/Page.astro";
 export const prerender = false;
+
+const mapglKey = process.env.DGIS_MAPGL_KEY?.trim() || "";
 ---
 
 <Page>
-  <Leaflet
-    id="location-map"
-    options={{
-      mapOptions: {
-        attributionControl: false,
-      },
-      center: [55.7521, 37.6177], // Example coordinates
-      zoom: 12,
-    }}
-  />
+  <div id="location-map" class="map-container" data-mapgl-key={mapglKey}></div>
 </Page>
 
 <script>
-  import { getMapFromId } from "astro-leaflet";
   import L from "astro-leaflet/leaflet";
+  import { getAstroLeafletMarkerDefaultIcon } from "astro-leaflet/client";
 
-  document.addEventListener("DOMContentLoaded", () => {
+  const MOSCOW_CENTER = { lat: 55.7521, lng: 37.6177 };
+  const DEFAULT_ZOOM = 12;
+  const ADDRESS_ZOOM = 17;
+  const MAPGL_SCRIPT_URL = "https://mapgl.2gis.com/api/js/v1";
+  const MAPGL_LOAD_TIMEOUT_MS = 10_000;
+
+  function loadMapGl() {
+    if (window.mapgl) return Promise.resolve(window.mapgl);
+
+    return new Promise((resolve, reject) => {
+      const existingScript = document.querySelector(`script[src="${MAPGL_SCRIPT_URL}"]`);
+      const script = existingScript || document.createElement("script");
+      const timeout = window.setTimeout(() => reject(new Error("2GIS MapGL loading timed out")), MAPGL_LOAD_TIMEOUT_MS);
+      const loaded = () => {
+        window.clearTimeout(timeout);
+        window.mapgl ? resolve(window.mapgl) : reject(new Error("2GIS MapGL is unavailable"));
+      };
+      const failed = () => {
+        window.clearTimeout(timeout);
+        reject(new Error("2GIS MapGL loading failed"));
+      };
+
+      script.addEventListener("load", loaded, { once: true });
+      script.addEventListener("error", failed, { once: true });
+      if (!existingScript) {
+        script.src = MAPGL_SCRIPT_URL;
+        script.async = true;
+        document.head.append(script);
+      }
+    });
+  }
+
+  async function geocode(params) {
+    const response = await fetch(`/api/v1/geocode?${new URLSearchParams(params)}`);
+    if (!response.ok) throw new Error(await response.text());
+    return response.json();
+  }
+
+  function notifyLocation(targetInputId, address, lat, lng) {
+    if (!window.opener || window.opener.closed) return;
+    window.opener.postMessage({ type: "LOCATION_PICKED", address, lat, lng, targetInputId }, window.location.origin);
+  }
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const container = document.getElementById("location-map");
+    if (!container) return;
+
     const urlParams = new URLSearchParams(window.location.search);
     const targetInputId = urlParams.get("target");
     const address = urlParams.get("address");
     const latitude = Number(urlParams.get("lat"));
     const longitude = Number(urlParams.get("lng"));
+    const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude) && latitude !== 0 && longitude !== 0;
+    const mapglKey = container.dataset.mapglKey?.trim();
+    let center = hasCoordinates ? { lat: latitude, lng: longitude } : MOSCOW_CENTER;
+    let zoom = hasCoordinates ? ADDRESS_ZOOM : DEFAULT_ZOOM;
+    let pickedLocation = hasCoordinates ? { lat: latitude, lng: longitude, label: address } : null;
+    let fallbackStarted = false;
+    let mapglMap = null;
+    let mapglMarker = null;
 
-    const map = getMapFromId("location-map");
+    const selectLocation = async (lat, lng) => {
+      try {
+        const result = await geocode({ lat: String(lat), lng: String(lng) });
+        if (result.displayName) notifyLocation(targetInputId, result.displayName, lat, lng);
+      } catch (error) {
+        console.error("Reverse geocoding failed:", error);
+      }
+    };
 
-    if (map) {
-      let currentMarker = null;
+    const startOpenStreetMap = async (reason) => {
+      if (fallbackStarted) return;
+      fallbackStarted = true;
+      if (reason) console.warn("2GIS is unavailable, switching to OpenStreetMap:", reason);
 
-      if (address && Number.isFinite(latitude) && Number.isFinite(longitude) && latitude && longitude) {
-        currentMarker = L.marker([latitude, longitude]).addTo(map).bindPopup(address).openPopup();
-        map.setView([latitude, longitude], 17);
-      } else if (address) {
-        fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=ru&q=${encodeURIComponent(address)}`)
-          .then((response) => response.json())
-          .then((results) => {
-            if (!results.length) return;
-            const lat = Number(results[0].lat);
-            const lng = Number(results[0].lon);
-            currentMarker = L.marker([lat, lng]).addTo(map).bindPopup(address).openPopup();
-            map.setView([lat, lng], 17);
-          })
-          .catch((error) => console.error("Address geocoding failed:", error));
+      if (mapglMap) {
+        try {
+          const [lng, lat] = mapglMap.getCenter();
+          center = { lat, lng };
+          zoom = mapglMap.getZoom();
+        } catch {
+          // Keep the last known state if MapGL failed before initialization completed.
+        }
+      }
+      if (mapglMarker) mapglMarker.destroy();
+      if (mapglMap) mapglMap.destroy();
+      container.replaceChildren();
+
+      const map = L.map(container, { attributionControl: false }).setView([center.lat, center.lng], zoom);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        subdomains: ["a", "b", "c"],
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      let marker = null;
+      const setMarker = (lat, lng, label) => {
+        center = { lat, lng };
+        pickedLocation = { lat, lng, label: label || pickedLocation?.label };
+        if (marker) marker.setLatLng([lat, lng]);
+        else marker = L.marker([lat, lng], { icon: getAstroLeafletMarkerDefaultIcon() }).addTo(map);
+        if (label) marker.bindPopup(label).openPopup();
+      };
+
+      if (pickedLocation) setMarker(pickedLocation.lat, pickedLocation.lng, pickedLocation.label);
+      else if (address) {
+        try {
+          const result = await geocode({ address });
+          center = { lat: result.lat, lng: result.lng };
+          zoom = ADDRESS_ZOOM;
+          setMarker(result.lat, result.lng, address);
+          map.setView([result.lat, result.lng], zoom);
+        } catch (error) {
+          console.error("Address geocoding failed:", error);
+        }
       }
 
-      map.on("click", async (e) => {
-        const { lat, lng } = e.latlng;
-
-        if (currentMarker) {
-          currentMarker.setLatLng([lat, lng]);
-        } else {
-          currentMarker = L.marker([lat, lng]).addTo(map);
-        }
-
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ru`,
-          );
-          const data = await response.json();
-
-          if (data && data.display_name) {
-            const address = data.display_name;
-
-            if (window.opener && !window.opener.closed) {
-              window.opener.postMessage(
-                { type: "LOCATION_PICKED", address, lat, lng, targetInputId },
-                window.location.origin
-              );
-            }
-          } else {
-            console.log("Address not found for this location.");
-          }
-        } catch (error) {
-          console.error("Reverse geocoding failed:", error);
-        }
+      map.on("click", ({ latlng }) => {
+        setMarker(latlng.lat, latlng.lng);
+        selectLocation(latlng.lat, latlng.lng);
       });
+    };
+
+    if (!mapglKey) return startOpenStreetMap("DGIS_MAPGL_KEY is not configured");
+
+    try {
+      const mapgl = await loadMapGl();
+      if (mapgl.Map.isSupported && !mapgl.Map.isSupported({ failIfMajorPerformanceCaveat: true })) {
+        throw new Error("2GIS MapGL is not supported by this browser");
+      }
+
+      mapglMap = new mapgl.Map(container, {
+        key: mapglKey,
+        center: [center.lng, center.lat],
+        zoom,
+        enableTrackResize: true,
+      });
+
+      const idleTimeout = window.setTimeout(() => startOpenStreetMap("2GIS tiles loading timed out"), MAPGL_LOAD_TIMEOUT_MS);
+      mapglMap.once("idle", () => window.clearTimeout(idleTimeout));
+      mapglMap.on("error", (error) => startOpenStreetMap(error));
+
+      const setMarker = (lat, lng, label) => {
+        center = { lat, lng };
+        pickedLocation = { lat, lng, label: label || pickedLocation?.label };
+        if (mapglMarker) mapglMarker.setCoordinates([lng, lat]);
+        else mapglMarker = new mapgl.Marker(mapglMap, { coordinates: [lng, lat] });
+        if (label) mapglMarker.setLabel({ text: label, offset: [0, 28], relativeAnchor: [0.5, 0] });
+      };
+
+      if (hasCoordinates) setMarker(latitude, longitude, address);
+      else if (address) {
+        try {
+          const result = await geocode({ address });
+          center = { lat: result.lat, lng: result.lng };
+          zoom = ADDRESS_ZOOM;
+          setMarker(result.lat, result.lng, address);
+          mapglMap.setCenter([result.lng, result.lat]);
+          mapglMap.setZoom(zoom);
+        } catch (error) {
+          console.error("Address geocoding failed:", error);
+        }
+      }
+
+      mapglMap.on("click", ({ lngLat }) => {
+        const [lng, lat] = lngLat;
+        setMarker(lat, lng);
+        selectLocation(lat, lng);
+      });
+    } catch (error) {
+      startOpenStreetMap(error);
     }
   });
 </script>
 
 <style>
   :global(main) {
-    padding: 0rem;
+    padding: 0;
+  }
+
+  .map-container {
+    width: 100vw;
+    height: 100vh;
   }
 </style>
