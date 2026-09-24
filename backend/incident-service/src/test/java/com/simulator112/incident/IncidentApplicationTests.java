@@ -44,8 +44,9 @@ class IncidentApplicationTests {
                 List.of("101", "102"), 1, "Описание", List.of(call));
         var incident = new System112Incident(null, "Пожар",
                 new Address("Москва", "Тверская", "1", null, null, 1), Difficulty.EASY,
-                List.of(stage), new System112Criteria(
-                List.of("Адрес?"), List.of("Передать карточку"), List.of()));
+                List.of(stage), new System112Criteria(List.of(
+                        new DialogueCriterion(null, "Уточнение адреса",
+                                "Оператор уточнил адрес происшествия", 10))));
 
         var saved = incidentRepository.save(incident);
         var loaded = incidentRepository.findById(saved.id()).orElseThrow();
@@ -55,6 +56,11 @@ class IncidentApplicationTests {
         assertThat(((System112Stage) loaded.stages().getFirst()).classifierCodes()).containsExactly("101", "102");
         assertThat(loaded.stages().getFirst().calls()).hasSize(1);
         assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.INBOUND);
+        assertThat(((System112Incident) loaded).criteria().dialogueCriteria()).singleElement()
+                .satisfies(criterion -> {
+                    assertThat(criterion.name()).isEqualTo("Уточнение адреса");
+                    assertThat(criterion.weight()).isEqualTo(10);
+                });
         assertThat(detailCount("SYSTEM112_STAGE_DETAILS", saved.id())).isEqualTo(1);
         assertThat(detailCount("DDS_STAGE_DETAILS", saved.id())).isZero();
     }
@@ -77,7 +83,6 @@ class IncidentApplicationTests {
                 Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
                 new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of()),
                 new InitialAssignment(EmergencyService.FIRE, "101", "Направить ближайшую бригаду"),
-                new DdsCriteria(List.of("Адрес?"), List.of("Назначить бригаду"), List.of()),
                 initialStageId,
                 List.of(new DdsStageTransition(initialStageId, successStageId, failureStageId)));
 

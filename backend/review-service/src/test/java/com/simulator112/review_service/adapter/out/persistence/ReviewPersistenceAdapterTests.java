@@ -28,7 +28,8 @@ class ReviewPersistenceAdapterTests {
         UUID contextId = UUID.randomUUID();
         Review saved = store.save(new Review(contextId, UUID.randomUUID(), UUID.randomUUID(),
                 ReviewStatus.IN_REVIEW, List.of(new CriterionResult("incident", 1,
-                "Поля", 60, 70, "Проверка")), null, null));
+                "Поля", 60, 70, "Проверка")), 60, 60, 70,
+                10, 30, 0, null, null, null, null, null));
         entityManager.flush();
         entityManager.clear();
 

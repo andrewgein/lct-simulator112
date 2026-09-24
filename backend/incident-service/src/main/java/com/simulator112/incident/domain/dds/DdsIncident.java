@@ -17,7 +17,6 @@ public record DdsIncident(
         List<DdsStage> stages,
         PreparedCardTemplate preparedCardTemplate,
         InitialAssignment initialAssignment,
-        DdsCriteria criteria,
         UUID initialStageId,
         List<DdsStageTransition> transitions) implements Incident {
     public DdsIncident {

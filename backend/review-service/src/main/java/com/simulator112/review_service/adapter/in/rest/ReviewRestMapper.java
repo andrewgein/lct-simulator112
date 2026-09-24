@@ -12,6 +12,9 @@ final class ReviewRestMapper {
         return new ReviewResponse(review.contextId(), review.userId(), review.assignmentId(), review.createdAt(),
                 review.results().stream().map(value -> new CriterionResultResponse(value.incidentId(),
                                 value.incidentOrder(), value.criterionName(), value.score(), value.maxScore(), value.feedback()))
-                        .toList(), review.status().name());
+                        .toList(),
+                review.automaticScore(), review.finalScore(), review.maxScore(), review.durationSeconds(),
+                review.timeLimitSeconds(), review.overtimeSeconds(), review.expertId(), review.expertComment(),
+                review.confirmedAt(), review.status().name());
     }
 }

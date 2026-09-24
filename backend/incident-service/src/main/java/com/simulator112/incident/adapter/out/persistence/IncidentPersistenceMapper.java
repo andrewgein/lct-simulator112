@@ -26,8 +26,6 @@ public class IncidentPersistenceMapper {
                             entity.getPreparedCardAdditionalInfo()),
                     new InitialAssignment(entity.getEmergencyService(), entity.getInitialAssignmentClassifierCode(),
                             entity.getInitialAssignmentInstructions()),
-                    new DdsCriteria(entity.getRequiredQuestions(), entity.getExpectedActions(),
-                            entity.getCriticalMistakes()),
                     entity.getDdsInitialStageId(),
                     entity.getDdsStageTransitions().stream()
                             .map(value -> new DdsStageTransition(value.getStageId(), value.getSuccessStageId(),
@@ -37,8 +35,7 @@ public class IncidentPersistenceMapper {
         List<System112Stage> stages = entity.getStages().stream().map(this::toSystem112Stage).toList();
         return new System112Incident(
                 entity.getId(), entity.getTitle(), toDomain(entity.getAddress()), entity.getDifficulty(), stages,
-                new System112Criteria(entity.getRequiredQuestions(), entity.getExpectedActions(),
-                        entity.getCriticalMistakes()));
+                new System112Criteria(toDomainCriteria(entity.getDialogueCriteria())));
     }
 
     public IncidentJpaEntity toEntity(Incident incident) {
@@ -51,12 +48,9 @@ public class IncidentPersistenceMapper {
 
         if (incident instanceof System112Incident system112) {
             system112.stages().stream().map(this::toEntity).forEach(entity::addStage);
-            setCriteria(entity, system112.criteria().requiredQuestions(), system112.criteria().expectedActions(),
-                    system112.criteria().criticalMistakes());
+            entity.setDialogueCriteria(toEntityCriteria(system112.criteria().dialogueCriteria()));
         } else if (incident instanceof DdsIncident dds) {
             dds.stages().stream().map(this::toEntity).forEach(entity::addStage);
-            setCriteria(entity, dds.criteria().requiredQuestions(), dds.criteria().expectedActions(),
-                    dds.criteria().criticalMistakes());
             PreparedCardTemplate card = dds.preparedCardTemplate();
             entity.setPreparedCardClassifierCodes(new java.util.ArrayList<>(card.classifierCodes()));
             entity.setCardApplicant(toEntity(card.applicant()));
@@ -140,11 +134,15 @@ public class IncidentPersistenceMapper {
         return entity;
     }
 
-    private void setCriteria(IncidentJpaEntity entity, List<String> questions, List<String> actions,
-                             List<String> mistakes) {
-        entity.setRequiredQuestions(new java.util.ArrayList<>(questions));
-        entity.setExpectedActions(new java.util.ArrayList<>(actions));
-        entity.setCriticalMistakes(new java.util.ArrayList<>(mistakes));
+    private List<DialogueCriterion> toDomainCriteria(List<DialogueCriterionEmbeddable> values) {
+        return values.stream().map(value -> new DialogueCriterion(
+                value.getId(), value.getName(), value.getHypothesis(), value.getWeight())).toList();
+    }
+
+    private java.util.ArrayList<DialogueCriterionEmbeddable> toEntityCriteria(List<DialogueCriterion> values) {
+        return values.stream().map(value -> new DialogueCriterionEmbeddable(
+                        value.id(), value.name(), value.hypothesis(), value.weight()))
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
     }
 
     private Address toDomain(AddressEmbeddable value) {

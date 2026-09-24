@@ -25,6 +25,15 @@ public class ReviewPersistenceAdapter implements ReviewStore {
         target.setAssignmentId(source.assignmentId());
         target.setStatus(source.status());
         target.setResults(source.results().stream().map(ReviewPersistenceAdapter::toEntity).toList());
+        target.setAutomaticScore(source.automaticScore());
+        target.setFinalScore(source.finalScore());
+        target.setMaxScore(source.maxScore());
+        target.setDurationSeconds(source.durationSeconds());
+        target.setTimeLimitSeconds(source.timeLimitSeconds());
+        target.setOvertimeSeconds(source.overtimeSeconds());
+        target.setExpertId(source.expertId());
+        target.setExpertComment(source.expertComment());
+        target.setConfirmedAt(source.confirmedAt());
         target.setCreatedAt(source.createdAt());
         target.setUpdatedAt(source.updatedAt());
         return target;
@@ -45,6 +54,9 @@ public class ReviewPersistenceAdapter implements ReviewStore {
     private static Review toDomain(ReviewJpaEntity source) {
         return new Review(source.getContextId(), source.getUserId(), source.getAssignmentId(), source.getStatus(),
                 source.getResults().stream().map(ReviewPersistenceAdapter::toDomain).toList(),
+                source.getAutomaticScore(), source.getFinalScore(), source.getMaxScore(),
+                source.getDurationSeconds(), source.getTimeLimitSeconds(), source.getOvertimeSeconds(),
+                source.getExpertId(), source.getExpertComment(), source.getConfirmedAt(),
                 source.getCreatedAt(), source.getUpdatedAt());
     }
 

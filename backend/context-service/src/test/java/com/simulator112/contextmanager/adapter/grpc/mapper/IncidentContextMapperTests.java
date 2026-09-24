@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.simulator112.incident.grpc.contract.CallDirection;
 import com.simulator112.incident.grpc.contract.CallScenario;
 import com.simulator112.incident.grpc.contract.CounterpartyType;
+import com.simulator112.incident.grpc.contract.Criteria;
+import com.simulator112.incident.grpc.contract.DialogueCriterion;
 import com.simulator112.incident.grpc.contract.IncidentContext;
 import com.simulator112.incident.grpc.contract.IncidentStage;
 import com.simulator112.incident.grpc.contract.Person;
@@ -25,6 +27,11 @@ class IncidentContextMapperTests {
                 .setTitle("Пожар")
                 .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.INCIDENT_TARGET_TYPE_SYSTEM_112)
                 .setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_EASY)
+                .setCriteria(Criteria.newBuilder().addDialogueCriteria(DialogueCriterion.newBuilder()
+                        .setId(UUID.randomUUID().toString())
+                        .setName("Уточнение адреса")
+                        .setHypothesis("Оператор уточнил адрес происшествия")
+                        .setWeight(10)))
                 .addStages(IncidentStage.newBuilder()
                         .setId(UUID.randomUUID().toString())
                         .setSystem112(System112StageDetails.newBuilder()
@@ -46,6 +53,11 @@ class IncidentContextMapperTests {
         assertThat(stored.getStages().getFirst().getClassifierCodes()).containsExactly("101", "102");
         assertThat(IncidentContextMapper.toProto(stored).getStages(0).getSystem112().getClassifierCodesList())
                 .containsExactly("101", "102");
+        assertThat(IncidentContextMapper.toProto(stored).getCriteria().getDialogueCriteriaList()).singleElement()
+                .satisfies(criterion -> {
+                    assertThat(criterion.getName()).isEqualTo("Уточнение адреса");
+                    assertThat(criterion.getWeight()).isEqualTo(10);
+                });
         assertThat(result.getId()).isEqualTo(callId.toString());
         assertThat(result.getPerson().getFirstName()).isEqualTo("Анна");
         assertThat(result.getPerson().getAddress()).isEqualTo("Адрес заявителя");

@@ -90,22 +90,9 @@ public class IncidentJpaEntity {
     private List<DdsStageTransitionEmbeddable> ddsStageTransitions = new ArrayList<>();
 
     @ElementCollection
-    @CollectionTable(name = "incident_required_questions", joinColumns = @JoinColumn(name = "incident_id"))
+    @CollectionTable(name = "incident_dialogue_criteria", joinColumns = @JoinColumn(name = "incident_id"))
     @OrderColumn(name = "position")
-    @Column(name = "question", nullable = false)
-    private List<String> requiredQuestions = new ArrayList<>();
-
-    @ElementCollection
-    @CollectionTable(name = "incident_expected_actions", joinColumns = @JoinColumn(name = "incident_id"))
-    @OrderColumn(name = "position")
-    @Column(name = "action", nullable = false)
-    private List<String> expectedActions = new ArrayList<>();
-
-    @ElementCollection
-    @CollectionTable(name = "incident_critical_mistakes", joinColumns = @JoinColumn(name = "incident_id"))
-    @OrderColumn(name = "position")
-    @Column(name = "mistake", nullable = false)
-    private List<String> criticalMistakes = new ArrayList<>();
+    private List<DialogueCriterionEmbeddable> dialogueCriteria = new ArrayList<>();
 
     @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")

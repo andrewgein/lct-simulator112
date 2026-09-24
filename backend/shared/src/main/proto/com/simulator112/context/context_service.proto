@@ -148,6 +148,8 @@ message FullContext {
   AssignmentContext assignment_context = 6;
   repeated SolutionContext solution_context_revisions = 7;
   LevelProgress level_progress = 8;
+  string started_at = 9;
+  string submitted_at = 10;
 }
 
 service ContextManagerService {

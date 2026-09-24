@@ -6,6 +6,7 @@ import com.simulator112.contextmanager.domain.common.CallSnapshot;
 import com.simulator112.contextmanager.domain.common.CallStatus;
 import com.simulator112.contextmanager.domain.common.CounterpartyType;
 import com.simulator112.contextmanager.domain.common.Criteria;
+import com.simulator112.contextmanager.domain.common.DialogueCriterion;
 import com.simulator112.contextmanager.domain.common.Gender;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
@@ -128,11 +129,20 @@ public final class IncidentContextMapper {
     }
 
     private static Criteria toDomain(com.simulator112.incident.grpc.contract.Criteria value) {
-        return new Criteria(value.getRequiredQuestionsList(), value.getExpectedActionsList(), value.getCriticalMistakesList());
+        return new Criteria(value.getDialogueCriteriaList().stream().map(criterion -> new DialogueCriterion(
+                java.util.UUID.fromString(criterion.getId()), criterion.getName(),
+                criterion.getHypothesis(), criterion.getWeight())).toList());
     }
     private static com.simulator112.incident.grpc.contract.Criteria toProto(Criteria value) {
-        return com.simulator112.incident.grpc.contract.Criteria.newBuilder().addAllRequiredQuestions(value.requiredQuestions())
-                .addAllExpectedActions(value.expectedActions()).addAllCriticalMistakes(value.criticalMistakes()).build();
+        return com.simulator112.incident.grpc.contract.Criteria.newBuilder()
+                .addAllDialogueCriteria(value.dialogueCriteria().stream().map(criterion ->
+                        com.simulator112.incident.grpc.contract.DialogueCriterion.newBuilder()
+                                .setId(criterion.id().toString())
+                                .setName(criterion.name())
+                                .setHypothesis(criterion.hypothesis())
+                                .setWeight(criterion.weight())
+                                .build()).toList())
+                .build();
     }
     private static Address toDomain(com.simulator112.incident.grpc.contract.Address value) {
         return new Address(value.getCity(), value.getStreet(), value.getHouse(), value.getBuilding(), value.getApartment(), value.hasFloor() ? value.getFloor() : null);

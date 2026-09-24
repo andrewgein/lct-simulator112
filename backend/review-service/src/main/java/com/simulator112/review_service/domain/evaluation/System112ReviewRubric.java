@@ -3,7 +3,9 @@ package com.simulator112.review_service.domain.evaluation;
 import com.simulator112.review_service.domain.model.CriterionResult;
 import com.simulator112.review_service.domain.model.ReviewSubmission;
 
+import java.time.Duration;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class System112ReviewRubric implements ReviewRubric {
     private final Rubric rubric = new RubricBuilder(ReviewSubmission.TargetType.SYSTEM_112)
@@ -40,7 +42,9 @@ public final class System112ReviewRubric implements ReviewRubric {
                 current.mainCardId(), merge(previous.applicant(), current.applicant()),
                 current.victimCount() == null ? previous.victimCount() : current.victimCount(),
                 current.additionalInfoProvided() ? current.additionalInfo() : previous.additionalInfo(),
-                current.additionalInfoProvided(), current.incidentTypes().isEmpty() ? previous.incidentTypes() : current.incidentTypes());
+                current.additionalInfoProvided(), current.incidentTypes().isEmpty() ? previous.incidentTypes() : current.incidentTypes(),
+                current.services().isEmpty() ? previous.services() : current.services(),
+                current.createdAt() == null ? previous.createdAt() : current.createdAt());
     }
 
     private static ReviewSubmission.Person merge(ReviewSubmission.Person previous, ReviewSubmission.Person current) {
@@ -84,7 +88,9 @@ public final class System112ReviewRubric implements ReviewRubric {
 
     @Override
     public List<CriterionResult> evaluate(ReviewSubmission submission) {
-        return rubric.evaluate(submission);
+        List<CriterionResult> results = new ArrayList<>(rubric.evaluate(submission));
+        results.addAll(dialogueResults(submission));
+        return List.copyOf(results);
     }
 
     public List<Stage> stages() {
@@ -98,57 +104,84 @@ public final class System112ReviewRubric implements ReviewRubric {
                 Map<String, ReviewSubmission.CardRevision> cards = assemble(submission.cardRevisions());
                 Map<String, List<ReviewSubmission.CardRevision>> byCall = new HashMap<>();
                 cards.values().forEach(card -> byCall.computeIfAbsent(card.callId(), ignored -> new ArrayList<>()).add(card));
-                return submission.incidents().stream().map(incident -> {
+                return submission.incidents().stream().flatMap(incident -> {
                     List<ExpectedCall> calls = expectedCalls(incident);
-                    double ratio = switch (category) {
-                        case "Поля" -> fieldRatio(calls, byCall);
-                        case "Операции и связи" -> operationRatio(calls, byCall, cards);
-                        case "Обработка звонков" -> coverageRatio(calls, byCall);
+                    List<WeightedCheck> checks = switch (category) {
+                        case "Поля" -> fieldChecks(calls, byCall);
+                        case "Операции и связи" -> operationChecks(calls, byCall, cards);
+                        case "Обработка звонков" -> callChecks(submission, incident, calls, byCall);
                         default -> throw new IllegalStateException("Неизвестный критерий: " + category);
                     };
-                    int score = (int) Math.round(maxScore() * ratio);
-                    return result(incident, score, score == maxScore()
-                            ? "Критерий выполнен" : "Набрано " + score + " из " + maxScore() + " баллов");
+                    return allocate(incident, category, categoryBudget(incident, category), checks).stream();
                 }).toList();
             }
         };
     }
 
-    private double fieldRatio(List<ExpectedCall> calls, Map<String, List<ReviewSubmission.CardRevision>> byCall) {
-        int checks = 0;
-        int correct = 0;
-        for (ExpectedCall expected : calls) {
+    private List<WeightedCheck> fieldChecks(List<ExpectedCall> calls,
+                                            Map<String, List<ReviewSubmission.CardRevision>> byCall) {
+        if (calls.isEmpty()) return List.of(new WeightedCheck(false, 1, "В сценарии отсутствуют звонки для проверки."));
+        List<WeightedCheck> result = new ArrayList<>();
+        double callWeight = 1.0 / calls.size();
+        for (int callIndex = 0; callIndex < calls.size(); callIndex++) {
+            ExpectedCall expected = calls.get(callIndex);
             var cards = byCall.getOrDefault(expected.call().id(), List.of());
             var card = cards.isEmpty() ? null : cards.getFirst();
-            List<Boolean> values = new ArrayList<>();
-            if (expected.call().person() != null)
-                comparePerson(values, expected.call().person(), card == null ? null : card.applicant());
-            values.add(card != null && card.victimCount() != null
-                    && expected.stage().victimCount() == card.victimCount());
-            if (!expected.stage().classifierCodes().isEmpty())
-                values.add(card != null && sameSet(expected.stage().classifierCodes(), card.incidentTypes()));
-            if (values.isEmpty()) values.add(card != null);
-            checks += values.size();
-            correct += (int) values.stream().filter(Boolean::booleanValue).count();
+            List<AtomicCheck> checks = new ArrayList<>();
+            if (expected.call().person() != null) {
+                personChecks(checks, expected.call().person(), card == null ? null : card.applicant());
+            }
+            int victimCount = expected.stage().victimCount();
+            checks.add(new AtomicCheck(card != null && card.victimCount() != null
+                    && victimCount == card.victimCount(), card == null || card.victimCount() == null
+                    ? "Количество пострадавших не указано." : "Количество пострадавших указано неверно.",
+                    "Количество пострадавших указано верно."));
+            var classifierCodes = expected.stage().classifierCodes();
+            if (!classifierCodes.isEmpty()) {
+                checks.add(new AtomicCheck(card != null && sameSet(classifierCodes, card.incidentTypes()),
+                        card == null || card.incidentTypes().isEmpty()
+                                ? "Классификация не указана." : "Классификация выбрана неверно.",
+                        "Классификация выбрана верно."));
+            }
+            if (checks.isEmpty()) {
+                checks.add(new AtomicCheck(card != null, "Карточка по звонку отсутствует.", "Карточка создана."));
+            }
+            double checkWeight = callWeight / checks.size();
+            String prefix = "Звонок №" + (callIndex + 1) + ": ";
+            checks.forEach(check -> result.add(new WeightedCheck(check.correct(), checkWeight,
+                    prefix + (check.correct() ? check.successFeedback() : check.failureFeedback()))));
         }
-        return checks == 0 ? 0 : (double) correct / checks;
+        return result;
     }
 
-    private double operationRatio(List<ExpectedCall> calls, Map<String, List<ReviewSubmission.CardRevision>> byCall,
-                                  Map<String, ReviewSubmission.CardRevision> cards) {
-        if (calls.isEmpty()) return 0;
-        int correct = 0;
-        for (ExpectedCall expected : calls) {
+    private List<WeightedCheck> operationChecks(List<ExpectedCall> calls,
+                                                 Map<String, List<ReviewSubmission.CardRevision>> byCall,
+                                                 Map<String, ReviewSubmission.CardRevision> cards) {
+        if (calls.isEmpty()) return List.of(new WeightedCheck(false, 1, "В сценарии отсутствуют операции для проверки."));
+        List<WeightedCheck> result = new ArrayList<>();
+        double weight = 1.0 / calls.size();
+        for (int callIndex = 0; callIndex < calls.size(); callIndex++) {
+            ExpectedCall expected = calls.get(callIndex);
+            String callLabel = "звонка №" + (callIndex + 1);
             var matches = byCall.getOrDefault(expected.call().id(), List.of());
-            if (matches.size() != 1) continue;
-            var card = matches.getFirst();
-            boolean valid = switch (expected.operation()) {
-                case CREATE -> blank(card.mainCardId());
-                case LINK -> linked(card.mainCardId(), expected.targetCallId(), cards);
-            };
-            if (valid) correct++;
+            boolean valid = false;
+            String feedback;
+            if (matches.isEmpty()) {
+                feedback = "Для " + callLabel + " карточка не создана.";
+            } else if (matches.size() > 1) {
+                feedback = "Для " + callLabel + " создано несколько карточек.";
+            } else {
+                var card = matches.getFirst();
+                valid = switch (expected.operation()) {
+                    case CREATE -> blank(card.mainCardId());
+                    case LINK -> linked(card.mainCardId(), expected.targetCallId(), cards);
+                };
+                feedback = valid ? "Операция с карточкой " + callLabel + " выполнена верно."
+                        : "Операция или связь карточки " + callLabel + " выполнена неверно.";
+            }
+            result.add(new WeightedCheck(valid, weight, feedback));
         }
-        return (double) correct / calls.size();
+        return result;
     }
 
     private boolean linked(String targetCardId, String expectedCallId, Map<String, ReviewSubmission.CardRevision> cards) {
@@ -156,9 +189,99 @@ public final class System112ReviewRubric implements ReviewRubric {
         return target != null && expectedCallId.equals(target.callId());
     }
 
-    private double coverageRatio(List<ExpectedCall> calls, Map<String, List<ReviewSubmission.CardRevision>> byCall) {
-        if (calls.isEmpty()) return 0;
-        return (double) calls.stream().filter(call -> byCall.getOrDefault(call.call().id(), List.of()).size() == 1).count() / calls.size();
+    private List<WeightedCheck> callChecks(ReviewSubmission submission, ReviewSubmission.IncidentScenario incident,
+                                           List<ExpectedCall> calls,
+                                           Map<String, List<ReviewSubmission.CardRevision>> byCall) {
+        List<WeightedCheck> result = new ArrayList<>();
+        if (calls.isEmpty()) {
+            result.add(new WeightedCheck(false, 1, "В сценарии отсутствуют звонки для проверки."));
+        } else {
+            double weight = 1.0 / calls.size();
+            for (int callIndex = 0; callIndex < calls.size(); callIndex++) {
+                ExpectedCall call = calls.get(callIndex);
+                String callLabel = "Звонок №" + (callIndex + 1);
+                int count = byCall.getOrDefault(call.call().id(), List.of()).size();
+                String feedback = count == 1 ? callLabel + " обработан."
+                        : count == 0 ? callLabel + " не обработан."
+                        : "Для звонка №" + (callIndex + 1) + " найдено несколько карточек.";
+                result.add(new WeightedCheck(count == 1, weight, feedback));
+            }
+        }
+        if (submission.startedAt() != null && submission.submittedAt() != null
+                && !submission.submittedAt().isBefore(submission.startedAt())) {
+            long duration = Duration.between(submission.startedAt(), submission.submittedAt()).toSeconds();
+            long limit = 30L * Math.max(1, submission.incidents().size());
+            if (duration > limit) result.add(new WeightedCheck(false, 0,
+                    "Норматив превышен: " + duration + " сек. при нормативе " + limit + " сек."));
+        }
+        return result;
+    }
+
+    private List<CriterionResult> allocate(ReviewSubmission.IncidentScenario incident, String category,
+                                           int budget, List<WeightedCheck> checks) {
+        int[] points = new int[checks.size()];
+        int allocated = 0;
+        for (int index = 0; index < checks.size(); index++) {
+            points[index] = (int) Math.floor(budget * checks.get(index).weight());
+            allocated += points[index];
+        }
+        List<Integer> order = new ArrayList<>();
+        for (int index = 0; index < checks.size(); index++) order.add(index);
+        order.sort(Comparator.<Integer>comparingDouble(index ->
+                budget * checks.get(index).weight() - points[index]).reversed().thenComparingInt(index -> index));
+        for (int index = 0; allocated < budget; index++, allocated++) {
+            points[order.get(index % order.size())]++;
+        }
+        List<CriterionResult> results = new ArrayList<>();
+        for (int index = 0; index < checks.size(); index++) {
+            WeightedCheck check = checks.get(index);
+            int max = points[index];
+            results.add(new CriterionResult(incident.id(), incident.order(), category,
+                    check.correct() ? max : 0, max, check.feedback()));
+        }
+        return results;
+    }
+
+    private List<CriterionResult> dialogueResults(ReviewSubmission submission) {
+        String operatorText = submission.transcript().stream()
+                .filter(phrase -> "USER".equals(phrase.speaker()))
+                .map(ReviewSubmission.TranscriptPhrase::text)
+                .collect(Collectors.joining(" "));
+        return submission.incidents().stream().flatMap(incident -> incident.criteria().dialogueCriteria().stream()
+                .map(criterion -> {
+                    boolean matched = matches(criterion.hypothesis(), operatorText);
+                    return new CriterionResult(incident.id(), incident.order(), criterion.name(),
+                            matched ? criterion.weight() : 0, criterion.weight(),
+                            matched ? "Критерий оценки диалога выполнен."
+                                    : "Критерий оценки диалога не выполнен.");
+                })).toList();
+    }
+
+    private int categoryBudget(ReviewSubmission.IncidentScenario incident, String category) {
+        int dialogueBudget = incident.criteria().dialogueCriteria().stream()
+                .mapToInt(ReviewSubmission.DialogueCriterion::weight).sum();
+        int[] budgets = ScoreBudget.scale(100 - dialogueBudget, 70, 20, 10);
+        return switch (category) {
+            case "Поля" -> budgets[0];
+            case "Операции и связи" -> budgets[1];
+            case "Обработка звонков" -> budgets[2];
+            default -> throw new IllegalStateException("Неизвестный критерий: " + category);
+        };
+    }
+
+    private boolean matches(String expected, String actual) {
+        Set<String> expectedTokens = tokens(expected);
+        Set<String> actualTokens = tokens(actual);
+        if (expectedTokens.isEmpty()) return true;
+        long matches = expectedTokens.stream().filter(actualTokens::contains).count();
+        return matches >= Math.max(1, (expectedTokens.size() + 1) / 2);
+    }
+
+    private Set<String> tokens(String value) {
+        return Arrays.stream(normalize(value).split("[^а-яa-z0-9]+"))
+                .filter(token -> token.length() >= 4)
+                .map(token -> token.substring(0, Math.min(5, token.length())))
+                .collect(Collectors.toSet());
     }
 
     private List<ExpectedCall> expectedCalls(ReviewSubmission.IncidentScenario incident) {
@@ -179,22 +302,34 @@ public final class System112ReviewRubric implements ReviewRubric {
         return result;
     }
 
-    private void comparePerson(List<Boolean> checks, ReviewSubmission.Person expected, ReviewSubmission.Person actual) {
-        compare(checks, expected.firstName(), actual == null ? null : actual.firstName());
-        compare(checks, expected.lastName(), actual == null ? null : actual.lastName());
-        compare(checks, expected.middleName(), actual == null ? null : actual.middleName());
-        compare(checks, expected.phone(), actual == null ? null : actual.phone());
-        compare(checks, expected.contactPhone(), actual == null ? null : actual.contactPhone());
-        compare(checks, expected.onScenePhone(), actual == null ? null : actual.onScenePhone());
-        compare(checks, expected.address(), actual == null ? null : actual.address());
-        compare(checks, expected.additionalInfo(), actual == null ? null : actual.additionalInfo());
+    private void personChecks(List<AtomicCheck> checks, ReviewSubmission.Person expected,
+                              ReviewSubmission.Person actual) {
+        fieldCheck(checks, "Имя", expected.firstName(), actual == null ? null : actual.firstName());
+        fieldCheck(checks, "Фамилия", expected.lastName(), actual == null ? null : actual.lastName());
+        fieldCheck(checks, "Отчество", expected.middleName(), actual == null ? null : actual.middleName());
+        fieldCheck(checks, "Телефон", expected.phone(), actual == null ? null : actual.phone());
+        fieldCheck(checks, "Контактный телефон", expected.contactPhone(),
+                actual == null ? null : actual.contactPhone());
+        fieldCheck(checks, "Телефон на месте", expected.onScenePhone(),
+                actual == null ? null : actual.onScenePhone());
+        fieldCheck(checks, "Адрес", expected.address(), actual == null ? null : actual.address());
+        fieldCheck(checks, "Дополнительная информация", expected.additionalInfo(),
+                actual == null ? null : actual.additionalInfo());
     }
 
-    private void compare(List<Boolean> checks, String expected, String actual) {
-        if (!blank(expected)) checks.add(same(expected, actual));
+    private void fieldCheck(List<AtomicCheck> checks, String field, String expected, String actual) {
+        if (blank(expected)) return;
+        checks.add(new AtomicCheck(same(expected, actual), actual == null || actual.isBlank()
+                ? field + " не указано." : field + " указано неверно.", field + " указано верно."));
     }
 
     private enum Operation {CREATE, LINK}
+
+    private record AtomicCheck(boolean correct, String failureFeedback, String successFeedback) {
+    }
+
+    private record WeightedCheck(boolean correct, double weight, String feedback) {
+    }
 
     private record ExpectedCall(ReviewSubmission.CallScenario call, ReviewSubmission.StageScenario stage,
                                 Operation operation, String targetCallId) {
