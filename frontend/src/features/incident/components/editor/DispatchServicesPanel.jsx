@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from "preact/hooks";
 
 const styles = `
-.dispatch-services { display: flex; flex: 1; min-width: 0; align-items: stretch; overflow-x: auto; background: #ff5b2d; color: #ffffff; }
+.dispatch-services { display: flex; width: 0; min-width: 0; flex: 1 1 0; align-items: stretch; overflow-x: auto; overflow-y: hidden; background: #ff5b2d; color: #ffffff; }
 .dispatch-services--readonly { background: #45525a; }
 .dispatch-services-label, .dispatch-service { display: flex; flex: 0 0 auto; min-width: 8rem; min-height: 6rem; box-sizing: border-box; align-items: center; justify-content: center; padding: var(--wa-space-m); border-inline-end: var(--wa-border-width-s) solid rgba(255, 255, 255, .45); }
 .dispatch-services-label { min-width: 7rem; font-weight: var(--wa-font-weight-bold); }

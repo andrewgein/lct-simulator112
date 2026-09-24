@@ -1,5 +1,5 @@
 const styles = `
-.incident-workspace { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 48rem; background: #c8d1d5; color: var(--wa-color-text-normal); }
+.incident-workspace { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; min-width: 48rem; overflow: hidden; background: #c8d1d5; color: var(--wa-color-text-normal); }
 .workspace-callbar { display: grid; grid-template-columns: minmax(16rem, 1fr) minmax(22rem, 1.5fr) minmax(16rem, 1fr) auto; box-sizing: border-box; width: auto; min-height: 6rem; border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
 .workspace-callbar > div { display: flex; box-sizing: border-box; min-width: 0; padding: var(--wa-space-m) var(--wa-space-l); border-inline-end: var(--wa-border-width-s) solid #b8c1c5; }
 .workspace-connection { align-items: center; gap: var(--wa-space-l); }

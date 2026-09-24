@@ -50,7 +50,7 @@ const styles = `
 .workspace-incident-meta strong { overflow: hidden; font-size: var(--wa-font-size-l); text-overflow: ellipsis; white-space: nowrap; }
 .workspace-timer { align-items: center; justify-content: center; min-width: 8rem; background: #293238; color: #ffffff; font-size: var(--wa-font-size-2xl); font-weight: var(--wa-font-weight-bold); font-variant-numeric: tabular-nums; }
 .saved-view-label { background: #008dca; font-size: var(--wa-font-size-m); text-transform: uppercase; }
-.workspace-body { display: grid; grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr); gap: 0.5rem; min-height: 0; padding: 0 0.5rem; }
+.workspace-body { display: grid; grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr); width: 100%; min-width: 0; gap: 0.5rem; min-height: 0; overflow: hidden; padding: 0 0.5rem; }
 .saved-card-body { display: grid; grid-template-columns: minmax(24rem, 0.9fr) minmax(30rem, 1.1fr); gap: var(--wa-space-s); min-height: 0; padding: 0 var(--wa-space-s) var(--wa-space-s); background: #c8d1d5; }
 .saved-card-column { min-width: 0; overflow-y: auto; }
 .saved-card-column.wa-stack { --wa-content-spacing: var(--wa-space-s); }
@@ -105,10 +105,10 @@ const styles = `
 .workspace-link-table td:first-child { width: 3rem; text-align: center; }
 .workspace-link-empty { padding: var(--wa-space-xl); color: var(--wa-color-text-quiet); text-align: center; }
 .workspace-section-title { margin: 0; padding: var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid #b8c1c5; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-xl); font-weight: var(--wa-font-weight-normal); }
-.workspace-footer { min-height: 6rem; color: #ffffff; }
+.workspace-footer { width: 100%; min-width: 0; min-height: 6rem; overflow: hidden; color: #ffffff; }
 .workspace-footer--editable { background: #ff5b2d; }
 .workspace-footer--readonly { background: #45525a; }
-.workspace-actions { padding: var(--wa-space-m); }
+.workspace-actions { flex: 0 0 auto; padding: var(--wa-space-m); }
 .workspace-actions wa-button::part(button) { min-width: 8rem; border-color: #ffffff; color: #ffffff; }
 .workspace-actions .workspace-save::part(button) { min-width: 13rem; }
 .workspace-actions .workspace-link::part(button), .workspace-actions .workspace-close::part(button) { min-width: 4rem; }
@@ -119,6 +119,10 @@ const styles = `
 
 function formatTime(seconds) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function routingFactsComplete(incident, additionalInfo) {
+  return incident.routingFactCodes.every((code) => additionalInfo[code] !== undefined && additionalInfo[code] !== null && additionalInfo[code] !== "");
 }
 
 function classifierDetails(incident, values, routingFacts) {
@@ -176,7 +180,11 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const setApplicant = (applicant) => onChange({ ...editor, applicant });
   const addIncidentType = (code) => {
     const nextIncidentTypes = [...incidentTypes, code];
-    onChange({ ...editor, incidentTypes: nextIncidentTypes, services: [...new Set([...(editor.services || []), ...automaticServices(classifierState.classifier, nextIncidentTypes)])] });
+    const nextEditor = { ...editorRef.current, incidentTypes: nextIncidentTypes, services: [...new Set([...(editorRef.current.services || []), ...automaticServices(classifierState.classifier, nextIncidentTypes)])] };
+    editorRef.current = nextEditor;
+    onChange(nextEditor);
+    const incident = findIncident(classifierState.classifier, code);
+    if (incident && routingFactsComplete(incident, nextEditor.additionalInfo)) resolveIncidentRouting(incident, nextEditor);
   };
   const removeIncidentType = (removedIncident) => {
     const remainingTypes = incidentTypes.filter((code) => code !== removedIncident.code);
@@ -221,7 +229,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     const nextEditor = { ...editorRef.current, additionalInfo: { ...editorRef.current.additionalInfo, [factCode]: value } };
     editorRef.current = nextEditor;
     onChange(nextEditor);
-    incidents.filter((item) => item.routingFactCodes.includes(factCode)).forEach((item) => resolveIncidentRouting(item, nextEditor));
+    incidents.filter((item) => item.routingFactCodes.includes(factCode) && routingFactsComplete(item, nextEditor.additionalInfo)).forEach((item) => resolveIncidentRouting(item, nextEditor));
   };
   const openLinkDialog = () => {
     if (relationLocked || !linkCards.length) return;
