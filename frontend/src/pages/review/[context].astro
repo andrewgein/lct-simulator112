@@ -5,6 +5,8 @@ import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
 
 const accessToken = Astro.cookies.get("accessToken").value;
+const role = Astro.cookies.get("role")?.value || "";
+const isTeacher = ["ADMIN", "SUPERVISOR"].includes(role);
 const { context } = Astro.params;
 const reviewResponse = await getReview(context, accessToken);
 const review = await reviewResponse.json();
@@ -33,12 +35,14 @@ export const prerender = false;
 
 <Page>
   <Header slot="header" />
-  <MainHeader slot="main-header" title="Результат" />
+  <MainHeader slot="main-header" title="Результат">
+    {isTeacher && <wa-button href="/teacher/statistics" appearance="outlined"><wa-icon slot="start" name="arrow-left"></wa-icon>К статистике</wa-button>}
+  </MainHeader>
   <div class="review-sections wa-stack wa-gap-2xl">
     <section class="wa-stack wa-gap-l" aria-labelledby="summary-heading">
       <h2 id="summary-heading" class="wa-heading-xl">Общая информация</h2>
       <div>
-        <span><strong>Статус:</strong> {review.reviewStatus}</span>
+        <span><strong>Статус:</strong> {review.status === "DONE" ? "Проверка завершена" : "Результат формируется"}</span>
       </div>
       <span><strong>Общий балл:</strong> {totalScore} из {maxTotalScore} ({percentage}%)</span>
       <wa-progress-bar value={percentage} label="Процент выполнения"></wa-progress-bar>
