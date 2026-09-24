@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import DataGrid from "../../../../components/DataGrid.jsx";
-import { applicantName, cardAddress, cardIsComplete, findIncident, formatAdditionalInfoValue } from "../../../incident/components/editor/editorHelpers";
+import { applicantName, cardAddress, cardIsComplete, findIncident } from "../../../incident/components/editor/editorHelpers";
 
 function arrangeCards(cards) {
   const childrenByMain = new Map();
@@ -20,7 +20,9 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
   const incident = incidents[0];
   const victimSummary = card.victimCount > 0 ? `Есть · ${card.victimCount}` : "Нет";
   const classifierFeatures = incident ? [incident.feature1Name, incident.feature2Name, incident.feature3Name, incident.additionalFeatures].filter(Boolean) : [];
-  const additionalInfo = [...classifierFeatures, ...(incident?.fields || []).map((field) => `${field.name}: ${formatAdditionalInfoValue(field, card.additionalInfo?.[field.id])}`)].join(" · ");
+  const factsByCode = new Map((classifierState.routingFacts || []).map((fact) => [fact.code, fact]));
+  const selectedFacts = (incident?.routingFactCodes || []).map((code) => factsByCode.get(code)).filter((fact) => fact && card.additionalInfo?.[fact.code]).map((fact) => `${fact.label}: ${fact.options.find((option) => option.value === card.additionalInfo[fact.code])?.label || card.additionalInfo[fact.code]}`);
+  const additionalInfo = [...classifierFeatures, ...selectedFacts].join(" · ");
   return {
     id: card.cardId,
     card,
