@@ -10,8 +10,12 @@ import com.simulator112.classifier.domain.model.RoutingRule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
@@ -23,8 +27,14 @@ public class ClassifierPersistenceAdapter implements ClassifierRepository {
 
     @Override
     public List<ClassifierCategory> findAllCategories() {
+        Map<UUID, LinkedHashSet<String>> collectedFactCodes = new LinkedHashMap<>();
+        routingRuleRepository.findAllFactCodes().forEach(fact -> collectedFactCodes
+                .computeIfAbsent(fact.getEntryId(), ignored -> new LinkedHashSet<>())
+                .add(fact.getFactCode()));
+        Map<UUID, List<String>> factCodes = new LinkedHashMap<>();
+        collectedFactCodes.forEach((entryId, codes) -> factCodes.put(entryId, List.copyOf(codes)));
         return categoryRepository.findAllByOrderByPositionAsc().stream()
-                .map(ClassifierPersistenceMapper::toDomain)
+                .map(category -> ClassifierPersistenceMapper.toDomain(category, factCodes))
                 .toList();
     }
 

@@ -18,5 +18,6 @@ public record ClassifierEntry(
         String additionalFeatures,
         String finalName,
         String ekp35Name,
-        List<DispatchService> primaryServices) {
+        List<DispatchService> primaryServices,
+        List<String> routingFactCodes) {
 }

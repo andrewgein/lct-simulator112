@@ -11,6 +11,15 @@ import java.util.UUID;
 public interface RoutingRuleRepository extends JpaRepository<RoutingRuleEntity, UUID> {
 
     @Query("""
+            SELECT rule.classifierEntry.id AS entryId, condition.factCode AS factCode
+            FROM RoutingRuleEntity rule
+            JOIN rule.variant variant
+            JOIN variant.conditions condition
+            ORDER BY variant.position, condition.position
+            """)
+    List<RoutingFactCodeProjection> findAllFactCodes();
+
+    @Query("""
             SELECT DISTINCT rule
             FROM RoutingRuleEntity rule
             JOIN FETCH rule.variant variant

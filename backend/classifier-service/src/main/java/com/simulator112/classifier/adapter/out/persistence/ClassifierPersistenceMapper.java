@@ -5,19 +5,29 @@ import com.simulator112.classifier.adapter.out.persistence.entity.ClassifierEntr
 import com.simulator112.classifier.adapter.out.persistence.entity.RoutingRuleEntity;
 import com.simulator112.classifier.domain.model.*;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 final class ClassifierPersistenceMapper {
 
     private ClassifierPersistenceMapper() {
     }
 
-    static ClassifierCategory toDomain(ClassifierCategoryEntity entity) {
+    static ClassifierCategory toDomain(ClassifierCategoryEntity entity, Map<UUID, List<String>> routingFactCodes) {
         return new ClassifierCategory(
                 entity.getCode(),
                 entity.getName(),
-                entity.getEntries().stream().map(ClassifierPersistenceMapper::toDomain).toList());
+                entity.getEntries().stream()
+                        .map(entry -> toDomain(entry, routingFactCodes.getOrDefault(entry.getId(), List.of())))
+                        .toList());
     }
 
     static ClassifierEntry toDomain(ClassifierEntryEntity entity) {
+        return toDomain(entity, List.of());
+    }
+
+    private static ClassifierEntry toDomain(ClassifierEntryEntity entity, List<String> routingFactCodes) {
         return new ClassifierEntry(
                 entity.getId(),
                 entity.getCode(),
@@ -35,7 +45,8 @@ final class ClassifierPersistenceMapper {
                 entity.getEkp35Name(),
                 entity.getPrimaryServices().stream()
                         .map(service -> new DispatchService(service.getId(), service.getCode(), service.getName()))
-                        .toList());
+                        .toList(),
+                routingFactCodes);
     }
 
     static RoutingRule toDomain(RoutingRuleEntity entity) {
