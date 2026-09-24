@@ -33,7 +33,7 @@ const styles = `
 @media (max-width: 48rem) { .dds-level-message { margin: var(--wa-space-s) var(--wa-space-s) 0; } }
 `;
 
-export default function DdsLevelApp({ contextId, incidents, classifier, userService }) {
+export default function DdsLevelApp({ contextId, incidents, classifier, routingFacts, userService }) {
   const [progress, setProgress] = useState(null);
   const [incidentDefinitions, setIncidentDefinitions] = useState(incidents);
   const [editor, setEditor] = useState({ open: false });
@@ -81,7 +81,7 @@ export default function DdsLevelApp({ contextId, incidents, classifier, userServ
   const cards = useMemo(() => incidentDefinitions.map(incidentCard), [incidentDefinitions]);
   const selectedCard = cards.find((card) => card.cardId === editor.editingCardId);
   const selectedProgress = progress?.incidents?.find((item) => String(item.incidentId) === selectedCard?.cardId);
-  const classifierState = { classifier, loading: false, error: null };
+  const classifierState = { classifier, routingFacts, loading: false, error: null };
   const finished = !!progress?.incidents?.length && progress.incidents.every((item) => ["COMPLETED", "FAILED"].includes(item.status));
   const getCardMeta = useCallback((card) => {
     const item = progress?.incidents?.find((entry) => String(entry.incidentId) === card.cardId);
@@ -126,7 +126,7 @@ export default function DdsLevelApp({ contextId, incidents, classifier, userServ
       </LevelCommandBar>
       {error && <wa-callout class="dds-level-message" variant="danger"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{error}</wa-callout>}
       {finished && <LevelCompletionNotice className="dds-level-message" complete ready finishing={finishing} completeMessage="Все происшествия обработаны. Завершите уровень, чтобы перейти к разбору." onFinish={finishLevel} />}
-      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} onApply={applyReactionStatus} /> : null} onChange={setEditor} onClose={() => {}} />}
+      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} routingFacts={routingFacts} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} onApply={applyReactionStatus} /> : null} onChange={setEditor} onClose={() => {}} />}
       <ActiveCards cards={cards} loading={!progress} error={false} classifierState={classifierState} searchQuery={query} onOpen={(card) => setEditor(editorFor(card))} getCardMeta={getCardMeta} heading="Список происшествий" emptyMessage="Карточки ДДС пока не поступили" statusLabel="Статус" />
     </div>
   );

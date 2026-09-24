@@ -17,6 +17,7 @@ const isDev = import.meta.env.DEV;
 let targetType = null;
 let incidents = [];
 let classifier = [];
+let routingFacts = [];
 const profile = Astro.locals.profile;
 let error = contextId ? null : "Не указан контекст прохождения задания";
 if (!error) {
@@ -43,7 +44,9 @@ if (!error) {
     if (targetType === "DDS") {
       const classifierResponse = await getIncidentClassifier(Astro.locals.accessToken);
       if (!classifierResponse.ok || !profile) throw new Error("Не удалось загрузить рабочее поле ДДС");
-      classifier = normalizeClassifier(await classifierResponse.json()).classifier;
+      const normalizedClassifier = normalizeClassifier(await classifierResponse.json());
+      classifier = normalizedClassifier.classifier;
+      routingFacts = normalizedClassifier.routingFacts;
     }
   } catch (requestError) {
     error = requestError.message || "Не удалось загрузить задание";
@@ -52,7 +55,7 @@ if (!error) {
 ---
 <Page {error}>
   {!error && targetType === "SYSTEM_112" && <LevelApp {contextId} {dialogEndpoint} {dadataApiKey} {isDev} client:load />}
-  {!error && targetType === "DDS" && <DdsLevelApp {contextId} {incidents} {classifier} userService={profile?.ddsService} client:load />}
+  {!error && targetType === "DDS" && <DdsLevelApp {contextId} {incidents} {classifier} {routingFacts} userService={profile?.ddsService} client:load />}
 </Page>
 <style is:global>
   wa-page:has(.level-app)::part(main-content) { padding: 0; background: #899ba4; }

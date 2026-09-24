@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import AdditionalInfoCard from "./AdditionalInfoCard.jsx";
 import ApplicantHeader from "./ApplicantHeader.jsx";
 import DispatchServicesPanel, { automaticServices } from "./DispatchServicesPanel.jsx";
@@ -7,7 +7,7 @@ import LinkCardDialog from "./LinkCardDialog.jsx";
 import PersonCard from "./PersonCard.jsx";
 import PhoneField from "./PhoneField.jsx";
 import VictimStatusBar from "./VictimStatusBar.jsx";
-import { cardAddress, emptyPerson, findIncident, formatAdditionalInfoValue } from "./editorHelpers";
+import { cardAddress, emptyPerson, findIncident } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
 import IncidentWorkspace from "../../../level/components/common/IncidentWorkspace.jsx";
 
@@ -80,6 +80,15 @@ const styles = `
 .incident-details-header button:hover { background: rgba(255, 255, 255, .12); }
 .incident-details-content { padding: var(--wa-space-m); }
 .incident-details-empty { color: var(--wa-color-text-quiet); }
+.incident-routing-facts { display: grid; gap: var(--wa-space-s); }
+.incident-routing-row { display: grid; grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr); align-items: start; gap: var(--wa-space-m); }
+.incident-routing-row > span { padding-block: var(--wa-space-xs); color: #687880; }
+.incident-routing-options { display: flex; flex-wrap: wrap; gap: var(--wa-space-xs); }
+.incident-routing-option { min-height: 2.6rem; padding: var(--wa-space-xs) var(--wa-space-m); border: var(--wa-border-width-s) solid #9ba8ae; background: #ffffff; color: #26343b; font: inherit; font-weight: var(--wa-font-weight-semibold); cursor: pointer; }
+.incident-routing-option:hover, .incident-routing-option:focus-visible { border-color: #008dca; outline: 0; }
+.incident-routing-option--selected { border-color: #008dca; background: #008dca; color: #ffffff; }
+.incident-routing-status { margin: 0; color: #687880; }
+.incident-routing-error { margin: 0; color: var(--wa-color-danger-on-quiet); }
 .incident-classifier-details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--wa-space-s); margin: 0; }
 .incident-classifier-details div { min-width: 0; }
 .incident-classifier-details dt { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
@@ -105,28 +114,36 @@ const styles = `
 .workspace-actions .workspace-link::part(button), .workspace-actions .workspace-close::part(button) { min-width: 4rem; }
 .workspace-actions .workspace-link[appearance='filled']::part(button) { background: #ffffff; color: #ff5b2d; }
 @media (max-width: 70rem) { .workspace-callbar { grid-template-columns: repeat(3, minmax(13rem, 1fr)) auto; } .workspace-connection { display: none !important; } }
-@media (max-width: 48rem) { .incident-workspace { min-width: 0; } .workspace-callbar { grid-template-columns: repeat(3, minmax(12rem, 1fr)) auto; overflow-x: auto; } .workspace-body, .saved-card-body { grid-template-columns: 1fr; overflow-y: auto; } .workspace-column { overflow: visible; } }
+@media (max-width: 48rem) { .incident-workspace { min-width: 0; } .workspace-callbar { grid-template-columns: repeat(3, minmax(12rem, 1fr)) auto; overflow-x: auto; } .workspace-body, .saved-card-body { grid-template-columns: 1fr; overflow-y: auto; } .workspace-column { overflow: visible; } .incident-routing-row { grid-template-columns: 1fr; gap: var(--wa-space-xs); } }
 `;
 
 function formatTime(seconds) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-function classifierDetails(incident, values) {
+function classifierDetails(incident, values, routingFacts) {
   const features = [incident.feature1Name, incident.feature2Name, incident.feature3Name]
     .map((value, index) => value ? { name: `Признак ${index + 1}`, value } : null)
     .filter(Boolean);
   if (incident.additionalFeatures) features.push({ name: "Дополнительные признаки", value: incident.additionalFeatures });
-  return [...features, ...(incident.fields || []).map((field) => ({ name: field.name, value: formatAdditionalInfoValue(field, values[field.id]) }))];
+  const factsByCode = new Map(routingFacts.map((fact) => [fact.code, fact]));
+  const selectedFacts = incident.routingFactCodes.map((code) => factsByCode.get(code)).filter((fact) => fact && values[fact.code]).map((fact) => ({ name: fact.label, value: fact.options.find((option) => option.value === values[fact.code])?.label || values[fact.code] }));
+  return [...features, ...selectedFacts];
 }
 
-export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor }) {
+export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, routingFacts = [], readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor }) {
   const loadedClassifierState = useClassifier();
-  const classifierState = classifier ? { classifier, loading: false, error: null } : loadedClassifierState;
+  const classifierState = classifier ? { classifier, routingFacts, loading: false, error: null } : loadedClassifierState;
   const [seconds, setSeconds] = useState(0);
   const [savedEditMode, setSavedEditMode] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkTargetId, setLinkTargetId] = useState("");
+  const [routingErrors, setRoutingErrors] = useState({});
+  const [routingPending, setRoutingPending] = useState({});
+  const editorRef = useRef(editor);
+  const routingRequestVersion = useRef({});
+  const routedServices = useRef({});
+  editorRef.current = editor;
   const incidentTypes = editor.incidentTypes.filter(Boolean);
   const incidents = incidentTypes.map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
   const editingCard = cards.find((card) => card.cardId === editor.editingCardId);
@@ -135,10 +152,17 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const relatedCard = !!editingCard?.mainCardId;
   const canUnlink = relatedCard && call.phase === "active" && call.activeCallId === editingCard.callId;
   const relationLocked = relatedCard || call.phase === "finished";
-  const canSave = !editor.cardSaved && Number.isInteger(editor.victimCount) && editor.victimCount >= 0 && incidentTypes.length === editor.incidentTypes.length && incidentTypes.length > 0 && (editor.operation !== "LINK" || !!selectedCard);
+  const routingReady = !Object.values(routingPending).some(Boolean) && !Object.values(routingErrors).some(Boolean);
+  const canSave = !editor.cardSaved && routingReady && Number.isInteger(editor.victimCount) && editor.victimCount >= 0 && incidentTypes.length === editor.incidentTypes.length && incidentTypes.length > 0 && (editor.operation !== "LINK" || !!selectedCard);
   const aoh = call.phone || editor.applicant.phone;
 
-  useEffect(() => setSavedEditMode(false), [editor.editingCardId, editor.open]);
+  useEffect(() => {
+    setSavedEditMode(false);
+    setRoutingErrors({});
+    setRoutingPending({});
+    routingRequestVersion.current = {};
+    routedServices.current = {};
+  }, [editor.editingCardId, editor.open]);
 
   useEffect(() => {
     if (!editor.open || call.phase !== "active") {
@@ -155,8 +179,49 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     onChange({ ...editor, incidentTypes: nextIncidentTypes, services: [...new Set([...(editor.services || []), ...automaticServices(classifierState.classifier, nextIncidentTypes)])] });
   };
   const removeIncidentType = (removedIncident) => {
-    const removedFields = new Set((removedIncident.fields || []).map((field) => field.id));
-    onChange({ ...editor, incidentTypes: incidentTypes.filter((code) => code !== removedIncident.code), additionalInfo: Object.fromEntries(Object.entries(editor.additionalInfo).filter(([key]) => !removedFields.has(key))) });
+    const remainingTypes = incidentTypes.filter((code) => code !== removedIncident.code);
+    const remainingFacts = new Set(remainingTypes.map((code) => findIncident(classifierState.classifier, code)).filter(Boolean).flatMap((incident) => incident.routingFactCodes));
+    const removedFacts = new Set(removedIncident.routingFactCodes.filter((code) => !remainingFacts.has(code)));
+    const previousRouted = new Set(Object.values(routedServices.current).flat());
+    const nextRoutedServices = { ...routedServices.current };
+    delete nextRoutedServices[removedIncident.code];
+    routedServices.current = nextRoutedServices;
+    routingRequestVersion.current[removedIncident.code] = (routingRequestVersion.current[removedIncident.code] || 0) + 1;
+    setRoutingErrors((current) => ({ ...current, [removedIncident.code]: "" }));
+    setRoutingPending((current) => ({ ...current, [removedIncident.code]: false }));
+    const remainingRouted = Object.values(nextRoutedServices).flat();
+    const services = [...new Set([...editor.services.filter((code) => !previousRouted.has(code)), ...automaticServices(classifierState.classifier, remainingTypes), ...remainingRouted])];
+    onChange({ ...editor, incidentTypes: remainingTypes, additionalInfo: Object.fromEntries(Object.entries(editor.additionalInfo).filter(([key]) => !removedFacts.has(key))), services });
+  };
+  const resolveIncidentRouting = async (incident, nextEditor) => {
+    setRoutingErrors((current) => ({ ...current, [incident.code]: "" }));
+    setRoutingPending((current) => ({ ...current, [incident.code]: true }));
+    const version = (routingRequestVersion.current[incident.code] || 0) + 1;
+    routingRequestVersion.current[incident.code] = version;
+    const facts = Object.fromEntries(incident.routingFactCodes.filter((code) => nextEditor.additionalInfo[code] !== undefined).map((code) => [code, nextEditor.additionalInfo[code]]));
+    try {
+      const response = await fetch(`/api/v1/classifier/${encodeURIComponent(incident.code)}/routing`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ facts }) });
+      if (!response.ok) throw new Error("Не удалось рассчитать подключаемые службы");
+      const result = await response.json();
+      if (routingRequestVersion.current[incident.code] !== version) return;
+      const previousRouted = new Set(Object.values(routedServices.current).flat());
+      routedServices.current = { ...routedServices.current, [incident.code]: result.decisions.map((decision) => decision.service.code) };
+      const currentEditor = editorRef.current;
+      const services = [...new Set([...currentEditor.services.filter((code) => !previousRouted.has(code)), ...automaticServices(classifierState.classifier, currentEditor.incidentTypes), ...Object.values(routedServices.current).flat()])];
+      const routedEditor = { ...currentEditor, services };
+      editorRef.current = routedEditor;
+      onChange(routedEditor);
+    } catch (error) {
+      if (routingRequestVersion.current[incident.code] === version) setRoutingErrors((current) => ({ ...current, [incident.code]: error.message }));
+    } finally {
+      if (routingRequestVersion.current[incident.code] === version) setRoutingPending((current) => ({ ...current, [incident.code]: false }));
+    }
+  };
+  const changeRoutingFact = (factCode, value) => {
+    const nextEditor = { ...editorRef.current, additionalInfo: { ...editorRef.current.additionalInfo, [factCode]: value } };
+    editorRef.current = nextEditor;
+    onChange(nextEditor);
+    incidents.filter((item) => item.routingFactCodes.includes(factCode)).forEach((item) => resolveIncidentRouting(item, nextEditor));
   };
   const openLinkDialog = () => {
     if (relationLocked || !linkCards.length) return;
@@ -171,13 +236,13 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const autofill = () => {
     const firstIncident = classifierState.classifier.flatMap((category) => category.entries)[0];
     if (!firstIncident) return;
-    const values = { boolean: "true", number: "1", email: "test@example.com", tel: "79001234567", url: "https://example.com" };
+    const factsByCode = new Map(classifierState.routingFacts.map((fact) => [fact.code, fact]));
     onChange({
       ...editor,
       applicant: { ...emptyPerson(), phone: "79001234567", contactPhone: "79001234567", onScenePhone: "79001234567", lastName: "Иванов", firstName: "Иван", middleName: "Иванович", address: "г. Москва, ул. Тверская, д. 1", additionalInfo: "Тестовый заявитель" },
       victimCount: 1,
       incidentTypes: [firstIncident.code],
-      additionalInfo: Object.fromEntries((firstIncident.fields || []).map((field) => [field.id, values[field.type.toLowerCase()] || "Тестовое значение"])),
+      additionalInfo: Object.fromEntries(firstIncident.routingFactCodes.map((code) => [code, factsByCode.get(code)?.options[0]?.value]).filter(([, value]) => value)),
       services: automaticServices(classifierState.classifier, [firstIncident.code])
     });
   };
@@ -251,7 +316,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
         <section class="saved-card-column wa-stack wa-gap-m" aria-label="Сведения о происшествии">
           <VictimStatusBar victimCount={editor.victimCount} readonly />
-          {incidents.map((item) => { const details = classifierDetails(item, editor.additionalInfo); return <div class="wa-stack wa-gap-0" key={item.code}>
+          {incidents.map((item) => { const details = classifierDetails(item, editor.additionalInfo, classifierState.routingFacts); return <div class="wa-stack wa-gap-0" key={item.code}>
             <div class="saved-incident-heading">
               <strong>{item.finalName}</strong>
             </div>
@@ -305,7 +370,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
           <LinkCardDialog open={linkDialogOpen} cards={linkCards} selectedId={linkTargetId} onSelect={setLinkTargetId} onCancel={() => setLinkDialogOpen(false)} onConfirm={confirmLink} />
           <IncidentTypeSearch classifierState={classifierState} selectedCodes={incidentTypes} onAdd={addIncidentType} />
           <div class="workspace-column-inner wa-stack wa-gap-m">
-            {incidents.map((item) => <AdditionalInfoCard key={item.code} incident={item} values={editor.additionalInfo} onChange={(additionalInfo) => onChange({ ...editor, additionalInfo })} onRemove={() => removeIncidentType(item)} />)}
+            {incidents.map((item) => <AdditionalInfoCard key={item.code} incident={item} routingFacts={classifierState.routingFacts} values={editor.additionalInfo} routingError={routingErrors[item.code]} routingPending={routingPending[item.code]} onChange={changeRoutingFact} onRemove={() => removeIncidentType(item)} />)}
           </div>
         </section>
       </div>
