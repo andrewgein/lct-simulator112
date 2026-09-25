@@ -1,10 +1,10 @@
 ---
-import Page from "../../layouts/Page.astro";
-import Header from "../../layouts/Header.astro";
-import MainHeader from "../../layouts/MainHeader.astro";
-import { getCourses, getStudyGroups, getStudyGroupCourses } from "../../features/course/api/CourseApi";
-import { getStudents } from "../../features/course/api/StudentApi";
-import { getStudentReviews } from "../../features/review/api/ReviewApi";
+import Page from "../../../../layouts/Page.astro";
+import Header from "../../../../layouts/Header.astro";
+import MainHeader from "../../../../layouts/MainHeader.astro";
+import { getCourses, getStudyGroups, getStudyGroupCourses } from "../../../../features/course/api/CourseApi";
+import { getStudents } from "../../../../features/course/api/StudentApi";
+import { getStudentReviews } from "../../../../features/review/api/ReviewApi";
 
 export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
@@ -28,7 +28,8 @@ try {
   ]);
   if (!coursesResponse.ok || !groupsResponse.ok) throw new Error();
 
-  const courses = await coursesResponse.json();
+  const courses = (await coursesResponse.json()).filter((course) => String(course.id) === String(Astro.params.id));
+  if (!courses.length) return Astro.redirect('/teacher/courses');
   const groups = await groupsResponse.json();
   const groupCourses = await Promise.all(groups.map(async (group) => {
     const response = await getStudyGroupCourses(group.id, token);
@@ -98,13 +99,18 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", ti
 
 <Page {error}>
   <Header slot="header" />
-  <MainHeader slot="main-header" title="Статистика обучения" />
+  <MainHeader slot="main-header" title={courseStats[0]?.course.title || "Статистика курса"}>
+    <div class="wa-cluster wa-gap-xs">
+      <wa-button href="/teacher/courses" appearance="outlined">Все курсы</wa-button>
+      {courseStats[0] && <wa-button href={`/teacher/courses/${courseStats[0].course.id}`} appearance="outlined">Редактировать курс</wa-button>}
+    </div>
+  </MainHeader>
   {!error && (
     <div class="statistics-page wa-stack wa-gap-xl">
       <dl class="summary-strip">
         <div class="summary-item wa-stack wa-gap-2xs">
-          <dt>Курсы</dt>
-          <dd>{courseStats.length}</dd>
+          <dt>Задания</dt>
+          <dd>{courseStats[0]?.course.assignments?.length || 0}</dd>
         </div>
         <div class="summary-item wa-stack wa-gap-2xs">
           <dt>Обучающиеся</dt>
@@ -120,11 +126,11 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", ti
         </div>
       </dl>
 
-      {!courseStats.length && <wa-callout>Создайте курс и назначьте его учебной группе, чтобы здесь появилась статистика.</wa-callout>}
-      {courseStats.map(({ course, students, completed, possible, average }, courseIndex) => {
+      {!courseStats.length && <wa-callout>Статистика курса недоступна.</wa-callout>}
+      {courseStats.map(({ course, students, completed, possible, average }) => {
         const progress = possible ? Math.round(completed / possible * 100) : 0;
         return (
-          <wa-details appearance="filled-outlined" open={courseIndex === 0}>
+          <wa-details appearance="filled-outlined" open>
             <div slot="summary" class="course-heading wa-split wa-gap-m">
               <div class="wa-stack wa-gap-2xs">
                 <h2 class="wa-heading-l">{course.title}</h2>

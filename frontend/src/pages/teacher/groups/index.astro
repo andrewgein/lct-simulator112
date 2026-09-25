@@ -2,13 +2,15 @@
 import Page from "../../../layouts/Page.astro";
 import Header from "../../../layouts/Header.astro";
 import MainHeader from "../../../layouts/MainHeader.astro";
-import { getStudyGroups } from "../../../features/course/api/CourseApi";
+import { getStudyGroupCourses, getStudyGroups } from "../../../features/course/api/CourseApi";
 import { getStudents } from "../../../features/course/api/StudentApi";
+import GroupCourseList from "../../../features/course/components/GroupCourseList.astro";
 
 export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
 let groups = [];
 let studentsById = new Map();
+let assignedCoursesByGroupId = new Map();
 let error = null;
 try {
   const [response, students] = await Promise.all([
@@ -17,7 +19,13 @@ try {
   ]);
   if (!response.ok) throw new Error();
   groups = await response.json();
+  const assignedCourseEntries = await Promise.all(groups.map(async (group) => {
+    const assignedResponse = await getStudyGroupCourses(group.id, Astro.locals.accessToken);
+    if (!assignedResponse.ok) throw new Error();
+    return [String(group.id), await assignedResponse.json()];
+  }));
   studentsById = new Map(students.map((student) => [String(student.id), student]));
+  assignedCoursesByGroupId = new Map(assignedCourseEntries);
 } catch {
   error = "Не удалось загрузить учебные группы";
 }
@@ -30,37 +38,82 @@ try {
   </MainHeader>
   {!error && !groups.length && <wa-callout>Учебных групп пока нет. Создайте группу, чтобы назначать курсы нескольким обучающимся.</wa-callout>}
   {!error && groups.length > 0 && (
-    <div class="wa-grid wa-gap-m">
-      {groups.map((group) => {
+    <wa-accordion class="groups-accordion" appearance="outlined" heading-level="2" mode="single-collapsible">
+      {groups.map((group, index) => {
         const students = (group.studentIds || []).map((id) => studentsById.get(String(id))).filter(Boolean);
         return (
-          <wa-card with-header>
-            <h2 slot="header" class="group-title wa-heading-l">{group.title}</h2>
-            <div class="wa-stack wa-gap-l">
-              <wa-accordion>
-                <wa-accordion-item label={`Участники (${students.length})`}>
-                  {students.length ? (
-                    <ul class="student-list wa-stack wa-gap-xs">
-                      {students.map((student) => {
-                        const fullName = student.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
-                        return <li><strong>{fullName}</strong></li>;
-                      })}
-                    </ul>
-                  ) : (
-                    <p class="empty-students">В группе пока нет обучающихся.</p>
-                  )}
-                </wa-accordion-item>
-              </wa-accordion>
-              <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined">Открыть группу</wa-button>
+          <wa-accordion-item expanded={index === 0}>
+            <div slot="label" class="group-label wa-split wa-gap-m">
+              <span class="wa-heading-l">{group.title}</span>
+              <wa-badge variant="neutral" appearance="outlined">Участников: {students.length}</wa-badge>
             </div>
-          </wa-card>
+            <div class="group-content wa-stack wa-gap-l">
+              <div class="wa-split wa-gap-m">
+                <h3 class="group-section-title wa-heading-l">Состав группы</h3>
+                <div class="wa-cluster wa-gap-xs">
+                  <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
+                    <wa-icon name="pen" label="Редактировать">
+                    </wa-icon>
+                  </wa-button>
+                  <wa-button class="delete-group" type="button" appearance="outlined" variant="danger" data-id={group.id} data-title={group.title} aria-label={`Удалить группу ${group.title}`}>
+                    <wa-icon name="trash" label="Удалить">
+                    </wa-icon>
+                  </wa-button>
+                </div>
+              </div>
+              {students.length ? (
+                <ul class="student-list wa-stack wa-gap-2xs">
+                  {students.map((student) => {
+                    const fullName = student.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
+                    return (
+                      <li class="student-row wa-split wa-gap-m">
+                        <strong>{fullName}</strong>
+                        <span>{student.email}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <wa-callout variant="neutral">В группе пока нет обучающихся.</wa-callout>
+              )}
+              <GroupCourseList group={group} assignedCourses={assignedCoursesByGroupId.get(String(group.id)) || []} />
+            </div>
+          </wa-accordion-item>
         );
       })}
-    </div>
+    </wa-accordion>
   )}
 </Page>
 
+<script>
+  document.querySelectorAll('.delete-group').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!confirm(`Удалить группу «${button.dataset.title}» без возможности восстановления?`)) return;
+      button.loading = true;
+      const response = await fetch(`/api/v1/study-groups/${encodeURIComponent(button.dataset.id)}`, { method: 'DELETE' });
+      if (response.ok) window.location.reload();
+      else {
+        button.loading = false;
+        alert('Не удалось удалить группу');
+      }
+    });
+  });
+</script>
+
 <style>
-  .group-title, .student-list, .empty-students { margin: 0; }
+  .groups-accordion { width: 100%; }
+  .groups-accordion wa-accordion-item::part(accordion-item),
+  .groups-accordion wa-accordion-item::part(button),
+  .groups-accordion wa-accordion-item::part(content) { background-color: var(--wa-color-surface-raised); }
+  .group-label { width: 100%; align-items: center; font-weight: var(--wa-font-weight-semibold); }
+  .group-content { padding-block: var(--wa-space-xs); }
+  .group-section-title, .student-list { margin: 0; }
   .student-list { padding: 0; list-style: none; }
+  .student-row { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .student-row:first-child { border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .student-row span { color: var(--wa-color-text-quiet); }
+  @media (max-width: 48rem) {
+    .group-content > .wa-split, .student-row { align-items: flex-start; flex-direction: column; }
+    .group-label wa-badge { display: none; }
+  }
 </style>

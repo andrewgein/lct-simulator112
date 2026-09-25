@@ -1,80 +1,30 @@
 ---
-const { group = {}, courses = [], assignedCourses = [], students = [] } = Astro.props;
+const { group = {}, students = [] } = Astro.props;
 const selectedStudentIds = new Set((group.studentIds || []).map(String));
-const assignedCourseIds = new Set(assignedCourses.map((course) => String(course.id)));
-const availableCourses = courses.filter((course) => !assignedCourseIds.has(String(course.id)));
 const trackLabels = { SYSTEM_112: "Система-112", DDS: "ДДС" };
 ---
 
-<div class:list={["group-editor", { "group-editor--with-courses": group.id }]}>
-  <form id="group-form" class="wa-stack wa-gap-l" data-id={group.id || ""}>
-    {group.id && <h2 class="wa-heading-xl">Настройки группы</h2>}
-    <wa-callout id="group-error" variant="danger" hidden></wa-callout>
-    <wa-input name="title" label="Название группы" value={group.title || ""} placeholder="Например, Диспетчеры — весна 2026" required></wa-input>
-    <fieldset class="student-picker wa-stack wa-gap-s">
-      <legend class="wa-heading-l">Обучающиеся</legend>
-      <wa-input id="student-search" type="search" placeholder="Поиск по имени или электронной почте" with-clear><wa-icon slot="start" name="magnifying-glass"></wa-icon></wa-input>
-      <input id="students-validation" class="students-validation" type="text" required aria-label="Обучающиеся группы">
-      {students.length ? (
-        <div id="student-list" class="student-list wa-stack wa-gap-2xs">
-          {students.map((student) => {
-            const fullName = student.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
-            const track = trackLabels[student.profile?.trainingTrack] || "Направление не назначено";
-            return (
-              <wa-checkbox class="student-option" value={student.id} data-selected={selectedStudentIds.has(String(student.id)) ? "true" : "false"} data-search={`${fullName} ${student.email}`.toLowerCase()}>
-                <span class="student-option-label"><strong>{fullName}</strong><small>{student.email} · {track}</small></span>
-              </wa-checkbox>
-            );
-          })}
-        </div>
-      ) : (
-        <wa-callout variant="neutral">Обучающихся пока нет.</wa-callout>
-      )}
-      <wa-callout id="students-empty" variant="neutral" hidden>Обучающиеся не найдены.</wa-callout>
-    </fieldset>
-  </form>
-
-  {group.id && (
-    <>
-      <wa-divider class="group-editor-divider group-editor-divider--vertical" orientation="vertical"></wa-divider>
-      <wa-divider class="group-editor-divider group-editor-divider--horizontal"></wa-divider>
-      <section class="assignment-panel wa-stack wa-gap-l" aria-labelledby="courses-heading">
-      <h2 id="courses-heading" class="wa-heading-xl">Курсы</h2>
-      <div class="wa-stack wa-gap-s">
-        <h3 id="assigned-courses-heading" class="wa-heading-l">Назначенные курсы</h3>
-        <div id="assigned-course-list" class="assigned-course-list wa-stack wa-gap-xs">
-          {assignedCourses.map((course) => (
-            <div class="assigned-course-item" data-course-id={course.id}>
-              <wa-icon name="book-open" aria-hidden="true"></wa-icon>
-              <strong>{course.title}</strong>
-            </div>
-          ))}
-        </div>
-        <wa-callout id="assigned-courses-empty" variant="neutral" hidden={assignedCourses.length > 0}>Группе пока не назначены курсы.</wa-callout>
+<form id="group-form" class="wa-stack wa-gap-l" data-id={group.id || ""}>
+  <wa-callout id="group-error" variant="danger" hidden></wa-callout>
+  <wa-input name="title" label="Название группы" value={group.title || ""} placeholder="Например, Диспетчеры — весна 2026" required></wa-input>
+  <fieldset class="student-picker wa-stack wa-gap-s">
+    <legend class="wa-heading-l">Обучающиеся</legend>
+    <wa-input id="student-search" type="search" placeholder="Поиск по имени или электронной почте" with-clear><wa-icon slot="start" name="magnifying-glass"></wa-icon></wa-input>
+    <input id="students-validation" class="students-validation" type="text" required aria-label="Обучающиеся группы">
+    {students.length ? (
+      <div id="student-list" class="student-list wa-stack wa-gap-2xs">
+        {students.map((student) => {
+          const fullName = student.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
+          const track = trackLabels[student.profile?.trainingTrack] || "Направление не назначено";
+          return <wa-checkbox class="student-option" value={student.id} data-selected={selectedStudentIds.has(String(student.id)) ? "true" : "false"} data-search={`${fullName} ${student.email}`.toLowerCase()}><span class="student-option-label"><strong>{fullName}</strong><small>{student.email} · {track}</small></span></wa-checkbox>;
+        })}
       </div>
-      <wa-divider></wa-divider>
-      <div class="wa-stack wa-gap-2xs">
-        <h3 id="course-assignment-heading" class="wa-heading-l">Назначить курс</h3>
-        <p>Курс будет назначен всем текущим участникам группы.</p>
-      </div>
-      {courses.length ? (
-        <>
-          <div id="course-assignment-controls" class="wa-cluster wa-align-items-end" hidden={!availableCourses.length}>
-            <wa-select id="course-to-assign" label="Курс">
-              {availableCourses.map((course) => <wa-option value={course.id}>{course.title}</wa-option>)}
-            </wa-select>
-            <wa-button id="assign-course" type="button" variant="brand">Назначить группе</wa-button>
-          </div>
-          <wa-callout id="all-courses-assigned" variant="neutral" hidden={availableCourses.length > 0}>Все доступные курсы уже назначены группе.</wa-callout>
-        </>
-      ) : (
-        <wa-callout>Сначала <a href="/teacher/courses/new">создайте курс</a>.</wa-callout>
-      )}
-        <wa-callout id="assignment-result" variant="success" hidden></wa-callout>
-      </section>
-    </>
-  )}
-</div>
+    ) : (
+      <wa-callout variant="neutral">Обучающихся пока нет.</wa-callout>
+    )}
+    <wa-callout id="students-empty" variant="neutral" hidden>Обучающиеся не найдены.</wa-callout>
+  </fieldset>
+</form>
 
 <script>
   const form = document.querySelector('#group-form');
@@ -113,20 +63,6 @@ const trackLabels = { SYSTEM_112: "Система-112", DDS: "ДДС" };
   });
   validateStudents();
 
-  async function saveGroup() {
-    const groupId = form.dataset.id;
-    const response = await fetch(`/api/v1/study-groups${groupId ? `/${groupId}` : ''}`, {
-      method: groupId ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: form.querySelector('[name="title"]').value.trim(), studentIds: readStudentIds() })
-    });
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      throw new Error(body.message || body.detail || 'Не удалось сохранить группу.');
-    }
-    return response.json();
-  }
-
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (saving || !validateStudents() || !form.reportValidity()) return;
@@ -135,8 +71,17 @@ const trackLabels = { SYSTEM_112: "Система-112", DDS: "ДДС" };
     error.hidden = true;
     const groupId = form.dataset.id;
     try {
-      const saved = await saveGroup();
-      window.location.href = groupId ? '/teacher/groups' : `/teacher/groups/${saved.id}`;
+      const response = await fetch(`/api/v1/study-groups${groupId ? `/${encodeURIComponent(groupId)}` : ''}`, {
+        method: groupId ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: form.querySelector('[name="title"]').value.trim(), studentIds: readStudentIds() })
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.detail || 'Не удалось сохранить группу.');
+      }
+      const saved = await response.json();
+      window.location.href = groupId ? `/teacher/groups/${encodeURIComponent(groupId)}` : `/teacher/groups/${encodeURIComponent(saved.id)}`;
     } catch (requestError) {
       error.textContent = requestError.message;
       error.hidden = false;
@@ -145,77 +90,14 @@ const trackLabels = { SYSTEM_112: "Система-112", DDS: "ДДС" };
       submit.loading = false;
     }
   });
-
-  const assignButton = document.querySelector('#assign-course');
-  assignButton?.addEventListener('click', async () => {
-    const select = document.querySelector('#course-to-assign');
-    const courseId = select.value;
-    const result = document.querySelector('#assignment-result');
-    if (!courseId || !form.dataset.id) return;
-    assignButton.loading = true;
-    result.hidden = true;
-    try {
-      const response = await fetch(`/api/v1/study-groups/${form.dataset.id}/courses/${courseId}`, { method: 'POST' });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        throw new Error(body.message || body.detail || 'Не удалось назначить курс.');
-      }
-      await response.json();
-      const selectedOption = select.querySelector(`wa-option[value="${courseId}"]`);
-      const assignedList = document.querySelector('#assigned-course-list');
-      if (!assignedList.querySelector(`[data-course-id="${courseId}"]`)) {
-        const item = document.createElement('div');
-        item.className = 'assigned-course-item';
-        item.dataset.courseId = courseId;
-        const icon = document.createElement('wa-icon');
-        icon.name = 'book-open';
-        icon.setAttribute('aria-hidden', 'true');
-        const title = document.createElement('strong');
-        title.textContent = selectedOption?.textContent?.trim() || 'Курс';
-        item.append(icon, title);
-        assignedList.append(item);
-      }
-      document.querySelector('#assigned-courses-empty').hidden = true;
-      selectedOption?.remove();
-      const remainingOptions = select.querySelectorAll('wa-option');
-      if (!remainingOptions.length) {
-        document.querySelector('#course-assignment-controls').hidden = true;
-        document.querySelector('#all-courses-assigned').hidden = false;
-      } else {
-        select.value = remainingOptions[0].value;
-      }
-      result.variant = 'success';
-      result.textContent = 'Курс назначен группе.';
-    } catch (requestError) {
-      result.variant = 'danger';
-      result.textContent = requestError.message;
-    } finally {
-      result.hidden = false;
-      assignButton.loading = false;
-    }
-  });
 </script>
 
 <style>
-  .group-editor--with-courses { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--wa-space-xl); align-items: stretch; min-block-size: calc(100dvh - 13rem); }
-  #group-form, .assignment-panel { min-width: 0; }
-  .group-editor-divider { align-self: stretch; block-size: 100%; --spacing: 0; }
-  .group-editor-divider--horizontal { display: none; }
+  #group-form { max-width: 48rem; }
   .student-picker { min-width: 0; padding: 0; border: 0; margin: 0; }
   .student-picker legend { margin-block-end: var(--wa-space-s); font-weight: var(--wa-font-weight-semibold); }
   .student-list { max-height: 40vh; overflow-y: auto; padding: var(--wa-space-xs); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-default); }
   .student-option-label { display: grid; gap: var(--wa-space-3xs); }
   .student-option-label small { color: var(--wa-color-text-quiet); }
   .students-validation { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .assignment-panel { align-self: start; }
-  #group-form > h2, .assignment-panel h2, .assignment-panel h3, .assignment-panel p { margin: 0; }
-  .assignment-panel p { color: var(--wa-color-text-quiet); }
-  .assigned-course-item { display: flex; align-items: center; gap: var(--wa-space-s); padding: var(--wa-space-s) var(--wa-space-m); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-default); }
-  .assigned-course-item wa-icon { color: var(--wa-color-text-quiet); }
-  #course-to-assign { min-width: min(100%, 24rem); }
-  @media (max-width: 64rem) {
-    .group-editor--with-courses { grid-template-columns: minmax(0, 1fr); min-block-size: auto; }
-    .group-editor-divider--vertical { display: none; }
-    .group-editor-divider--horizontal { display: block; }
-  }
 </style>
