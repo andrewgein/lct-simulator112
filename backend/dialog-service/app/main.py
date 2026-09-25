@@ -5,6 +5,7 @@ from app.adapter.config.configuration import components
 from app.adapter.inbound.websocket.controller import configure, router as input_server_router
 from dotenv import load_dotenv
 from prometheus_fastapi_instrumentator import Instrumentator
+from os import getenv
 import logging
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -53,3 +54,18 @@ app.include_router(input_server_router)
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/internal/settings")
+async def internal_settings():
+    """Read-only view of the voice pipeline's current config, for the admin panel's settings
+    page (admin-service calls this directly over the docker network, never through the public
+    gateway). Deliberately excludes LLM_API_KEY - everything else here is operational config,
+    not a secret, and changing it is a matter of editing prod/.env and redeploying."""
+    return {
+        "llmModel": getenv("LLM_MODEL", "gpt-oss-120b"),
+        "llmBaseUrl": getenv("LLM_BASE_URL", "https://api.aitunnel.ru/v1/"),
+        "ttsBaseUrl": getenv("F5_TTS_BASE_URL", ""),
+        "ttsReadTimeout": getenv("F5_TTS_READ_TIMEOUT", "120"),
+        "ttsVoiceProfile": getenv("TTS_VOICE_PROFILE"),
+    }
