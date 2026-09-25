@@ -90,20 +90,10 @@ const formatBytes = (bytes) => (bytes == null ? "—" : `${(bytes / 1024 / 1024)
   });
 
   document.querySelectorAll<HTMLElement>(".download-backup").forEach((button) => {
-    button.addEventListener("click", async () => {
+    button.addEventListener("click", () => {
       const runId = button.dataset.runId;
       if (!runId) return;
-      button.toggleAttribute("loading", true);
-      try {
-        const response = await fetch(`/api/v1/admin/backups/${encodeURIComponent(runId)}/download-url`);
-        if (!response.ok) throw new Error();
-        const { url } = await response.json();
-        window.location.href = url;
-      } catch {
-        alert("Не удалось получить ссылку на скачивание");
-      } finally {
-        button.toggleAttribute("loading", false);
-      }
+      window.location.href = `/api/v1/admin/backups/${encodeURIComponent(runId)}/download`;
     });
   });
 </script>
