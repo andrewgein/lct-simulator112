@@ -34,9 +34,13 @@ const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium"
 <AdminLayout title="Журнал действий" active="audit" {error}>
   {!error && (
     <div class="wa-stack wa-gap-l">
-      <form class="wa-cluster wa-gap-s" method="get">
+      <form id="audit-filter-form" class="audit-filters wa-cluster wa-gap-s" method="get">
         <wa-input name="userId" label="ID пользователя" value={filters.userId}></wa-input>
-        <wa-input name="action" label="Действие" placeholder="ROLE_CHANGED, HTTP_REQUEST…" value={filters.action}></wa-input>
+        <wa-select id="action-filter" name="action" label="Действие" value={filters.action}>
+          <wa-option value="">Любое</wa-option>
+          <wa-option value="ROLE_CHANGED">ROLE_CHANGED</wa-option>
+          <wa-option value="HTTP_REQUEST">HTTP_REQUEST</wa-option>
+        </wa-select>
         <wa-input name="dateFrom" type="datetime-local" label="С" value={filters.dateFrom}></wa-input>
         <wa-input name="dateTo" type="datetime-local" label="По" value={filters.dateTo}></wa-input>
         <wa-button type="submit" variant="brand" appearance="filled">Применить</wa-button>
@@ -81,3 +85,13 @@ const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium"
     </div>
   )}
 </AdminLayout>
+
+<style>
+  .audit-filters { align-items: end; }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("#audit-filter-form");
+  const actionFilter = document.querySelector("#action-filter");
+  actionFilter?.addEventListener("change", () => form?.requestSubmit());
+</script>
