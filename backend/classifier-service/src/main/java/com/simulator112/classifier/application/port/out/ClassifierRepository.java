@@ -1,5 +1,6 @@
 package com.simulator112.classifier.application.port.out;
 
+import com.simulator112.classifier.domain.model.ClassifierCandidate;
 import com.simulator112.classifier.domain.model.ClassifierCategory;
 import com.simulator112.classifier.domain.model.ClassifierEntry;
 import com.simulator112.classifier.domain.model.RoutingRule;
@@ -9,6 +10,8 @@ import java.util.Optional;
 
 public interface ClassifierRepository {
     List<ClassifierCategory> findAllCategories();
+
+    List<ClassifierCandidate> findCandidates();
 
     Optional<ClassifierEntry> findEntryByCode(String code);
 

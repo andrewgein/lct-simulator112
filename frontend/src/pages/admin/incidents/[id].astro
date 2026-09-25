@@ -3,6 +3,7 @@ import Page from "../../../layouts/Page.astro";
 import Header from "../../../layouts/Header.astro";
 import MainHeader from "../../../layouts/MainHeader.astro";
 import IncidentForm from "../../../features/incident/components/admin/IncidentForm.astro";
+import IncidentGenerator from "../../../features/incident/components/admin/IncidentGenerator.astro";
 import { getIncident } from "../../../features/incident/api/AdminIncidentApi";
 
 export const prerender = false;
@@ -31,7 +32,8 @@ try {
       <wa-button type="submit" form="incident-form" appearance="accent" variant="success">Сохранить</wa-button>
     </div>
   </MainHeader>
-  {incident && (
-    <IncidentForm {incident} mode="edit" />
-  )}
+  {incident && <IncidentForm {incident} mode="edit" />}
+  {incident?.targetType === "SYSTEM_112" && <div slot="aside"><IncidentGenerator /></div>}
+  {incident?.targetType === "SYSTEM_112" && <div slot="floating" class="generator-thinking" aria-hidden="true"><wa-icon class="generator-thinking-star generator-thinking-star--one" name="star"></wa-icon><wa-icon class="generator-thinking-star generator-thinking-star--two" name="star"></wa-icon><wa-icon class="generator-thinking-star generator-thinking-star--three" name="star"></wa-icon></div>}
+  {incident?.targetType === "SYSTEM_112" && <button slot="floating" id="open-incident-generator" class="generator-tab" type="button" aria-label="Открыть ИИ-чат" aria-controls="incident-generator" aria-expanded="false"><wa-icon class="generator-tab-icon" name="wand-magic-sparkles" aria-hidden="true"></wa-icon><span class="generator-tab-label">ИИ</span><span class="generator-tab-caption">помощник</span></button>}
 </Page>

@@ -21,6 +21,11 @@ grpc:
   server:
     port: 9091
 
+incident:
+  generator:
+    url: ${OLLAMA_CHAT_URL:http://100.105.43.63:11434/api/chat}
+    model: ${OLLAMA_MODEL:qwen3:4b-instruct-2507-q4_K_M}
+
 classifier:
   grpc:
     host: ${CLASSIFIER_GRPC_HOST:localhost}

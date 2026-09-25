@@ -2,6 +2,7 @@ package com.simulator112.classifier.adapter.in.grpc;
 
 import com.simulator112.classifier.application.port.in.GetClassifierEntryUseCase;
 import com.simulator112.classifier.application.port.in.ResolveRoutingUseCase;
+import com.simulator112.classifier.application.port.in.SearchClassifierEntriesUseCase;
 import com.simulator112.classifier.domain.exception.ClassifierEntryNotFoundException;
 import com.simulator112.classifier.grpc.contract.*;
 import io.grpc.Status;
@@ -17,6 +18,7 @@ public class ClassifierGrpcController extends ClassifierServiceGrpc.ClassifierSe
 
     private final GetClassifierEntryUseCase classifier;
     private final ResolveRoutingUseCase routing;
+    private final SearchClassifierEntriesUseCase search;
 
     @Override
     public void getClassifierEntry(
@@ -25,6 +27,22 @@ public class ClassifierGrpcController extends ClassifierServiceGrpc.ClassifierSe
             requireCode(request.getClassifierCode());
             observer.onNext(ClassifierGrpcMapper.toProto(
                     classifier.getClassifierEntry(request.getClassifierCode())));
+            observer.onCompleted();
+        } catch (RuntimeException exception) {
+            observer.onError(toStatus(exception));
+        }
+    }
+
+    @Override
+    public void searchClassifierEntries(SearchClassifierEntriesRequest request,
+                                        StreamObserver<SearchClassifierEntriesResponse> observer) {
+        try {
+            var response = SearchClassifierEntriesResponse.newBuilder();
+            for (var entry : search.search(request.getQuery(), request.getLimit(), request.getIncludedCodesList())) {
+                response.addEntries(ClassifierCandidate.newBuilder().setCode(entry.code())
+                        .setCategoryName(entry.categoryName()).setFinalName(entry.finalName()).build());
+            }
+            observer.onNext(response.build());
             observer.onCompleted();
         } catch (RuntimeException exception) {
             observer.onError(toStatus(exception));
