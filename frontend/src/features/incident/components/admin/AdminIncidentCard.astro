@@ -3,7 +3,7 @@
 /** @type {{ incident: Incident, canDelete?: boolean }} */
 const { incident, canDelete = true } = Astro.props;
 const isDds = incident.targetType === "DDS";
-const editHref = isDds ? `/admin/incidents/dds/${incident.id}` : `/admin/incidents/${incident.id}`;
+const editHref = `/admin/incidents/${incident.id}`;
 ---
 
 <wa-card>
