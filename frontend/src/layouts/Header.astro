@@ -51,6 +51,12 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
               </wa-icon>
               Статистика
             </wa-button>
+            <wa-button id="notifications-menu-item" appearance="plain" variant="neutral" data-popover="close">
+              <wa-icon slot="start" name="bell">
+              </wa-icon>
+              Уведомления
+              <wa-badge id="notification-unread-badge" slot="end" variant="danger" pill hidden>0</wa-badge>
+            </wa-button>
             <wa-button appearance="plain" variant="neutral" href="/profile/settings" data-popover="close">
               <wa-icon slot="start" name="user-gear">
               </wa-icon>
@@ -61,10 +67,134 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
             <LogoutButton />
           </nav>
         </wa-popover>
+        <wa-popover id="notifications-popover" class="notifications-popover" placement="bottom-end" without-arrow>
+          <div class="notifications-panel wa-stack wa-gap-2xs">
+            <div class="notifications-panel-header">
+              <span class="wa-heading-s">Уведомления</span>
+              <wa-button id="notifications-mark-all" appearance="plain" variant="neutral" size="small">
+                Прочитать всё
+              </wa-button>
+            </div>
+            <wa-divider>
+            </wa-divider>
+            <div id="notifications-list" class="notifications-list wa-stack wa-gap-2xs" aria-live="polite">
+              <div class="notifications-status">Загрузка…</div>
+            </div>
+          </div>
+        </wa-popover>
       </div>
     </div>
   </div>
 </header>
+
+<script>
+  const trigger = document.querySelector('#profile-menu-trigger');
+  const menuItem = document.querySelector('#notifications-menu-item');
+  const badge = document.querySelector('#notification-unread-badge');
+  const popover = document.querySelector('#notifications-popover');
+  const list = document.querySelector('#notifications-list');
+  const markAllButton = document.querySelector('#notifications-mark-all');
+
+  if (popover && trigger) {
+    popover.anchor = trigger;
+  }
+
+  const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
+  let unreadCount = 0;
+
+  function setUnreadCount(count) {
+    unreadCount = Math.max(0, count);
+    if (!badge) return;
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+      badge.hidden = false;
+    } else {
+      badge.hidden = true;
+    }
+  }
+
+  async function refreshUnreadCount() {
+    try {
+      const response = await fetch('/api/v1/notifications/unread-count');
+      if (!response.ok) return;
+      const data = await response.json();
+      setUnreadCount(data.unreadCount ?? 0);
+    } catch {
+      // notification-service недоступен — меню продолжает работать без счётчика
+    }
+  }
+
+  function renderNotifications(notifications) {
+    if (!list) return;
+    list.innerHTML = '';
+    if (!notifications.length) {
+      list.innerHTML = '<div class="notifications-status">Уведомлений пока нет</div>';
+      return;
+    }
+    for (const notification of notifications) {
+      const item = document.createElement('a');
+      item.href = notification.targetUrl || '#';
+      item.className = notification.read ? 'notification-item' : 'notification-item is-unread';
+      const created = notification.createdAt ? dateFormatter.format(new Date(notification.createdAt)) : '';
+      const title = document.createElement('strong');
+      title.textContent = notification.title;
+      const time = document.createElement('time');
+      time.textContent = created;
+      const header = document.createElement('div');
+      header.className = 'notification-item-header';
+      header.append(title, time);
+      const text = document.createElement('p');
+      text.textContent = notification.text;
+      item.append(header, text);
+      item.addEventListener('click', () => {
+        if (notification.read) return;
+        notification.read = true;
+        item.classList.remove('is-unread');
+        setUnreadCount(unreadCount - 1);
+        fetch(`/api/v1/notifications/${notification.id}/read`, { method: 'PATCH', keepalive: true }).catch(() => {});
+      });
+      list.appendChild(item);
+    }
+  }
+
+  async function loadNotifications() {
+    if (!list) return;
+    list.innerHTML = '<div class="notifications-status">Загрузка…</div>';
+    try {
+      const response = await fetch('/api/v1/notifications');
+      if (!response.ok) {
+        list.innerHTML = '<div class="notifications-status">Не удалось загрузить уведомления</div>';
+        return;
+      }
+      const data = await response.json();
+      renderNotifications(data.notifications || []);
+    } catch {
+      list.innerHTML = '<div class="notifications-status">Не удалось загрузить уведомления</div>';
+    }
+  }
+
+  menuItem?.addEventListener('click', () => {
+    popover?.show?.();
+    loadNotifications();
+  });
+
+  markAllButton?.addEventListener('click', async () => {
+    markAllButton.loading = true;
+    try {
+      const response = await fetch('/api/v1/notifications/read-all', { method: 'PATCH' });
+      if (response.ok) {
+        list?.querySelectorAll('.notification-item.is-unread').forEach((el) => el.classList.remove('is-unread'));
+        setUnreadCount(0);
+      }
+    } catch {
+      // счётчик обновится при следующем открытии
+    } finally {
+      markAllButton.loading = false;
+    }
+  });
+
+  refreshUnreadCount();
+</script>
 
 <style>
   .profile-menu-wrap { flex: 0 0 auto; }
@@ -75,4 +205,52 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
   .profile-menu wa-button { box-sizing: border-box; width: 100%; margin-inline-start: 0; --wa-color-neutral-on-quiet: var(--wa-color-text-normal); }
   .profile-menu wa-button::part(button) { justify-content: flex-start; }
   .profile-menu wa-button[variant='neutral']::part(button):hover { background: var(--wa-color-neutral-fill-normal); color: var(--wa-color-text-normal); }
+
+  #notifications-menu-item::part(button) { position: relative; }
+  #notification-unread-badge { margin-inline-start: auto; }
+
+  .notifications-popover { --max-width: 24rem; color: var(--wa-color-text-normal); }
+  .notifications-popover::part(body) { padding: 0; }
+  .notifications-panel { box-sizing: border-box; inline-size: 22rem; max-block-size: 28rem; }
+  .notifications-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--wa-space-s);
+    padding: var(--wa-space-s) var(--wa-space-m);
+  }
+  .notifications-panel-header .wa-heading-s { margin: 0; }
+  .notifications-list { overflow-y: auto; padding: var(--wa-space-2xs) var(--wa-space-2xs) var(--wa-space-s); }
+  .notifications-status { padding: var(--wa-space-l) var(--wa-space-m); color: var(--wa-color-text-quiet); text-align: center; }
+
+  .notification-item {
+    display: block;
+    box-sizing: border-box;
+    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    border-inline-start-width: var(--wa-space-3xs);
+    background: var(--wa-color-surface-raised);
+    color: inherit;
+    text-decoration: none;
+  }
+  .notification-item + .notification-item { margin-block-start: var(--wa-space-2xs); }
+  .notification-item:hover { background: var(--wa-color-neutral-fill-quiet); }
+  .notification-item.is-unread { border-inline-start-color: var(--wa-color-brand-fill-loud); background: var(--wa-color-brand-fill-quiet); }
+
+  .notification-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--wa-space-m);
+    padding: var(--wa-space-2xs) var(--wa-space-s) 0;
+  }
+  .notification-item-header strong { font-size: var(--wa-font-size-s); }
+  .notification-item-header time { flex: 0 0 auto; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-2xs); }
+
+  .notification-item p {
+    margin: 0;
+    padding: var(--wa-space-2xs) var(--wa-space-s) var(--wa-space-s);
+    font-size: var(--wa-font-size-s);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
 </style>

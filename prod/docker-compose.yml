@@ -189,6 +189,7 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      COURSE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-course:8088
     networks: [default, monitoring]
     depends_on:
       postgres:
@@ -196,6 +197,8 @@ services:
       incident-service:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      course-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q '\"status\":\"UP\"'"]

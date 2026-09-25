@@ -3,7 +3,7 @@ import { addReviewComment } from "../../../../../features/review/api/ReviewApi";
 export const prerender = false;
 
 export async function POST({ params, request, cookies, redirect }) {
-    if (cookies.get("role")?.value !== "SUPERVISOR") {
+    if (!["ADMIN", "SUPERVISOR"].includes(cookies.get("role")?.value)) {
         return new Response(null, { status: 403 });
     }
     const contextId = params.context || "";

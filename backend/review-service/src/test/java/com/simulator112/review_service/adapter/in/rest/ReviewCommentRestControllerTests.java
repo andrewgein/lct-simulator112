@@ -33,9 +33,24 @@ class ReviewCommentRestControllerTests {
         UUID authorId = UUID.randomUUID();
         ReviewComment comment = new ReviewComment(UUID.randomUUID(), contextId, authorId,
                 "Комментарий", Instant.now());
-        when(addComment.add(contextId, authorId, "Комментарий")).thenReturn(comment);
+        when(addComment.add(contextId, authorId, "SUPERVISOR", "Комментарий")).thenReturn(comment);
 
         var response = controller.addComment(authorId, "SUPERVISOR", contextId,
+                new AddReviewCommentRequest("Комментарий"));
+
+        assertThat(response.id()).isEqualTo(comment.id());
+        assertThat(response.authorId()).isEqualTo(authorId);
+    }
+
+    @Test
+    void adminCanAddComment() {
+        UUID contextId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
+        ReviewComment comment = new ReviewComment(UUID.randomUUID(), contextId, authorId,
+                "Комментарий", Instant.now());
+        when(addComment.add(contextId, authorId, "ADMIN", "Комментарий")).thenReturn(comment);
+
+        var response = controller.addComment(authorId, "ADMIN", contextId,
                 new AddReviewCommentRequest("Комментарий"));
 
         assertThat(response.id()).isEqualTo(comment.id());

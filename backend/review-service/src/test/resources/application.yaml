@@ -20,3 +20,5 @@ review:
     base-url: http://localhost:8080
     model-name: rubert-tiny-bilingual-nli
     threshold: 0.8
+  course-service:
+    base-url: http://localhost:8088

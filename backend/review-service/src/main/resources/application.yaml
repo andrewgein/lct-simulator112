@@ -24,6 +24,8 @@ review:
     base-url: ${MLSERVER_URL:http://localhost:8080}
     model-name: ${MLSERVER_MODEL_NAME:rubert-tiny-bilingual-nli}
     threshold: ${MLSERVER_ENTAILMENT_THRESHOLD:0.8}
+  course-service:
+    base-url: ${COURSE_SERVICE_URL:http://localhost:8088}
 management:
   endpoints:
     web:
