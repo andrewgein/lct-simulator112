@@ -1,21 +1,176 @@
 ---
-import AuthInputGroup from "./AuthInputGroup.astro";
 const error = Astro.url.searchParams.get("error");
 ---
-<wa-card style="width: 100%; max-width: 30rem" class="card-header">
-  <h2 slot="header">Вход</h2>
+<section class="login-card" aria-labelledby="login-title">
+  <div class="login-heading" id="login-title">
+    <span class="login-number">112</span>
+    <span class="login-title">Вход в учебный симулятор</span>
+  </div>
   <form method="POST" action="/api/v1/auth/login">
-    <div class="wa-stack">
-      <AuthInputGroup />
-      <wa-button type="submit" variant="brand">Войти</wa-button>
-      <div class="wa-cluster wa-gap-xs"> 
-        Или <a href="/register" class="wa-link">зарегистрироваться</a> 
-      </div>
-      { error && (
-      <wa-callout class="wa-danger">
-        <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
-        <strong>{error}</strong>
-      </wa-callout>)}
-    </div>
+    <label class="login-field">
+      <span>ЛОГИН:</span>
+      <input type="email" name="email" autocomplete="username" required>
+    </label>
+    <label class="login-field">
+      <span>ПАРОЛЬ:</span>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button type="submit">ВОЙТИ</button>
+    {error && <p class="login-error" role="alert">{error}</p>}
   </form>
-</wa-card>
+</section>
+
+<style>
+  .login-card {
+    position: absolute;
+    z-index: 2;
+    top: 11.5%;
+    right: 5.8%;
+    width: 29.2vw;
+    color: #f8fbfb;
+  }
+
+  .login-heading {
+    display: flex;
+    align-items: center;
+    gap: clamp(0.8rem, 1.25vw, 1.6rem);
+    white-space: nowrap;
+  }
+
+  .login-number {
+    font-size: clamp(4.5rem, 5.5vw, 7rem);
+    font-weight: 300;
+    line-height: 0.82;
+    letter-spacing: 0.015em;
+  }
+
+  .login-title {
+    font-size: clamp(1.25rem, 1.55vw, 2rem);
+    font-weight: 300;
+    line-height: 1.08;
+  }
+
+  form {
+    margin-top: clamp(2rem, 5.5vh, 3.5rem);
+  }
+
+  .login-field {
+    display: block;
+    margin-bottom: clamp(0.65rem, 1.1vh, 0.9rem);
+    color: #3f86c4;
+    font-size: clamp(0.72rem, 0.75vw, 0.9rem);
+    font-weight: 600;
+  }
+
+  .login-field span {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+
+  .login-field input {
+    box-sizing: border-box;
+    width: 100%;
+    height: 1.35rem;
+    padding: 0 0.25rem;
+    border: 0;
+    border-bottom: 2px solid rgba(207, 245, 249, 0.85);
+    border-radius: 0;
+    outline: 0;
+    background: transparent;
+    color: #ffffff;
+    font: inherit;
+    font-size: 1.05rem;
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+
+  .login-field input:focus {
+    border-bottom-color: #ffffff;
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  button {
+    width: 100%;
+    min-height: clamp(2.8rem, 5.1vh, 3.5rem);
+    margin-top: clamp(0.6rem, 1.6vh, 1rem);
+    border: 0;
+    background: #808080;
+    color: #ffffff;
+    font: inherit;
+    font-size: clamp(1rem, 1.15vw, 1.35rem);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 150ms ease;
+  }
+
+  button:hover {
+    background: #737373;
+  }
+
+  button:focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  button:active {
+    background: #666666;
+  }
+
+  .login-error {
+    margin: 0.8rem 0 0;
+    padding: 0.65rem 0.8rem;
+    background: rgba(120, 29, 29, 0.78);
+    color: #ffffff;
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 900px) {
+    .login-card {
+      top: 9%;
+      right: 7vw;
+      width: min(86vw, 32rem);
+    }
+
+    .login-heading {
+      white-space: normal;
+    }
+
+    .login-title {
+      max-width: 17rem;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .login-card {
+      top: 8%;
+      right: 6vw;
+      left: 6vw;
+      width: auto;
+    }
+
+    .login-number {
+      font-size: clamp(4rem, 19vw, 6rem);
+    }
+
+    .login-title {
+      font-size: clamp(1.2rem, 6vw, 1.7rem);
+    }
+
+    form {
+      margin-top: 2.25rem;
+    }
+  }
+
+  @media (max-height: 620px) and (min-width: 700px) {
+    .login-card {
+      top: 7%;
+    }
+
+    form {
+      margin-top: 1.5rem;
+    }
+
+    .login-field {
+      margin-bottom: 0.75rem;
+    }
+  }
+</style>

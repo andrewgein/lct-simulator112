@@ -1,10 +1,69 @@
 ---
 import Page from '../layouts/Page.astro';
 import LoginCard from '../features/auth/components/LoginCard.astro';
+import LoginIllustration from '../features/auth/components/LoginIllustration.astro';
 export const prerender = false;
 ---
 <Page>
-  <div class="centered-page">
+  <main class="login-page">
+    <LoginIllustration />
     <LoginCard />
-  </div>
+  </main>
 </Page>
+
+<style is:global>
+  body:has(.login-page) {
+    overflow: hidden;
+  }
+
+  body:has(.login-page) wa-page > main {
+    padding: 0;
+  }
+
+  .login-page {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    margin: 0;
+    background: #6fafd3;
+    font-family: 'Manrope Variable', Helvetica, Arial, sans-serif;
+  }
+
+  @media (max-width: 900px) {
+    .login-page .skyline-back {
+      opacity: 0.6;
+      transform: translate(-150px, 130px) scale(0.84);
+      transform-origin: bottom left;
+    }
+
+    .login-page .helicopter {
+      transform: translate(260px, 390px) scale(0.85);
+    }
+
+    .login-page .foreground-city {
+      transform: translateY(60px);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .login-page .skyline-back {
+      opacity: 0.42;
+      transform: translate(-250px, 220px) scale(0.75);
+      transform-origin: bottom left;
+    }
+
+    .login-page .helicopter {
+      display: none;
+    }
+
+    .login-page .foreground-city {
+      opacity: 0.72;
+      transform: translate(-300px, 80px) scale(1.2);
+      transform-origin: bottom center;
+    }
+  }
+</style>
