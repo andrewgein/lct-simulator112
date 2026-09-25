@@ -26,13 +26,14 @@ try {
   {!error && courses.length > 0 && (
     <div class="course-list wa-stack wa-gap-m">
       {courses.map((course) => (
-        <wa-card class="course-card" orientation="horizontal">
+        <wa-card class="course-card" orientation="horizontal" appearance="filled-outlined">
           <div class="course-summary wa-stack wa-gap-xs">
             <h2 class="wa-heading-l">{course.title}</h2>
             <p>{course.description || "Описание не добавлено"}</p>
           </div>
           <div slot="actions" class="course-actions wa-cluster wa-gap-xs">
-            <wa-button href={`/teacher/courses/${course.id}`} appearance="outlined" aria-label={`Редактировать курс ${course.title}`}><wa-icon name="pen"></wa-icon></wa-button>
+            <wa-button href={`/teacher/courses/${course.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
+            <wa-button href={`/teacher/courses/${course.id}`} appearance="outlined" aria-label={`Редактировать курс ${course.title}`}><wa-icon name="pen" label="Редактировать"></wa-icon></wa-button>
             <wa-button class="delete-course" type="button" appearance="outlined" variant="danger" data-id={course.id} data-title={course.title} aria-label={`Удалить курс ${course.title}`}><wa-icon name="trash"></wa-icon></wa-button>
           </div>
         </wa-card>
@@ -58,6 +59,7 @@ try {
 
 <style>
   .course-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  @media (max-width: 48rem) { .course-card { display: block; } }
   .course-summary h2, .course-summary p { margin: 0; }
   .course-summary p { color: var(--wa-color-text-quiet); }
 </style>

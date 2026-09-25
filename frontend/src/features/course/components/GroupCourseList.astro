@@ -1,0 +1,31 @@
+---
+interface Props {
+  group: { id: string | number };
+  assignedCourses?: { id: string | number; title: string }[];
+}
+const { group, assignedCourses = [] } = Astro.props;
+const headingId = `assigned-courses-heading-${group.id}`;
+---
+<section class="assigned-courses wa-stack wa-gap-s" aria-labelledby={headingId}>
+  <h2 id={headingId} class="wa-heading-l">Назначенные курсы</h2>
+  <ul class="assigned-course-list wa-stack wa-gap-2xs">
+    {assignedCourses.map((course) => (
+      <li class="assigned-course-row">
+        <a class="assigned-course-link" href={`/teacher/courses/${course.id}/statistics`}><strong>{course.title}</strong></a>
+      </li>
+    ))}
+    {!assignedCourses.length && <li class="assigned-course-row empty-course-row">Группе пока не назначены курсы.</li>}
+  </ul>
+</section>
+
+<style>
+  .assigned-courses { width: 100%; }
+  .assigned-courses h2, .assigned-course-list { margin: 0; }
+  .assigned-course-list { padding: 0; list-style: none; }
+  .assigned-course-row { border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .assigned-course-row:first-child { border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .assigned-course-link { display: block; padding: var(--wa-space-s) var(--wa-space-m); color: var(--wa-color-text-normal); text-decoration: none; cursor: pointer; transition: background-color var(--wa-transition-fast), color var(--wa-transition-fast); }
+  .assigned-course-link:hover { color: var(--wa-color-brand-on-quiet); background-color: var(--wa-color-brand-fill-quiet); }
+  .assigned-course-link:focus-visible { outline: var(--wa-focus-ring); outline-offset: calc(-1 * var(--wa-focus-ring-width)); }
+  .empty-course-row { padding: var(--wa-space-s) var(--wa-space-m); color: var(--wa-color-text-quiet); }
+</style>

@@ -1,0 +1,164 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { getCourses, getStudyGroupCourses, getStudyGroups } from "../../../features/course/api/CourseApi";
+
+export const prerender = false;
+if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
+type Item = { id: string | number; title: string };
+let groups: Item[] = [];
+let courses: Item[] = [];
+let assignedByGroup = new Map<string, Set<string>>();
+let error: string | undefined;
+try {
+  const [groupsResponse, coursesResponse] = await Promise.all([
+    getStudyGroups(Astro.locals.accessToken),
+    getCourses(Astro.locals.accessToken)
+  ]);
+  if (!groupsResponse.ok || !coursesResponse.ok) throw new Error();
+  [groups, courses] = await Promise.all([groupsResponse.json(), coursesResponse.json()]);
+  assignedByGroup = new Map(await Promise.all(groups.map(async (group) => {
+    const response = await getStudyGroupCourses(group.id, Astro.locals.accessToken);
+    if (!response.ok) throw new Error();
+    const assigned: Item[] = await response.json();
+    return [String(group.id), new Set(assigned.map((course) => String(course.id)))] as const;
+  })));
+} catch {
+  error = "Не удалось загрузить данные для назначения курсов";
+}
+const assignments = groups.flatMap((group) => courses.filter((course) => assignedByGroup.get(String(group.id))?.has(String(course.id))).map((course) => ({ group, course })));
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Назначение курсов">
+    {!error && groups.length > 0 && courses.length > 0 && <wa-button type="button" variant="brand" data-dialog="open new-assignment-dialog"><wa-icon slot="start" name="plus"></wa-icon>Новое назначение</wa-button>}
+  </MainHeader>
+  {!error && !groups.length && <wa-callout>Сначала <a href="/teacher/groups/new">создайте группу</a>.</wa-callout>}
+  {!error && groups.length > 0 && !courses.length && <wa-callout>Сначала <a href="/teacher/courses/new">создайте курс</a>.</wa-callout>}
+  {!error && groups.length > 0 && courses.length > 0 && (
+    <>
+      <section class="assignment-list-section" aria-label="Текущие назначения">
+        {assignments.length ? (
+          <div class="assignment-table-wrap">
+            <table class="assignment-table">
+              <thead>
+                <tr>
+                  <th scope="col">Группа</th>
+                  <th scope="col">Курс</th>
+                  <th scope="col" class="assignment-actions-heading"><span class="wa-visually-hidden">Действия</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignments.map(({ group, course }) => (
+                  <tr>
+                    <td><strong>{group.title}</strong></td>
+                    <td><a href={`/teacher/courses/${course.id}/statistics`}>{course.title}</a></td>
+                    <td class="assignment-actions"><wa-button class="delete-assignment" type="button" appearance="outlined" variant="danger" data-group-id={group.id} data-course-id={course.id} data-group-title={group.title} data-course-title={course.title} aria-label={`Удалить назначение курса ${course.title} группе ${group.title}`}><wa-icon name="trash" label="Удалить"></wa-icon></wa-button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <wa-callout variant="neutral">Курсы пока не назначены ни одной группе.</wa-callout>
+        )}
+      </section>
+      <wa-dialog id="new-assignment-dialog" class="assignment-dialog" label="Новое назначение" with-footer>
+        <div class="assignment-fields wa-stack wa-gap-l">
+          <p>Выберите группу и курс. Назначение получат все текущие участники группы.</p>
+          <wa-select id="assignment-group" label="Учебная группа" placeholder="Выберите группу" required>
+            {groups.map((group) => <wa-option value={group.id}>{group.title}</wa-option>)}
+          </wa-select>
+          <wa-select id="assignment-course" label="Курс" placeholder="Выберите курс" required disabled>
+            {courses.map((course) => {
+              const assignedGroupIds = groups.filter((group) => assignedByGroup.get(String(group.id))?.has(String(course.id))).map((group) => String(group.id));
+              return <wa-option value={course.id} data-assigned-group-ids={assignedGroupIds.join(",")}>{course.title}</wa-option>;
+            })}
+          </wa-select>
+          <wa-callout id="all-courses-assigned" variant="neutral" hidden>Все доступные курсы уже назначены этой группе.</wa-callout>
+          <wa-callout id="assignment-result" variant="danger" hidden></wa-callout>
+        </div>
+        <div slot="footer" class="wa-cluster wa-gap-s">
+          <wa-button type="button" appearance="outlined" data-dialog="close">Отмена</wa-button>
+          <wa-button id="assign-course" type="button" variant="brand" disabled>Назначить курс</wa-button>
+        </div>
+      </wa-dialog>
+    </>
+  )}
+</Page>
+
+<script>
+  const groupSelect = document.querySelector<HTMLElement & { value: string }>('#assignment-group');
+  const courseSelect = document.querySelector<HTMLElement & { value: string; disabled: boolean }>('#assignment-course');
+  const courseOptions = document.querySelectorAll<HTMLElement>('#assignment-course wa-option');
+  const allAssigned = document.querySelector<HTMLElement>('#all-courses-assigned');
+  const assignButton = document.querySelector<HTMLElement & { disabled: boolean; loading: boolean }>('#assign-course');
+  const result = document.querySelector<HTMLElement>('#assignment-result');
+  const updateAssignment = () => {
+    const groupId = groupSelect?.value || '';
+    let availableCount = 0;
+    courseOptions.forEach((option) => {
+      const assignedGroupIds = (option.dataset.assignedGroupIds || '').split(',').filter(Boolean);
+      option.hidden = !groupId || assignedGroupIds.includes(groupId);
+      if (!option.hidden) availableCount++;
+    });
+    if (courseSelect) {
+      if (Array.from(courseOptions).find((option) => option.getAttribute('value') === courseSelect.value)?.hidden) courseSelect.value = '';
+      courseSelect.disabled = !groupId || !availableCount;
+    }
+    if (allAssigned) allAssigned.hidden = !groupId || availableCount > 0;
+    if (assignButton) assignButton.disabled = !courseSelect?.value;
+    if (result) result.hidden = true;
+  };
+  groupSelect?.addEventListener('change', updateAssignment);
+  courseSelect?.addEventListener('change', updateAssignment);
+  assignButton?.addEventListener('click', async () => {
+    const groupId = groupSelect?.value;
+    const courseId = courseSelect?.value;
+    if (!groupId || !courseId || !result) return;
+    assignButton.loading = true;
+    result.hidden = true;
+    try {
+      const response = await fetch(`/api/v1/study-groups/${encodeURIComponent(groupId)}/courses/${encodeURIComponent(courseId)}`, { method: 'POST' });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.detail || 'Не удалось назначить курс.');
+      }
+      window.location.href = '/teacher/assignments';
+    } catch (requestError) {
+      result.textContent = requestError instanceof Error ? requestError.message : 'Не удалось назначить курс.';
+      result.hidden = false;
+      assignButton.loading = false;
+    }
+  });
+  updateAssignment();
+  document.querySelectorAll<HTMLElement & { loading: boolean }>('.delete-assignment').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!confirm(`Удалить назначение курса «${button.dataset.courseTitle}» группе «${button.dataset.groupTitle}»?`)) return;
+      button.loading = true;
+      const response = await fetch(`/api/v1/study-groups/${encodeURIComponent(button.dataset.groupId || '')}/courses/${encodeURIComponent(button.dataset.courseId || '')}`, { method: 'DELETE' });
+      if (response.ok) window.location.reload();
+      else {
+        button.loading = false;
+        alert('Не удалось удалить назначение.');
+      }
+    });
+  });
+</script>
+
+<style>
+  .assignment-list-section { width: 100%; }
+  .assignment-fields p { margin: 0; color: var(--wa-color-text-quiet); }
+  .assignment-dialog { --width: min(90vw, 38rem); }
+  .assignment-table-wrap { width: 100%; overflow-x: auto; border-block: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .assignment-table { width: 100%; border-collapse: collapse; background: var(--wa-color-surface-raised); text-align: left; }
+  .assignment-table th, .assignment-table td { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .assignment-table tbody tr:last-child td { border-block-end: 0; }
+  .assignment-table th { color: var(--wa-color-text-quiet); font-weight: var(--wa-font-weight-semibold); }
+  .assignment-table .assignment-actions-heading, .assignment-table .assignment-actions { width: 1%; text-align: right; white-space: nowrap; }
+  .assignment-table tbody tr:hover { background: var(--wa-color-brand-fill-quiet); }
+  .assignment-table a { color: var(--wa-color-text-link); text-decoration: none; }
+  .assignment-table a:hover { text-decoration: underline; }
+</style>

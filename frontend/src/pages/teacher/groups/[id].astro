@@ -3,28 +3,22 @@ import Page from "../../../layouts/Page.astro";
 import Header from "../../../layouts/Header.astro";
 import MainHeader from "../../../layouts/MainHeader.astro";
 import StudyGroupForm from "../../../features/course/components/StudyGroupForm.astro";
-import { getCourses, getStudyGroup, getStudyGroupCourses } from "../../../features/course/api/CourseApi";
+import { getStudyGroup } from "../../../features/course/api/CourseApi";
 import { getStudents } from "../../../features/course/api/StudentApi";
 import { filterStudentsByProfessionalProfile } from "../../../features/profile/professionalProfile";
 
 export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
 let group = null;
-let courses = [];
-let assignedCourses = [];
 let students = [];
 let error = null;
 try {
-  const [groupResponse, coursesResponse, assignedCoursesResponse, studentList] = await Promise.all([
+  const [groupResponse, studentList] = await Promise.all([
     getStudyGroup(Astro.params.id, Astro.locals.accessToken),
-    getCourses(Astro.locals.accessToken),
-    getStudyGroupCourses(Astro.params.id, Astro.locals.accessToken),
     getStudents(Astro.locals.accessToken)
   ]);
-  if (!groupResponse.ok || !coursesResponse.ok || !assignedCoursesResponse.ok) throw new Error();
+  if (!groupResponse.ok) throw new Error();
   group = await groupResponse.json();
-  courses = await coursesResponse.json();
-  assignedCourses = await assignedCoursesResponse.json();
   students = filterStudentsByProfessionalProfile(studentList, Astro.locals.profile);
 } catch {
   error = "Не удалось загрузить учебную группу";
@@ -35,9 +29,9 @@ try {
   <Header slot="header" />
   <MainHeader slot="main-header" title={group?.title || "Учебная группа"}>
     <div class="wa-cluster">
-      <wa-button href="/teacher/groups" appearance="outlined">Назад</wa-button>
+      <wa-button href="/teacher/groups" appearance="outlined">Все группы</wa-button>
       <wa-button type="submit" form="group-form" variant="success">Сохранить изменения</wa-button>
     </div>
   </MainHeader>
-  {group && <StudyGroupForm {group} {courses} {assignedCourses} {students} />}
+  {group && <StudyGroupForm {group} {students} />}
 </Page>
