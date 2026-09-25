@@ -205,10 +205,12 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
 
   #notifications-menu-item::part(button) { position: relative; }
   #notification-unread-badge { margin-inline-start: auto; }
+</style>
 
-  .notifications-popover { --max-width: 24rem; color: var(--wa-color-text-normal); }
+<style is:global>
+  .notifications-popover { --max-width: 26rem; color: var(--wa-color-text-normal); }
   .notifications-popover::part(body) { padding: 0; }
-  .notifications-panel { box-sizing: border-box; inline-size: 22rem; max-block-size: 28rem; }
+  .notifications-panel { box-sizing: border-box; inline-size: 24rem; max-inline-size: calc(100vw - 2rem); }
   .notifications-panel-header {
     display: flex;
     align-items: center;
@@ -216,36 +218,40 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
     gap: var(--wa-space-s);
     padding: var(--wa-space-s) var(--wa-space-m);
   }
-  .notifications-panel-header .wa-heading-s { margin: 0; }
-  .notifications-list { overflow-y: auto; padding: var(--wa-space-2xs) var(--wa-space-2xs) var(--wa-space-s); }
-  .notifications-status { padding: var(--wa-space-l) var(--wa-space-m); color: var(--wa-color-text-quiet); text-align: center; }
+  .notifications-panel-header .wa-heading-s { margin: 0; font-weight: var(--wa-font-weight-bold); }
+  .notifications-panel > wa-divider { margin: 0; }
+  .notifications-list { max-block-size: 26rem; overflow-y: auto; padding: var(--wa-space-xs); }
+  .notifications-status { padding: var(--wa-space-xl) var(--wa-space-m); color: var(--wa-color-text-quiet); text-align: center; }
 
-  .notification-item {
-    display: block;
+  .notifications-list .notification-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wa-space-3xs);
     box-sizing: border-box;
+    padding: var(--wa-space-s) var(--wa-space-m);
     border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
-    border-inline-start-width: var(--wa-space-3xs);
+    border-inline-start: var(--wa-space-3xs) solid var(--wa-color-neutral-border-normal);
     background: var(--wa-color-surface-raised);
-    color: inherit;
+    color: var(--wa-color-text-normal);
     text-decoration: none;
   }
-  .notification-item + .notification-item { margin-block-start: var(--wa-space-2xs); }
-  .notification-item:hover { background: var(--wa-color-neutral-fill-quiet); }
-  .notification-item.is-unread { border-inline-start-color: var(--wa-color-brand-fill-loud); background: var(--wa-color-brand-fill-quiet); }
-
-  .notification-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: var(--wa-space-m);
-    padding: var(--wa-space-2xs) var(--wa-space-s) 0;
+  .notifications-list .notification-item + .notification-item { margin-block-start: var(--wa-space-xs); }
+  .notifications-list .notification-item:hover { background: var(--wa-color-neutral-fill-quiet); text-decoration: none; }
+  .notifications-list .notification-item.is-unread {
+    border-inline-start-color: var(--wa-color-brand-fill-loud);
+    background: var(--wa-color-brand-fill-quiet);
   }
-  .notification-item-header strong { font-size: var(--wa-font-size-s); }
-  .notification-item-header time { flex: 0 0 auto; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-2xs); }
+  .notifications-list .notification-item.is-unread:hover { background: var(--wa-color-brand-fill-normal); }
 
-  .notification-item p {
+  .notifications-list .notification-item-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--wa-space-3xs);
+  }
+  .notifications-list .notification-item-header strong { font-size: var(--wa-font-size-s); font-weight: var(--wa-font-weight-bold); }
+  .notifications-list .notification-item-header time { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-xs); }
+  .notifications-list .notification-item p {
     margin: 0;
-    padding: var(--wa-space-2xs) var(--wa-space-s) var(--wa-space-s);
     font-size: var(--wa-font-size-s);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
