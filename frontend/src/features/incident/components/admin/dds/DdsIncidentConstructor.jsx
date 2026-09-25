@@ -40,7 +40,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   }, []);
 
   useEffect(() => {
-    const form = document.querySelector("#dds-incident-form");
+    const form = document.querySelector("#incident-form");
     if (!form) return;
     form.getDdsStructure = () => {
       const current = stateRef.current;

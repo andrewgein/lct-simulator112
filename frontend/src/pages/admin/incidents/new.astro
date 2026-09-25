@@ -2,11 +2,12 @@
 import Page from "../../../layouts/Page.astro";
 import Header from "../../../layouts/Header.astro";
 import MainHeader from "../../../layouts/MainHeader.astro";
-import AdminIncidentForm from "../../../features/incident/components/admin/AdminIncidentForm.astro";
+import IncidentForm from "../../../features/incident/components/admin/IncidentForm.astro";
 
 export const prerender = false;
 const role = Astro.cookies.get("role")?.value;
 if (!["ADMIN", "SUPERVISOR"].includes(role || "")) return Astro.redirect("/");
+const type = Astro.url.searchParams.get("type") === "DDS" ? "DDS" : "SYSTEM_112";
 ---
 <Page>
   <Header slot="header" />
@@ -16,5 +17,5 @@ if (!["ADMIN", "SUPERVISOR"].includes(role || "")) return Astro.redirect("/");
       <wa-button type="submit" form="incident-form" appearance="accent" variant="success">Сохранить</wa-button>
     </div>
   </MainHeader>
-  <AdminIncidentForm mode="create" />
+  <IncidentForm mode="create" {type} allowTypeSelection />
 </Page>

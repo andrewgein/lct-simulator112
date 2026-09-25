@@ -10,8 +10,7 @@ import AdminIncidentStagesCard from "./AdminIncidentStagesCard.astro";
 const { incident = {}, mode = "create" } = Astro.props;
 const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
 ---
-<form id="incident-form" class="wa-stack wa-gap-l" data-mode={mode}>
-  <input type="hidden" name="id" value={incident.id || ""} />
+<input type="hidden" name="id" value={incident.id || ""} />
   <p id="form-error" class="form-error" hidden>
   </p>
   <div class="wa-stack wa-gap-3xl">
@@ -20,7 +19,6 @@ const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
     <AdminIncidentStagesCard stages={incident.stages} />
     <AdminIncidentCriteriaCard criteria={incident.criteria} />
   </div>
-</form>
 <script>
   /** @typedef {import("../../contract/Incident").IncidentRequest} IncidentRequest */
 

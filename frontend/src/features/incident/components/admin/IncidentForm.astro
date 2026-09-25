@@ -1,0 +1,26 @@
+---
+import AdminIncidentForm from "./AdminIncidentForm.astro";
+import DdsIncidentForm from "./dds/DdsIncidentForm.astro";
+
+/** @typedef {import("../../contract/Incident").Incident} Incident */
+/** @typedef {import("../../contract/Incident").DdsIncident} DdsIncident */
+/** @type {{ incident?: Partial<Incident | DdsIncident>, type?: "SYSTEM_112" | "DDS", mode?: "create" | "edit", allowTypeSelection?: boolean }} */
+const { incident = {}, type = incident.targetType === "DDS" ? "DDS" : "SYSTEM_112", mode = "create", allowTypeSelection = false } = Astro.props;
+---
+<form id="incident-form" class="wa-stack wa-gap-l" data-mode={mode}>
+  {allowTypeSelection && (
+    <wa-select id="incident-type" label="Тип сценария" value={type} required>
+      <wa-option value="SYSTEM_112">Система-112</wa-option>
+      <wa-option value="DDS">ДДС</wa-option>
+    </wa-select>
+  )}
+  {type === "DDS" ? <DdsIncidentForm incident={incident} {mode} /> : <AdminIncidentForm incident={incident} {mode} />}
+</form>
+<script>
+  const incidentType = document.querySelector<HTMLInputElement>('#incident-type');
+  incidentType?.addEventListener('change', () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('type', incidentType.value);
+    window.location.href = url.toString();
+  });
+</script>

@@ -8,7 +8,7 @@ import DdsIncidentConstructor from "./DdsIncidentConstructor.jsx";
 const { incident = {}, mode = "create" } = Astro.props;
 const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
 ---
-<form id="dds-incident-form" class="wa-stack wa-gap-3xl" data-mode={mode}>
+<div class="wa-stack wa-gap-3xl">
   <input type="hidden" name="id" value={incident.id || ""} />
   <wa-callout id="dds-form-error" variant="danger" hidden></wa-callout>
   <section class="wa-stack wa-gap-m">
@@ -25,11 +25,11 @@ const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
   <AdminIncidentAddressCard address={incident.address} {dadataApiKey} />
   <DdsIncidentConstructor {incident} client:load />
   <AdminIncidentCriteriaCard criteria={incident.criteria} />
-</form>
+</div>
 <script>
-  const form = document.querySelector('#dds-incident-form');
+  const form = document.querySelector('#incident-form');
   const error = document.querySelector('#dds-form-error');
-  const submitButton = document.querySelector('[type="submit"][form="dds-incident-form"]');
+  const submitButton = document.querySelector('[type="submit"][form="incident-form"]');
   const splitLines = (value) => String(value || '').split('\n').map((item) => item.trim()).filter(Boolean);
 
   form?.addEventListener('submit', async (event) => {
@@ -78,31 +78,31 @@ const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
   });
 </script>
 <style is:global>
-  #dds-incident-form .dds-section-hint { margin: var(--wa-space-2xs) 0 0; color: var(--wa-color-text-quiet); }
-  #dds-incident-form .dds-classifier-row > wa-select { min-width: 0; }
-  #dds-incident-form .dds-add-type { align-self: flex-start; }
-  #dds-incident-form .dds-people { --min-column-size: 24rem; }
-  #dds-incident-form, #dds-incident-form section { min-width: 0; }
-  #dds-incident-form .dds-tree-heading { gap: var(--wa-space-l); }
-  #dds-incident-form .dds-tree-note { display: inline-flex; flex: 0 0 auto; align-items: center; gap: var(--wa-space-xs); color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
-  #dds-incident-form .dds-tree-scroller { overflow: auto; width: 100%; min-width: 0; max-width: 100%; height: calc(var(--wa-space-5xl) * 7); padding: var(--wa-space-xl); contain: inline-size; border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: var(--wa-border-radius-l); background: var(--wa-color-surface-lowered); box-shadow: inset 0 0 0 var(--wa-border-width-s) var(--wa-color-surface-default); }
-  #dds-incident-form .dds-tree { position: relative; margin-inline: auto; }
-  #dds-incident-form .dds-tree-links { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
-  #dds-incident-form .dds-tree-link { fill: none; stroke: var(--wa-color-surface-border); stroke-width: var(--wa-border-width-m); stroke-linecap: round; stroke-linejoin: round; }
-  #dds-incident-form .dds-tree-link--success { stroke: var(--wa-color-success-border-normal); }
-  #dds-incident-form .dds-tree-link--failure { stroke: var(--wa-color-danger-border-normal); }
-  #dds-incident-form .dds-tree-node { position: absolute; z-index: 2; width: calc(var(--wa-space-5xl) * 4); transform: translateX(-50%); }
-  #dds-incident-form .dds-stage-card { width: 100%; height: calc(var(--wa-space-5xl) + var(--wa-space-xs)); text-align: start; box-shadow: var(--wa-shadow-s); }
-  #dds-incident-form .dds-stage-card--root { border-color: var(--wa-color-brand-border-normal); box-shadow: var(--wa-shadow-m); }
-  #dds-incident-form .dds-stage-card--success { border-color: var(--wa-color-success-border-quiet); }
-  #dds-incident-form .dds-stage-card--failure { border-color: var(--wa-color-danger-border-quiet); }
-  #dds-incident-form .dds-stage-card::part(body) { padding: var(--wa-space-m); }
-  #dds-incident-form .dds-stage-title { margin: 0; font-size: var(--wa-font-size-m); line-height: var(--wa-line-height-condensed); }
-  #dds-incident-form .dds-stage-meta { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-xs); }
-  #dds-incident-form .dds-add-node { position: absolute; z-index: 2; transform: translateX(-50%); }
-  #dds-incident-form .add-branch { box-shadow: var(--wa-shadow-s); }
-  #dds-incident-form .dds-call { --spacing: var(--wa-space-m); }
+  #incident-form .dds-section-hint { margin: var(--wa-space-2xs) 0 0; color: var(--wa-color-text-quiet); }
+  #incident-form .dds-classifier-row > wa-select { min-width: 0; }
+  #incident-form .dds-add-type { align-self: flex-start; }
+  #incident-form .dds-people { --min-column-size: 24rem; }
+  #incident-form, #incident-form section { min-width: 0; }
+  #incident-form .dds-tree-heading { gap: var(--wa-space-l); }
+  #incident-form .dds-tree-note { display: inline-flex; flex: 0 0 auto; align-items: center; gap: var(--wa-space-xs); color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+  #incident-form .dds-tree-scroller { overflow: auto; width: 100%; min-width: 0; max-width: 100%; height: calc(var(--wa-space-5xl) * 7); padding: var(--wa-space-xl); contain: inline-size; border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: var(--wa-border-radius-l); background: var(--wa-color-surface-lowered); box-shadow: inset 0 0 0 var(--wa-border-width-s) var(--wa-color-surface-default); }
+  #incident-form .dds-tree { position: relative; margin-inline: auto; }
+  #incident-form .dds-tree-links { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+  #incident-form .dds-tree-link { fill: none; stroke: var(--wa-color-surface-border); stroke-width: var(--wa-border-width-m); stroke-linecap: round; stroke-linejoin: round; }
+  #incident-form .dds-tree-link--success { stroke: var(--wa-color-success-border-normal); }
+  #incident-form .dds-tree-link--failure { stroke: var(--wa-color-danger-border-normal); }
+  #incident-form .dds-tree-node { position: absolute; z-index: 2; width: calc(var(--wa-space-5xl) * 4); transform: translateX(-50%); }
+  #incident-form .dds-stage-card { width: 100%; height: calc(var(--wa-space-5xl) + var(--wa-space-xs)); text-align: start; box-shadow: var(--wa-shadow-s); }
+  #incident-form .dds-stage-card--root { border-color: var(--wa-color-brand-border-normal); box-shadow: var(--wa-shadow-m); }
+  #incident-form .dds-stage-card--success { border-color: var(--wa-color-success-border-quiet); }
+  #incident-form .dds-stage-card--failure { border-color: var(--wa-color-danger-border-quiet); }
+  #incident-form .dds-stage-card::part(body) { padding: var(--wa-space-m); }
+  #incident-form .dds-stage-title { margin: 0; font-size: var(--wa-font-size-m); line-height: var(--wa-line-height-condensed); }
+  #incident-form .dds-stage-meta { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-xs); }
+  #incident-form .dds-add-node { position: absolute; z-index: 2; transform: translateX(-50%); }
+  #incident-form .add-branch { box-shadow: var(--wa-shadow-s); }
+  #incident-form .dds-call { --spacing: var(--wa-space-m); }
   @media (max-width: 48rem) {
-    #dds-incident-form .dds-people { --min-column-size: 18rem; }
+    #incident-form .dds-people { --min-column-size: 18rem; }
   }
 </style>
