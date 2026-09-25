@@ -67,7 +67,8 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
             <LogoutButton />
           </nav>
         </wa-popover>
-        <wa-popover id="notifications-popover" class="notifications-popover" placement="bottom-end" without-arrow>
+        <span id="notifications-anchor" class="notifications-anchor" aria-hidden="true"></span>
+        <wa-popover id="notifications-popover" class="notifications-popover" for="notifications-anchor" placement="bottom-end" without-arrow>
           <div class="notifications-panel wa-stack wa-gap-2xs">
             <div class="notifications-panel-header">
               <span class="wa-heading-s">Уведомления</span>
@@ -88,16 +89,11 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
 </header>
 
 <script>
-  const trigger = document.querySelector('#profile-menu-trigger');
   const menuItem = document.querySelector('#notifications-menu-item');
   const badge = document.querySelector('#notification-unread-badge');
   const popover = document.querySelector('#notifications-popover');
   const list = document.querySelector('#notifications-list');
   const markAllButton = document.querySelector('#notifications-mark-all');
-
-  if (popover && trigger) {
-    popover.anchor = trigger;
-  }
 
   const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
   let unreadCount = 0;
@@ -197,7 +193,8 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
 </script>
 
 <style>
-  .profile-menu-wrap { flex: 0 0 auto; }
+  .profile-menu-wrap { position: relative; flex: 0 0 auto; }
+  .notifications-anchor { position: absolute; inset: 0; pointer-events: none; }
   #profile-menu-trigger wa-avatar { --size: 2rem; --wa-color-neutral-fill-normal: var(--wa-color-neutral-90); --wa-color-neutral-on-normal: var(--wa-color-neutral-05); font-weight: var(--wa-font-weight-bold); }
   .profile-menu-popover { --max-width: 18rem; color: var(--wa-color-text-normal); }
   .profile-menu-popover::part(body) { padding: var(--wa-space-2xs); }
