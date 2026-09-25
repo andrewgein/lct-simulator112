@@ -1,7 +1,5 @@
 ---
-import Page from "../../../layouts/Page.astro";
-import Header from "../../../layouts/Header.astro";
-import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { getAllUsers } from "../../../features/auth/api/AdminUserApi";
 import { getAllUserProfiles } from "../../../features/profile/api/UserProfileApi";
 
@@ -41,10 +39,7 @@ const trainingTrackLabels = {
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
 ---
 
-<Page {error}>
-  <Header slot="header" />
-  <MainHeader slot="main-header" title="Управление пользователями" />
-
+<AdminLayout title="Управление пользователями" active="users" {error}>
   {!error && (
     <div class="wa-stack wa-gap-l">
       <wa-input id="user-search" type="search" label="Поиск" placeholder="Имя или электронная почта">
@@ -128,7 +123,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
       <wa-callout id="no-users-found" variant="neutral" hidden>Пользователи не найдены.</wa-callout>
     </div>
   )}
-</Page>
+</AdminLayout>
 
 <script>
   const rows = Array.from(document.querySelectorAll<HTMLElement>("[data-user-row]"));

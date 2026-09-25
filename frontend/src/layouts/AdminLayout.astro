@@ -1,0 +1,44 @@
+---
+import Page from "./Page.astro";
+import Header from "./Header.astro";
+import MainHeader from "./MainHeader.astro";
+
+interface Props {
+  title: string;
+  active: "users" | "monitoring" | "backups" | "audit" | "ops" | "settings";
+  error?: string | null;
+}
+
+const { title, active, error = null } = Astro.props;
+
+const sections = [
+  { key: "users", href: "/admin/users", label: "Пользователи", icon: "users" },
+  { key: "monitoring", href: "/admin/monitoring", label: "Мониторинг", icon: "gauge-high" },
+  { key: "backups", href: "/admin/backups", label: "Бэкапы", icon: "database" },
+  { key: "audit", href: "/admin/audit", label: "Журнал действий", icon: "list-check" },
+  { key: "ops", href: "/admin/ops", label: "Сервисы", icon: "server" },
+  { key: "settings", href: "/admin/settings", label: "Настройки", icon: "gear" }
+];
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <nav class="admin-nav wa-stack wa-gap-2xs" slot="navigation" aria-label="Разделы администрирования">
+    {sections.map((section) => (
+      <wa-button class:list={{ 'admin-nav-active': section.key === active }} appearance={section.key === active ? 'filled' : 'plain'} variant={section.key === active ? 'brand' : 'neutral'} href={section.href}>
+        <wa-icon slot="start" name={section.icon}></wa-icon>
+        {section.label}
+      </wa-button>
+    ))}
+  </nav>
+  <MainHeader slot="main-header" title={title}>
+    <slot name="actions" />
+  </MainHeader>
+  <slot />
+</Page>
+
+<style>
+  .admin-nav { padding: var(--wa-space-m); inline-size: 14rem; box-sizing: border-box; }
+  .admin-nav wa-button { width: 100%; }
+  .admin-nav wa-button::part(button) { justify-content: flex-start; }
+</style>

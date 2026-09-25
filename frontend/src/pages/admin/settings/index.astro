@@ -1,7 +1,5 @@
 ---
-import Page from "../../../layouts/Page.astro";
-import Header from "../../../layouts/Header.astro";
-import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { requireRole } from "../../../features/auth/requireRole";
 import { getSettingsOverview } from "../../../features/admin/api/AdminSettingsApi";
 
@@ -41,10 +39,7 @@ const sections = [
 ];
 ---
 
-<Page {error}>
-  <Header slot="header" />
-  <MainHeader slot="main-header" title="Текущая конфигурация" />
-
+<AdminLayout title="Текущая конфигурация" active="settings" {error}>
   {!error && (
     <div class="wa-stack wa-gap-l">
       <wa-callout variant="neutral">
@@ -58,7 +53,7 @@ const sections = [
           {!data || Object.keys(data).length === 0 ? (
             <wa-callout variant="neutral">Нет данных (сервис недоступен).</wa-callout>
           ) : (
-            <table class="wa-zebra-rows">
+            <table class="wa-zebra-rows settings-table">
               <tbody>
                 {Object.entries(data).map(([key, value]) => (
                   <tr>
@@ -73,4 +68,9 @@ const sections = [
       ))}
     </div>
   )}
-</Page>
+</AdminLayout>
+
+<style>
+  .settings-table { table-layout: fixed; width: 100%; }
+  .settings-table th { width: 22rem; }
+</style>
