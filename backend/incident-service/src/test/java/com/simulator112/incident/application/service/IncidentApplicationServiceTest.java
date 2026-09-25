@@ -160,7 +160,7 @@ class IncidentApplicationServiceTest {
         DdsIncident incident = new DdsIncident(
                 source.id(), source.title(), source.address(), source.difficulty(), source.stages(),
                 source.preparedCardTemplate(), new InitialAssignment(EmergencyService.FIRE, " ", null),
-                source.criteria(), source.initialStageId(), source.transitions());
+                source.initialStageId(), source.transitions());
 
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
