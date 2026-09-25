@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import com.simulator112.auth.dto.ApiResponse;
 import com.simulator112.auth.dto.request.ChangeRoleRequest;
@@ -42,8 +43,13 @@ public class AuthController {
 
   @PostMapping("/api/v1/auth/change-role/{userId}")
   public ResponseEntity<ApiResponse<ChangeRoleResponse>> changeRole(
-      @Valid @RequestBody ChangeRoleRequest request, @PathVariable UUID userId) {
-    ChangeRoleResponse changeRoleResponse = authService.changeRole(userId, request.getRole());
+      @Valid @RequestBody ChangeRoleRequest request,
+      @PathVariable UUID userId,
+      @RequestHeader(value = "X-User-Id", required = false) UUID actorUserId,
+      @RequestHeader(value = "X-User-Email", required = false) String actorEmail,
+      @RequestHeader(value = "X-User-Role", required = false) String actorRole) {
+    ChangeRoleResponse changeRoleResponse =
+        authService.changeRole(userId, request.getRole(), actorUserId, actorEmail, actorRole);
     return ResponseEntity.ok(
         ApiResponse.<ChangeRoleResponse>builder()
             .success(true)
