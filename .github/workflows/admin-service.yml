@@ -1,0 +1,23 @@
+name: admin-service
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - backend/admin-service/**
+      - .github/workflows/admin-service.yml
+
+jobs:
+  build-and-deploy:
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/_build-and-deploy-service.yml
+    with:
+      image: admin-service
+      context: backend
+      dockerfile: backend/admin-service/Dockerfile
+      compose_service: admin-service
+      image_env: ADMIN_SERVICE_IMAGE
+      container_suffix: admin

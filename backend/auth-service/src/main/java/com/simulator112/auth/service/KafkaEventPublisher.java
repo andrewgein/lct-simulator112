@@ -6,6 +6,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import com.simulator112.auth.dto.event.EmailVerificationRequestedEvent;
 import com.simulator112.auth.dto.event.PasswordResetRequestedEvent;
+import com.simulator112.auth.dto.event.RoleChangedEvent;
 import com.simulator112.auth.dto.event.UserCreatedEvent;
 
 import java.util.UUID;
@@ -18,6 +19,7 @@ public class KafkaEventPublisher {
     private static final String TOPIC_EMAIL_VERIFICATION = "email.verification.requested";
     private static final String TOPIC_PASSWORD_RESET = "password.reset.requested";
     private static final String TOPIC_USER_CREATED = "user.created";
+    private static final String TOPIC_AUDIT_DOMAIN = "audit.domain.events";
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
@@ -47,6 +49,16 @@ public class KafkaEventPublisher {
                 .whenComplete((result, ex) -> {
                     if (ex != null) {
                         log.error("Ошибка отправки в {}: userId={}", TOPIC_USER_CREATED, userId, ex);
+                    }
+                });
+    }
+
+    public void publishRoleChanged(RoleChangedEvent event) {
+        log.info("Kafka -> {}: resourceId={}, {}", TOPIC_AUDIT_DOMAIN, event.getResourceId(), event.getDetails());
+        kafkaTemplate.send(TOPIC_AUDIT_DOMAIN, event.getResourceId(), event)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Ошибка отправки в {}: resourceId={}", TOPIC_AUDIT_DOMAIN, event.getResourceId(), ex);
                     }
                 });
     }

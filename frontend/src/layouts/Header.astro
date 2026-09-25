@@ -32,6 +32,11 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
             <wa-button class:list={{ 'header-nav-active': isActive('/teacher/assignments') }} appearance="plain" variant="brand" href="/teacher/assignments" aria-current={isActive('/teacher/assignments') ? 'page' : undefined}>Назначение курсов</wa-button>
             <wa-button class:list={{ 'header-nav-active': isActive('/admin/incidents') }} appearance="plain" variant="brand" href="/admin/incidents" aria-current={isActive('/admin/incidents') ? 'page' : undefined}>Сценарии</wa-button>
             {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/users') }} appearance="plain" variant="brand" href="/admin/users" aria-current={isActive('/admin/users') ? 'page' : undefined}>Пользователи</wa-button>}
+            {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/monitoring') }} appearance="plain" variant="brand" href="/admin/monitoring" aria-current={isActive('/admin/monitoring') ? 'page' : undefined}>Мониторинг</wa-button>}
+            {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/backups') }} appearance="plain" variant="brand" href="/admin/backups" aria-current={isActive('/admin/backups') ? 'page' : undefined}>Бэкапы</wa-button>}
+            {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/audit') }} appearance="plain" variant="brand" href="/admin/audit" aria-current={isActive('/admin/audit') ? 'page' : undefined}>Журнал действий</wa-button>}
+            {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/ops') }} appearance="plain" variant="brand" href="/admin/ops" aria-current={isActive('/admin/ops') ? 'page' : undefined}>Сервисы</wa-button>}
+            {isAdmin && <wa-button class:list={{ 'header-nav-active': isActive('/admin/settings') }} appearance="plain" variant="brand" href="/admin/settings" aria-current={isActive('/admin/settings') ? 'page' : undefined}>Настройки</wa-button>}
           </nav>
         )}
       </div>

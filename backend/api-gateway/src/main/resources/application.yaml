@@ -176,6 +176,57 @@ spring:
               filters:
                 - name: JwtAuthFilter
 
+            #Admin service — monitoring overview, backups, audit log
+            - id: admin-service-monitoring
+              uri: ${ADMIN_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/admin/monitoring/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
+            - id: admin-service-backups
+              uri: ${ADMIN_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/admin/backups,/api/v1/admin/backups/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
+            - id: admin-service-audit-logs
+              uri: ${ADMIN_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/admin/audit-logs,/api/v1/admin/audit-logs/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
+            - id: admin-service-ops
+              uri: ${ADMIN_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/admin/ops,/api/v1/admin/ops/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
+            - id: admin-service-settings
+              uri: ${ADMIN_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/admin/settings/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
 
           httpclient:
             websocket:
@@ -185,22 +236,50 @@ spring:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
             - name: RequestRateLimiter
               args:
-                redis-rate-limiter.replenishRate: 20
-                redis-rate-limiter.burstCapacity: 40
+                redis-rate-limiter.replenishRate: ${rate-limit.replenish-rate}
+                redis-rate-limiter.burstCapacity: ${rate-limit.burst-capacity}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: 6379
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        "[spring.json.add.type.headers]": false
+
 jwt:
   public-key: ${JWT_PUBLIC_KEY_PATH}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
+rate-limit:
+  replenish-rate: ${RATE_LIMIT_REPLENISH:20}
+  burst-capacity: ${RATE_LIMIT_BURST:40}
+
+audit:
+  # Only these path prefixes are logged (combined with a mutating HTTP method) - avoids flooding
+  # the audit log with routine GET traffic. Kept in sync manually with the /api/v1/admin/** and
+  # other RoleAuthorization-protected write routes above.
+  logged-path-prefixes: /api/v1/admin/,/api/v1/auth/change-role/,/api/v1/incidents,/api/v1/courses,/api/v1/study-groups
 
 logging:
   level:
     '[org.springframework.cloud.gateway]': INFO
 
 management:
+  endpoint:
+    # /actuator/env is only reachable from inside the docker network (never routed through the
+    # gateway's own proxy routes) - admin-service's settings viewer calls it directly by
+    # container name. Spring's built-in Sanitizer still masks anything that looks like a
+    # password/secret/token/key regardless of this setting.
+    env:
+      show-values: always
   endpoints:
     web:
       exposure:
-        include: health,prometheus
+        include: health,prometheus,env

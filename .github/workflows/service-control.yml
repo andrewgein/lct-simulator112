@@ -1,0 +1,73 @@
+name: service-control
+
+# Plain docker compose start/stop/restart of one already-deployed service - no build, no image
+# pull. Triggered either manually or via admin-service's GithubActionsClient (POST
+# /api/v1/admin/ops/services/{service}/{action} in the admin panel), using the GitHub REST API's
+# workflow dispatch endpoint. Kept separate from the per-service build-and-deploy workflows so
+# this one stays minimal - it never touches Docker Hub/GHCR credentials or builds anything.
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Compose service name (see prod/docker-compose.yml)
+        required: true
+        type: choice
+        options:
+          - auth-service
+          - incident-service
+          - course-service
+          - context-service
+          - review-service
+          - profile-service
+          - classifier-service
+          - notification-service
+          - admin-service
+          - dialog-service
+          - api-gateway
+          - frontend
+      action:
+        required: true
+        type: choice
+        options: [start, stop, restart]
+
+jobs:
+  control:
+    runs-on: [self-hosted, simulator112]
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Restore deployment secrets
+        shell: bash
+        run: |
+          mkdir -p secrets
+          cp ~/lct-simulator112-secrets/secrets/private.pem secrets/private.pem
+          cp ~/lct-simulator112-secrets/secrets/public.pem secrets/public.pem
+          cp ~/lct-simulator112-secrets/prod/.env prod/.env
+
+      - name: ${{ inputs.action }} ${{ inputs.service }}
+        run: >-
+          docker compose
+          -p sim112-stable
+          --env-file prod/.env
+          -f prod/docker-compose.yml
+          ${{ inputs.action }} ${{ inputs.service }}
+
+      - name: Show resulting container state
+        if: always()
+        shell: bash
+        run: |
+          # container_name in prod/docker-compose.yml is "${COMPOSE_PROJECT_NAME}-<suffix>", and
+          # the suffix isn't always the service key (see container_suffix in the per-service
+          # build-and-deploy workflows) - map it the same way here.
+          declare -A suffixes=(
+            [auth-service]=auth [incident-service]=incident [course-service]=course
+            [context-service]=context [review-service]=review [profile-service]=profile
+            [classifier-service]=classifier [notification-service]=notification
+            [admin-service]=admin [dialog-service]=dialog [api-gateway]=gateway [frontend]=frontend
+          )
+          docker ps -a --filter "name=sim112-stable-${suffixes[${{ inputs.service }}]}"

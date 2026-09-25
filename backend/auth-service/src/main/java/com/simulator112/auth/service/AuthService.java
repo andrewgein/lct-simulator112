@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.simulator112.auth.configuration.JwtService;
 import com.simulator112.auth.dto.event.EmailVerificationRequestedEvent;
 import com.simulator112.auth.dto.event.PasswordResetRequestedEvent;
+import com.simulator112.auth.dto.event.RoleChangedEvent;
 import com.simulator112.auth.dto.UserDetails;
 import com.simulator112.auth.dto.request.ForgotPasswordRequest;
 import com.simulator112.auth.dto.request.LoginRequest;
@@ -216,7 +217,7 @@ public class AuthService {
         return user.getRole().name();
     }
 
-    public ChangeRoleResponse changeRole(UUID userId, Role role) {
+    public ChangeRoleResponse changeRole(UUID userId, Role role, UUID actorUserId, String actorEmail, String actorRole) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new InvalidCredentialsException("Пользователь не найден"));
         Role previousRole = user.getRole();
@@ -224,6 +225,8 @@ public class AuthService {
         userRepository.save(user);
         refreshTokenRepository.deleteAllByUserId(userId);
         log.info("Роль изменена: userId={}, {} -> {}", userId, previousRole, role);
+        kafkaEventPublisher.publishRoleChanged(
+                RoleChangedEvent.of(actorUserId, actorEmail, actorRole, userId, previousRole.name(), role.name()));
         return ChangeRoleResponse.builder()
                 .role(role.name())
                 .build();

@@ -1,0 +1,68 @@
+server:
+  port: ${SERVER_PORT:8089}
+
+spring:
+  application:
+    name: admin-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/admin}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+  flyway:
+    enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: admin-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+prometheus:
+  base-url: ${PROMETHEUS_BASE_URL:http://localhost:9090}
+
+github:
+  repository: ${GITHUB_REPOSITORY:}
+  actions-token: ${GITHUB_ACTIONS_TOKEN:}
+
+settings:
+  gateway-base-url: ${GATEWAY_INTERNAL_URL:http://localhost:8080}
+  auth-base-url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  dialog-base-url: ${DIALOG_SERVICE_INTERNAL_URL:http://localhost:8005}
+
+s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:9000}
+  access-key: ${S3_ACCESS_KEY:}
+  secret-key: ${S3_SECRET_KEY:}
+  backup-bucket: ${S3_BACKUP_BUCKET:backups}
+
+backup:
+  cron: ${BACKUP_CRON:0 0 3 * * *}
+  retention-days: ${RETENTION_DAYS:14}
+  db-host: ${BACKUP_DB_HOST:postgres}
+  db-databases: ${BACKUP_DB_DATABASES:auth,incident,context,profile,review,notification,classifier,course}
+  db-username: ${DB_USERNAME:postgres}
+  db-password: ${DB_PASSWORD:postgres}
+  secrets-dir: ${BACKUP_SECRETS_DIR:}
+  encryption-key: ${BACKUP_ENCRYPTION_KEY:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+
+logging:
+  level:
+    "[com.simulator112.adminservice]": INFO
+    "[org.springframework.kafka]": WARN

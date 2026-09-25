@@ -1,0 +1,84 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { requireRole } from "../../../features/auth/requireRole";
+import { getMonitoringOverview } from "../../../features/admin/api/AdminMonitoringApi";
+
+export const prerender = false;
+
+const redirect = requireRole(Astro, ["ADMIN"]);
+if (redirect) return redirect;
+
+let overview = null;
+let error = null;
+
+try {
+  const response = await getMonitoringOverview(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  overview = await response.json();
+} catch {
+  error = "Не удалось загрузить состояние сервисов";
+}
+
+const bytesToMb = (bytes) => (bytes == null ? "—" : `${(bytes / 1024 / 1024).toFixed(0)} МБ`);
+const formatRate = (rate) => (rate == null ? "—" : rate.toFixed(3));
+const formatPercent = (value) => (value == null ? "—" : `${value.toFixed(1)}%`);
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Мониторинг компонентов" />
+
+  {!error && overview && (
+    <div class="wa-stack wa-gap-l">
+      <div class="wa-cluster wa-gap-m">
+        <wa-card>
+          <div class="wa-stack wa-gap-2xs">
+            <span>Пул соединений БД (активно / в ожидании)</span>
+            <strong>{overview.dbPoolActive ?? "—"} / {overview.dbPoolPending ?? "—"}</strong>
+          </div>
+        </wa-card>
+        <wa-card>
+          <div class="wa-stack wa-gap-2xs">
+            <span>Свободно места на диске VM</span>
+            <strong>{formatPercent(overview.diskAvailPercent)}</strong>
+          </div>
+        </wa-card>
+      </div>
+
+      {overview.services.length === 0 ? (
+        <wa-callout variant="neutral">Prometheus не вернул данные — проверьте, что мониторинг-стек запущен.</wa-callout>
+      ) : (
+        <wa-scroller>
+          <table class="wa-zebra-rows wa-hover-rows">
+            <thead>
+              <tr>
+                <th scope="col">Сервис</th>
+                <th scope="col">Статус</th>
+                <th scope="col">5xx / 5 мин</th>
+                <th scope="col">Heap, МБ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {overview.services.map((service) => (
+                <tr>
+                  <th scope="row">{service.service}</th>
+                  <td>
+                    <wa-badge variant={service.up ? "success" : "danger"}>{service.up ? "UP" : "DOWN"}</wa-badge>
+                  </td>
+                  <td>{formatRate(service.http5xxRate)}</td>
+                  <td>{bytesToMb(service.heapUsedBytes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </wa-scroller>
+      )}
+
+      <wa-callout variant="neutral">
+        Подробные графики и история — в Grafana (доступ по Tailscale IP сервера, см. <code>prod/DEPLOY.md</code>).
+      </wa-callout>
+    </div>
+  )}
+</Page>

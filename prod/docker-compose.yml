@@ -294,6 +294,66 @@ services:
       retries: 10
       start_period: 20s
 
+  # Exporters live in the app stack (not prod/monitoring/) because they need to reach postgres/
+  # kafka on this stack's *internal* default network - only the app services and Prometheus
+  # (via the shared external prod-monitoring network) need to see them.
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: ${COMPOSE_PROJECT_NAME}-postgres-exporter
+    environment:
+      DATA_SOURCE_NAME: postgresql://postgres:${DB_PASSWORD}@postgres:5432/postgres?sslmode=disable
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: ${COMPOSE_PROJECT_NAME}-kafka-exporter
+    command: ["--kafka.server=kafka:9092"]
+    networks: [default, monitoring]
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  admin-service:
+    image: ${ADMIN_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/admin-service:${IMAGE_TAG:?IMAGE_TAG is required}}
+    container_name: ${COMPOSE_PROJECT_NAME}-admin
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/admin
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      PROMETHEUS_BASE_URL: http://prod-prometheus:9090
+      S3_ENDPOINT: http://${COMPOSE_PROJECT_NAME}-minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+      S3_BACKUP_BUCKET: backups
+      RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_SECRETS_DIR: /run/secrets/all
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:?BACKUP_ENCRYPTION_KEY is required}
+      GITHUB_REPOSITORY: ${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}
+      GITHUB_ACTIONS_TOKEN: ${GITHUB_ACTIONS_TOKEN:?GITHUB_ACTIONS_TOKEN is required}
+      GATEWAY_INTERNAL_URL: http://${COMPOSE_PROJECT_NAME}-gateway:8080
+      AUTH_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-auth:8081
+      DIALOG_SERVICE_INTERNAL_URL: http://${COMPOSE_PROJECT_NAME}-dialog:8005
+    volumes:
+      - ../secrets:/run/secrets/all:ro
+    networks: [default, monitoring]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8089/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   api-gateway:
     image: ${API_GATEWAY_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/api-gateway:${IMAGE_TAG:?IMAGE_TAG is required}}
     container_name: ${COMPOSE_PROJECT_NAME}-gateway
@@ -309,8 +369,10 @@ services:
       NOTIFICATION_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-notification:8087
       PROFILE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-profile:8082
       CLASSIFIER_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-classifier:8087
+      ADMIN_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-admin:8089
       DIALOG_SERVICE_URL: ws://${COMPOSE_PROJECT_NAME}-dialog:8005
       REDIS_HOST: redis
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       JWT_PUBLIC_KEY_PATH: file:/run/secrets/public.pem
     volumes:
       - ../secrets/public.pem:/run/secrets/public.pem:ro
@@ -332,9 +394,13 @@ services:
         condition: service_started
       classifier-service:
         condition: service_started
+      admin-service:
+        condition: service_started
       dialog-service:
         condition: service_started
       redis:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   frontend:
