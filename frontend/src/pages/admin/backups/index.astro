@@ -62,7 +62,7 @@ const formatBytes = (bytes) => (bytes == null ? "—" : `${(bytes / 1024 / 1024)
                   <td>{run.errorMessage || "—"}</td>
                   <td>
                     {run.status === "SUCCEEDED" && (
-                      <wa-button class="download-backup" data-run-id={run.id} size="small" appearance="outlined">Скачать</wa-button>
+                      <wa-button class="download-backup" data-run-id={run.id} size="small" appearance="outlined">Скачать всё (.zip)</wa-button>
                     )}
                   </td>
                 </tr>

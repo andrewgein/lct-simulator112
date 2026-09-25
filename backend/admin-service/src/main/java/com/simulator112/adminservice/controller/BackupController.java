@@ -4,10 +4,13 @@ import com.simulator112.adminservice.dto.BackupRunResponse;
 import com.simulator112.adminservice.entity.BackupRun;
 import com.simulator112.adminservice.repository.BackupRunRepository;
 import com.simulator112.adminservice.service.BackupService;
+import java.io.InputStream;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
@@ -19,8 +22,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 
 @RestController
 public class BackupController {
@@ -57,28 +62,48 @@ public class BackupController {
   }
 
   /**
-   * Streams the backup file through this service rather than handing back a presigned MinIO URL:
-   * MinIO is only reachable on the internal docker network (S3_ENDPOINT is a container-name
-   * host), so a browser could never resolve a presigned URL built against it. admin-service is
-   * already publicly reachable through the gateway, so it fetches the object itself and passes
-   * the bytes straight through.
+   * Streams every object from this run's MinIO prefix (all database dumps, plus the encrypted
+   * secrets archive if present) as a single ZIP, built on the fly - nothing is buffered on disk
+   * or fully in memory. Goes through this service rather than a presigned MinIO URL because MinIO
+   * is only reachable on the internal docker network (S3_ENDPOINT is a container-name host), so a
+   * browser could never resolve a presigned URL built against it.
    */
   @GetMapping("/api/v1/admin/backups/{id}/download")
-  public ResponseEntity<InputStreamResource> download(@PathVariable UUID id) {
+  public ResponseEntity<StreamingResponseBody> download(@PathVariable UUID id) {
     BackupRun run =
         backupRunRepository.findById(id).orElseThrow(() -> new NoSuchElementException("Backup run not found"));
     if (run.getObjectKey() == null) {
       throw new IllegalStateException("Backup run has no stored objects yet");
     }
-    // objectKey is the folder prefix for this run (e.g. "backup-2026-01-01T03-00-00/"); the auth
-    // database dump is the primary download - the rest of the run's objects share the same prefix
-    // and can be fetched from MinIO directly by an operator if needed.
-    String key = run.getObjectKey() + "auth.sql.gz";
-    var s3Object = s3Client.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build());
-    String filename = run.getObjectKey().replace("/", "") + "-auth.sql.gz";
+    String prefix = run.getObjectKey();
+    List<String> keys =
+        s3Client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
+            .contents()
+            .stream()
+            .map(software.amazon.awssdk.services.s3.model.S3Object::key)
+            .toList();
+    if (keys.isEmpty()) {
+      throw new IllegalStateException("Backup run has no stored objects yet");
+    }
+
+    StreamingResponseBody body =
+        outputStream -> {
+          try (ZipOutputStream zip = new ZipOutputStream(outputStream)) {
+            for (String key : keys) {
+              zip.putNextEntry(new ZipEntry(key.substring(prefix.length())));
+              try (InputStream s3Object =
+                  s3Client.getObject(GetObjectRequest.builder().bucket(bucket).key(key).build())) {
+                s3Object.transferTo(zip);
+              }
+              zip.closeEntry();
+            }
+          }
+        };
+
+    String filename = prefix.replace("/", "") + ".zip";
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
         .contentType(MediaType.APPLICATION_OCTET_STREAM)
-        .body(new InputStreamResource(s3Object));
+        .body(body);
   }
 }
