@@ -6,3 +6,4 @@ SELECT 'CREATE DATABASE review' WHERE NOT EXISTS (SELECT FROM pg_database WHERE 
 SELECT 'CREATE DATABASE notification' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'notification')\gexec
 SELECT 'CREATE DATABASE classifier' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'classifier')\gexec
 SELECT 'CREATE DATABASE course' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'course')\gexec
+SELECT 'CREATE DATABASE admin' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'admin')\gexec
