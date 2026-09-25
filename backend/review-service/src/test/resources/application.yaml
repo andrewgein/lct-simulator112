@@ -13,3 +13,8 @@ spring:
   grpc:
     server:
       port: 0
+review:
+  dialogue-analysis:
+    base-url: http://localhost:8080
+    model-name: rubert-tiny-bilingual-nli
+    threshold: 0.8

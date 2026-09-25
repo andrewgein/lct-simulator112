@@ -66,6 +66,29 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
       }
     };
 
+    form.getIncidentStages = () => stagesRef.current.map((stage, position) => ({
+      id: stage.id || null,
+      title: stage.title || `Этап ${position + 1}`,
+      position,
+      classifierCodes: stage.typeId ? [stage.typeId] : [],
+      victimCount: Number(stage.victimCount || 0),
+      description: stage.description || null,
+      type: null,
+      timeLimitSeconds: null,
+      calls: stage.dialups.map((dialup, callPosition) => ({
+        id: dialup.id || null,
+        position: callPosition,
+        direction: "INBOUND",
+        counterparty: "CALLER",
+        person: personValue(dialup.applicant),
+        gender: dialup.gender || null,
+        knownFacts: splitLines(dialup.knownFacts),
+        hiddenFacts: splitLines(dialup.hiddenFacts),
+        aiContext: dialup.aiContext || null,
+        emotionalState: dialup.emotionalState || null
+      }))
+    }));
+
     form.saveIncidentStructure = async (incidentId) => {
       form.validateIncidentStructure();
       const currentStages = stagesRef.current.map((stage) => ({ ...stage, dialups: stage.dialups.map((dialup) => ({ ...dialup })) }));
@@ -118,6 +141,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
 
     return () => {
       delete form.validateIncidentStructure;
+      delete form.getIncidentStages;
       delete form.saveIncidentStructure;
     };
   }, []);

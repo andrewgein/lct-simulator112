@@ -1,5 +1,6 @@
 package com.simulator112.review_service.application.service;
 
+import com.simulator112.review_service.application.port.out.DialogueAnalysisPort;
 import com.simulator112.review_service.application.port.out.ReviewStore;
 import com.simulator112.review_service.domain.evaluation.System112ReviewRubric;
 import com.simulator112.review_service.domain.model.Review;
@@ -19,8 +20,9 @@ import static org.mockito.Mockito.when;
 
 class ReviewApplicationServiceTests {
     private final ReviewStore store = mock(ReviewStore.class);
+    private final DialogueAnalysisPort dialogueAnalysisPort = mock(DialogueAnalysisPort.class);
     private final ReviewApplicationService service = new ReviewApplicationService(store,
-            List.of(new System112ReviewRubric()));
+            List.of(new System112ReviewRubric()), dialogueAnalysisPort);
 
     @Test
     void persistsSubmissionIdentifiers() {
@@ -39,6 +41,29 @@ class ReviewApplicationServiceTests {
         assertThat(result.assignmentId()).isEqualTo(assignmentId);
         assertThat(result.status()).isEqualTo(ReviewStatus.DONE);
         assertThat(result.finalScore()).isEqualTo(result.automaticScore());
+    }
+
+    @Test
+    void addsNliDialogueScoresToScaledSystem112Rubric() {
+        when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var criterion = new ReviewSubmission.DialogueCriterion(
+                "address", "Уточнение адреса", "Оператор уточнил адрес происшествия", 25);
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(),
+                new ReviewSubmission.EvaluationCriteria(List.of(criterion)));
+        var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(), List.of(),
+                List.of(new ReviewSubmission.TranscriptPhrase("USER", "Назовите адрес")), null, null);
+        when(dialogueAnalysisPort.analyze(any(), any())).thenReturn(List.of(
+                new DialogueAnalysisPort.DialogueAnalysis("address", true, 0.91)));
+
+        Review result = service.submit(submission);
+
+        assertThat(result.maxScore()).isEqualTo(100);
+        assertThat(result.results()).anySatisfy(value -> {
+            assertThat(value.criterionName()).isEqualTo("Уточнение адреса");
+            assertThat(value.score()).isEqualTo(25);
+            assertThat(value.feedback()).contains("0.910");
+        });
     }
 
     @Test

@@ -4,8 +4,10 @@ import com.simulator112.review_service.application.exception.ReviewNotFoundExcep
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
 import com.simulator112.review_service.application.port.in.SubmitReviewUseCase;
+import com.simulator112.review_service.application.port.out.DialogueAnalysisPort;
 import com.simulator112.review_service.application.port.out.ReviewStore;
 import com.simulator112.review_service.domain.evaluation.ReviewRubric;
+import com.simulator112.review_service.domain.model.CriterionResult;
 import com.simulator112.review_service.domain.model.Review;
 import com.simulator112.review_service.domain.model.ReviewStatus;
 import com.simulator112.review_service.domain.model.ReviewSubmission;
@@ -15,8 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +31,7 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
 
     private final ReviewStore store;
     private final List<ReviewRubric> rubrics;
+    private final DialogueAnalysisPort dialogueAnalysisPort;
 
     @Override
     @Transactional
@@ -33,7 +40,8 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
                 .orElseThrow(() -> new IllegalArgumentException("Не найдена рубрика для " + submission.targetType()));
         long duration = durationSeconds(submission);
         long timeLimit = DEFAULT_TIME_LIMIT_SECONDS * Math.max(1, submission.incidents().size());
-        var results = rubric.evaluate(submission);
+        var results = new ArrayList<>(rubric.evaluate(submission));
+        results.addAll(evaluateDialogue(submission));
         int score = results.stream().mapToInt(value -> value.score()).sum();
         int maxScore = results.stream().mapToInt(value -> value.maxScore()).sum();
         Review review = new Review(submission.contextId(), submission.userId(), submission.assignmentId(),
@@ -63,6 +71,30 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
     @Transactional(readOnly = true)
     public List<Review> getByUserId(UUID userId) {
         return store.findByUserId(userId);
+    }
+
+    private List<CriterionResult> evaluateDialogue(ReviewSubmission submission) {
+        if (submission.targetType() != ReviewSubmission.TargetType.SYSTEM_112) return List.of();
+        var criteria = submission.incidents().stream()
+                .flatMap(incident -> incident.criteria().dialogueCriteria().stream())
+                .toList();
+        if (criteria.isEmpty()) return List.of();
+
+        var analysisByCriterion = dialogueAnalysisPort.analyze(submission.transcript(), criteria).stream()
+                .collect(Collectors.toMap(DialogueAnalysisPort.DialogueAnalysis::criterionId, Function.identity()));
+        return submission.incidents().stream().flatMap(incident -> incident.criteria().dialogueCriteria().stream()
+                .map(criterion -> {
+                    var analysis = analysisByCriterion.get(criterion.id());
+                    if (analysis == null) {
+                        throw new IllegalStateException("MLServer не вернул результат для критерия " + criterion.id());
+                    }
+                    String confidence = String.format(Locale.ROOT, "%.3f", analysis.confidence());
+                    String feedback = analysis.matched()
+                            ? "Критерий оценки диалога выполнен. Уверенность модели: " + confidence + "."
+                            : "Критерий оценки диалога не выполнен. Уверенность модели: " + confidence + ".";
+                    return new CriterionResult(incident.id(), incident.order(), criterion.name(),
+                            analysis.matched() ? criterion.weight() : 0, criterion.weight(), feedback);
+                })).toList();
     }
 
     private long durationSeconds(ReviewSubmission submission) {

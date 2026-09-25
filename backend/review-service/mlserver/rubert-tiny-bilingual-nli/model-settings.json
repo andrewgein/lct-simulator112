@@ -1,0 +1,10 @@
+{
+  "name": "rubert-tiny-bilingual-nli",
+  "implementation": "mlserver_huggingface.HuggingFaceRuntime",
+  "parameters": {
+    "extra": {
+      "task": "zero-shot-classification",
+      "pretrained_model": "cointegrated/rubert-tiny-bilingual-nli"
+    }
+  }
+}

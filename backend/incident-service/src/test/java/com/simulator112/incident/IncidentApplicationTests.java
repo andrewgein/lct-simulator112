@@ -66,6 +66,32 @@ class IncidentApplicationTests {
     }
 
     @Test
+    void updatesSystem112StageDetailsWithSharedPrimaryKey() {
+        UUID stageId = UUID.randomUUID();
+        var original = new System112Incident(null, "Пожар",
+                new Address("Москва", "Тверская", "1", null, null, 1), Difficulty.EASY,
+                List.of(new System112Stage(stageId, "Первичный вызов", 0,
+                        List.of("101"), 0, "Исходное описание", List.of())),
+                new System112Criteria(List.of()));
+        var saved = incidentRepository.save(original);
+        var updated = new System112Incident(saved.id(), "Пожар",
+                saved.address(), saved.difficulty(),
+                List.of(new System112Stage(stageId, "Первичный вызов", 0,
+                        List.of("101", "102"), 2, "Новое описание", List.of())),
+                new System112Criteria(List.of()));
+
+        incidentRepository.save(updated);
+        var loaded = (System112Incident) incidentRepository.findById(saved.id()).orElseThrow();
+
+        assertThat(loaded.stages()).singleElement().satisfies(stage -> {
+            assertThat(stage.description()).isEqualTo("Новое описание");
+            assertThat(stage.victimCount()).isEqualTo(2);
+            assertThat(stage.classifierCodes()).containsExactly("101", "102");
+        });
+        assertThat(detailCount("SYSTEM112_STAGE_DETAILS", saved.id())).isEqualTo(1);
+    }
+
+    @Test
     void persistsTimedDdsStagesAndStatusCall() {
         var brigade = new Person("Бригада 12", null, null, null, null, null, null, null, null);
         var outgoing = new CallScenario(null, 0, CallDirection.OUTBOUND, CounterpartyType.BRIGADE,

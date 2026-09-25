@@ -7,4 +7,10 @@ const { incident = {} } = Astro.props;
   <h2 class="wa-heading-xl">Основное</h2>
   <wa-input name="title" label="Название" value={incident.title || ""} required>
   </wa-input>
+  <wa-select name="difficulty" label="Сложность" value={incident.difficulty || "NORMAL"} required>
+    <wa-option value="EASY">Лёгкая</wa-option>
+    <wa-option value="NORMAL">Обычная</wa-option>
+    <wa-option value="HARD">Сложная</wa-option>
+  </wa-select>
+  <input type="hidden" name="targetType" value={incident.targetType || "SYSTEM_112"} />
 </section>

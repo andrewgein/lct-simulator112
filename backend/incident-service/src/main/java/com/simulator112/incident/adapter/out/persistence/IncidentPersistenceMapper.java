@@ -88,6 +88,7 @@ public class IncidentPersistenceMapper {
         IncidentStageJpaEntity entity = toEntityBase(stage);
         entity.setPosition(stage.position());
         System112StageDetailsJpaEntity details = new System112StageDetailsJpaEntity();
+        details.setStageId(entity.getId());
         details.setClassifierCodes(new java.util.ArrayList<>(stage.classifierCodes()));
         details.setVictimCount(stage.victimCount());
         entity.setSystem112Details(details);
@@ -97,6 +98,7 @@ public class IncidentPersistenceMapper {
     private IncidentStageJpaEntity toEntity(DdsStage stage) {
         IncidentStageJpaEntity entity = toEntityBase(stage);
         DdsStageDetailsJpaEntity details = new DdsStageDetailsJpaEntity();
+        details.setStageId(entity.getId());
         details.setType(stage.type());
         details.setTimeLimitSeconds(stage.timeLimitSeconds());
         entity.setDdsDetails(details);
