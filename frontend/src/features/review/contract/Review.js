@@ -1,6 +1,20 @@
 /** @typedef {"IN_REVIEW" | "DONE"} ReviewStatus */
 
 /**
+ * @typedef {Object} ReviewComment
+ * @property {string} id
+ * @property {string} reviewContextId
+ * @property {string} authorId
+ * @property {string} text
+ * @property {string} createdAt
+ */
+
+/**
+ * @typedef {Object} ReviewComments
+ * @property {ReviewComment[]} comments
+ */
+
+/**
  * @typedef {Object} CriterionResult
  * @property {string} incidentId
  * @property {number} incidentOrder
