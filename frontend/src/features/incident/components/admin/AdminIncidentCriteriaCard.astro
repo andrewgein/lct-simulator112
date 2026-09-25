@@ -50,6 +50,17 @@ const dialogueCriteria = criteria.dialogueCriteria || [];
   list?.addEventListener("click", (event) => {
     if (event.target.closest(".remove-dialogue-criterion")) event.target.closest(".dialogue-criterion")?.remove();
   });
+  section?.closest("form")?.addEventListener("apply-generated-criteria", (event) => {
+    list.replaceChildren();
+    for (const criterion of event.detail) {
+      const item = createCriterion();
+      item.dataset.criterionId = criterion.id || "";
+      item.querySelector("[data-name]").value = criterion.name || "";
+      item.querySelector("[data-hypothesis]").value = criterion.hypothesis || "";
+      item.querySelector("[data-weight]").value = String(criterion.weight || 1);
+      list.append(item);
+    }
+  });
   const valueOf = (element) => element?.value ?? element?.getAttribute("value") ?? "";
   section?.closest("form")?.addEventListener("collect-dialogue-criteria", (event) => {
     const criteria = [...(list?.querySelectorAll(".dialogue-criterion") || [])].map((item) => ({

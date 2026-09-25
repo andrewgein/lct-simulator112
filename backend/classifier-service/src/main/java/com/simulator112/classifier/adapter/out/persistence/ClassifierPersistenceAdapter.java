@@ -4,6 +4,7 @@ import com.simulator112.classifier.adapter.out.persistence.repository.Classifier
 import com.simulator112.classifier.adapter.out.persistence.repository.ClassifierEntryRepository;
 import com.simulator112.classifier.adapter.out.persistence.repository.RoutingRuleRepository;
 import com.simulator112.classifier.application.port.out.ClassifierRepository;
+import com.simulator112.classifier.domain.model.ClassifierCandidate;
 import com.simulator112.classifier.domain.model.ClassifierCategory;
 import com.simulator112.classifier.domain.model.ClassifierEntry;
 import com.simulator112.classifier.domain.model.RoutingRule;
@@ -36,6 +37,11 @@ public class ClassifierPersistenceAdapter implements ClassifierRepository {
         return categoryRepository.findAllByOrderByPositionAsc().stream()
                 .map(category -> ClassifierPersistenceMapper.toDomain(category, factCodes))
                 .toList();
+    }
+
+    @Override
+    public List<ClassifierCandidate> findCandidates() {
+        return entryRepository.findCandidates();
     }
 
     @Override

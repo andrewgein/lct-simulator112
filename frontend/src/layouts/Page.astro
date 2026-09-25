@@ -70,6 +70,10 @@ const hasNavigation = Astro.slots.has('navigation');
           <div slot="main-header" class="main-header-slot"><slot name="main-header" /></div>
         ) : null}
 
+        {Astro.slots.has('aside') ? (
+          <aside slot="aside" class="contents-slot"><slot name="aside" /></aside>
+        ) : null}
+
         {Astro.slots.has('footer') ? (
           <div slot="footer" class="contents-slot"><slot name="footer" /></div>
         ) : null}
@@ -80,6 +84,7 @@ const hasNavigation = Astro.slots.has('navigation');
       <ErrorMessage message={error} />
     )}
   </wa-page>
+  <slot name="floating" />
   <script>
     import '@awesome.me/astro-lit/dsd-polyfill.js';
     import '@awesome.me/astro-lit/hydration-support.js';

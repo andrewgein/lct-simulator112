@@ -1,6 +1,7 @@
 package com.simulator112.classifier;
 
 import com.simulator112.classifier.application.port.in.ResolveRoutingUseCase;
+import com.simulator112.classifier.application.port.in.SearchClassifierEntriesUseCase;
 import com.simulator112.classifier.adapter.in.web.ClassifierController;
 import com.simulator112.classifier.domain.model.RoutingResultKind;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,8 @@ class ClassifierApplicationTests {
     @Autowired
     private ResolveRoutingUseCase routing;
     @Autowired
+    private SearchClassifierEntriesUseCase candidateSearch;
+    @Autowired
     private ClassifierController classifierController;
     @Autowired
     private MockMvc mockMvc;
@@ -36,6 +39,13 @@ class ClassifierApplicationTests {
         assertThat(count("classifier_entries")).isEqualTo(1283);
         assertThat(count("dispatch_services")).isEqualTo(58);
         assertThat(count("routing_rules")).isEqualTo(22484);
+    }
+
+    @Test
+    void searchesRealClassifierWithoutLoadingFullCatalogIntoIncidentService() {
+        var matches = candidateSearch.search("пожар", 10, java.util.List.of());
+        assertThat(matches).isNotEmpty().hasSizeLessThanOrEqualTo(10);
+        assertThat(matches).anySatisfy(match -> assertThat(match.finalName().toLowerCase()).contains("пожар"));
     }
 
     @Test

@@ -43,6 +43,22 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
     const form = document.querySelector("#incident-form");
     if (!form) return;
 
+    const applyGenerated = (event) => {
+      const generated = event.detail;
+      if (!Array.isArray(generated)) return;
+      const previous = stagesRef.current;
+      const next = generated.map((stage, index) => {
+        const existing = previous[index];
+        const calls = (stage.calls || []).map((call, callIndex) => ({ ...call, id: existing?.dialups[callIndex]?.id || null }));
+        return normalizeStage({ ...stage, id: existing?.id || null, calls }, existing?.key || crypto.randomUUID());
+      });
+      stagesRef.current = next;
+      setStages(next);
+      setOpenStage("");
+      setOpenDialup("");
+    };
+    form.addEventListener("apply-generated-stages", applyGenerated);
+
     form.validateIncidentStructure = () => {
       for (const stage of stagesRef.current) {
         if (!stage.typeId) {
@@ -140,6 +156,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
     };
 
     return () => {
+      form.removeEventListener("apply-generated-stages", applyGenerated);
       delete form.validateIncidentStructure;
       delete form.getIncidentStages;
       delete form.saveIncidentStructure;

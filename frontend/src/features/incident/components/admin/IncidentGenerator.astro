@@ -1,0 +1,172 @@
+<div id="incident-generator" class="generator-panel">
+  <div class="generator-heading">
+    <div class="generator-title"><wa-icon name="wand-magic-sparkles" aria-hidden="true"></wa-icon><h2>ИИ-конструктор</h2></div>
+    <wa-button id="close-incident-generator" type="button" appearance="plain" aria-label="Закрыть ИИ-конструктор"><wa-icon name="xmark" aria-hidden="true"></wa-icon></wa-button>
+  </div>
+  <div class="generator-body">
+    <div id="generator-messages" role="log" aria-live="polite" aria-label="История чата"><p class="generator-message generator-message--assistant">Опишите происшествие или попросите изменить детали сценария.</p></div>
+    <form id="generator-chat" class="generator-compose">
+      <wa-textarea id="generator-prompt" aria-label="Ваш запрос" placeholder="Напишите запрос" rows="2" resize="none" maxlength="4000"></wa-textarea>
+      <wa-button id="generator-send" type="submit" variant="brand" size="l" aria-label="Отправить запрос"><wa-icon name="paper-plane" aria-hidden="true"></wa-icon></wa-button>
+    </form>
+  </div>
+</div>
+<script>
+  const form = document.querySelector('#incident-form');
+  const page = document.querySelector('wa-page');
+  const generator = document.querySelector('#incident-generator');
+  const chat = document.querySelector('#generator-chat');
+  const prompt = document.querySelector('#generator-prompt');
+  const send = document.querySelector('#generator-send');
+  const log = document.querySelector('#generator-messages');
+  const messages = [];
+
+  const toggle = document.querySelector('#open-incident-generator');
+  const setOpen = (open) => {
+    page.classList.toggle('generator-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Закрыть ИИ-чат' : 'Открыть ИИ-чат');
+    if (open) prompt.focus();
+    else toggle.focus();
+  };
+  toggle?.addEventListener('click', () => setOpen(!page.classList.contains('generator-open')));
+  document.querySelector('#close-incident-generator')?.addEventListener('click', () => setOpen(false));
+  const appendMessage = (role, text) => {
+    const item = document.createElement('p');
+    item.className = `generator-message generator-message--${role}`;
+    item.textContent = text;
+    if (role === 'error') item.setAttribute('role', 'alert');
+    log.append(item);
+    log.scrollTop = log.scrollHeight;
+  };
+  const collectDraft = () => {
+    if (!form.getIncidentStages) throw new Error('Подождите, пока загрузится редактор этапов');
+    const data = Object.fromEntries(new FormData(form));
+    const detail = { criteria: [] };
+    form.dispatchEvent(new CustomEvent('collect-dialogue-criteria', { detail }));
+    return {
+      title: data.title || '',
+      difficulty: data.difficulty || 'NORMAL',
+      address: {
+        city: data['address.city'] || '', street: data['address.street'] || '', house: data['address.house'] || '',
+        building: data['address.building'] || null, apartment: data['address.apartment'] || null,
+        floor: data['address.floor'] === '' ? null : Number(data['address.floor'] || 0)
+      },
+      stages: form.getIncidentStages(), dialogueCriteria: detail.criteria
+    };
+  };
+  const applyIncident = (incident) => {
+    if (!incident || typeof incident !== 'object' || Array.isArray(incident)) throw new Error('Модель вернула некорректное изменение сценария');
+    const fields = { ...Object.fromEntries(['title', 'difficulty'].filter((name) => Object.hasOwn(incident, name)).map((name) => [name, incident[name]])),
+      ...Object.fromEntries(Object.entries(incident.address || {}).map(([part, value]) => [`address.${part}`, value])) };
+    for (const [name, value] of Object.entries(fields)) {
+      const field = form.querySelector(`[name="${name}"]`);
+      if (field) field.value = value == null ? '' : String(value);
+    }
+    if (incident.address) {
+      const address = collectDraft().address;
+      const fullAddress = [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(', ');
+      const addressInput = form.querySelector('#incident-main-address input');
+      if (addressInput) addressInput.value = fullAddress;
+      window.dispatchEvent(new CustomEvent('incident-address-change', { detail: fullAddress }));
+    }
+    if (Object.hasOwn(incident, 'stages')) form.dispatchEvent(new CustomEvent('apply-generated-stages', { detail: incident.stages }));
+    if (Object.hasOwn(incident, 'dialogueCriteria')) form.dispatchEvent(new CustomEvent('apply-generated-criteria', { detail: incident.dialogueCriteria }));
+  };
+
+  chat?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const text = prompt.value.trim();
+    if (!text || send.loading) return;
+    send.loading = true;
+    page.classList.add('generator-busy');
+    generator.setAttribute('aria-busy', 'true');
+    appendMessage('user', text);
+    messages.push({ role: 'user', content: text });
+    prompt.value = '';
+    try {
+      const response = await fetch('/api/v1/incidents/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: messages.slice(-5), draft: collectDraft() }) });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || body.detail || 'Не удалось сгенерировать сценарий');
+      }
+      const result = await response.json();
+      applyIncident(result.incident);
+      const reply = result.message || 'Черновик обновлён.';
+      messages.push({ role: 'assistant', content: reply });
+      appendMessage('assistant', reply);
+    } catch (caught) {
+      appendMessage('error', caught instanceof Error ? caught.message : 'Ошибка генерации');
+    } finally {
+      send.loading = false;
+      page.classList.remove('generator-busy');
+      generator.removeAttribute('aria-busy');
+    }
+  });
+</script>
+<style is:global>
+  :root { --generator-panel-width: min(32rem, 40vw); }
+  wa-page:has(#incident-generator) { --aside-width: 0px; }
+  wa-page:has(#incident-generator)::part(body) { transition: grid-template-columns var(--wa-transition-normal); }
+  wa-page:has(#incident-generator)::part(main), wa-page:has(#incident-generator)::part(menu), wa-page:has(#incident-generator)::part(subheader), wa-page:has(#incident-generator)::part(footer) { transition: filter var(--wa-transition-slow), opacity var(--wa-transition-slow); }
+  wa-page.generator-busy:has(#incident-generator)::part(main), wa-page.generator-busy:has(#incident-generator)::part(menu), wa-page.generator-busy:has(#incident-generator)::part(subheader), wa-page.generator-busy:has(#incident-generator)::part(footer) { filter: blur(.4rem) saturate(.65); opacity: .48; pointer-events: none; user-select: none; }
+  wa-page:has(#incident-generator)::part(aside) { min-width: 0; overflow: hidden; opacity: 0; pointer-events: none; transition: opacity var(--wa-transition-normal); }
+  wa-page:has(#incident-generator) > [slot="aside"] { box-sizing: border-box; align-items: flex-end; overflow: hidden; padding: 0; }
+  wa-page.generator-open:has(#incident-generator) { --aside-width: var(--generator-panel-width); }
+  wa-page.generator-open:has(#incident-generator)::part(aside) { opacity: 1; pointer-events: auto; border-inline-start: 1px solid var(--wa-color-surface-border); }
+  .generator-thinking { position: fixed; z-index: 1050; inset-block-start: 50%; inset-inline-start: calc((100vw - var(--generator-panel-width)) / 2); width: 7rem; height: 7rem; border-radius: 50%; opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, -50%) scale(.72); transition: opacity var(--wa-transition-slow), transform var(--wa-transition-slow), visibility 0s linear var(--wa-transition-slow); }
+  .generator-thinking::before { position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(circle, color-mix(in srgb, var(--wa-color-brand-fill-loud) 18%, transparent), transparent 68%); content: ''; filter: blur(.45rem); transform: scale(.7); transition: transform var(--wa-transition-slow); }
+  body:has(wa-page.generator-busy) .generator-thinking { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); transition-delay: 0s; }
+  body:has(wa-page.generator-busy) .generator-thinking::before { transform: scale(1.35); }
+  .generator-thinking-star { position: absolute; color: var(--wa-color-brand-fill-loud); filter: drop-shadow(0 0 .55rem color-mix(in srgb, var(--wa-color-brand-fill-loud) 55%, transparent)); animation-play-state: paused; }
+  body:has(wa-page.generator-busy) .generator-thinking-star { animation-play-state: running; }
+  .generator-thinking-star--one { inset-block-start: 50%; inset-inline-start: 50%; font-size: 2rem; animation: generator-star-orbit 2.4s linear infinite; }
+  .generator-thinking-star--two { inset-block-start: 50%; inset-inline-start: 50%; font-size: 1.15rem; animation: generator-star-orbit 2.4s linear -.8s infinite; }
+  .generator-thinking-star--three { inset-block-start: 50%; inset-inline-start: 50%; font-size: 1.45rem; animation: generator-star-orbit 2.4s linear -1.6s infinite; }
+  @keyframes generator-star-orbit {
+    0%, 100% { opacity: 1; transform: translate(-50%, -50%) translate3d(2.15rem, 1.5rem, 0) scale(1.15); }
+    12.5% { opacity: .9; transform: translate(-50%, -50%) translate3d(1.05rem, 1.7rem, 0) scale(1.08); }
+    25% { opacity: .75; transform: translate(-50%, -50%) translate3d(-.65rem, .9rem, 0) scale(.92); }
+    37.5% { opacity: .5; transform: translate(-50%, -50%) translate3d(-1.95rem, -.4rem, 0) scale(.74); }
+    50% { opacity: .3; transform: translate(-50%, -50%) translate3d(-2.15rem, -1.5rem, 0) scale(.58); }
+    62.5% { opacity: .42; transform: translate(-50%, -50%) translate3d(-1.05rem, -1.7rem, 0) scale(.68); }
+    75% { opacity: .62; transform: translate(-50%, -50%) translate3d(.65rem, -.9rem, 0) scale(.84); }
+    87.5% { opacity: .85; transform: translate(-50%, -50%) translate3d(1.95rem, .4rem, 0) scale(1.04); }
+  }
+  button.generator-tab { position: fixed; z-index: 1100; inset-inline-end: 0; bottom: 4rem; display: flex; width: 4.25rem; height: 9rem; flex-direction: column; align-items: center; justify-content: center; gap: var(--wa-space-xs); padding: 0; border: 0; border-radius: 0; background: var(--wa-color-brand-fill-loud); color: var(--wa-color-brand-on-loud); box-shadow: -4px 4px 12px rgb(18 38 60 / 18%); cursor: pointer; transition: inset-inline-end var(--wa-transition-normal), filter var(--wa-transition-fast); }
+  button.generator-tab[aria-expanded="true"] { inset-inline-end: var(--generator-panel-width); }
+  .generator-tab-icon { display: block; width: 2.5rem; height: 2.5rem; flex: 0 0 2.5rem; margin-inline: auto; font-size: 2.25rem; line-height: 1; }
+  .generator-tab-label { font-size: var(--wa-font-size-m); font-weight: var(--wa-font-weight-bold); letter-spacing: .08em; }
+  .generator-tab-caption { margin-block-start: calc(-1 * var(--wa-space-xs)); font-size: var(--wa-font-size-xs); font-weight: var(--wa-font-weight-semibold); }
+  button.generator-tab:hover, button.generator-tab:focus-visible { filter: brightness(.88); }
+  button.generator-tab:focus-visible { outline: var(--wa-focus-ring); outline-offset: calc(-1 * var(--wa-focus-ring-offset)); }
+  #incident-generator { display: flex; position: relative; flex: none; flex-direction: column; box-sizing: border-box; width: var(--generator-panel-width); height: calc(100dvh - var(--banner-height) - var(--header-height) - var(--subheader-height)); min-height: 0; padding: var(--wa-space-m); transition: box-shadow var(--wa-transition-slow); }
+  wa-page.generator-busy #incident-generator { animation: generator-focus 1.6s ease-in-out infinite alternate; }
+  @keyframes generator-focus {
+    from { box-shadow: calc(-1 * var(--wa-space-l)) 0 2rem color-mix(in srgb, var(--wa-color-brand-fill-loud) 8%, transparent); }
+    to { box-shadow: calc(-1 * var(--wa-space-xl)) 0 3rem color-mix(in srgb, var(--wa-color-brand-fill-loud) 22%, transparent); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    wa-page:has(#incident-generator)::part(main), wa-page:has(#incident-generator)::part(menu), wa-page:has(#incident-generator)::part(subheader), wa-page:has(#incident-generator)::part(footer), #incident-generator { transition: none; }
+    wa-page.generator-busy #incident-generator { animation: none; box-shadow: calc(-1 * var(--wa-space-l)) 0 2rem color-mix(in srgb, var(--wa-color-brand-fill-loud) 14%, transparent); }
+  }
+  .generator-heading { display: flex; align-items: center; justify-content: space-between; padding-block-end: var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .generator-title { display: flex; align-items: center; gap: var(--wa-space-s); }
+  .generator-title wa-icon { color: var(--wa-color-brand-fill-loud); font-size: var(--wa-font-size-xl); }
+  .generator-heading h2 { margin: 0; font-size: var(--wa-font-size-l); }
+  @media (max-width: 60rem) {
+    :root { --generator-panel-width: calc(100vw - 4.25rem); }
+    wa-page.generator-open:has(#incident-generator) { --aside-width: var(--generator-panel-width); }
+    wa-page.generator-open:has(#incident-generator)::part(main) { overflow: hidden; }
+    .generator-thinking { display: none; }
+  }
+  .generator-body { display: flex; flex: 1; flex-direction: column; gap: var(--wa-space-m); min-height: 0; padding-block-start: var(--wa-space-m); }
+  #generator-messages { display: flex; flex: 1; flex-direction: column; gap: var(--wa-space-s); min-height: 8rem; overflow-y: auto; }
+  .generator-message { max-width: 90%; margin: 0; padding: var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: 0; overflow-wrap: anywhere; white-space: pre-wrap; background: var(--wa-color-surface-lowered); }
+  .generator-message--user { align-self: flex-end; border-color: var(--wa-color-brand-border-loud); background: var(--wa-color-brand-fill-loud); color: var(--wa-color-brand-on-loud); }
+  .generator-message--error { border-color: var(--wa-color-danger-border-quiet); background: var(--wa-color-danger-fill-quiet); color: var(--wa-color-danger-60); }
+  .generator-compose { display: flex; align-items: flex-end; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .generator-compose wa-textarea { flex: 1; min-width: 0; }
+  .generator-compose wa-button { flex: none; }
+  #generator-prompt::part(textarea-wrapper), #generator-send::part(button) { border-radius: 0; }
+</style>

@@ -1,5 +1,5 @@
 function featureAt(entry, level) {
-    return entry.features.find((feature) => feature.level === level);
+    return entry.features?.find((feature) => feature.level === level);
 }
 
 function featureKey(entry, level) {
@@ -20,27 +20,29 @@ function normalizeEntry(entry, category) {
         ...entry,
         categoryCode: category.code,
         categoryName: category.name,
-        feature1Code: feature1?.code || null,
-        feature1Name: feature1?.name?.trim() || null,
-        feature2Code: feature2?.code || null,
-        feature2Name: feature2?.name?.trim() || null,
-        feature3Code: feature3?.code || null,
-        feature3Name: feature3?.name?.trim() || null,
+        feature1Code: feature1?.code || entry.feature1Code || null,
+        feature1Name: feature1?.name?.trim() || entry.feature1Name?.trim() || null,
+        feature2Code: feature2?.code || entry.feature2Code || null,
+        feature2Name: feature2?.name?.trim() || entry.feature2Name?.trim() || null,
+        feature3Code: feature3?.code || entry.feature3Code || null,
+        feature3Name: feature3?.name?.trim() || entry.feature3Name?.trim() || null,
         additionalFeatures: entry.additionalFeatures?.trim() || null,
         routingFactCodes: Array.isArray(entry.routingFactCodes) ? entry.routingFactCodes : [],
-        fields: []
+        fields: Array.isArray(entry.fields) ? entry.fields : []
     };
 }
 
 export function normalizeClassifier(view) {
-    if (!view || !Array.isArray(view.categories) || !Array.isArray(view.routingFacts)) {
+    const categories = Array.isArray(view) ? view : view?.categories;
+    const routingFacts = Array.isArray(view?.routingFacts) ? view.routingFacts : [];
+    if (!Array.isArray(categories) || categories.some((category) => !Array.isArray(category?.entries))) {
         throw new Error("Некорректный формат классификатора");
     }
-    const classifier = view.categories.map((category) => ({
+    const classifier = categories.map((category) => ({
         ...category,
         entries: normalizeEntries(category)
     }));
-    return { classifier, routingFacts: view.routingFacts };
+    return { classifier, routingFacts };
 }
 
 function normalizeEntries(category) {
