@@ -99,6 +99,14 @@ spring:
               filters:
                 - name: JwtAuthFilter
 
+            #Notification service - пользовательские уведомления
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - name: JwtAuthFilter
+
             #Classifier — справочник происшествий и маршрутизация
             - id: classifier-service
               uri: ${CLASSIFIER_SERVICE_URL:http://localhost:8087}

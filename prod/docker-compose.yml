@@ -188,11 +188,14 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/review
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     networks: [default, monitoring]
     depends_on:
       postgres:
         condition: service_healthy
       incident-service:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q '\"status\":\"UP\"'"]
@@ -247,6 +250,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:4321}
     networks: [default, monitoring]
     depends_on:
       postgres:
@@ -299,6 +303,7 @@ services:
       COURSE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-course:8088
       CONTEXT_MANGER_URL: http://${COMPOSE_PROJECT_NAME}-context:8084
       REVIEW_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-review:8085
+      NOTIFICATION_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-notification:8087
       PROFILE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-profile:8082
       CLASSIFIER_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-classifier:8087
       DIALOG_SERVICE_URL: ws://${COMPOSE_PROJECT_NAME}-dialog:8005
@@ -317,6 +322,8 @@ services:
       context-service:
         condition: service_started
       review-service:
+        condition: service_started
+      notification-service:
         condition: service_started
       profile-service:
         condition: service_started
