@@ -6,6 +6,7 @@ import com.simulator112.course.adapter.in.rest.dto.StudyGroupRequest;
 import com.simulator112.course.adapter.in.rest.dto.StudyGroupView;
 import com.simulator112.course.application.port.in.AssignCourseToGroupUseCase;
 import com.simulator112.course.application.port.in.CreateStudyGroupUseCase;
+import com.simulator112.course.application.port.in.DeleteStudyGroupUseCase;
 import com.simulator112.course.application.port.in.FindGroupCoursesUseCase;
 import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class StudyGroupRestController {
     private final CreateStudyGroupUseCase createStudyGroup;
     private final UpdateStudyGroupUseCase updateStudyGroup;
+    private final DeleteStudyGroupUseCase deleteStudyGroup;
     private final GetStudyGroupUseCase getStudyGroup;
     private final FindOwnedStudyGroupsUseCase findOwnedStudyGroups;
     private final AssignCourseToGroupUseCase assignCourseToGroup;
@@ -42,6 +44,12 @@ public class StudyGroupRestController {
                                  @Valid @RequestBody StudyGroupRequest request) {
         return mapper.toView(updateStudyGroup.updateStudyGroup(groupId, mapper.toDomain(groupId, request, userId),
                 userId));
+    }
+
+    @DeleteMapping("/{groupId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId) {
+        deleteStudyGroup.deleteStudyGroup(groupId, userId);
     }
 
     @GetMapping("/{groupId}")
