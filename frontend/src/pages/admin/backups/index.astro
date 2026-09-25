@@ -1,7 +1,5 @@
 ---
-import Page from "../../../layouts/Page.astro";
-import Header from "../../../layouts/Header.astro";
-import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { requireRole } from "../../../features/auth/requireRole";
 import { listBackups } from "../../../features/admin/api/AdminBackupApi";
 
@@ -28,14 +26,11 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", ti
 const formatBytes = (bytes) => (bytes == null ? "—" : `${(bytes / 1024 / 1024).toFixed(1)} МБ`);
 ---
 
-<Page {error}>
-  <Header slot="header" />
-  <MainHeader slot="main-header" title="Резервное копирование">
-    <wa-button id="run-backup" variant="brand" appearance="filled">
-      <wa-icon slot="start" name="database"></wa-icon>
-      Запустить бэкап сейчас
-    </wa-button>
-  </MainHeader>
+<AdminLayout title="Резервное копирование" active="backups" {error}>
+  <wa-button slot="actions" id="run-backup" variant="brand" appearance="filled">
+    <wa-icon slot="start" name="database"></wa-icon>
+    Запустить бэкап сейчас
+  </wa-button>
 
   {!error && (
     <div class="wa-stack wa-gap-l">
@@ -78,7 +73,7 @@ const formatBytes = (bytes) => (bytes == null ? "—" : `${(bytes / 1024 / 1024)
       )}
     </div>
   )}
-</Page>
+</AdminLayout>
 
 <script>
   const runButton = document.querySelector<HTMLElement>("#run-backup");

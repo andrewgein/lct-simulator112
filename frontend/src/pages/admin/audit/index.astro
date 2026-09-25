@@ -1,7 +1,5 @@
 ---
-import Page from "../../../layouts/Page.astro";
-import Header from "../../../layouts/Header.astro";
-import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { requireRole } from "../../../features/auth/requireRole";
 import { searchAuditLogs } from "../../../features/admin/api/AdminAuditLogApi";
 
@@ -33,10 +31,7 @@ try {
 const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "medium" });
 ---
 
-<Page {error}>
-  <Header slot="header" />
-  <MainHeader slot="main-header" title="Журнал действий" />
-
+<AdminLayout title="Журнал действий" active="audit" {error}>
   {!error && (
     <div class="wa-stack wa-gap-l">
       <form class="wa-cluster wa-gap-s" method="get">
@@ -85,4 +80,4 @@ const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium"
       )}
     </div>
   )}
-</Page>
+</AdminLayout>

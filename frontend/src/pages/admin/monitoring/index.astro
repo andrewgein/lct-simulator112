@@ -1,7 +1,5 @@
 ---
-import Page from "../../../layouts/Page.astro";
-import Header from "../../../layouts/Header.astro";
-import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { requireRole } from "../../../features/auth/requireRole";
 import { getMonitoringOverview } from "../../../features/admin/api/AdminMonitoringApi";
 
@@ -26,10 +24,7 @@ const formatRate = (rate) => (rate == null ? "—" : rate.toFixed(3));
 const formatPercent = (value) => (value == null ? "—" : `${value.toFixed(1)}%`);
 ---
 
-<Page {error}>
-  <Header slot="header" />
-  <MainHeader slot="main-header" title="Мониторинг компонентов" />
-
+<AdminLayout title="Мониторинг компонентов" active="monitoring" {error}>
   {!error && overview && (
     <div class="wa-stack wa-gap-l">
       <div class="wa-cluster wa-gap-m">
@@ -81,4 +76,4 @@ const formatPercent = (value) => (value == null ? "—" : `${value.toFixed(1)}%`
       </wa-callout>
     </div>
   )}
-</Page>
+</AdminLayout>

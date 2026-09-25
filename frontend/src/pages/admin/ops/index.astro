@@ -1,7 +1,5 @@
 ---
-import Page from "../../../layouts/Page.astro";
-import Header from "../../../layouts/Header.astro";
-import MainHeader from "../../../layouts/MainHeader.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { requireRole } from "../../../features/auth/requireRole";
 import { listOpsServices } from "../../../features/admin/api/AdminOpsApi";
 
@@ -25,10 +23,7 @@ const runStatusLabels = { queued: "В очереди", in_progress: "Выпол�
 const conclusionLabels = { success: "Успешно", failure: "Ошибка", cancelled: "Отменено" };
 ---
 
-<Page {error}>
-  <Header slot="header" />
-  <MainHeader slot="main-header" title="Сервисы" />
-
+<AdminLayout title="Сервисы" active="ops" {error}>
   {!error && (
     <div class="wa-stack wa-gap-l">
       <wa-callout variant="neutral">
@@ -72,7 +67,7 @@ const conclusionLabels = { success: "Успешно", failure: "Ошибка", c
       </wa-scroller>
     </div>
   )}
-</Page>
+</AdminLayout>
 
 <script>
   document.querySelectorAll<HTMLElement>(".ops-action").forEach((button) => {
