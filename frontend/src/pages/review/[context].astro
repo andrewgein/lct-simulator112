@@ -1,15 +1,23 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { getReview } from "../../features/review/api/ReviewApi";
+import { getReview, getReviewComments } from "../../features/review/api/ReviewApi";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
 
 const accessToken = Astro.cookies.get("accessToken").value;
 const role = Astro.cookies.get("role")?.value || "";
 const isTeacher = ["ADMIN", "SUPERVISOR"].includes(role);
+const canComment = role === "SUPERVISOR";
 const { context } = Astro.params;
-const reviewResponse = await getReview(context, accessToken);
+const [reviewResponse, commentsResponse] = await Promise.all([
+  getReview(context, accessToken),
+  getReviewComments(context, accessToken)
+]);
 const review = await reviewResponse.json();
+const comments = commentsResponse.ok ? (await commentsResponse.json()).comments || [] : [];
+const commentError = Astro.url.searchParams.get("commentError");
+const commentAdded = Astro.url.searchParams.has("commentAdded");
+const commentDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 
 const groupedIncidents = review.criterionResults.reduce((acc, current) => {
   const key = current.incidentId ? `incident:${current.incidentId}` : `legacy:${current.criterionName}`;
@@ -84,5 +92,111 @@ export const prerender = false;
         );
       })}
     </section>
+    <wa-divider></wa-divider>
+    <section id="comments" class="comments-section wa-stack wa-gap-l" aria-labelledby="comments-heading">
+      <div class="comments-heading">
+        <h2 id="comments-heading" class="wa-heading-xl">Комментарии преподавателя</h2>
+        {!!comments.length && <span class="wa-caption-m">{comments.length}</span>}
+      </div>
+      {commentAdded && <wa-callout variant="success"><wa-icon slot="icon" name="circle-check"></wa-icon>Комментарий добавлен</wa-callout>}
+      {commentError && <wa-callout variant="danger"><wa-icon slot="icon" name="circle-exclamation"></wa-icon>{commentError}</wa-callout>}
+      {!!comments.length ? (
+        <div class="comment-list wa-stack wa-gap-m">
+          {comments.map((comment) => (
+            <article class="comment-entry">
+              <header class="comment-entry-header">
+                <strong>Преподаватель</strong>
+                <time datetime={comment.createdAt}>{comment.createdAt ? commentDateFormatter.format(new Date(comment.createdAt)) : "Дата не указана"}</time>
+              </header>
+              <p>{comment.text}</p>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div class="comments-empty">Комментариев пока нет</div>
+      )}
+      {canComment && (
+        <form class="comment-form wa-stack wa-gap-m" method="POST" action={`/api/v1/review/${encodeURIComponent(context)}/comments`}>
+          <wa-textarea name="text" label="Новый комментарий" rows="4" maxlength="4000" resize="vertical" required></wa-textarea>
+          <div class="comment-form-actions">
+            <wa-button type="submit" variant="brand">Добавить комментарий</wa-button>
+          </div>
+        </form>
+      )}
+    </section>
   </div>
 </Page>
+
+<style>
+  .comments-heading {
+    display: flex;
+    align-items: baseline;
+    gap: var(--wa-space-s);
+  }
+
+  .comments-heading h2 {
+    margin: 0;
+  }
+
+  .comment-list {
+    max-width: 70rem;
+  }
+
+  .comment-entry {
+    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    background: var(--wa-color-surface-raised);
+  }
+
+  .comment-entry-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--wa-space-m);
+    padding: var(--wa-space-s) var(--wa-space-m);
+    border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    background: var(--wa-color-surface-default);
+  }
+
+  .comment-entry-header time {
+    color: var(--wa-color-text-quiet);
+    font-size: var(--wa-font-size-s);
+  }
+
+  .comment-entry p {
+    margin: 0;
+    padding: var(--wa-space-m);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .comments-empty {
+    max-width: 70rem;
+    padding: var(--wa-space-l);
+    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    color: var(--wa-color-text-quiet);
+    background: var(--wa-color-surface-default);
+  }
+
+  .comment-form {
+    box-sizing: border-box;
+    max-width: 70rem;
+    padding: var(--wa-space-l);
+    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    background: var(--wa-color-surface-raised);
+  }
+
+  .comment-form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 600px) {
+    .comment-entry-header {
+      flex-direction: column;
+      gap: var(--wa-space-2xs);
+    }
+
+    .comment-form {
+      padding: var(--wa-space-m);
+    }
+  }
+</style>
