@@ -4,7 +4,9 @@ import com.simulator112.review_service.application.exception.ReviewNotFoundExcep
 import com.simulator112.review_service.application.port.in.AddReviewCommentUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewCommentsUseCase;
 import com.simulator112.review_service.application.port.out.ReviewCommentStore;
+import com.simulator112.review_service.application.port.out.ReviewCommentNotificationPort;
 import com.simulator112.review_service.application.port.out.ReviewStore;
+import com.simulator112.review_service.domain.model.Review;
 import com.simulator112.review_service.domain.model.ReviewComment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,12 +21,15 @@ import java.util.UUID;
 public class ReviewCommentApplicationService implements AddReviewCommentUseCase, GetReviewCommentsUseCase {
     private final ReviewStore reviewStore;
     private final ReviewCommentStore commentStore;
+    private final ReviewCommentNotificationPort notificationPort;
 
     @Override
     @Transactional
     public ReviewComment add(UUID contextId, UUID authorId, String text) {
-        requireReview(contextId);
-        return commentStore.save(ReviewComment.create(contextId, authorId, text, Instant.now()));
+        Review review = requireReview(contextId);
+        ReviewComment comment = commentStore.save(ReviewComment.create(contextId, authorId, text, Instant.now()));
+        notificationPort.publish(comment, review.userId());
+        return comment;
     }
 
     @Override
@@ -34,9 +39,7 @@ public class ReviewCommentApplicationService implements AddReviewCommentUseCase,
         return commentStore.findByContextId(contextId);
     }
 
-    private void requireReview(UUID contextId) {
-        if (reviewStore.findByContextId(contextId).isEmpty()) {
-            throw new ReviewNotFoundException(contextId);
-        }
+    private Review requireReview(UUID contextId) {
+        return reviewStore.findByContextId(contextId).orElseThrow(() -> new ReviewNotFoundException(contextId));
     }
 }
