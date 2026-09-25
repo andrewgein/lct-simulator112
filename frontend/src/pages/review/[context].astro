@@ -7,7 +7,7 @@ import MainHeader from "../../layouts/MainHeader.astro";
 const accessToken = Astro.cookies.get("accessToken").value;
 const role = Astro.cookies.get("role")?.value || "";
 const isTeacher = ["ADMIN", "SUPERVISOR"].includes(role);
-const canComment = role === "SUPERVISOR";
+const canComment = isTeacher;
 const { context } = Astro.params;
 const [reviewResponse, commentsResponse] = await Promise.all([
   getReview(context, accessToken),

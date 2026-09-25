@@ -51,11 +51,11 @@ public class ReviewCommentRestController {
                                             @RequestHeader("X-User-Role") String role,
                                             @PathVariable UUID contextId,
                                             @Valid @RequestBody AddReviewCommentRequest request) {
-        if (!"SUPERVISOR".equals(role)) {
+        if (!REVIEWER_ROLES.contains(role)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Оставлять комментарии может только преподаватель");
+                    "Оставлять комментарии может только преподаватель или администратор");
         }
-        return toResponse(addComment.add(contextId, authorId, request.text()));
+        return toResponse(addComment.add(contextId, authorId, role, request.text()));
     }
 
     private static ReviewCommentResponse toResponse(ReviewComment comment) {
