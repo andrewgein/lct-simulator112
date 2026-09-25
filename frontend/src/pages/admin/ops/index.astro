@@ -1,0 +1,98 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { requireRole } from "../../../features/auth/requireRole";
+import { listOpsServices } from "../../../features/admin/api/AdminOpsApi";
+
+export const prerender = false;
+
+const redirect = requireRole(Astro, ["ADMIN"]);
+if (redirect) return redirect;
+
+let services = [];
+let error = null;
+
+try {
+  const response = await listOpsServices(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  services = await response.json();
+} catch {
+  error = "Не удалось загрузить список сервисов";
+}
+
+const runStatusLabels = { queued: "В очереди", in_progress: "Выполняется", completed: "Завершено" };
+const conclusionLabels = { success: "Успешно", failure: "Ошибка", cancelled: "Отменено" };
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Сервисы" />
+
+  {!error && (
+    <div class="wa-stack wa-gap-l">
+      <wa-callout variant="neutral">
+        Действия выполняются через GitHub Actions на сервере (без прямого доступа к Docker) — занимают от нескольких секунд
+        (старт/стоп/рестарт) до пары минут (обновление — пересборка и передеплой).
+      </wa-callout>
+
+      <wa-scroller>
+        <table class="wa-zebra-rows wa-hover-rows">
+          <thead>
+            <tr>
+              <th scope="col">Сервис</th>
+              <th scope="col">Последний запуск CI</th>
+              <th scope="col"><span class="wa-visually-hidden">Действия</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {services.map((service) => (
+              <tr data-service-row data-service={service.service}>
+                <th scope="row">{service.service}</th>
+                <td>
+                  {service.lastRunUrl ? (
+                    <a href={service.lastRunUrl} target="_blank" rel="noopener">
+                      {runStatusLabels[service.lastRunStatus] || service.lastRunStatus || "—"}
+                      {service.lastRunConclusion && ` · ${conclusionLabels[service.lastRunConclusion] || service.lastRunConclusion}`}
+                    </a>
+                  ) : "—"}
+                </td>
+                <td>
+                  <div class="wa-cluster wa-gap-2xs">
+                    <wa-button class="ops-action" data-action="start" size="small" appearance="outlined">Старт</wa-button>
+                    <wa-button class="ops-action" data-action="stop" size="small" appearance="outlined" variant="danger">Стоп</wa-button>
+                    <wa-button class="ops-action" data-action="restart" size="small" appearance="outlined">Рестарт</wa-button>
+                    <wa-button class="ops-action" data-action="update" size="small" appearance="filled" variant="brand">Обновить</wa-button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </wa-scroller>
+    </div>
+  )}
+</Page>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".ops-action").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const row = button.closest<HTMLElement>("[data-service-row]");
+      const service = row?.dataset.service;
+      const action = button.dataset.action;
+      if (!service || !action) return;
+      if (!confirm(`Выполнить "${action}" для ${service}?`)) return;
+
+      button.toggleAttribute("loading", true);
+      try {
+        const response = await fetch(`/api/v1/admin/ops/services/${encodeURIComponent(service)}/${encodeURIComponent(action)}`, { method: "POST" });
+        if (!response.ok) throw new Error();
+        alert(`Запущено: ${action} для ${service}. Прогресс — в GitHub Actions.`);
+      } catch {
+        alert("Не удалось выполнить действие");
+      } finally {
+        button.toggleAttribute("loading", false);
+      }
+    });
+  });
+</script>

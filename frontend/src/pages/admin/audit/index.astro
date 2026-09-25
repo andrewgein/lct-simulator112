@@ -1,0 +1,88 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { requireRole } from "../../../features/auth/requireRole";
+import { searchAuditLogs } from "../../../features/admin/api/AdminAuditLogApi";
+
+export const prerender = false;
+
+const redirect = requireRole(Astro, ["ADMIN"]);
+if (redirect) return redirect;
+
+const params = Astro.url.searchParams;
+const filters = {
+  userId: params.get("userId") || "",
+  action: params.get("action") || "",
+  dateFrom: params.get("dateFrom") || "",
+  dateTo: params.get("dateTo") || ""
+};
+
+let entries = [];
+let error = null;
+
+try {
+  const response = await searchAuditLogs(filters, Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  const page = await response.json();
+  entries = page.content || [];
+} catch {
+  error = "Не удалось загрузить журнал действий";
+}
+
+const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "medium" });
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Журнал действий" />
+
+  {!error && (
+    <div class="wa-stack wa-gap-l">
+      <form class="wa-cluster wa-gap-s" method="get">
+        <wa-input name="userId" label="ID пользователя" value={filters.userId}></wa-input>
+        <wa-input name="action" label="Действие" placeholder="ROLE_CHANGED, HTTP_REQUEST…" value={filters.action}></wa-input>
+        <wa-input name="dateFrom" type="datetime-local" label="С" value={filters.dateFrom}></wa-input>
+        <wa-input name="dateTo" type="datetime-local" label="По" value={filters.dateTo}></wa-input>
+        <wa-button type="submit" variant="brand" appearance="filled">Применить</wa-button>
+        <wa-button type="button" appearance="outlined" onclick="window.location.href='/admin/audit'">Сбросить</wa-button>
+      </form>
+
+      {entries.length === 0 ? (
+        <wa-callout variant="neutral">По заданным фильтрам записей не найдено.</wa-callout>
+      ) : (
+        <wa-scroller>
+          <table class="wa-zebra-rows wa-hover-rows">
+            <thead>
+              <tr>
+                <th scope="col">Дата и время</th>
+                <th scope="col">Пользователь</th>
+                <th scope="col">Действие</th>
+                <th scope="col">Ресурс</th>
+                <th scope="col">IP</th>
+                <th scope="col">Сервис</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr>
+                  <td>{dateTimeFormatter.format(new Date(entry.occurredAt))}</td>
+                  <td>
+                    <div class="wa-stack wa-gap-2xs">
+                      <span>{entry.actorEmail || entry.actorUserId || "—"}</span>
+                      {entry.actorRole && <small>{entry.actorRole}</small>}
+                    </div>
+                  </td>
+                  <td>{entry.action}</td>
+                  <td>{[entry.resourceType, entry.resourceId].filter(Boolean).join(" · ") || "—"}</td>
+                  <td>{entry.ipAddress || "—"}</td>
+                  <td>{entry.sourceService}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </wa-scroller>
+      )}
+    </div>
+  )}
+</Page>

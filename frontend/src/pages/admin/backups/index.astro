@@ -1,0 +1,114 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { requireRole } from "../../../features/auth/requireRole";
+import { listBackups } from "../../../features/admin/api/AdminBackupApi";
+
+export const prerender = false;
+
+const redirect = requireRole(Astro, ["ADMIN"]);
+if (redirect) return redirect;
+
+let runs = [];
+let error = null;
+
+try {
+  const response = await listBackups(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  const page = await response.json();
+  runs = page.content || [];
+} catch {
+  error = "Не удалось загрузить историю резервного копирования";
+}
+
+const statusLabels = { RUNNING: "Выполняется", SUCCEEDED: "Успешно", FAILED: "Ошибка" };
+const statusVariants = { RUNNING: "neutral", SUCCEEDED: "success", FAILED: "danger" };
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+const formatBytes = (bytes) => (bytes == null ? "—" : `${(bytes / 1024 / 1024).toFixed(1)} МБ`);
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Резервное копирование">
+    <wa-button id="run-backup" variant="brand" appearance="filled">
+      <wa-icon slot="start" name="database"></wa-icon>
+      Запустить бэкап сейчас
+    </wa-button>
+  </MainHeader>
+
+  {!error && (
+    <div class="wa-stack wa-gap-l">
+      <wa-callout variant="neutral">
+        Полный дамп всех баз данных выполняется автоматически раз в сутки и заливается в MinIO (бакет <code>backups</code>).
+        Старые копии старше срока хранения удаляются автоматически.
+      </wa-callout>
+
+      {runs.length === 0 ? (
+        <wa-callout variant="neutral">Резервных копий пока нет.</wa-callout>
+      ) : (
+        <wa-scroller>
+          <table class="wa-zebra-rows wa-hover-rows">
+            <thead>
+              <tr>
+                <th scope="col">Начало</th>
+                <th scope="col">Статус</th>
+                <th scope="col">Размер</th>
+                <th scope="col">Ошибка</th>
+                <th scope="col"><span class="wa-visually-hidden">Действия</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {runs.map((run) => (
+                <tr>
+                  <td>{dateFormatter.format(new Date(run.startedAt))}</td>
+                  <td><wa-badge variant={statusVariants[run.status] || "neutral"}>{statusLabels[run.status] || run.status}</wa-badge></td>
+                  <td>{formatBytes(run.sizeBytes)}</td>
+                  <td>{run.errorMessage || "—"}</td>
+                  <td>
+                    {run.status === "SUCCEEDED" && (
+                      <wa-button class="download-backup" data-run-id={run.id} size="small" appearance="outlined">Скачать</wa-button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </wa-scroller>
+      )}
+    </div>
+  )}
+</Page>
+
+<script>
+  const runButton = document.querySelector<HTMLElement>("#run-backup");
+  runButton?.addEventListener("click", async () => {
+    runButton.toggleAttribute("loading", true);
+    try {
+      const response = await fetch("/api/v1/admin/backups/run", { method: "POST" });
+      if (!response.ok) throw new Error();
+      window.location.reload();
+    } catch {
+      alert("Не удалось запустить резервное копирование");
+      runButton.toggleAttribute("loading", false);
+    }
+  });
+
+  document.querySelectorAll<HTMLElement>(".download-backup").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const runId = button.dataset.runId;
+      if (!runId) return;
+      button.toggleAttribute("loading", true);
+      try {
+        const response = await fetch(`/api/v1/admin/backups/${encodeURIComponent(runId)}/download-url`);
+        if (!response.ok) throw new Error();
+        const { url } = await response.json();
+        window.location.href = url;
+      } catch {
+        alert("Не удалось получить ссылку на скачивание");
+      } finally {
+        button.toggleAttribute("loading", false);
+      }
+    });
+  });
+</script>

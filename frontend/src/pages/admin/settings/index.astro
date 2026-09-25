@@ -1,0 +1,76 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { requireRole } from "../../../features/auth/requireRole";
+import { getSettingsOverview } from "../../../features/admin/api/AdminSettingsApi";
+
+export const prerender = false;
+
+const redirect = requireRole(Astro, ["ADMIN"]);
+if (redirect) return redirect;
+
+let overview = null;
+let error = null;
+
+try {
+  const response = await getSettingsOverview(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  overview = await response.json();
+} catch {
+  error = "Не удалось загрузить текущую конфигурацию";
+}
+
+const labels = {
+  "cors.allowed-origins": "Разрешённые CORS-источники",
+  "rate-limit.replenish-rate": "Rate limit: пополнение (запросов/сек)",
+  "rate-limit.burst-capacity": "Rate limit: burst-ёмкость",
+  "jwt.access-token-expiration": "JWT access-токен, мс",
+  "jwt.refresh-token-expiration": "JWT refresh-токен, мс",
+  llmModel: "LLM-модель",
+  llmBaseUrl: "LLM base URL",
+  ttsBaseUrl: "TTS base URL",
+  ttsReadTimeout: "TTS read timeout, сек",
+  ttsVoiceProfile: "Фиксированный голосовой профиль"
+};
+
+const sections = [
+  { title: "api-gateway", data: overview?.gateway },
+  { title: "auth-service", data: overview?.auth },
+  { title: "dialog-service (голосовой пайплайн)", data: overview?.dialog }
+];
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Текущая конфигурация" />
+
+  {!error && (
+    <div class="wa-stack wa-gap-l">
+      <wa-callout variant="neutral">
+        Раздел только для просмотра. Чтобы изменить значение — отредактируйте <code>prod/.env</code> на сервере и
+        нажмите «Обновить» для соответствующего сервиса в разделе <a href="/admin/ops">Сервисы</a>.
+      </wa-callout>
+
+      {sections.map(({ title, data }) => (
+        <div class="wa-stack wa-gap-s">
+          <h2 class="wa-heading-m">{title}</h2>
+          {!data || Object.keys(data).length === 0 ? (
+            <wa-callout variant="neutral">Нет данных (сервис недоступен).</wa-callout>
+          ) : (
+            <table class="wa-zebra-rows">
+              <tbody>
+                {Object.entries(data).map(([key, value]) => (
+                  <tr>
+                    <th scope="row">{labels[key] || key}</th>
+                    <td>{value ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</Page>
