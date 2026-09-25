@@ -15,11 +15,10 @@ spring:
   grpc:
     server:
       port: 9092
+  # в спринг бут 4 нет автоконфигурации кафки и не биндит spring.kafka.* сам 
+  # bootstrap-servers читает вручную KafkaProducerConfiguration, сериализаторы заданы там же
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 review:
   dialogue-analysis:
     base-url: ${MLSERVER_URL:http://localhost:8080}
