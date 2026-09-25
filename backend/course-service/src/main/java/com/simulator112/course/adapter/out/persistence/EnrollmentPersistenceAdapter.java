@@ -24,6 +24,12 @@ public class EnrollmentPersistenceAdapter implements EnrollmentRepository {
     }
 
     @Override
+    @Transactional
+    public void delete(Enrollment enrollment) {
+        repository.deleteById(enrollment.id());
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Optional<Enrollment> findByCourseIdAndGroupId(UUID courseId, UUID groupId) {
         return repository.findByCourseIdAndGroupId(courseId, groupId).map(mapper::toDomain);

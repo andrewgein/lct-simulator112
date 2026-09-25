@@ -6,6 +6,7 @@ import com.simulator112.course.application.port.in.FindStudentEnrollmentsUseCase
 import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.GetEnrollmentUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
+import com.simulator112.course.application.port.in.UnassignCourseFromGroupUseCase;
 import com.simulator112.course.application.port.out.EnrollmentRepository;
 import com.simulator112.course.domain.course.Course;
 import com.simulator112.course.domain.enrollment.Enrollment;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class EnrollmentApplicationService implements AssignCourseToGroupUseCase, GetEnrollmentUseCase,
-        FindStudentEnrollmentsUseCase, FindGroupCoursesUseCase {
+        FindStudentEnrollmentsUseCase, FindGroupCoursesUseCase, UnassignCourseFromGroupUseCase {
 
     private final EnrollmentRepository enrollmentRepository;
     private final GetCourseUseCase getCourse;
@@ -38,6 +39,18 @@ public class EnrollmentApplicationService implements AssignCourseToGroupUseCase,
         }
         return enrollmentRepository.findByCourseIdAndGroupId(courseId, groupId)
                 .orElseGet(() -> enrollmentRepository.save(new Enrollment(null, courseId, groupId)));
+    }
+
+    @Override
+    @Transactional
+    public void unassignCourseFromGroup(UUID courseId, UUID groupId, UUID requesterId) {
+        Course course = getCourse.getCourse(courseId);
+        StudyGroup group = getStudyGroup.getStudyGroup(groupId);
+        if (!course.authorId().equals(requesterId) || !group.ownerId().equals(requesterId)) {
+            throw new CourseAccessDeniedException("Удалить назначение может только преподаватель, "
+                    + "которому принадлежат и курс, и группа");
+        }
+        enrollmentRepository.findByCourseIdAndGroupId(courseId, groupId).ifPresent(enrollmentRepository::delete);
     }
 
     @Override
