@@ -10,6 +10,7 @@ import com.simulator112.course.application.port.in.DeleteStudyGroupUseCase;
 import com.simulator112.course.application.port.in.FindGroupCoursesUseCase;
 import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
+import com.simulator112.course.application.port.in.UnassignCourseFromGroupUseCase;
 import com.simulator112.course.application.port.in.UpdateStudyGroupUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class StudyGroupRestController {
     private final GetStudyGroupUseCase getStudyGroup;
     private final FindOwnedStudyGroupsUseCase findOwnedStudyGroups;
     private final AssignCourseToGroupUseCase assignCourseToGroup;
+    private final UnassignCourseFromGroupUseCase unassignCourseFromGroup;
     private final FindGroupCoursesUseCase findGroupCourses;
     private final CourseRestMapper mapper;
 
@@ -72,5 +74,12 @@ public class StudyGroupRestController {
     public EnrollmentView assignCourse(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId,
                                        @PathVariable UUID courseId) {
         return mapper.toView(assignCourseToGroup.assignCourseToGroup(courseId, groupId, userId));
+    }
+
+    @DeleteMapping("/{groupId}/courses/{courseId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void unassignCourse(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId,
+                               @PathVariable UUID courseId) {
+        unassignCourseFromGroup.unassignCourseFromGroup(courseId, groupId, userId);
     }
 }

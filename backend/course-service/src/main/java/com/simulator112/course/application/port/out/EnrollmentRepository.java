@@ -9,6 +9,8 @@ import java.util.UUID;
 public interface EnrollmentRepository {
     Enrollment save(Enrollment enrollment);
 
+    void delete(Enrollment enrollment);
+
     Optional<Enrollment> findByCourseIdAndGroupId(UUID courseId, UUID groupId);
 
     Optional<Enrollment> findByCourseIdAndStudentId(UUID courseId, UUID studentId);
