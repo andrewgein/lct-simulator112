@@ -51,15 +51,26 @@ export function normalizeStage(stage = {}, key = clientId()) {
   const additionalInfo = Array.isArray(stage.additionalInfo)
     ? Object.fromEntries(stage.additionalInfo.map((item) => [item.additionalInfoId, item.fieldValue]))
     : stage.additionalInfo || {};
+  const dialups = stage.dialups || (stage.calls || []).map((call) => ({
+    id: call.id,
+    applicant: call.person,
+    dialupDetails: {
+      gender: call.gender,
+      knownFacts: call.knownFacts,
+      hiddenFacts: call.hiddenFacts,
+      aiContext: call.aiContext,
+      emotionalState: call.emotionalState
+    }
+  }));
   return {
     key,
     id: stage.id || "",
     title: stage.title || "",
-    typeId: stage.type?.id || stage.typeId || "",
+    typeId: stage.type?.id || stage.typeId || stage.classifierCodes?.[0] || "",
     description: stage.description || "",
     victimCount: stage.victimCount ?? 0,
     additionalInfo,
-    dialups: (stage.dialups || []).map((dialup, index) => normalizeDialup(dialup, dialup.id || `${key}-dialup-${index}`))
+    dialups: dialups.map((dialup, index) => normalizeDialup(dialup, dialup.id || `${key}-dialup-${index}`))
   };
 }
 

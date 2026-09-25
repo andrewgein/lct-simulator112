@@ -5,7 +5,6 @@ import com.simulator112.review_service.domain.model.ReviewSubmission;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public final class System112ReviewRubric implements ReviewRubric {
     private final Rubric rubric = new RubricBuilder(ReviewSubmission.TargetType.SYSTEM_112)
@@ -88,9 +87,7 @@ public final class System112ReviewRubric implements ReviewRubric {
 
     @Override
     public List<CriterionResult> evaluate(ReviewSubmission submission) {
-        List<CriterionResult> results = new ArrayList<>(rubric.evaluate(submission));
-        results.addAll(dialogueResults(submission));
-        return List.copyOf(results);
+        return rubric.evaluate(submission);
     }
 
     public List<Stage> stages() {
@@ -242,21 +239,6 @@ public final class System112ReviewRubric implements ReviewRubric {
         return results;
     }
 
-    private List<CriterionResult> dialogueResults(ReviewSubmission submission) {
-        String operatorText = submission.transcript().stream()
-                .filter(phrase -> "USER".equals(phrase.speaker()))
-                .map(ReviewSubmission.TranscriptPhrase::text)
-                .collect(Collectors.joining(" "));
-        return submission.incidents().stream().flatMap(incident -> incident.criteria().dialogueCriteria().stream()
-                .map(criterion -> {
-                    boolean matched = matches(criterion.hypothesis(), operatorText);
-                    return new CriterionResult(incident.id(), incident.order(), criterion.name(),
-                            matched ? criterion.weight() : 0, criterion.weight(),
-                            matched ? "Критерий оценки диалога выполнен."
-                                    : "Критерий оценки диалога не выполнен.");
-                })).toList();
-    }
-
     private int categoryBudget(ReviewSubmission.IncidentScenario incident, String category) {
         int dialogueBudget = incident.criteria().dialogueCriteria().stream()
                 .mapToInt(ReviewSubmission.DialogueCriterion::weight).sum();
@@ -267,21 +249,6 @@ public final class System112ReviewRubric implements ReviewRubric {
             case "Обработка звонков" -> budgets[2];
             default -> throw new IllegalStateException("Неизвестный критерий: " + category);
         };
-    }
-
-    private boolean matches(String expected, String actual) {
-        Set<String> expectedTokens = tokens(expected);
-        Set<String> actualTokens = tokens(actual);
-        if (expectedTokens.isEmpty()) return true;
-        long matches = expectedTokens.stream().filter(actualTokens::contains).count();
-        return matches >= Math.max(1, (expectedTokens.size() + 1) / 2);
-    }
-
-    private Set<String> tokens(String value) {
-        return Arrays.stream(normalize(value).split("[^а-яa-z0-9]+"))
-                .filter(token -> token.length() >= 4)
-                .map(token -> token.substring(0, Math.min(5, token.length())))
-                .collect(Collectors.toSet());
     }
 
     private List<ExpectedCall> expectedCalls(ReviewSubmission.IncidentScenario incident) {

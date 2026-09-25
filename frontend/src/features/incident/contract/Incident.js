@@ -30,11 +30,14 @@
  */
 
 /**
- * @typedef {Object} Criteria
- * @property {string[]} requiredQuestions
- * @property {string[]} expectedActions
- * @property {string[]} criticalMistakes
+ * @typedef {Object} DialogueCriterion
+ * @property {string | null} id
+ * @property {string} name
+ * @property {string} hypothesis
+ * @property {number} weight
  */
+
+/** @typedef {{ dialogueCriteria: DialogueCriterion[] }} Criteria */
 
 /**
  * @typedef {Object} CallScenario
@@ -114,9 +117,7 @@
  * @property {Difficulty} difficulty
  * @property {IncidentTargetType} targetType
  * @property {(System112Stage | DdsStage)[]} stages
- * @property {string[]} requiredQuestions
- * @property {string[]} expectedActions
- * @property {string[]} criticalMistakes
+ * @property {DialogueCriterion[]} dialogueCriteria
  * @property {PreparedCardTemplate | null} preparedCardTemplate
  * @property {InitialAssignment | null} initialAssignment
  * @property {string | null} initialStageId

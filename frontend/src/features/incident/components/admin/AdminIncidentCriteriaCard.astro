@@ -1,16 +1,67 @@
 ---
-/** @typedef {import("../../contract/Incident").DispatcherCriteria} DispatcherCriteria */
-/** @type {{ criteria?: Partial<DispatcherCriteria> }} */
+/** @typedef {import("../../contract/Incident").DialogueCriterion} DialogueCriterion */
+/** @type {{ criteria?: { dialogueCriteria?: DialogueCriterion[] } }} */
 const { criteria = {} } = Astro.props;
-/** @param {string[] | undefined} items */
-const lines = (items) => (items || []).join("\n");
+const dialogueCriteria = criteria.dialogueCriteria || [];
 ---
-<section class="wa-stack wa-gap-m">
-  <h2 class="wa-heading-xl">Критерии оценки</h2>
-  <wa-textarea name="requiredQuestions" label="Обязательные вопросы (один на строку)" rows="5" value={lines(criteria.requiredQuestions)} required>
-  </wa-textarea>
-  <wa-textarea name="expectedActions" label="Ожидаемые действия (одно на строку)" rows="5" value={lines(criteria.expectedActions)} required>
-  </wa-textarea>
-  <wa-textarea name="criticalMistakes" label="Критические ошибки (одна на строку)" rows="5" value={lines(criteria.criticalMistakes)}>
-  </wa-textarea>
+<section id="dialogue-criteria" class="wa-stack wa-gap-m">
+  <div class="wa-split wa-align-items-center">
+    <h2 class="wa-heading-xl">Критерии диалога</h2>
+    <wa-button id="add-dialogue-criterion" type="button" appearance="outlined">Добавить критерий</wa-button>
+  </div>
+  <p class="hint">Критерий формулируется как проверяемый факт: «Оператор предупредил…». Суммарный вес — не более 40 баллов.</p>
+  <div id="dialogue-criterion-list" class="wa-stack wa-gap-m">
+    {dialogueCriteria.map((criterion) => (
+      <div class="dialogue-criterion wa-card" data-criterion-id={criterion.id || ""}>
+        <div class="wa-stack wa-gap-s">
+          <div class="wa-split wa-align-items-center">
+            <strong>Речевой критерий</strong>
+            <wa-button type="button" class="remove-dialogue-criterion" appearance="plain" variant="danger">Удалить</wa-button>
+          </div>
+          <wa-input data-name label="Название" value={criterion.name || ""} required></wa-input>
+          <wa-textarea data-hypothesis label="Гипотеза для проверки" rows="2" value={criterion.hypothesis || ""} required></wa-textarea>
+          <wa-number-input data-weight label="Вес" min="1" max="40" value={criterion.weight ?? 1} required></wa-number-input>
+        </div>
+      </div>
+    ))}
+  </div>
 </section>
+<script>
+  const section = document.querySelector("#dialogue-criteria");
+  const list = section?.querySelector("#dialogue-criterion-list");
+  const add = section?.querySelector("#add-dialogue-criterion");
+  const createCriterion = () => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "dialogue-criterion wa-card";
+    wrapper.dataset.criterionId = "";
+    wrapper.innerHTML = `
+      <div class="wa-stack wa-gap-s">
+        <div class="wa-split wa-align-items-center">
+          <strong>Речевой критерий</strong>
+          <wa-button type="button" class="remove-dialogue-criterion" appearance="plain" variant="danger">Удалить</wa-button>
+        </div>
+        <wa-input data-name label="Название" required></wa-input>
+        <wa-textarea data-hypothesis label="Гипотеза для проверки" rows="2" required></wa-textarea>
+        <wa-number-input data-weight label="Вес" min="1" max="40" value="1" required></wa-number-input>
+      </div>`;
+    return wrapper;
+  };
+  add?.addEventListener("click", () => list?.append(createCriterion()));
+  list?.addEventListener("click", (event) => {
+    if (event.target.closest(".remove-dialogue-criterion")) event.target.closest(".dialogue-criterion")?.remove();
+  });
+  const valueOf = (element) => element?.value ?? element?.getAttribute("value") ?? "";
+  section?.closest("form")?.addEventListener("collect-dialogue-criteria", (event) => {
+    const criteria = [...(list?.querySelectorAll(".dialogue-criterion") || [])].map((item) => ({
+      id: item.dataset.criterionId || null,
+      name: valueOf(item.querySelector("[data-name]")),
+      hypothesis: valueOf(item.querySelector("[data-hypothesis]")),
+      weight: Number(valueOf(item.querySelector("[data-weight]")))
+    }));
+    event.detail.criteria = criteria;
+  });
+</script>
+<style>
+  .hint { margin: 0; color: var(--wa-color-text-quiet); }
+  .dialogue-criterion { padding: var(--wa-space-m); }
+</style>

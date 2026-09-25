@@ -15,6 +15,11 @@ spring:
   grpc:
     server:
       port: 9092
+review:
+  dialogue-analysis:
+    base-url: ${MLSERVER_URL:http://localhost:8080}
+    model-name: ${MLSERVER_MODEL_NAME:rubert-tiny-bilingual-nli}
+    threshold: ${MLSERVER_ENTAILMENT_THRESHOLD:0.8}
 management:
   endpoints:
     web:

@@ -32,30 +32,34 @@ const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     error.hidden = true;
-    const data = Object.fromEntries(new FormData(form));
-    /** @type {IncidentRequest} */
-    const payload = {
-      title: data.title,
-      address: {
-        city: data['address.city'],
-        street: data['address.street'],
-        house: data['address.house'],
-        building: data['address.building'] || null,
-        apartment: data['address.apartment'] || null,
-        floor: Number(data['address.floor'])
-      },
-      criteria: {
-        requiredQuestions: splitLines(data.requiredQuestions),
-        expectedActions: splitLines(data.expectedActions),
-        criticalMistakes: splitLines(data.criticalMistakes)
-      }
-    };
-    const url = form.dataset.mode === 'create' ? '/api/v1/admin/incident' : `/api/v1/admin/incident/${data.id}`;
-    const method = form.dataset.mode === 'create' ? 'POST' : 'PATCH';
     if (submitButton.loading) return;
     submitButton.loading = true;
     try {
+      const data = Object.fromEntries(new FormData(form));
       form.validateIncidentStructure();
+      const dialogueEvent = new CustomEvent('collect-dialogue-criteria', { detail: { criteria: [] } });
+      form.dispatchEvent(dialogueEvent);
+      const dialogueWeight = dialogueEvent.detail.criteria.reduce((sum, criterion) => sum + criterion.weight, 0);
+      if (dialogueWeight > 40) throw new Error('Суммарный вес критериев диалога не может превышать 40 баллов');
+      const stages = form.getIncidentStages ? form.getIncidentStages() : [];
+      /** @type {IncidentRequest} */
+      const payload = {
+        title: data.title,
+        address: {
+          city: data['address.city'],
+          street: data['address.street'],
+          house: data['address.house'],
+          building: data['address.building'] || null,
+          apartment: data['address.apartment'] || null,
+          floor: data['address.floor'] === '' ? null : Number(data['address.floor'])
+        },
+        difficulty: data.difficulty || 'NORMAL',
+        targetType: data.targetType || 'SYSTEM_112',
+        stages,
+        dialogueCriteria: dialogueEvent.detail.criteria
+      };
+      const url = form.dataset.mode === 'create' ? '/api/v1/incidents' : `/api/v1/incidents/${data.id}`;
+      const method = form.dataset.mode === 'create' ? 'POST' : 'PUT';
       const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
@@ -67,7 +71,6 @@ const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
         form.querySelector('[name="id"]').value = savedIncident.id;
         window.history.replaceState({}, '', `/admin/incidents/${savedIncident.id}`);
       }
-      await form.saveIncidentStructure(savedIncident.id);
       window.location.href = '/admin/incidents';
     } catch (err) {
       error.textContent = err.message;
