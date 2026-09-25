@@ -34,4 +34,10 @@ public class StudyGroupPersistenceAdapter implements StudyGroupRepository {
     public List<StudyGroup> findAllByOwnerId(UUID ownerId) {
         return repository.findAllByOwnerId(ownerId).stream().map(mapper::toDomain).toList();
     }
+
+    @Override
+    @Transactional
+    public void deleteById(UUID groupId) {
+        repository.deleteById(groupId);
+    }
 }

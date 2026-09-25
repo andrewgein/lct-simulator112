@@ -72,6 +72,22 @@ class CourseApplicationTests {
     }
 
     @Test
+    void deletesStudyGroupWithItsCourseEnrollments() {
+        UUID ownerId = UUID.randomUUID();
+        StudyGroup group = studyGroupRepository.save(new StudyGroup(null, "Удаляемая группа", ownerId,
+                List.of(UUID.randomUUID())));
+        Course course = courseRepository.save(new Course(null, "Курс группы", null, CourseTargetType.SYSTEM_112,
+                ownerId, List.of(), List.of()));
+        enrollmentRepository.save(new Enrollment(null, course.id(), group.id()));
+
+        studyGroupRepository.deleteById(group.id());
+
+        assertThat(studyGroupRepository.findById(group.id())).isEmpty();
+        assertThat(enrollmentRepository.findAllByGroupId(group.id())).isEmpty();
+        assertThat(courseRepository.findById(course.id())).isPresent();
+    }
+
+    @Test
     void persistsStudyGroupAndEnrollment() {
         UUID ownerId = UUID.randomUUID();
         UUID studentId = UUID.randomUUID();

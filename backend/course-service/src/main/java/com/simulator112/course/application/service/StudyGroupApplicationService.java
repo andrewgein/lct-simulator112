@@ -1,6 +1,7 @@
 package com.simulator112.course.application.service;
 
 import com.simulator112.course.application.port.in.CreateStudyGroupUseCase;
+import com.simulator112.course.application.port.in.DeleteStudyGroupUseCase;
 import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
 import com.simulator112.course.application.port.in.UpdateStudyGroupUseCase;
@@ -19,7 +20,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class StudyGroupApplicationService implements CreateStudyGroupUseCase, UpdateStudyGroupUseCase,
-        GetStudyGroupUseCase, FindOwnedStudyGroupsUseCase {
+        DeleteStudyGroupUseCase, GetStudyGroupUseCase, FindOwnedStudyGroupsUseCase {
 
     private final StudyGroupRepository studyGroupRepository;
 
@@ -40,6 +41,16 @@ public class StudyGroupApplicationService implements CreateStudyGroupUseCase, Up
         StudyGroup updated = new StudyGroup(groupId, studyGroup.title(), existing.ownerId(), studyGroup.studentIds());
         validate(updated);
         return studyGroupRepository.save(updated);
+    }
+
+    @Override
+    @Transactional
+    public void deleteStudyGroup(UUID groupId, UUID requesterId) {
+        StudyGroup existing = getStudyGroup(groupId);
+        if (!existing.ownerId().equals(requesterId)) {
+            throw new CourseAccessDeniedException("Удалить группу может только её владелец");
+        }
+        studyGroupRepository.deleteById(groupId);
     }
 
     @Override
