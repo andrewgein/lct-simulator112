@@ -45,10 +45,13 @@ spring:
         "[spring.deserializer.key.delegate.class]": org.apache.kafka.common.serialization.StringDeserializer
         "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JsonDeserializer
         "[spring.json.trusted.packages]": "com.simulator112.notification.dto"
-        "[spring.json.type.mapping]": "com.simulator112.auth.dto.event.PasswordResetRequestedEvent:com.simulator112.notification.dto.PasswordResetEvent,com.simulator112.auth.dto.event.EmailVerificationRequestedEvent:com.simulator112.notification.dto.EmailVerificationRequestedEvent,com.simulator112.auth.dto.event.UserCreatedEvent:com.simulator112.notification.dto.UserCreatedEvent"
+        "[spring.json.type.mapping]": "com.simulator112.auth.dto.event.PasswordResetRequestedEvent:com.simulator112.notification.dto.PasswordResetEvent,com.simulator112.auth.dto.event.EmailVerificationRequestedEvent:com.simulator112.notification.dto.EmailVerificationRequestedEvent,com.simulator112.auth.dto.event.UserCreatedEvent:com.simulator112.notification.dto.UserCreatedEvent,com.simulator112.review_service.adapter.out.messaging.dto.ReviewCommentCreatedEvent:com.simulator112.notification.dto.ReviewCommentCreatedEvent"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+notification:
+  app-base-url: ${APP_BASE_URL:http://localhost:4321}
 
 management:
   endpoints:

@@ -22,6 +22,10 @@ public class MailSenderService {
     private final MessageRepository messageRepository;
 
     public void send(UUID eventId, UUID userId, String to, String subject, String body) {
+        if (eventId != null && messageRepository.existsByEventId(eventId)) {
+            log.info("Письмо для события {} уже отправлено", eventId);
+            return;
+        }
         log.info("Отправка письма на {} с темой '{}'", to, subject);
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();

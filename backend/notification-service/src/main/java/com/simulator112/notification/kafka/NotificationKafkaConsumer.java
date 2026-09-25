@@ -2,7 +2,9 @@ package com.simulator112.notification.kafka;
 
 import com.simulator112.notification.dto.EmailVerificationRequestedEvent;
 import com.simulator112.notification.dto.PasswordResetEvent;
+import com.simulator112.notification.dto.ReviewCommentCreatedEvent;
 import com.simulator112.notification.dto.UserCreatedEvent;
+import com.simulator112.notification.service.InAppNotificationService;
 import com.simulator112.notification.service.MailSenderService;
 import com.simulator112.notification.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +19,7 @@ public class NotificationKafkaConsumer {
 
     private final UserService userService;
     private final MailSenderService mailSenderService;
+    private final InAppNotificationService notificationService;
 
     @KafkaListener(topics = "password.reset.requested", groupId = "notification-service")
     public void consumePasswordReset(PasswordResetEvent event) {
@@ -47,5 +50,12 @@ public class NotificationKafkaConsumer {
                 event.getUserId(), event.getEmail());
                 
         userService.userCreate(event.getUserId(), event.getEmail());
+    }
+
+    @KafkaListener(topics = "review.comment.created", groupId = "notification-service")
+    public void consumeReviewCommentCreated(ReviewCommentCreatedEvent event) {
+        log.info("Получено событие комментария к результату: eventId={}, recipientUserId={}",
+                event.getEventId(), event.getRecipientUserId());
+        notificationService.handleReviewComment(event);
     }
 }

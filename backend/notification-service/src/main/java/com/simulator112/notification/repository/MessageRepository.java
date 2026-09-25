@@ -9,4 +9,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     List<Message> findByRecipient(String recipient);
 
     List<Message> findByUserId(UUID userId);
+
+    boolean existsByEventId(UUID eventId);
 }
