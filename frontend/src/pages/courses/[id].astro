@@ -27,7 +27,13 @@ try {
 
 const materials = course?.materials || [];
 const assignments = course?.assignments || [];
-const completed = new Set(reviews.filter((review) => review.status === "DONE").map((review) => String(review.assignmentId)));
+const completedReviews = new Map();
+reviews.filter((review) => review.status === "DONE").forEach((review) => {
+  const assignmentId = String(review.assignmentId);
+  const savedReview = completedReviews.get(assignmentId);
+  if (!savedReview || Date.parse(review.createdAt) > Date.parse(savedReview.createdAt)) completedReviews.set(assignmentId, review);
+});
+const completed = new Set(completedReviews.keys());
 const currentAssignment = assignments.find((assignment) => !completed.has(String(assignment.id)));
 const requestedMaterial = Astro.url.searchParams.get("material");
 const requestedAssignment = Astro.url.searchParams.get("assignment");
@@ -44,6 +50,7 @@ const isMarkdown = contentType.includes("markdown") || fileName.endsWith(".md");
 const isPdf = contentType.includes("pdf") || fileName.endsWith(".pdf");
 const activeAssignmentDone = activeAssignment ? completed.has(String(activeAssignment.id)) : false;
 const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id) === String(activeAssignment.id);
+const activeReview = activeAssignment ? completedReviews.get(String(activeAssignment.id)) : null;
 ---
 <Page {error}>
   <Header slot="header" />
@@ -69,11 +76,12 @@ const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id
         <h2 id="assignments-menu-heading">Задания</h2>
         {assignments.length ? (
           <div class="wa-stack wa-gap-3xs">
-            {assignments.map((assignment, index) => {
-              const done = completed.has(String(assignment.id));
-              const current = String(currentAssignment?.id) === String(assignment.id);
-              const active = String(activeAssignment?.id) === String(assignment.id);
-              return <wa-button class="course-menu-button" href={`/courses/${course.id}?assignment=${encodeURIComponent(assignment.id)}`} appearance={active ? "filled" : "plain"} variant={active ? "brand" : "neutral"} aria-current={active ? "page" : undefined} with-start with-end={!done && !current}><wa-badge slot="start" appearance="outlined" variant={done ? "success" : "neutral"}>{done ? <wa-icon name="check"></wa-icon> : index + 1}</wa-badge>{assignment.title}{!done && !current && <wa-icon slot="end" name="lock"></wa-icon>}</wa-button>;
+            {assignments.map((assignment) => {
+              const assignmentId = String(assignment.id);
+              const done = completed.has(assignmentId);
+              const current = String(currentAssignment?.id) === assignmentId;
+              const active = String(activeAssignment?.id) === assignmentId;
+              return <wa-button class="course-menu-button" href={`/courses/${course.id}?assignment=${encodeURIComponent(assignment.id)}`} appearance={active ? "filled" : "plain"} variant={active ? "brand" : "neutral"} aria-current={active ? "page" : undefined} with-start with-end={!done && !current}>{done ? <wa-icon slot="start" class="assignment-state-icon completed-icon" name="circle-check" label="Выполнено"></wa-icon> : <wa-icon slot="start" class="assignment-state-icon" name="circle" variant="regular" label="Не выполнено"></wa-icon>}{assignment.title}{!done && !current && <wa-icon slot="end" name="lock"></wa-icon>}</wa-button>;
             })}
           </div>
         ) : <p class="menu-empty wa-caption-s">Задания не добавлены</p>}
@@ -112,10 +120,10 @@ const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id
               <div class="assignment-description wa-prose">
                 <p>{activeAssignment.description || "Описание задания не добавлено."}</p>
               </div>
-              {activeAssignmentDone && <wa-callout variant="success"><wa-icon slot="icon" name="circle-check"></wa-icon>Задание выполнено.</wa-callout>}
               {!activeAssignmentCurrent && !activeAssignmentDone && <wa-callout><wa-icon slot="icon" name="lock"></wa-icon>Сначала выполните предыдущие задания.</wa-callout>}
             </article>
           </wa-card>
+          {activeReview && <wa-callout variant="success"><wa-icon slot="icon" name="circle-check"></wa-icon><div class="completion-summary wa-split wa-align-items-center"><strong>Задание выполнено</strong><a href={`/review/${encodeURIComponent(activeReview.contextId)}`}>Посмотреть детальный разбор <wa-icon name="arrow-right"></wa-icon></a></div></wa-callout>}
           {activeAssignmentCurrent && <wa-button class="start-assignment" variant="brand" size="large" data-course-id={course.id} data-assignment-id={activeAssignment.id}>Начать</wa-button>}
         </div>
       )}
@@ -160,6 +168,8 @@ const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id
   .course-navigation h2 { margin: 0; font-size: var(--wa-font-size-m); }
   .course-menu-button { width: 100%; }
   .course-menu-button::part(button) { justify-content: flex-start; text-align: start; }
+  .assignment-state-icon { font-size: var(--wa-font-size-l); }
+  .completed-icon { color: var(--wa-color-success-fill-loud); }
   .menu-empty { margin: 0; }
   .content-heading h2 { margin: 0; }
   .document-viewer { box-sizing: border-box; width: 100%; min-height: 65vh; border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
@@ -168,5 +178,6 @@ const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id
   .markdown-viewer > :last-child { margin-block-end: 0; }
   .assignment-card { width: 100%; --spacing: var(--wa-space-xl); }
   .assignment-description p { margin-block-start: 0; white-space: pre-wrap; }
+  .completion-summary { width: 100%; }
   .start-assignment { align-self: stretch; }
 </style>
