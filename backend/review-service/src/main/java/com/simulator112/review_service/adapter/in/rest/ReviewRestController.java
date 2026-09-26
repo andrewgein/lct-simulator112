@@ -3,20 +3,24 @@ package com.simulator112.review_service.adapter.in.rest;
 import com.simulator112.review_service.adapter.in.rest.dto.ConfirmReviewRequest;
 import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingsResponse;
+import com.simulator112.review_service.adapter.in.rest.dto.ReviewAnalyticsResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.ReviewResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.UserReviewsResponse;
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
+import com.simulator112.review_service.application.port.in.GetReviewAnalyticsUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
 import com.simulator112.review_service.application.port.out.CallRecordingStore;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
@@ -28,6 +32,7 @@ public class ReviewRestController {
     private final GetReviewUseCase getReview;
     private final ConfirmReviewUseCase confirmReview;
     private final CallRecordingStore callRecordings;
+    private final GetReviewAnalyticsUseCase getAnalytics;
 
     @GetMapping
     public UserReviewsResponse getUserReviews(@RequestHeader("X-User-Id") UUID userId) {
@@ -40,6 +45,26 @@ public class ReviewRestController {
             @PathVariable UUID studentId) {
         requireReviewer(role);
         return reviewsFor(studentId);
+    }
+
+    @GetMapping("/analytics")
+    public ReviewAnalyticsResponse getAnalytics(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-User-Role") String role,
+            @RequestParam(required = false) UUID groupId,
+            @RequestParam(required = false) UUID courseId,
+            @RequestParam(required = false) UUID assignmentId,
+            @RequestParam(required = false) String incidentId,
+            @RequestParam(required = false) String difficulty,
+            @RequestParam(required = false) String criterion,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size) {
+        requireReviewer(role);
+        return ReviewRestMapper.toResponse(getAnalytics.getAnalytics(userId, role,
+                new GetReviewAnalyticsUseCase.Filter(groupId, courseId, assignmentId, incidentId,
+                        difficulty, criterion, from, to), page, size));
     }
 
     @GetMapping("/{contextId}")

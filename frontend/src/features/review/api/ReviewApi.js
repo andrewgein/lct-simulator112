@@ -12,6 +12,12 @@ export function getStudentReviews(studentId, token) {
     return apiCall(`${API_PREFIX}/users/${encodeURIComponent(studentId)}`, "GET", undefined, token);
 }
 
+/** @param {string} token @param {URLSearchParams} [query] @returns {Promise<Response>} */
+export function getAnalyticsReviews(token, query = new URLSearchParams()) {
+    const suffix = query.toString();
+    return apiCall(`${API_PREFIX}/analytics${suffix ? `?${suffix}` : ""}`, "GET", undefined, token);
+}
+
 /** @param {string} contextId @param {string} token @returns {Promise<Response>} */
 export function getReview(contextId, token) {
     return apiCall(`${API_PREFIX}/${encodeURIComponent(contextId)}`, "GET", undefined, token);

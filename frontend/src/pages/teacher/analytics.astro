@@ -1,0 +1,386 @@
+---
+import Page from "../../layouts/Page.astro";
+import Header from "../../layouts/Header.astro";
+import MainHeader from "../../layouts/MainHeader.astro";
+import { getCourses, getStudyGroups, getStudyGroupCourses } from "../../features/course/api/CourseApi";
+import { getStudents } from "../../features/course/api/StudentApi";
+import { getAnalyticsReviews } from "../../features/review/api/ReviewApi";
+
+export const prerender = false;
+const viewerRole = Astro.cookies.get("role")?.value || "";
+if (!["ADMIN", "SUPERVISOR"].includes(viewerRole)) return Astro.redirect("/");
+
+const token = Astro.locals.accessToken;
+const params = Astro.url.searchParams;
+const filters = {
+  group: params.get("group") || "",
+  course: params.get("course") || "",
+  assignment: params.get("assignment") || "",
+  scenario: params.get("scenario") || "",
+  difficulty: params.get("difficulty") || "",
+  criterion: params.get("criterion") || "",
+  from: params.get("from") || "",
+  to: params.get("to") || ""
+};
+const requestedPage = Math.max(0, Number.parseInt(params.get("page") || "0", 10) || 0);
+const difficultyLabels = { EASY: "Лёгкая", NORMAL: "Средняя", HARD: "Сложная" };
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+const shortDateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit" });
+const studentName = (student) => student?.profile
+  ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ")
+  : student?.email || "Обучающийся";
+const reviewPercent = (review) => review.maxScore > 0
+  ? Math.round(((review.finalScore ?? review.automaticScore ?? 0) / review.maxScore) * 100)
+  : null;
+const average = (values) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
+const formatDuration = (seconds) => {
+  const value = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(value / 60);
+  const rest = value % 60;
+  return minutes ? `${minutes} мин ${rest} с` : `${rest} с`;
+};
+
+let error = null;
+let courses = [];
+let groups = [];
+let assignments = [];
+let reviews = [];
+let criteriaOptions = [];
+let scenarioOptions = [];
+let groupCourses = [];
+let analyticsPayload = null;
+let studentNamesById = new Map();
+
+try {
+  const [coursesResponse, groupsResponse, students, reviewsResponse] = await Promise.all([
+    getCourses(token),
+    getStudyGroups(token),
+    getStudents(token),
+    getAnalyticsReviews(token, new URLSearchParams([
+      ...Object.entries(filters).filter(([, value]) => value).map(([key, value]) => [{ group: "groupId", course: "courseId", assignment: "assignmentId", scenario: "incidentId" }[key] || key, value]),
+      ["page", String(requestedPage)],
+      ["size", "25"]
+    ]))
+  ]);
+  if (!coursesResponse.ok || !groupsResponse.ok || !reviewsResponse.ok) throw new Error();
+  courses = await coursesResponse.json();
+  groups = await groupsResponse.json();
+  analyticsPayload = await reviewsResponse.json();
+  const studentsById = new Map(students.map((student) => [String(student.id), student]));
+  studentNamesById = new Map(students.map((student) => [String(student.id), studentName(student)]));
+
+  groupCourses = await Promise.all(groups.map(async (group) => {
+    const response = await getStudyGroupCourses(group.id, token);
+    if (!response.ok) throw new Error();
+    return { group, courses: await response.json() };
+  }));
+
+  assignments = courses.flatMap((course) => (course.assignments || []).map((assignment) => ({
+    ...assignment,
+    courseId: String(course.id),
+    courseTitle: course.title
+  })));
+  const assignmentsById = new Map(assignments.map((assignment) => [String(assignment.id), assignment]));
+  const groupsByStudent = new Map();
+  groupCourses.forEach(({ group, courses: assignedCourses }) => {
+    const assignedCourseIds = new Set(assignedCourses.map((course) => String(course.id)));
+    (group.studentIds || []).forEach((studentId) => {
+      const key = String(studentId);
+      if (!groupsByStudent.has(key)) groupsByStudent.set(key, []);
+      groupsByStudent.get(key).push({ id: String(group.id), title: group.title, assignedCourseIds });
+    });
+  });
+
+  reviews = (analyticsPayload.reviews?.items || []).map((review) => {
+    const assignment = assignmentsById.get(String(review.assignmentId));
+    const membership = groupsByStudent.get(String(review.userId)) || [];
+    const relatedGroups = assignment
+      ? membership.filter((entry) => entry.assignedCourseIds.has(String(assignment.courseId)))
+      : [];
+    return {
+      ...review,
+      percent: reviewPercent(review),
+      assignment,
+      student: studentsById.get(String(review.userId)),
+      studentName: studentName(studentsById.get(String(review.userId))),
+      groups: relatedGroups
+    };
+  }).filter((review) => viewerRole === "ADMIN" || review.groups.length > 0);
+
+  criteriaOptions = [...new Set((analyticsPayload.criteria || []).map((criterion) => criterion.name).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right, "ru"));
+  const scenarios = new Map((analyticsPayload.scenarios || []).map((scenario) => [String(scenario.incidentId), scenario.incidentOrder || 0]));
+  scenarioOptions = [...scenarios.entries()].sort((left, right) => left[1] - right[1]);
+} catch {
+  error = "Не удалось загрузить данные аналитики";
+}
+
+const summary = analyticsPayload?.summary || { attempts: 0, students: 0, averageScore: null, averageDurationSeconds: null, overtimeAttempts: 0 };
+const scoreAverage = summary.averageScore;
+const uniqueStudents = summary.students;
+const durationAverage = summary.averageDurationSeconds;
+const overtimeShare = summary.attempts ? Math.round(summary.overtimeAttempts / summary.attempts * 100) : 0;
+const trend = (analyticsPayload?.trend || []).map((point) => ({ date: point.date, value: point.averageScore }));
+const trendWidth = 720;
+const trendHeight = 220;
+const trendPadding = 32;
+const trendPoints = trend.map((point, index) => ({
+  ...point,
+  x: trend.length === 1 ? trendWidth / 2 : trendPadding + index * (trendWidth - trendPadding * 2) / (trend.length - 1),
+  y: trendHeight - trendPadding - point.value * (trendHeight - trendPadding * 2) / 100
+}));
+const trendPolyline = trendPoints.map((point) => `${point.x},${point.y}`).join(" ");
+
+const criterionStats = (analyticsPayload?.criteria || []).map((item) => ({
+  name: item.name,
+  count: item.assessments,
+  result: item.maxScore ? Math.round(item.score / item.maxScore * 100) : 0,
+  error: item.maxScore ? Math.round((item.maxScore - item.score) / item.maxScore * 100) : 0
+}));
+const scenarioStats = (analyticsPayload?.scenarios || []).map((item) => ({
+  id: item.incidentId,
+  order: item.incidentOrder,
+  attempts: item.attempts,
+  result: item.maxScore ? Math.round(item.score / item.maxScore * 100) : 0
+}));
+
+const topCriteria = criterionStats.slice(0, 6);
+const heatmapByStudent = new Map();
+(analyticsPayload?.heatmap || []).forEach((item) => {
+  const key = String(item.userId);
+  if (!heatmapByStudent.has(key)) heatmapByStudent.set(key, new Map());
+  heatmapByStudent.get(key).set(item.criterion, item);
+});
+const heatmap = [...heatmapByStudent.entries()].map(([userId, values]) => ({
+  name: studentNamesById.get(userId) || "Обучающийся",
+  cells: topCriteria.map((criterion) => {
+    const value = values.get(criterion.name);
+    return value?.maxScore ? Math.round((value.maxScore - value.score) / value.maxScore * 100) : null;
+  })
+})).sort((left, right) => left.name.localeCompare(right.name, "ru")).slice(0, 12);
+
+const recommendations = [];
+if (criterionStats[0]?.error >= 25) recommendations.push(`Разобрать критерий «${criterionStats[0].name}»: доля потерянных баллов ${criterionStats[0].error}%.`);
+if (overtimeShare >= 25) recommendations.push(`Отработать скорость действий: ${overtimeShare}% прохождений вышли за норматив.`);
+if (scoreAverage !== null && scoreAverage < 70) recommendations.push(`Назначить повторную практику: средний результат группы ${scoreAverage}%.`);
+if (!recommendations.length && summary.attempts) recommendations.push("Критических групповых отклонений по выбранному срезу не обнаружено.");
+
+const reportData = reviews.map((review) => ({
+  date: review.createdAt,
+  student: review.studentName,
+  groups: review.groups.map((group) => group.title).join(", "),
+  course: review.assignment?.courseTitle || "",
+  assignment: review.assignment?.title || "",
+  difficulty: difficultyLabels[review.assignment?.difficulty] || review.assignment?.difficulty || "",
+  score: review.percent,
+  duration: review.durationSeconds,
+  overtime: review.overtimeSeconds
+}));
+const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toString("base64");
+const filteredAssignments = assignments.filter((assignment) => !filters.course || assignment.courseId === filters.course);
+const hasFilters = Object.values(filters).some(Boolean);
+const reviewPage = analyticsPayload?.reviews || { page: 0, totalPages: 0, totalItems: 0 };
+const pageQuery = (page) => new URLSearchParams([
+  ...Object.entries(filters).filter(([, value]) => value),
+  ["page", String(page)]
+]).toString();
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Аналитика">
+    <wa-button id="export-csv" appearance="outlined" disabled={!reviews.length}><wa-icon slot="start" name="download"></wa-icon>Экспорт страницы CSV</wa-button>
+  </MainHeader>
+  <script type="application/json" id="analytics-report-data" set:text={reportDataEncoded}></script>
+  {!error && (
+    <div class="analytics-page wa-stack wa-gap-l">
+      <form class="filters-panel" method="get">
+        <wa-select name="group" label="Группа" value={filters.group} placeholder="Все группы" with-clear>
+          {groups.map((group) => <wa-option value={group.id}>{group.title}</wa-option>)}
+        </wa-select>
+        <wa-select name="course" label="Курс" value={filters.course} placeholder="Все курсы" with-clear>
+          {courses.map((course) => <wa-option value={course.id}>{course.title}</wa-option>)}
+        </wa-select>
+        <wa-select name="assignment" label="Задание" value={filters.assignment} placeholder="Все задания" with-clear>
+          {filteredAssignments.map((assignment) => <wa-option value={assignment.id}>{assignment.title}</wa-option>)}
+        </wa-select>
+        <wa-select name="scenario" label="Сценарий" value={filters.scenario} placeholder="Все сценарии" with-clear>
+          {scenarioOptions.map(([id, order]) => <wa-option value={id}>Сценарий {order || "—"}</wa-option>)}
+        </wa-select>
+        <wa-select name="difficulty" label="Сложность" value={filters.difficulty} placeholder="Любая" with-clear>
+          {Object.entries(difficultyLabels).map(([value, label]) => <wa-option value={value}>{label}</wa-option>)}
+        </wa-select>
+        <wa-select name="criterion" label="Критерий / ошибка" value={filters.criterion} placeholder="Все критерии" with-clear>
+          {criteriaOptions.map((criterion) => <wa-option value={criterion}>{criterion}</wa-option>)}
+        </wa-select>
+        <wa-input type="date" name="from" label="С даты" value={filters.from}></wa-input>
+        <wa-input type="date" name="to" label="По дату" value={filters.to}></wa-input>
+        <div class="filter-actions wa-cluster wa-gap-xs">
+          <wa-button type="submit" variant="brand">Применить</wa-button>
+          {hasFilters && <wa-button href="/teacher/analytics" appearance="outlined">Сбросить</wa-button>}
+        </div>
+      </form>
+
+      <section class="kpi-grid" aria-label="Ключевые показатели">
+        <article class="kpi-card"><span>Средний результат</span><strong>{scoreAverage === null ? "—" : `${scoreAverage}%`}</strong><small>{summary.attempts} завершённых попыток</small></article>
+        <article class="kpi-card"><span>Обучающиеся</span><strong>{uniqueStudents}</strong><small>в выбранном срезе</small></article>
+        <article class="kpi-card"><span>Среднее время</span><strong>{durationAverage === null ? "—" : formatDuration(durationAverage)}</strong><small>на одно прохождение</small></article>
+        <article class="kpi-card"><span>Выход за норматив</span><strong>{summary.attempts ? `${overtimeShare}%` : "—"}</strong><small>{summary.overtimeAttempts} попыток</small></article>
+      </section>
+
+      {!summary.attempts ? (
+        <wa-callout variant="neutral">По выбранным условиям прохождений пока нет.</wa-callout>
+      ) : (
+        <>
+          <section class="analytics-grid">
+            <article class="panel trend-panel">
+              <div class="panel-heading"><div><h2>Динамика результатов</h2><p>Средний балл завершённых попыток по дням</p></div></div>
+              {trendPoints.length ? (
+                <div class="chart-wrap">
+                  <svg class="trend-chart" viewBox={`0 0 ${trendWidth} ${trendHeight}`} role="img" aria-label="График среднего результата по дням">
+                    {[0, 25, 50, 75, 100].map((tick) => {
+                      const y = trendHeight - trendPadding - tick * (trendHeight - trendPadding * 2) / 100;
+                      return <g><line x1={trendPadding} y1={y} x2={trendWidth - trendPadding} y2={y}></line><text x="2" y={y + 4}>{tick}%</text></g>;
+                    })}
+                    {trendPoints.length > 1 && <polyline points={trendPolyline}></polyline>}
+                    {trendPoints.map((point) => <g><circle cx={point.x} cy={point.y} r="5"><title>{shortDateFormatter.format(new Date(point.date))}: {point.value}%</title></circle><text class="point-label" x={point.x} y={point.y - 10}>{point.value}%</text></g>)}
+                  </svg>
+                  <div class="chart-dates"><span>{shortDateFormatter.format(new Date(trendPoints[0].date))}</span><span>{shortDateFormatter.format(new Date(trendPoints.at(-1).date))}</span></div>
+                </div>
+              ) : <p class="empty-chart">Нет завершённых попыток с оценкой.</p>}
+            </article>
+
+            <article class="panel">
+              <div class="panel-heading"><div><h2>Типичные ошибки</h2><p>Доля потерянных баллов по критериям</p></div></div>
+              <div class="bar-list">
+                {criterionStats.slice(0, 8).map((criterion) => (
+                  <div class="bar-item"><div><span>{criterion.name}</span><strong>{criterion.error}%</strong></div><div class="bar-track"><span style={`width: ${criterion.error}%`}></span></div><small>{criterion.count} оценок</small></div>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <section class="analytics-grid">
+            <article class="panel">
+              <div class="panel-heading"><div><h2>Результаты по сценариям</h2><p>Средний процент выполнения</p></div></div>
+              <div class="scenario-list">
+                {scenarioStats.map((scenario) => <a href={`?${new URLSearchParams({ ...Object.fromEntries(Object.entries(filters).filter(([, value]) => value)), scenario: scenario.id })}`}><span>Сценарий {scenario.order || "—"}<small>{scenario.attempts} попыток</small></span><strong>{scenario.result}%</strong></a>)}
+              </div>
+            </article>
+            <article class="panel recommendations">
+              <div class="panel-heading"><div><h2>Рекомендации</h2><p>На основе текущего среза данных</p></div></div>
+              <ol>{recommendations.map((recommendation) => <li>{recommendation}</li>)}</ol>
+            </article>
+          </section>
+
+          {topCriteria.length > 0 && heatmap.length > 0 && (
+            <section class="panel">
+              <div class="panel-heading"><div><h2>Карта ошибок</h2><p>Чем темнее ячейка, тем больше потеряно баллов</p></div></div>
+              <div class="heatmap-scroll">
+                <table class="heatmap-table">
+                  <thead><tr><th>Обучающийся</th>{topCriteria.map((criterion) => <th title={criterion.name}>{criterion.name}</th>)}</tr></thead>
+                  <tbody>{heatmap.map((row) => <tr><th>{row.name}</th>{row.cells.map((value) => <td style={value === null ? "" : `--error-weight: ${Math.max(8, value)}%`}><span>{value === null ? "—" : `${value}%`}</span></td>)}</tr>)}</tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          <section class="panel">
+            <div class="panel-heading"><div><h2>Прохождения</h2><p>Детализация выбранного среза</p></div><wa-badge appearance="outlined">{reviewPage.totalItems}</wa-badge></div>
+            <wa-scroller>
+              <table class="attempts-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
+                <thead><tr><th>Дата</th><th>Обучающийся</th><th>Группа</th><th>Курс / задание</th><th>Результат</th><th>Время</th><th></th></tr></thead>
+                <tbody>{reviews.map((review) => (
+                  <tr>
+                    <td>{review.createdAt ? dateFormatter.format(new Date(review.createdAt)) : "—"}</td>
+                    <td><strong>{review.studentName}</strong></td>
+                    <td>{review.groups.map((group) => group.title).join(", ") || "—"}</td>
+                    <td><strong>{review.assignment?.courseTitle || "Курс не найден"}</strong><small>{review.assignment?.title || "Задание не найдено"}</small></td>
+                    <td><wa-badge variant={review.percent >= 70 ? "success" : review.percent >= 50 ? "warning" : "danger"} appearance="filled-outlined">{review.percent === null ? "—" : `${review.percent}%`}</wa-badge></td>
+                    <td>{formatDuration(review.durationSeconds)}{Number(review.overtimeSeconds) > 0 && <small class="overtime">+{formatDuration(review.overtimeSeconds)}</small>}</td>
+                    <td><wa-button size="small" appearance="plain" href={`/review/${encodeURIComponent(review.contextId)}`} aria-label={`Открыть результат ${review.studentName}`}><wa-icon name="arrow-right"></wa-icon></wa-button></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </wa-scroller>
+            {reviewPage.totalPages > 1 && (
+              <nav class="pagination wa-cluster wa-gap-xs" aria-label="Страницы прохождений">
+                <wa-button appearance="outlined" size="small" href={`?${pageQuery(reviewPage.page - 1)}`} disabled={reviewPage.page === 0}>Назад</wa-button>
+                <span>Страница {reviewPage.page + 1} из {reviewPage.totalPages}</span>
+                <wa-button appearance="outlined" size="small" href={`?${pageQuery(reviewPage.page + 1)}`} disabled={reviewPage.page + 1 >= reviewPage.totalPages}>Вперёд</wa-button>
+              </nav>
+            )}
+          </section>
+        </>
+      )}
+    </div>
+  )}
+</Page>
+
+<script>
+  const exportButton = document.querySelector('#export-csv');
+  const reportElement = document.querySelector('#analytics-report-data');
+  exportButton?.addEventListener('click', () => {
+    if (!reportElement) return;
+    const bytes = Uint8Array.from(atob(reportElement.textContent.trim()), (char) => char.charCodeAt(0));
+    const rows = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    const header = ['Дата', 'Обучающийся', 'Группа', 'Курс', 'Задание', 'Сложность', 'Результат, %', 'Время, с', 'Сверх норматива, с'];
+    const escape = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+    const csv = [header, ...rows.map((row) => [row.date, row.student, row.groups, row.course, row.assignment, row.difficulty, row.score, row.duration, row.overtime])]
+      .map((row) => row.map(escape).join(';')).join('\n');
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+    link.download = `analytics-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+</script>
+
+<style>
+  .analytics-page { padding-block-end: var(--wa-space-2xl); }
+  .filters-panel { display: grid; grid-template-columns: repeat(4, minmax(10rem, 1fr)); gap: var(--wa-space-m); padding: var(--wa-space-l); border: 1px solid var(--wa-color-neutral-border-normal); border-radius: var(--wa-border-radius-l); background: var(--wa-color-surface-raised); }
+  .filter-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--wa-space-m); }
+  .kpi-card, .panel { border: 1px solid var(--wa-color-neutral-border-normal); border-radius: var(--wa-border-radius-l); background: var(--wa-color-surface-raised); }
+  .kpi-card { display: grid; gap: var(--wa-space-2xs); padding: var(--wa-space-l); }
+  .kpi-card span, .kpi-card small, .panel-heading p, .bar-item small { color: var(--wa-color-text-quiet); }
+  .kpi-card strong { font-size: clamp(1.65rem, 3vw, 2.4rem); line-height: 1.1; }
+  .analytics-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(18rem, .65fr); gap: var(--wa-space-l); }
+  .panel { min-width: 0; padding: var(--wa-space-l); }
+  .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--wa-space-m); margin-block-end: var(--wa-space-l); }
+  .panel-heading h2 { margin: 0; font-size: var(--wa-font-size-l); }
+  .panel-heading p { margin: var(--wa-space-3xs) 0 0; }
+  .chart-wrap { min-width: 0; }
+  .trend-chart { display: block; width: 100%; height: auto; overflow: visible; }
+  .trend-chart line { stroke: var(--wa-color-neutral-border-normal); stroke-width: 1; }
+  .trend-chart text { fill: var(--wa-color-text-quiet); font-size: 11px; }
+  .trend-chart polyline { fill: none; stroke: var(--wa-color-brand-fill-loud); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .trend-chart circle { fill: var(--wa-color-brand-fill-loud); stroke: var(--wa-color-surface-raised); stroke-width: 3; }
+  .trend-chart .point-label { fill: var(--wa-color-text-normal); text-anchor: middle; font-weight: 700; }
+  .chart-dates { display: flex; justify-content: space-between; padding-inline: var(--wa-space-xl); color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+  .empty-chart { color: var(--wa-color-text-quiet); }
+  .bar-list { display: grid; gap: var(--wa-space-m); }
+  .bar-item > div:first-child { display: flex; justify-content: space-between; gap: var(--wa-space-s); }
+  .bar-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { height: .5rem; margin-block: var(--wa-space-2xs); overflow: hidden; border-radius: 999px; background: var(--wa-color-neutral-fill-normal); }
+  .bar-track span { display: block; height: 100%; border-radius: inherit; background: var(--wa-color-danger-fill-loud); }
+  .scenario-list { display: grid; gap: var(--wa-space-xs); }
+  .scenario-list a { display: flex; align-items: center; justify-content: space-between; gap: var(--wa-space-m); padding: var(--wa-space-s) var(--wa-space-m); border: 1px solid var(--wa-color-neutral-border-normal); border-radius: var(--wa-border-radius-m); color: inherit; text-decoration: none; }
+  .scenario-list a:hover { border-color: var(--wa-color-brand-border-normal); background: var(--wa-color-brand-fill-quiet); }
+  .scenario-list span { display: grid; }
+  .scenario-list small { color: var(--wa-color-text-quiet); }
+  .recommendations ol { display: grid; gap: var(--wa-space-m); margin: 0; padding-inline-start: 1.4rem; }
+  .heatmap-scroll { overflow-x: auto; }
+  .heatmap-table { width: 100%; min-width: 48rem; border-collapse: separate; border-spacing: .25rem; }
+  .heatmap-table th { max-width: 9rem; padding: var(--wa-space-xs); text-align: left; font-size: var(--wa-font-size-s); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .heatmap-table td { min-width: 5.2rem; padding: var(--wa-space-s); border-radius: var(--wa-border-radius-s); background: color-mix(in srgb, var(--wa-color-danger-fill-loud) var(--error-weight, 0%), var(--wa-color-neutral-fill-normal)); text-align: center; }
+  .heatmap-table td span { padding: .15rem .35rem; border-radius: .25rem; background: color-mix(in srgb, var(--wa-color-surface-raised) 78%, transparent); font-size: var(--wa-font-size-s); font-weight: 700; }
+  .attempts-table { width: 100%; min-width: 62rem; }
+  .attempts-table th, .attempts-table td { padding: var(--wa-space-s); text-align: left; vertical-align: middle; }
+  .attempts-table td strong, .attempts-table td small { display: block; }
+  .attempts-table td small { color: var(--wa-color-text-quiet); }
+  .attempts-table .overtime { color: var(--wa-color-danger-on-quiet); }
+  .pagination { justify-content: flex-end; margin-block-start: var(--wa-space-m); }
+  @media (max-width: 72rem) { .filters-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .analytics-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 40rem) { .filters-panel, .kpi-grid { grid-template-columns: 1fr; } .filter-actions { justify-content: stretch; } .filter-actions wa-button { flex: 1; } .panel, .filters-panel, .kpi-card { padding: var(--wa-space-m); } }
+</style>

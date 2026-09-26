@@ -11,6 +11,8 @@ public interface StudyGroupRepository {
 
     Optional<StudyGroup> findById(UUID groupId);
 
+    List<StudyGroup> findAll();
+
     List<StudyGroup> findAllByOwnerId(UUID ownerId);
 
     void deleteById(UUID groupId);
