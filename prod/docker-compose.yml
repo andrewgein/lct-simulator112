@@ -429,6 +429,7 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}-frontend
     environment:
       DGIS_MAPGL_KEY: ${DGIS_MAPGL_KEY:-}
+      PUBLIC_DADATA_API_KEY: ${PUBLIC_DADATA_API_KEY:?PUBLIC_DADATA_API_KEY is required}
     networks: [default, edge]
     depends_on:
       - api-gateway

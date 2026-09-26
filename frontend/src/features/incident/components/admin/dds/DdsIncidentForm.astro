@@ -6,7 +6,7 @@ import DdsIncidentConstructor from "./DdsIncidentConstructor.jsx";
 /** @typedef {import("../../../contract/Incident").DdsIncident} DdsIncident */
 /** @type {{ incident?: Partial<DdsIncident>, mode?: "create" | "edit" }} */
 const { incident = {}, mode = "create" } = Astro.props;
-const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
+const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
 ---
 <div class="wa-stack wa-gap-3xl">
   <input type="hidden" name="id" value={incident.id || ""} />
