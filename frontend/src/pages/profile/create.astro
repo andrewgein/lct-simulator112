@@ -1,12 +1,14 @@
 ---
 import CreateProfileCard from "../../features/profile/components/CreateUserProfileCard.astro";
+import AuthScreen from "../../features/auth/components/AuthScreen.astro";
 import Page from "../../layouts/Page.astro";
 
 export const prerender = false;
 ---
 <Page>
-  <div class="centered-page">
-    <CreateProfileCard />
-  </div>
+  <AuthScreen>
+    <div class="auth-center">
+      <CreateProfileCard />
+    </div>
+  </AuthScreen>
 </Page>
-

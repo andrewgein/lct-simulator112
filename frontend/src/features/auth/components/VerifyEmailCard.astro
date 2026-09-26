@@ -25,27 +25,24 @@ if (!token) {
   }
 }
 ---
-<wa-card style="width: 100%; max-width: 30rem" class="card-header">
-
-  <h2 slot="header">Подтверждение Email</h2>
-  <div class="wa-stack">
-
-    {status == "success" && (
-    <wa-callout class="wa-success">
-      <wa-icon slot="icon" name="circle-check"></wa-icon>
-      <strong>{message}</strong>
-    </wa-callout>
-    <a href="/login">Вернуться на страницу входа</a>
-    )}
-
-    {status == "error" && (
-    <wa-callout class="wa-danger">
-      <wa-icon slot="icon" name="circle-exclamation"></wa-icon>
-      <strong>{message}</strong>
-    </wa-callout>
-    <a href="/register">Вернуться на страницу регистрации</a>
-    )}
-
+<section class="login-card" aria-labelledby="login-title">
+  <div class="login-heading" id="login-title">
+    <span class="login-number">112</span>
+    <span class="login-title">Подтверждение почты</span>
   </div>
-
-</wa-card>
+  <div class="login-body">
+    {status == "success" && (
+      <>
+        <p class="login-message login-success" role="status">{message}</p>
+        <a class="login-primary" href="/login">Войти</a>
+      </>
+    )}
+    {status == "error" && (
+      <>
+        <p class="login-message login-error" role="alert">{message}</p>
+        <a class="login-primary" href="/register">Регистрация</a>
+        <a class="login-secondary" href="/login">Войти</a>
+      </>
+    )}
+  </div>
+</section>
