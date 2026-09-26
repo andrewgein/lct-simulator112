@@ -80,8 +80,7 @@ const trackLabels = { SYSTEM_112: "Система-112", DDS: "ДДС" };
         const body = await response.json().catch(() => ({}));
         throw new Error(body.message || body.detail || 'Не удалось сохранить группу.');
       }
-      const saved = await response.json();
-      window.location.href = groupId ? `/teacher/groups/${encodeURIComponent(groupId)}` : `/teacher/groups/${encodeURIComponent(saved.id)}`;
+      window.location.href = '/teacher/groups';
     } catch (requestError) {
       error.textContent = requestError.message;
       error.hidden = false;
