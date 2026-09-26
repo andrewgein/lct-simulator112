@@ -6,13 +6,23 @@ from app.application.model.prompts import build_call_scenario
 
 class CallScenarioPromptTests(unittest.TestCase):
     def test_builds_system112_caller_scenario(self):
-        call = _call(person=Person(first_name="Анна", address="Москва, улица Первая"))
+        call = _call(person=Person(
+            first_name="Анна",
+            last_name="Иванова",
+            middle_name="Сергеевна",
+            address="Москва, улица Первая",
+        ))
 
         prompt = build_call_scenario(call)
 
         self.assertIn("Собеседник: заявитель", prompt)
+        self.assertIn("Фамилия: Иванова", prompt)
         self.assertIn("Имя: Анна", prompt)
+        self.assertIn("Отчество: Сергеевна", prompt)
         self.assertIn("Адрес: Москва, улица Первая", prompt)
+        self.assertIn("На вопрос «Как вас зовут?» или «Представьтесь»", prompt)
+        self.assertIn("называй фамилию, имя и отчество (если указано)", prompt)
+        self.assertNotIn("Полное имя для ответа оператору", prompt)
 
     def test_builds_dds_brigade_scenario(self):
         call = _call(counterparty=CounterpartyType.BRIGADE,
