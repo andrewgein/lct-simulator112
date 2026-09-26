@@ -11,6 +11,8 @@ public interface EnrollmentRepository {
 
     void delete(Enrollment enrollment);
 
+    void deleteAllByCourseId(UUID courseId);
+
     Optional<Enrollment> findByCourseIdAndGroupId(UUID courseId, UUID groupId);
 
     Optional<Enrollment> findByCourseIdAndStudentId(UUID courseId, UUID studentId);

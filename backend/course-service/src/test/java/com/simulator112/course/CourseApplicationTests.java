@@ -1,5 +1,6 @@
 package com.simulator112.course;
 
+import com.simulator112.course.application.port.in.DeleteCourseUseCase;
 import com.simulator112.course.application.port.out.CourseRepository;
 import com.simulator112.course.application.port.out.EnrollmentRepository;
 import com.simulator112.course.application.port.out.StudyGroupRepository;
@@ -33,6 +34,9 @@ class CourseApplicationTests {
 
     @Autowired
     private EnrollmentRepository enrollmentRepository;
+
+    @Autowired
+    private DeleteCourseUseCase deleteCourse;
 
     @MockitoBean
     private com.simulator112.course.application.port.out.IncidentCatalogPort incidentCatalog;
@@ -69,6 +73,21 @@ class CourseApplicationTests {
 
         assertThat(courseRepository.findAllByAuthorId(authorId)).isEmpty();
         assertThat(courseRepository.findById(saved.id())).get().extracting(Course::deletedAt).isNotNull();
+    }
+
+    @Test
+    void deletesCourseEnrollmentsWhenCourseIsArchived() {
+        UUID ownerId = UUID.randomUUID();
+        StudyGroup group = studyGroupRepository.save(new StudyGroup(null, "Группа", ownerId,
+                List.of(UUID.randomUUID())));
+        Course course = courseRepository.save(new Course(null, "Удаляемый курс", null,
+                CourseTargetType.SYSTEM_112, ownerId, List.of(), List.of()));
+        enrollmentRepository.save(new Enrollment(null, course.id(), group.id()));
+
+        deleteCourse.deleteCourse(course.id(), ownerId);
+
+        assertThat(courseRepository.findById(course.id())).get().extracting(Course::deletedAt).isNotNull();
+        assertThat(enrollmentRepository.findAllByCourseId(course.id())).isEmpty();
     }
 
     @Test
