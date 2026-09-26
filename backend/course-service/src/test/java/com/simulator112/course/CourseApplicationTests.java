@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 class CourseApplicationTests {
@@ -61,6 +62,77 @@ class CourseApplicationTests {
         assertThat(loaded.assignments()).extracting(Assignment::title)
                 .containsExactly("Первое задание", "Второе задание");
         assertThat(courseRepository.findAllByAuthorId(authorId)).hasSize(1);
+    }
+
+    @Test
+    void replacesAndReordersAssignmentsWithoutPositionConflict() {
+        UUID authorId = UUID.randomUUID();
+        Course saved = courseRepository.save(new Course(null, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(),
+                List.of(new Assignment(null, "Старое первое", null, AssignmentDifficulty.NORMAL,
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())),
+                        new Assignment(null, "Старое второе", null, AssignmentDifficulty.NORMAL,
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))));
+
+        Assignment retained = saved.assignments().get(1);
+        Course updated = courseRepository.save(new Course(saved.id(), saved.title(), saved.description(),
+                saved.targetType(), saved.authorId(), List.of(),
+                List.of(new Assignment(null, "Новое первое", null, AssignmentDifficulty.NORMAL,
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())),
+                        retained)));
+
+        assertThat(updated.assignments()).extracting(Assignment::title)
+                .containsExactly("Новое первое", "Старое второе");
+        assertThat(updated.assignments().get(1).id()).isEqualTo(retained.id());
+        Course loaded = courseRepository.findById(saved.id()).orElseThrow();
+        assertThat(loaded.assignments()).extracting(Assignment::title)
+                .containsExactly("Новое первое", "Старое второе");
+        assertThat(loaded.assignments().get(1).id()).isEqualTo(retained.id());
+    }
+
+    @Test
+    void reordersExistingMaterialsAndAssignments() {
+        UUID authorId = UUID.randomUUID();
+        Course saved = courseRepository.save(new Course(null, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(new CourseMaterial(null, "Первый", "materials/" + UUID.randomUUID(), "first.md", "text/markdown", 1L),
+                        new CourseMaterial(null, "Второй", "materials/" + UUID.randomUUID(), "second.md", "text/markdown", 1L)),
+                List.of(new Assignment(null, "Первое", null, AssignmentDifficulty.NORMAL,
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())),
+                        new Assignment(null, "Второе", null, AssignmentDifficulty.NORMAL,
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))));
+
+        courseRepository.save(new Course(saved.id(), saved.title(), saved.description(), saved.targetType(), authorId,
+                List.of(saved.materials().get(1), saved.materials().get(0)),
+                List.of(saved.assignments().get(1), saved.assignments().get(0))));
+
+        Course loaded = courseRepository.findById(saved.id()).orElseThrow();
+        assertThat(loaded.materials()).extracting(CourseMaterial::id)
+                .containsExactly(saved.materials().get(1).id(), saved.materials().get(0).id());
+        assertThat(loaded.assignments()).extracting(Assignment::id)
+                .containsExactly(saved.assignments().get(1).id(), saved.assignments().get(0).id());
+    }
+
+    @Test
+    void failedReplacementLeavesExistingChildrenIntact() {
+        UUID authorId = UUID.randomUUID();
+        String occupiedKey = "materials/" + UUID.randomUUID();
+        courseRepository.save(new Course(null, "Другой курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(new CourseMaterial(null, "Файл", occupiedKey, "file.md", "text/markdown", 1L)), List.of()));
+        Course saved = courseRepository.save(new Course(null, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(new CourseMaterial(null, "Исходный", "materials/" + UUID.randomUUID(), "old.md", "text/markdown", 1L)),
+                List.of(new Assignment(null, "Исходное", null, AssignmentDifficulty.NORMAL,
+                        AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))));
+
+        assertThatThrownBy(() -> courseRepository.save(new Course(saved.id(), "Обновлённый", null,
+                CourseTargetType.SYSTEM_112, authorId,
+                List.of(new CourseMaterial(null, "Конфликт", occupiedKey, "new.md", "text/markdown", 1L)),
+                List.of(new Assignment(null, "Новое", null, AssignmentDifficulty.NORMAL,
+                        AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))))).isInstanceOf(RuntimeException.class);
+
+        Course loaded = courseRepository.findById(saved.id()).orElseThrow();
+        assertThat(loaded.title()).isEqualTo("Курс");
+        assertThat(loaded.materials()).extracting(CourseMaterial::id).containsExactly(saved.materials().get(0).id());
+        assertThat(loaded.assignments()).extracting(Assignment::id).containsExactly(saved.assignments().get(0).id());
     }
 
     @Test
