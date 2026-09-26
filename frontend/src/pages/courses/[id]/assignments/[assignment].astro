@@ -29,10 +29,10 @@ if (!error) {
     if (!enrollmentResponse.ok || !courseResponse.ok || !reviewsResponse.ok) throw new Error("Курс недоступен");
     const course = await courseResponse.json();
     const reviews = (await reviewsResponse.json()).reviews || [];
-    const completed = new Set(reviews.filter((review) => review.status === "DONE").map((review) => review.assignmentId));
-    const assignment = course.assignments.find((item) => item.id === assignmentId);
-    const current = course.assignments.find((item) => !completed.has(item.id));
-    if (!assignment || current?.id !== assignmentId) throw new Error("Задание недоступно");
+    const completed = new Set(reviews.filter((review) => review.status === "DONE" && review.passed === true).map((review) => String(review.assignmentId)));
+    const assignment = course.assignments.find((item) => String(item.id) === String(assignmentId));
+    const current = course.assignments.find((item) => !completed.has(String(item.id)));
+    if (!assignment || String(current?.id) !== String(assignmentId)) throw new Error("Задание недоступно");
     const responses = await Promise.all(assignment.incidentIds.map((incidentId) =>
       getIncident(incidentId, Astro.locals.accessToken)));
     if (responses.some((item) => !item.ok)) throw new Error("Не удалось загрузить сценарии");

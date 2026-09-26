@@ -15,8 +15,10 @@ let courseStats = [];
 
 const scorePercent = (review) => {
   const criteria = review.criterionResults || [];
-  const score = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
-  const maxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+  const criteriaScore = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
+  const criteriaMaxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+  const score = review.finalScore ?? criteriaScore;
+  const maxScore = review.maxScore ?? criteriaMaxScore;
   return maxScore ? Math.round(score / maxScore * 100) : null;
 };
 
@@ -69,7 +71,7 @@ try {
         .map((review) => ({ ...review, percent: scorePercent(review), assignmentTitle: assignmentTitles.get(String(review.assignmentId)) || "Задание" }))
         .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime());
       const completedByAssignment = new Map();
-      attempts.filter((attempt) => attempt.status === "DONE").forEach((attempt) => {
+      attempts.filter((attempt) => attempt.status === "DONE" && attempt.passed === true).forEach((attempt) => {
         const key = String(attempt.assignmentId);
         if (!completedByAssignment.has(key)) completedByAssignment.set(key, attempt);
       });
@@ -114,6 +116,8 @@ const reportData = {
         assignmentTitle: attempt.assignmentTitle,
         status: attempt.status,
         percent: attempt.percent,
+        grade: attempt.grade,
+        passed: attempt.passed,
         createdAt: attempt.createdAt,
         criteria: (attempt.criterionResults || []).map((criterion) => ({
           incidentOrder: criterion.incidentOrder,
@@ -215,7 +219,7 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
                             {student.attempts.length ? (
                               <div class="attempt-links wa-stack wa-gap-2xs">
                                 {student.attempts.map((attempt) => (
-                                  <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
+                                  <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status !== "DONE" ? "формируется" : attempt.grade !== null && attempt.grade !== undefined ? `оценка ${attempt.grade}, ${attempt.passed ? "зачтено" : "не зачтено"}` : attempt.percent !== null ? `${attempt.percent}%` : "—"}</a>
                                 ))}
                               </div>
                             ) : "—"}
@@ -242,7 +246,11 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
   const reportData = reportDataEl ? JSON.parse(decodeBase64Utf8(reportDataEl.textContent.trim())) : null;
   const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
   const percentLabel = (value) => (value === null || value === undefined ? '—' : `${value}%`);
-  const statusLabel = (attempt) => (attempt.status === 'DONE' ? percentLabel(attempt.percent) : 'формируется');
+  const statusLabel = (attempt) => {
+    if (attempt.status !== 'DONE') return 'формируется';
+    if (attempt.grade !== null && attempt.grade !== undefined) return `оценка ${attempt.grade}, ${attempt.passed ? 'зачтено' : 'не зачтено'}`;
+    return percentLabel(attempt.percent);
+  };
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
   function groupAttemptCriteria(attempt) {

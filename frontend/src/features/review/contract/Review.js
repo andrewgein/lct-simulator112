@@ -43,6 +43,11 @@
  * @property {string} assignmentId
  * @property {string} createdAt
  * @property {CriterionResult[]} criterionResults
+ * @property {number} automaticScore
+ * @property {number | null} finalScore
+ * @property {number} maxScore
+ * @property {number | null} grade
+ * @property {boolean | null} passed
  * @property {ReviewStatus} status
  */
 
