@@ -41,6 +41,10 @@ public class Context {
 
     private String levelTitle;
 
+    private Integer threshold3;
+    private Integer threshold4;
+    private Integer threshold5;
+
     @Enumerated(EnumType.STRING)
     private IncidentTargetType targetType;
 

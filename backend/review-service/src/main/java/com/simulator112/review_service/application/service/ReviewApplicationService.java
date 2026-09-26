@@ -46,7 +46,8 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
         int maxScore = results.stream().mapToInt(value -> value.maxScore()).sum();
         Review review = new Review(submission.contextId(), submission.userId(), submission.assignmentId(),
                 ReviewStatus.DONE, results, score, score, maxScore, duration, timeLimit,
-                Math.max(0, duration - timeLimit), null, null, null, null, null);
+                Math.max(0, duration - timeLimit), null, null, null, null, null,
+                submission.threshold3(), submission.threshold4(), submission.threshold5());
         return store.save(review);
     }
 

@@ -22,6 +22,11 @@ public final class FullContextMapper {
                             "INCIDENT_TARGET_TYPE_" + context.getTargetType().name()))
                     .setExecutionMode(com.simulator112.incident.grpc.contract.ExecutionMode.valueOf(
                             "EXECUTION_MODE_" + context.getExecutionMode().name()));
+            if (context.getThreshold3() != null) {
+                assignment.setThreshold3(context.getThreshold3())
+                        .setThreshold4(context.getThreshold4())
+                        .setThreshold5(context.getThreshold5());
+            }
             if (context.getDifficulty() != null) assignment.setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.valueOf(
                     "DIFFICULTY_" + context.getDifficulty().name()));
             context.getIncidents().forEach(value -> assignment.addIncidents(IncidentContextMapper.toProto(value)));

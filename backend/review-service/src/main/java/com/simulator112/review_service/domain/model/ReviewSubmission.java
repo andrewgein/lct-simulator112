@@ -8,7 +8,16 @@ import java.util.UUID;
 public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, TargetType targetType,
                                List<IncidentScenario> incidents, List<CardRevision> cardRevisions,
                                List<IncidentRuntime> runtime, List<TranscriptPhrase> transcript,
-                               Instant startedAt, Instant submittedAt) {
+                               Instant startedAt, Instant submittedAt,
+                               Integer threshold3, Integer threshold4, Integer threshold5) {
+    public ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, TargetType targetType,
+                            List<IncidentScenario> incidents, List<CardRevision> cardRevisions,
+                            List<IncidentRuntime> runtime, List<TranscriptPhrase> transcript,
+                            Instant startedAt, Instant submittedAt) {
+        this(contextId, userId, assignmentId, targetType, incidents, cardRevisions, runtime, transcript,
+                startedAt, submittedAt, null, null, null);
+    }
+
     public ReviewSubmission {
         incidents = List.copyOf(incidents);
         cardRevisions = List.copyOf(cardRevisions);

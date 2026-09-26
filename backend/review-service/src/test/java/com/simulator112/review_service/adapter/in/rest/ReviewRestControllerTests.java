@@ -92,6 +92,21 @@ class ReviewRestControllerTests {
     }
 
     @Test
+    void studentSeesFailedGradeWithoutChangingReviewStatus() {
+        UUID studentId = UUID.randomUUID();
+        Review review = new Review(UUID.randomUUID(), studentId, UUID.randomUUID(), ReviewStatus.DONE,
+                List.of(), 39, 39, 100, 0, 30, 0, null, null, null, Instant.now(), Instant.now(),
+                40, 60, 80);
+        when(getReview.getByContextId(review.contextId())).thenReturn(review);
+
+        var response = controller.getReview(studentId, "STUDENT", review.contextId());
+
+        assertThat(response.grade()).isEqualTo(2);
+        assertThat(response.passed()).isFalse();
+        assertThat(response.status()).isEqualTo("DONE");
+    }
+
+    @Test
     void studentCannotGetRecordingsFromAnotherReview() {
         Review review = review(UUID.randomUUID());
         when(getReview.getByContextId(review.contextId())).thenReturn(review);

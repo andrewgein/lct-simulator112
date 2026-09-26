@@ -42,6 +42,15 @@ public class AssignmentJpaEntity {
     @Column(name = "execution_mode", nullable = false)
     private AssignmentExecutionMode executionMode;
 
+    @Column(name = "threshold_3")
+    private Integer threshold3;
+
+    @Column(name = "threshold_4")
+    private Integer threshold4;
+
+    @Column(name = "threshold_5")
+    private Integer threshold5;
+
     @ElementCollection
     @CollectionTable(name = "course_assignment_incidents", joinColumns = @JoinColumn(name = "assignment_id"))
     @OrderColumn(name = "position")

@@ -84,6 +84,9 @@ public class ContextService implements ContextUseCase {
         TrainingContext context = new TrainingContext();
         context.setAssignmentId(assignmentId);
         context.setLevelTitle(assignment.title());
+        context.setThreshold3(assignment.threshold3());
+        context.setThreshold4(assignment.threshold4());
+        context.setThreshold5(assignment.threshold5());
         context.setUserId(userId);
         context.setStatus(ContextStatus.CREATED);
         context.setDialogStatus(DialogProgressStatus.IDLE);

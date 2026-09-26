@@ -29,6 +29,9 @@ public class ReviewJpaEntity {
     private Integer automaticScore;
     private Integer finalScore;
     private Integer maxScore;
+    private Integer threshold3;
+    private Integer threshold4;
+    private Integer threshold5;
     private Long durationSeconds;
     private Long timeLimitSeconds;
     private Long overtimeSeconds;

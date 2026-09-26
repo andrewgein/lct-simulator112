@@ -15,6 +15,9 @@ public class TrainingContext {
     private UUID id;
     private UUID assignmentId;
     private String levelTitle;
+    private Integer threshold3;
+    private Integer threshold4;
+    private Integer threshold5;
     private IncidentTargetType targetType;
     private Difficulty difficulty;
     private ExecutionMode executionMode;

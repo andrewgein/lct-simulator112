@@ -15,6 +15,6 @@ final class ReviewRestMapper {
                         .toList(),
                 review.automaticScore(), review.finalScore(), review.maxScore(), review.durationSeconds(),
                 review.timeLimitSeconds(), review.overtimeSeconds(), review.expertId(), review.expertComment(),
-                review.confirmedAt(), review.status().name());
+                review.confirmedAt(), review.status().name(), review.grade(), review.passed());
     }
 }

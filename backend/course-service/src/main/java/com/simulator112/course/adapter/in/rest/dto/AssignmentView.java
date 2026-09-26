@@ -12,5 +12,8 @@ public record AssignmentView(
         String description,
         AssignmentDifficulty difficulty,
         AssignmentExecutionMode executionMode,
-        List<UUID> incidentIds) {
+        List<UUID> incidentIds,
+        Integer threshold3,
+        Integer threshold4,
+        Integer threshold5) {
 }

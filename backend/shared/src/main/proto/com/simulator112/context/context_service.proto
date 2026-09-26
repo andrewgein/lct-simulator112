@@ -137,6 +137,9 @@ message AssignmentContext {
   incident.Difficulty difficulty = 6;
   incident.ExecutionMode execution_mode = 7;
   repeated incident.IncidentContext incidents = 8;
+  optional int32 threshold_3 = 9;
+  optional int32 threshold_4 = 10;
+  optional int32 threshold_5 = 11;
 }
 
 message FullContext {

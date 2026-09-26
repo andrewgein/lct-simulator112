@@ -33,6 +33,7 @@ final class ContextPersistenceMapper {
         TrainingContext target = new TrainingContext();
         target.setId(source.getUuid()); target.setAssignmentId(source.getAssignmentId());
         target.setLevelTitle(source.getLevelTitle());
+        target.setThreshold3(source.getThreshold3()); target.setThreshold4(source.getThreshold4()); target.setThreshold5(source.getThreshold5());
         target.setTargetType(source.getTargetType()); target.setDifficulty(source.getDifficulty());
         target.setExecutionMode(source.getExecutionMode()); target.setUserId(source.getUserId());
         target.setStatus(source.getStatus()); target.setActiveCallId(source.getActiveCallId());
@@ -50,6 +51,7 @@ final class ContextPersistenceMapper {
         Context target = new Context();
         target.setUuid(source.getId()); target.setAssignmentId(source.getAssignmentId());
         target.setLevelTitle(source.getLevelTitle());
+        target.setThreshold3(source.getThreshold3()); target.setThreshold4(source.getThreshold4()); target.setThreshold5(source.getThreshold5());
         target.setTargetType(source.getTargetType()); target.setDifficulty(source.getDifficulty());
         target.setExecutionMode(source.getExecutionMode()); target.setUserId(source.getUserId());
         target.setStatus(source.getStatus()); target.setActiveCallId(source.getActiveCallId()); target.setDialogStatus(source.getDialogStatus());

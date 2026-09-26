@@ -9,5 +9,5 @@ public record ReviewResponse(UUID contextId, UUID userId, UUID assignmentId, Ins
                              int automaticScore, Integer finalScore, int maxScore,
                              long durationSeconds, long timeLimitSeconds, long overtimeSeconds,
                              UUID expertId, String expertComment, Instant confirmedAt,
-                             String status) {
+                             String status, Integer grade, Boolean passed) {
 }

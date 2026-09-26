@@ -1,0 +1,3 @@
+ALTER TABLE contexts ADD COLUMN threshold3 INTEGER;
+ALTER TABLE contexts ADD COLUMN threshold4 INTEGER;
+ALTER TABLE contexts ADD COLUMN threshold5 INTEGER;
