@@ -1,10 +1,11 @@
 ---
 import VerifyEmailCard from '../features/auth/components/VerifyEmailCard.astro';
+import AuthScreen from '../features/auth/components/AuthScreen.astro';
 import Page from '../layouts/Page.astro';
 export const prerender = false;
 ---
 <Page>
-  <div class="centered-page">
+  <AuthScreen>
     <VerifyEmailCard />
-  </div>
+  </AuthScreen>
 </Page>
