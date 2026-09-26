@@ -122,6 +122,41 @@ class CourseApplicationServiceTest {
     }
 
     @Test
+    void rejectsDuplicateAssignmentIdsOnUpdate() {
+        UUID courseId = UUID.randomUUID();
+        UUID assignmentId = UUID.randomUUID();
+        UUID incidentId = UUID.randomUUID();
+        Assignment assignment = new Assignment(assignmentId, "Задание", null, AssignmentDifficulty.NORMAL,
+                AssignmentExecutionMode.SEQUENTIAL, List.of(incidentId));
+        Course existing = new Course(courseId, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(), List.of(assignment));
+        when(repository.findById(courseId)).thenReturn(Optional.of(existing));
+        when(incidents.requireIncident(incidentId)).thenReturn(new IncidentCatalogPort.IncidentDescriptor(
+                incidentId, CourseTargetType.SYSTEM_112, AssignmentDifficulty.NORMAL));
+        Course update = new Course(courseId, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(), List.of(assignment, assignment));
+
+        assertThatThrownBy(() -> service.updateCourse(courseId, update, authorId))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Повторяется идентификатор задания");
+    }
+
+    @Test
+    void rejectsForeignChildIdsOnUpdate() {
+        UUID courseId = UUID.randomUUID();
+        UUID incidentId = UUID.randomUUID();
+        when(repository.findById(courseId)).thenReturn(Optional.of(new Course(courseId, "Курс", null,
+                CourseTargetType.SYSTEM_112, authorId, List.of(), List.of())));
+        when(incidents.requireIncident(incidentId)).thenReturn(new IncidentCatalogPort.IncidentDescriptor(
+                incidentId, CourseTargetType.SYSTEM_112, AssignmentDifficulty.NORMAL));
+        Course update = new Course(courseId, "Курс", null, CourseTargetType.SYSTEM_112, authorId,
+                List.of(), List.of(new Assignment(UUID.randomUUID(), "Чужое задание", null,
+                        AssignmentDifficulty.NORMAL, AssignmentExecutionMode.SEQUENTIAL, List.of(incidentId))));
+
+        assertThatThrownBy(() -> service.updateCourse(courseId, update, authorId))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("не принадлежит курсу");
+    }
+
+    @Test
     void deletesCourseByAuthor() {
         UUID courseId = UUID.randomUUID();
         when(repository.findById(courseId)).thenReturn(Optional.of(course(courseId)));

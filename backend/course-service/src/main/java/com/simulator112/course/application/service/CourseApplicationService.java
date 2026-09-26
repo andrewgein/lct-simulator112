@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -40,6 +41,7 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
     @Transactional
     public Course createCourse(Course course) {
         validate(course);
+        validateChildIds(course, Set.of(), Set.of());
         return courseRepository.save(course);
     }
 
@@ -56,6 +58,9 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         Course updated = new Course(courseId, course.title(), course.description(), course.targetType(), course.ddsService(),
                 existing.authorId(), course.materials(), course.assignments(), existing.deletedAt());
         validate(updated);
+        validateChildIds(updated,
+                new HashSet<>(existing.materials().stream().map(CourseMaterial::id).toList()),
+                new HashSet<>(existing.assignments().stream().map(Assignment::id).toList()));
         return courseRepository.save(updated);
     }
 
@@ -112,6 +117,26 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
             fileStorage.requireOwnedBy(material.fileObjectKey(), course.authorId());
         });
         course.assignments().forEach(assignment -> validate(assignment, course));
+    }
+
+    private void validateChildIds(Course course, Set<UUID> materialIds, Set<UUID> assignmentIds) {
+        validateIds(course.materials().stream().map(CourseMaterial::id).toList(), materialIds, "материала");
+        validateIds(course.assignments().stream().map(Assignment::id).toList(), assignmentIds, "задания");
+    }
+
+    private void validateIds(List<UUID> requestedIds, Set<UUID> existingIds, String type) {
+        Set<UUID> seen = new HashSet<>();
+        for (UUID id : requestedIds) {
+            if (id == null) {
+                continue;
+            }
+            if (!seen.add(id)) {
+                throw new IllegalArgumentException("Повторяется идентификатор " + type + ": " + id);
+            }
+            if (!existingIds.contains(id)) {
+                throw new IllegalArgumentException("Идентификатор " + type + " не принадлежит курсу: " + id);
+            }
+        }
     }
 
     private void validate(CourseMaterial material) {
