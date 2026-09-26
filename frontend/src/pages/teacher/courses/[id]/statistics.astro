@@ -282,10 +282,10 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
         <>
           <section class="panel-grid">
             <article class="panel">
-              <header class="panel-heading">
+              <div class="panel-heading">
                 <h2>Динамика результатов</h2>
                 <p>Средний балл завершённых попыток по дням</p>
-              </header>
+              </div>
               {trendPoints.length ? (
                 <svg class="trend-chart" viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="Средний балл по дням">
                   {[0, 50, 100].map((tick) => (
@@ -310,10 +310,10 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
             </article>
 
             <article class="panel">
-              <header class="panel-heading">
+              <div class="panel-heading">
                 <h2>Частые ошибки</h2>
                 <p>Доля завершённых попыток, где встретилась ошибка</p>
-              </header>
+              </div>
               {topErrors.length ? (
                 <ol class="error-list">
                   {topErrors.map((item) => (
@@ -329,13 +329,13 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
 
           {assignments.length > 0 && (
             <section class="panel">
-              <header class="panel-heading">
+              <div class="panel-heading">
                 <div>
                   <h2>Результаты по заданиям</h2>
                   <p>Балл последней завершённой попытки. Нажмите на ячейку, чтобы открыть разбор</p>
                 </div>
                 <div class="heat-legend" aria-hidden="true"><span>0%</span><i class="scale-score"></i><span>100%</span></div>
-              </header>
+              </div>
               <div class="heatmap-scroll">
                 <table class="heatmap wa-tabular-nums">
                   <thead>
@@ -371,13 +371,13 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
 
           {criteriaColumns.length > 0 && (
             <section class="panel">
-              <header class="panel-heading">
+              <div class="panel-heading">
                 <div>
                   <h2>Карта ошибок</h2>
                   <p>Доля потерянных баллов по критериям в последних попытках. Чем темнее, тем больше ошибок</p>
                 </div>
                 <div class="heat-legend" aria-hidden="true"><span>0%</span><i class="scale-loss"></i><span>100%</span></div>
-              </header>
+              </div>
               <div class="heatmap-scroll">
                 <table class="heatmap wa-tabular-nums">
                   <thead>
