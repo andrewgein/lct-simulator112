@@ -7,6 +7,7 @@ import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.UpdateCourseUseCase;
 import com.simulator112.course.application.port.out.CourseRepository;
 import com.simulator112.course.application.port.out.DispatchServiceCatalogPort;
+import com.simulator112.course.application.port.out.EnrollmentRepository;
 import com.simulator112.course.application.port.out.IncidentCatalogPort;
 import com.simulator112.course.domain.course.Assignment;
 import com.simulator112.course.domain.course.Course;

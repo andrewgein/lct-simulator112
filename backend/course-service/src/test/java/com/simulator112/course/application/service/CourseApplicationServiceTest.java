@@ -3,6 +3,7 @@ package com.simulator112.course.application.service;
 import com.simulator112.course.application.port.out.CourseRepository;
 import com.simulator112.course.adapter.out.storage.MaterialFileStorage;
 import com.simulator112.course.application.port.out.DispatchServiceCatalogPort;
+import com.simulator112.course.application.port.out.EnrollmentRepository;
 import com.simulator112.course.application.port.out.IncidentCatalogPort;
 import com.simulator112.course.domain.course.Assignment;
 import com.simulator112.course.domain.course.AssignmentDifficulty;
