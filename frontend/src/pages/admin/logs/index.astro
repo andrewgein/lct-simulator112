@@ -1,0 +1,119 @@
+---
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { requireRole } from "../../../features/auth/requireRole";
+import { listLogServices, getLogs } from "../../../features/admin/api/AdminLogsApi";
+
+export const prerender = false;
+
+const redirect = requireRole(Astro, ["ADMIN"]);
+if (redirect) return redirect;
+
+let services = [];
+let entries = [];
+let error = null;
+
+const selectedService = Astro.url.searchParams.get("service") || "";
+
+try {
+  const servicesResponse = await listLogServices(Astro.locals.accessToken);
+  if (!servicesResponse.ok) throw new Error();
+  services = await servicesResponse.json();
+} catch {
+  error = "Не удалось загрузить список сервисов";
+}
+
+const activeService = services.includes(selectedService) ? selectedService : services[0] || "";
+
+if (!error && activeService) {
+  try {
+    const logsResponse = await getLogs(activeService, Astro.locals.accessToken);
+    if (!logsResponse.ok) throw new Error();
+    entries = await logsResponse.json();
+  } catch {
+    error = "Не удалось загрузить логи";
+  }
+}
+
+const timeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "medium" });
+---
+
+<AdminLayout title="Логи" active="logs" {error}>
+  {!error && (
+    <div class="wa-stack wa-gap-m">
+      <form class="wa-cluster wa-gap-s" method="get">
+        <wa-select name="service" label="Сервис" value={activeService} onchange="this.form.requestSubmit()">
+          {services.map((service) => (
+            <wa-option value={service}>{service}</wa-option>
+          ))}
+        </wa-select>
+      </form>
+
+      <div id="log-viewer" class="log-viewer" data-service={activeService} data-last-timestamp={entries.at(-1)?.timestamp || ""}>
+        {entries.length === 0 ? (
+          <div class="log-empty">Логов пока нет.</div>
+        ) : (
+          entries.map((entry) => (
+            <div class="log-line"><span class="log-time">{timeFormatter.format(new Date(entry.timestamp))}</span> {entry.line}</div>
+          ))
+        )}
+      </div>
+    </div>
+  )}
+</AdminLayout>
+
+<style>
+  .log-viewer {
+    background: #0d1117;
+    color: #d6e2ef;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    padding: var(--wa-space-m);
+    border-radius: var(--wa-border-radius-m);
+    max-block-size: 70vh;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .log-time { color: #7d8a99; margin-inline-end: var(--wa-space-2xs); }
+  .log-empty { color: #7d8a99; }
+</style>
+
+<script>
+  const viewer = document.querySelector<HTMLElement>("#log-viewer");
+  const service = viewer?.dataset.service;
+  const timeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "medium" });
+
+  if (viewer && service) {
+    viewer.scrollTop = viewer.scrollHeight;
+
+    setInterval(async () => {
+      const since = viewer.dataset.lastTimestamp;
+      const query = new URLSearchParams({ service });
+      if (since) query.set("since", since);
+      try {
+        const response = await fetch(`/api/v1/admin/logs?${query.toString()}`);
+        if (!response.ok) return;
+        const entries: { timestamp: string; line: string }[] = await response.json();
+        if (entries.length === 0) return;
+
+        const empty = viewer.querySelector(".log-empty");
+        empty?.remove();
+
+        for (const entry of entries) {
+          const line = document.createElement("div");
+          line.className = "log-line";
+          const time = document.createElement("span");
+          time.className = "log-time";
+          time.textContent = timeFormatter.format(new Date(entry.timestamp));
+          line.append(time, document.createTextNode(" " + entry.line));
+          viewer.appendChild(line);
+        }
+        viewer.dataset.lastTimestamp = entries.at(-1)?.timestamp || since || "";
+        viewer.scrollTop = viewer.scrollHeight;
+      } catch {
+        // тихо пропускаем один неудачный опрос - следующий поллинг попробует снова
+      }
+    }, 3000);
+  }
+</script>
