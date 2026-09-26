@@ -22,4 +22,6 @@ public interface EnrollmentRepository {
     List<Enrollment> findAllByCourseId(UUID courseId);
 
     List<Enrollment> findAllByGroupId(UUID groupId);
+
+    List<Enrollment> findAllByGroupIds(List<UUID> groupIds);
 }

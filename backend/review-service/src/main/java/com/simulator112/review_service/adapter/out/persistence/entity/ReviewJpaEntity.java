@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -25,6 +26,7 @@ public class ReviewJpaEntity {
     private ReviewStatus status;
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("incidentOrder ASC, criterionName ASC")
+    @BatchSize(size = 50)
     private List<CriterionResultJpaEntity> results = new ArrayList<>();
     private Integer automaticScore;
     private Integer finalScore;
