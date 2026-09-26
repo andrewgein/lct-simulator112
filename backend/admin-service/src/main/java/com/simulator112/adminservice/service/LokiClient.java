@@ -3,6 +3,7 @@ package com.simulator112.adminservice.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,11 +45,11 @@ public class LokiClient {
               .append(limit)
               .append("&direction=")
               .append(direction);
-      if (since != null) {
-        // Loki wants nanosecond-precision unix timestamps for start/end.
-        uri.append("&start=").append(since.getEpochSecond() * 1_000_000_000L + since.getNano() + 1)
-           .append("&end=").append(Instant.now().getEpochSecond() * 1_000_000_000L);
-      }
+      // Always pass an explicit start/end - without one, Loki's own default window is too
+      // narrow (and unreliable while Promtail is still backfilling older container logs) to
+      // reliably surface "the last N lines" for a container that hasn't logged very recently.
+      Instant start = since != null ? since.plusNanos(1) : Instant.now().minus(Duration.ofDays(7));
+      uri.append("&start=").append(toNanos(start)).append("&end=").append(toNanos(Instant.now()));
       JsonNode response = restClient.get().uri(uri.toString()).retrieve().body(JsonNode.class);
       if (response == null) return entries;
       for (JsonNode stream : response.path("data").path("result")) {
@@ -62,6 +63,10 @@ public class LokiClient {
       log.warn("Failed to query Loki for container {}: {}", container, e.getMessage());
     }
     return entries;
+  }
+
+  private static long toNanos(Instant instant) {
+    return instant.getEpochSecond() * 1_000_000_000L + instant.getNano();
   }
 
   public record LogEntry(Instant timestamp, String line) {}
