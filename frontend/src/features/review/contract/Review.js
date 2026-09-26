@@ -1,6 +1,18 @@
 /** @typedef {"IN_REVIEW" | "DONE"} ReviewStatus */
 
 /**
+ * @typedef {Object} CallRecording
+ * @property {string} callId
+ * @property {string} fileName
+ * @property {string} startedAt
+ */
+
+/**
+ * @typedef {Object} CallRecordings
+ * @property {CallRecording[]} recordings
+ */
+
+/**
  * @typedef {Object} ReviewComment
  * @property {string} id
  * @property {string} reviewContextId

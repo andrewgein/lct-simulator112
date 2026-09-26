@@ -61,7 +61,10 @@ uvicorn app.main:app --host 0.0.0.0 --port 8005
 Полный список переменных окружения — в `.env.example`. Коротко: `LLM_*` (доступ к LLM),
 `CONTEXT_SOURCE`/`CONTEXT_MANAGER_GRPC_URL` (откуда брать контекст диалога — `mock` для локальной
 разработки без Java-стека, `grpc` для реального `context-service`), `F5_TTS_*` и `TTS_*` (синтез
-речи).
+речи). WAV-записи разговоров формируются в памяти с момента подключения оператора до завершения
+или обрыва звонка и загружаются в S3/MinIO bucket `S3_RECORDINGS_BUCKET` (по умолчанию
+`call-recordings`). Оператор записан в левый канал, собеседник — в правый. Ключ объекта имеет вид
+`recordings/{contextId}/{callId}/{timestamp}.wav`; локальные файлы не создаются.
 
 ## TTS
 

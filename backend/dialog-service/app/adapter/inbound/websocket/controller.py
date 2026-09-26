@@ -5,7 +5,11 @@ import threading
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 
 from app.application.port.inbound import DialogUseCase
-from app.application.port.outbound import NoMoreCallsError, VoicePipelineFactory
+from app.application.port.outbound import (
+    CallRecorderFactory,
+    NoMoreCallsError,
+    VoicePipelineFactory,
+)
 from app.application.service.transcript_builder import DialogContextBuilder
 from app.domain.model import DialogProgress, DialogStatus
 
@@ -14,12 +18,18 @@ router = APIRouter()
 MAX_AUDIO_FRAME_BYTES = 32 * 1024
 _dialog_use_case: DialogUseCase | None = None
 _voice_pipeline_factory: VoicePipelineFactory | None = None
+_call_recorder_factory: CallRecorderFactory | None = None
 
 
-def configure(dialog: DialogUseCase, voice_pipeline: VoicePipelineFactory) -> None:
-    global _dialog_use_case, _voice_pipeline_factory
+def configure(
+    dialog: DialogUseCase,
+    voice_pipeline: VoicePipelineFactory,
+    call_recorder: CallRecorderFactory,
+) -> None:
+    global _dialog_use_case, _voice_pipeline_factory, _call_recorder_factory
     _dialog_use_case = dialog
     _voice_pipeline_factory = voice_pipeline
+    _call_recorder_factory = call_recorder
 
 
 def dialog_use_case() -> DialogUseCase:
@@ -32,6 +42,12 @@ def voice_pipeline_factory() -> VoicePipelineFactory:
     if _voice_pipeline_factory is None:
         raise RuntimeError("WebSocket adapter не сконфигурирован")
     return _voice_pipeline_factory
+
+
+def call_recorder_factory() -> CallRecorderFactory:
+    if _call_recorder_factory is None:
+        raise RuntimeError("Call recorder adapter не сконфигурирован")
+    return _call_recorder_factory
 
 
 def is_valid_context_id(context_id: object) -> bool:
@@ -147,6 +163,7 @@ async def process_call(ws: WebSocket):
         return
     call_id = progress.active_call_id
     call = dialog_use_case().resume_call(context_id)
+    call_recorder = call_recorder_factory().create(context_id, call_id)
 
     loop = asyncio.get_running_loop()
     client_disconnected = threading.Event()
@@ -164,6 +181,7 @@ async def process_call(ws: WebSocket):
 
     def output_callback(pcm: bytes) -> None:
         if not client_disconnected.is_set():
+            call_recorder.record_counterparty(pcm)
             asyncio.run_coroutine_threadsafe(send_audio_chunk(pcm), loop).result()
 
     processing_context = voice_pipeline_factory().create(
@@ -198,11 +216,16 @@ async def process_call(ws: WebSocket):
                 processing_context.process_text(text_data)
 
             elif "bytes" in message:
+                call_recorder.record_operator(message["bytes"])
                 processing_context.process_audio(message["bytes"])
     finally:
         client_disconnected.set()
         logger.info("Stopping process-call pipeline for %s", context_id)
         await asyncio.to_thread(processing_context.close)
+        try:
+            await asyncio.to_thread(call_recorder.close)
+        except Exception:
+            logger.exception("Could not save call recording for %s (call %s)", context_id, call_id)
         if not completed:
             try:
                 dialog_use_case().disconnect(context_id, call_id, dialog_context_builder.get())

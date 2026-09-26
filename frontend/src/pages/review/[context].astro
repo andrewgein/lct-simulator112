@@ -1,6 +1,6 @@
 ---
 import Page from "../../layouts/Page.astro";
-import { getReview, getReviewComments } from "../../features/review/api/ReviewApi";
+import { getReview, getReviewComments, getReviewRecordings } from "../../features/review/api/ReviewApi";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
 
@@ -9,12 +9,14 @@ const role = Astro.cookies.get("role")?.value || "";
 const isTeacher = ["ADMIN", "SUPERVISOR"].includes(role);
 const canComment = isTeacher;
 const { context } = Astro.params;
-const [reviewResponse, commentsResponse] = await Promise.all([
+const [reviewResponse, commentsResponse, recordingsResponse] = await Promise.all([
   getReview(context, accessToken),
-  getReviewComments(context, accessToken)
+  getReviewComments(context, accessToken),
+  getReviewRecordings(context, accessToken)
 ]);
 const review = await reviewResponse.json();
 const comments = commentsResponse.ok ? (await commentsResponse.json()).comments || [] : [];
+const recordings = recordingsResponse.ok ? (await recordingsResponse.json()).recordings || [] : [];
 const commentError = Astro.url.searchParams.get("commentError");
 const commentAdded = Astro.url.searchParams.has("commentAdded");
 const commentDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
@@ -54,6 +56,22 @@ export const prerender = false;
       </div>
       <span><strong>Общий балл:</strong> {totalScore} из {maxTotalScore} ({percentage}%)</span>
       <wa-progress-bar value={percentage} label="Процент выполнения"></wa-progress-bar>
+    </section>
+    <wa-divider></wa-divider>
+    <section class="recordings-section wa-stack wa-gap-l" aria-labelledby="recordings-heading">
+      <h2 id="recordings-heading" class="wa-heading-xl">Записи разговоров</h2>
+      {recordings.length ? (
+        <div class="recording-list wa-stack wa-gap-m">
+          {recordings.map((recording, index) => (
+            <article class="recording-entry">
+              <strong>Разговор {index + 1}</strong>
+              <audio controls preload="metadata" src={`/api/v1/review/${encodeURIComponent(context)}/recordings/${encodeURIComponent(recording.callId)}/${encodeURIComponent(recording.fileName)}`}>Ваш браузер не поддерживает воспроизведение аудио.</audio>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div class="recordings-empty">Для этого уровня нет записей разговоров</div>
+      )}
     </section>
     <wa-divider></wa-divider>
     <section class="wa-stack wa-gap-l" aria-labelledby="criteria-heading">
@@ -128,6 +146,27 @@ export const prerender = false;
 </Page>
 
 <style>
+  .recording-entry {
+    display: grid;
+    grid-template-columns: minmax(8rem, auto) minmax(16rem, 1fr);
+    align-items: center;
+    gap: var(--wa-space-l);
+    padding: var(--wa-space-m);
+    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    background: var(--wa-color-surface-raised);
+  }
+
+  .recording-entry audio {
+    width: 100%;
+  }
+
+  .recordings-empty {
+    padding: var(--wa-space-l);
+    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    color: var(--wa-color-text-quiet);
+    background: var(--wa-color-surface-default);
+  }
+
   .comments-heading {
     display: flex;
     align-items: baseline;
@@ -184,6 +223,11 @@ export const prerender = false;
   }
 
   @media (max-width: 600px) {
+    .recording-entry {
+      grid-template-columns: 1fr;
+      gap: var(--wa-space-s);
+    }
+
     .comment-entry-header {
       flex-direction: column;
       gap: var(--wa-space-2xs);

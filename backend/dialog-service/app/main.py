@@ -12,7 +12,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 load_dotenv()
 application_components = components()
-configure(application_components.dialog, application_components.voice_pipeline)
+configure(
+    application_components.dialog,
+    application_components.voice_pipeline,
+    application_components.call_recorder,
+)
 
 
 @asynccontextmanager

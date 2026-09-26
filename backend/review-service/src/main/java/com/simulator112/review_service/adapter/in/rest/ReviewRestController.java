@@ -1,11 +1,17 @@
 package com.simulator112.review_service.adapter.in.rest;
 
 import com.simulator112.review_service.adapter.in.rest.dto.ConfirmReviewRequest;
+import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingResponse;
+import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingsResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.ReviewResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.UserReviewsResponse;
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
+import com.simulator112.review_service.application.port.out.CallRecordingStore;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +27,7 @@ public class ReviewRestController {
     private static final Set<String> REVIEWER_ROLES = Set.of("ADMIN", "SUPERVISOR");
     private final GetReviewUseCase getReview;
     private final ConfirmReviewUseCase confirmReview;
+    private final CallRecordingStore callRecordings;
 
     @GetMapping
     public UserReviewsResponse getUserReviews(@RequestHeader("X-User-Id") UUID userId) {
@@ -46,6 +53,33 @@ public class ReviewRestController {
         return ReviewRestMapper.toResponse(review);
     }
 
+    @GetMapping("/{contextId}/recordings")
+    public CallRecordingsResponse getRecordings(@RequestHeader("X-User-Id") UUID userId,
+                                                 @RequestHeader("X-User-Role") String role,
+                                                 @PathVariable UUID contextId) {
+        requireReviewAccess(userId, role, contextId);
+        return new CallRecordingsResponse(callRecordings.findByContextId(contextId).stream()
+                .map(recording -> new CallRecordingResponse(recording.callId(), recording.fileName(),
+                        recording.startedAt()))
+                .toList());
+    }
+
+    @GetMapping("/{contextId}/recordings/{callId}/{fileName}")
+    public ResponseEntity<byte[]> getRecording(@RequestHeader("X-User-Id") UUID userId,
+                                                @RequestHeader("X-User-Role") String role,
+                                                @PathVariable UUID contextId,
+                                                @PathVariable String callId,
+                                                @PathVariable String fileName) {
+        requireReviewAccess(userId, role, contextId);
+        byte[] content = callRecordings.findContent(contextId, callId, fileName)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Запись не найдена"));
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.parseMediaType("audio/wav"))
+                .contentLength(content.length)
+                .body(content);
+    }
+
     @PostMapping("/{contextId}/confirm")
     public ReviewResponse confirmReview(@RequestHeader("X-User-Id") UUID expertId,
                                         @RequestHeader("X-User-Role") String role,
@@ -67,6 +101,13 @@ public class ReviewRestController {
     private void requireReviewer(String role) {
         if (!REVIEWER_ROLES.contains(role)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Просмотр результатов доступен преподавателям");
+        }
+    }
+
+    private void requireReviewAccess(UUID userId, String role, UUID contextId) {
+        var review = getReview.getByContextId(contextId);
+        if (!userId.equals(review.userId()) && !REVIEWER_ROLES.contains(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Результат недоступен пользователю");
         }
     }
 }

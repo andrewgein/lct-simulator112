@@ -22,6 +22,16 @@ export function getReviewComments(contextId, token) {
     return apiCall(`${API_PREFIX}/${encodeURIComponent(contextId)}/comments`, "GET", undefined, token);
 }
 
+/** @param {string} contextId @param {string} token @returns {Promise<Response>} */
+export function getReviewRecordings(contextId, token) {
+    return apiCall(`${API_PREFIX}/${encodeURIComponent(contextId)}/recordings`, "GET", undefined, token);
+}
+
+/** @param {string} contextId @param {string} callId @param {string} fileName @param {string} token @returns {Promise<Response>} */
+export function getReviewRecording(contextId, callId, fileName, token) {
+    return apiCall(`${API_PREFIX}/${encodeURIComponent(contextId)}/recordings/${encodeURIComponent(callId)}/${encodeURIComponent(fileName)}`, "GET", undefined, token);
+}
+
 /** @param {string} contextId @param {string} text @param {string} token @returns {Promise<Response>} */
 export function addReviewComment(contextId, text, token) {
     return apiCall(`${API_PREFIX}/${encodeURIComponent(contextId)}/comments`, "POST", { text }, token);
