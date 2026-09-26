@@ -11,7 +11,5 @@ public interface CourseRepository {
 
     Optional<Course> findById(UUID courseId);
 
-    List<Course> findAllByIds(List<UUID> courseIds);
-
     List<Course> findAllByAuthorId(UUID authorId);
 }
