@@ -32,6 +32,7 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
     private final ReviewStore store;
     private final List<ReviewRubric> rubrics;
     private final DialogueAnalysisPort dialogueAnalysisPort;
+    private final CertificateApplicationService certificates;
 
     @Override
     @Transactional
@@ -48,7 +49,9 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
                 ReviewStatus.DONE, results, score, score, maxScore, duration, timeLimit,
                 Math.max(0, duration - timeLimit), null, null, null, null, null,
                 submission.threshold3(), submission.threshold4(), submission.threshold5());
-        return store.save(review);
+        Review saved = store.save(review);
+        certificates.issueIfEligible(saved);
+        return saved;
     }
 
     @Override

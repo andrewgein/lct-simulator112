@@ -1,5 +1,6 @@
 package com.simulator112.notification.service;
 
+import com.simulator112.notification.dto.CertificateIssuedEvent;
 import com.simulator112.notification.dto.ReviewCommentCreatedEvent;
 import com.simulator112.notification.model.EmailDeliveryStatus;
 import com.simulator112.notification.model.Notification;
@@ -51,6 +52,11 @@ public class InAppNotificationService {
         }
     }
 
+    public void handleCertificateIssued(CertificateIssuedEvent event) {
+        repository.findByEventId(event.getEventId())
+                .orElseGet(() -> repository.save(newCertificateNotification(event)));
+    }
+
     @Transactional(readOnly = true)
     public List<Notification> getForUser(UUID userId) {
         return repository.findAllByUserIdOrderByCreatedAtDesc(userId);
@@ -88,6 +94,22 @@ public class InAppNotificationService {
         notification.setTargetUrl("/review/" + event.getReviewContextId() + "#comments");
         notification.setCreatedAt(event.getCreatedAt() == null ? Instant.now() : event.getCreatedAt());
         notification.setEmailStatus(EmailDeliveryStatus.PENDING);
+        return notification;
+    }
+
+    private Notification newCertificateNotification(CertificateIssuedEvent event) {
+        boolean honors = "HONORS".equals(event.getType());
+        Notification notification = new Notification();
+        notification.setId(UUID.randomUUID());
+        notification.setEventId(event.getEventId());
+        notification.setUserId(event.getRecipientUserId());
+        notification.setType(NotificationType.CERTIFICATE_ISSUED);
+        notification.setTitle(honors ? "Сертификат с отличием получен" : "Сертификат получен");
+        notification.setText("Курс «" + event.getCourseTitle() + "» пройден на " + event.getPercent() + "%. "
+                + (honors ? "Вам выдан сертификат с отличием." : "Вам выдан сертификат о прохождении."));
+        notification.setTargetUrl("/profile/certificates/" + event.getCertificateId());
+        notification.setCreatedAt(event.getCreatedAt() == null ? Instant.now() : event.getCreatedAt());
+        notification.setEmailStatus(EmailDeliveryStatus.SENT);
         return notification;
     }
 

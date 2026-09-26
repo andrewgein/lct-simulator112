@@ -1,5 +1,6 @@
 package com.simulator112.notification.kafka;
 
+import com.simulator112.notification.dto.CertificateIssuedEvent;
 import com.simulator112.notification.dto.EmailVerificationRequestedEvent;
 import com.simulator112.notification.dto.PasswordResetEvent;
 import com.simulator112.notification.dto.ReviewCommentCreatedEvent;
@@ -57,5 +58,12 @@ public class NotificationKafkaConsumer {
         log.info("Получено событие комментария к результату: eventId={}, recipientUserId={}",
                 event.getEventId(), event.getRecipientUserId());
         notificationService.handleReviewComment(event);
+    }
+
+    @KafkaListener(topics = "certificate.issued", groupId = "notification-service")
+    public void consumeCertificateIssued(CertificateIssuedEvent event) {
+        log.info("Получено событие выдачи сертификата: certificateId={}, recipientUserId={}",
+                event.getCertificateId(), event.getRecipientUserId());
+        notificationService.handleCertificateIssued(event);
     }
 }

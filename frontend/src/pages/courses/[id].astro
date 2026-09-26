@@ -217,7 +217,7 @@ const activeReview = activeAssignment ? finishedReviews.get(String(activeAssignm
   .xlsx-viewer td { border: var(--wa-border-width-s) solid var(--wa-color-surface-border); padding: var(--wa-space-3xs) var(--wa-space-xs); }
   .docx-viewer { overflow: auto; background: var(--wa-color-neutral-fill-loud, #52525b); padding: var(--wa-space-xl); }
   .docx-viewer :global(.docx-wrapper) { background: transparent; padding: 0; }
-  .docx-viewer :global(.docx-wrapper > section.docx) { margin: 0 auto var(--wa-space-l); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25); }
+  .docx-viewer :global(.docx-wrapper > section.docx) { margin: 0 auto var(--wa-space-l); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25); overflow-x: auto; overflow-y: hidden; }
   .assignment-card { width: 100%; --spacing: var(--wa-space-xl); }
   .assignment-description p { margin-block-start: 0; white-space: pre-wrap; }
   .completion-summary { width: 100%; }

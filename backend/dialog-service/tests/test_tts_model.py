@@ -179,6 +179,30 @@ class TTSModelTests(unittest.TestCase):
             with self.assertRaisesRegex(TTSError, "HTTP 503.*upload_audio"):
                 list(self._model().generate("Тест", self.profile))
 
+    def test_register_all_voices_preloads_every_profile(self):
+        from app.adapter.out.processing import tts_model as tts_model_module
+
+        registered = []
+
+        def handler(request):
+            if request.url.path == "/upload_audio/":
+                registered.append(request.url.params.get("audio_file_label")
+                                   or request.content)
+                return httpx.Response(200, json={"message": "uploaded"})
+            return httpx.Response(200)
+
+        profiles = [self.profile]
+        with patch.object(tts_model_module, "VOICE_PROFILES", profiles), \
+                self._client_using(httpx.MockTransport(handler)):
+            self._model().register_all_voices()
+
+        self.assertEqual(len(registered), 1)
+
+    def test_register_all_voices_skips_when_no_base_url(self):
+        os.environ["F5_TTS_BASE_URL"] = ""
+        model = self._model()
+        model.register_all_voices()
+
     def test_requires_server_url(self):
         os.environ["F5_TTS_BASE_URL"] = ""
         model = self._model()

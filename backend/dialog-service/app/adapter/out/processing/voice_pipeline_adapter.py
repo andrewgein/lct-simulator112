@@ -61,4 +61,4 @@ class ProcessingVoicePipelineFactory(VoicePipelineFactory):
             call, on_operator_phrase, on_counterparty_phrase, on_audio)
 
     def warm_up(self) -> None:
-        TTSModel()
+        TTSModel().register_all_voices()

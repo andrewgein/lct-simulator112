@@ -21,8 +21,9 @@ import static org.mockito.Mockito.when;
 class ReviewApplicationServiceTests {
     private final ReviewStore store = mock(ReviewStore.class);
     private final DialogueAnalysisPort dialogueAnalysisPort = mock(DialogueAnalysisPort.class);
+    private final CertificateApplicationService certificates = mock(CertificateApplicationService.class);
     private final ReviewApplicationService service = new ReviewApplicationService(store,
-            List.of(new System112ReviewRubric()), dialogueAnalysisPort);
+            List.of(new System112ReviewRubric()), dialogueAnalysisPort, certificates);
 
     @Test
     void persistsSubmissionIdentifiers() {
