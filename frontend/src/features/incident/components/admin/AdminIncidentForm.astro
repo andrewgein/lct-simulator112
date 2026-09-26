@@ -8,7 +8,7 @@ import AdminIncidentStagesCard from "./AdminIncidentStagesCard.astro";
 /** @typedef {import("../../contract/Incident").IncidentRequest} IncidentRequest */
 /** @type {{ incident?: Partial<Incident & IncidentRequest>, mode?: "create" | "edit" }} */
 const { incident = {}, mode = "create" } = Astro.props;
-const dadataApiKey = import.meta.env.PUBLIC_DADATA_API_KEY || "";
+const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
 ---
 <input type="hidden" name="id" value={incident.id || ""} />
   <p id="form-error" class="form-error" hidden>
