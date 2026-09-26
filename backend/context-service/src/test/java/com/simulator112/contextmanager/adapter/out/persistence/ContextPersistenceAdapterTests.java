@@ -63,7 +63,7 @@ class ContextPersistenceAdapterTests {
         call.setStatus(CallStatus.PENDING);
         stage.getCalls().add(call);
         incident.getStages().add(stage);
-        ServiceReaction reaction = new ServiceReaction("FIRE");
+        ServiceReaction reaction = new ServiceReaction("MCHS");
         reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, Instant.now(), null));
         incident.getServiceReactions().add(reaction);
         context.getIncidents().add(incident);
@@ -75,7 +75,7 @@ class ContextPersistenceAdapterTests {
         assertThat(restored.getIncidents().getFirst().getStages().getFirst().getCalls().getFirst().getSourceId())
                 .isEqualTo(call.getSourceId());
         assertThat(restored.getIncidents().getFirst().getServiceReactions().getFirst().getServiceCode())
-                .isEqualTo("FIRE");
+                .isEqualTo("MCHS");
         assertThat(restored.getIncidents().getFirst().getServiceReactions().getFirst().currentStatus())
                 .isEqualTo(ReactionStatus.ADDED);
 

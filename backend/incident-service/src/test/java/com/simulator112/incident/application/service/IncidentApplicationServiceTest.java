@@ -151,6 +151,7 @@ class IncidentApplicationServiceTest {
         service.createIncident(incident);
 
         verify(classifier, org.mockito.Mockito.times(2)).requireEntry("101");
+        verify(classifier).requireService("MCHS");
     }
 
     @Test
@@ -159,7 +160,7 @@ class IncidentApplicationServiceTest {
         DdsIncident source = incident(List.of(stage(root)), root, List.of());
         DdsIncident incident = new DdsIncident(
                 source.id(), source.title(), source.address(), source.difficulty(), source.stages(),
-                source.preparedCardTemplate(), new InitialAssignment(EmergencyService.FIRE, " ", null),
+                source.preparedCardTemplate(), new InitialAssignment("MCHS", " ", null),
                 source.initialStageId(), source.transitions());
 
         assertThatThrownBy(() -> service.createIncident(incident))
@@ -176,7 +177,7 @@ class IncidentApplicationServiceTest {
                                  List<DdsStageTransition> transitions, List<String> classifierCodes) {
         return new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, stages, new PreparedCardTemplate(classifierCodes, null, 0, Map.of()),
-                new InitialAssignment(com.simulator112.incident.domain.common.EmergencyService.FIRE, "101", null),
+                new InitialAssignment("MCHS", "101", null),
                 initialStageId, transitions);
     }
 

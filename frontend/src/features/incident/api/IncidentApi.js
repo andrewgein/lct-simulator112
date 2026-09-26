@@ -23,6 +23,10 @@ export function getIncidentClassifier(token) {
     return apiCall(CLASSIFIER_ENDPOINT, "GET", undefined, token);
 }
 
+export function getDispatchServices(token) {
+    return apiCall(`${CLASSIFIER_ENDPOINT}/services`, "GET", undefined, token);
+}
+
 /** @param {string} classifierCode @param {Object.<string, string>} facts @param {string} token */
 export function resolveRouting(classifierCode, facts, token) {
     return apiCall(`${CLASSIFIER_ENDPOINT}/${encodeURIComponent(classifierCode)}/routing`, "POST", { facts }, token);

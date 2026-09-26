@@ -1,4 +1,5 @@
 ---
+import DispatchServiceOptions from "../../incident/components/DispatchServiceOptions.astro";
 const { course = {}, targetType = "SYSTEM_112", ddsService = "" } = Astro.props;
 ---
 
@@ -14,11 +15,7 @@ const { course = {}, targetType = "SYSTEM_112", ddsService = "" } = Astro.props;
       <wa-option value="DDS">ДДС</wa-option>
     </wa-select>
     <wa-select name="ddsService" data-field="courseDdsService" label="Специализация ДДС" value={ddsService} placeholder="Выберите службу" hidden disabled>
-      <wa-option value="FIRE">Пожарная охрана</wa-option>
-      <wa-option value="POLICE">Полиция</wa-option>
-      <wa-option value="AMBULANCE">Скорая помощь</wa-option>
-      <wa-option value="GAS">Аварийная газовая служба</wa-option>
-      <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+      <DispatchServiceOptions />
     </wa-select>
   </div>
 </section>

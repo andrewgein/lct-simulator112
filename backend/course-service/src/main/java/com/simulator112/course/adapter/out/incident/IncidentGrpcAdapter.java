@@ -11,6 +11,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,7 +51,8 @@ public class IncidentGrpcAdapter implements IncidentCatalogPort {
         }
 
         @Bean
-        IncidentGrpcServiceGrpc.IncidentGrpcServiceBlockingStub incidentStub(ManagedChannel channel) {
+        IncidentGrpcServiceGrpc.IncidentGrpcServiceBlockingStub incidentStub(
+                @Qualifier("incidentChannel") ManagedChannel channel) {
             return IncidentGrpcServiceGrpc.newBlockingStub(channel);
         }
     }

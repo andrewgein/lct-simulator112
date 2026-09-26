@@ -1,6 +1,7 @@
 package com.simulator112.classifier.adapter.in.grpc;
 
 import com.simulator112.classifier.application.port.in.GetClassifierEntryUseCase;
+import com.simulator112.classifier.application.port.in.GetClassifierUseCase;
 import com.simulator112.classifier.application.port.in.ResolveRoutingUseCase;
 import com.simulator112.classifier.application.port.in.SearchClassifierEntriesUseCase;
 import com.simulator112.classifier.domain.exception.ClassifierEntryNotFoundException;
@@ -17,6 +18,7 @@ import net.devh.boot.grpc.server.service.GrpcService;
 public class ClassifierGrpcController extends ClassifierServiceGrpc.ClassifierServiceImplBase {
 
     private final GetClassifierEntryUseCase classifier;
+    private final GetClassifierUseCase catalog;
     private final ResolveRoutingUseCase routing;
     private final SearchClassifierEntriesUseCase search;
 
@@ -27,6 +29,17 @@ public class ClassifierGrpcController extends ClassifierServiceGrpc.ClassifierSe
             requireCode(request.getClassifierCode());
             observer.onNext(ClassifierGrpcMapper.toProto(
                     classifier.getClassifierEntry(request.getClassifierCode())));
+            observer.onCompleted();
+        } catch (RuntimeException exception) {
+            observer.onError(toStatus(exception));
+        }
+    }
+
+    @Override
+    public void hasDispatchService(HasDispatchServiceRequest request, StreamObserver<HasDispatchServiceResponse> observer) {
+        try {
+            requireCode(request.getServiceCode());
+            observer.onNext(HasDispatchServiceResponse.newBuilder().setExists(catalog.hasService(request.getServiceCode())).build());
             observer.onCompleted();
         } catch (RuntimeException exception) {
             observer.onError(toStatus(exception));

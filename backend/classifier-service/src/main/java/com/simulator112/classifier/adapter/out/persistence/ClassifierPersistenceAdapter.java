@@ -3,10 +3,12 @@ package com.simulator112.classifier.adapter.out.persistence;
 import com.simulator112.classifier.adapter.out.persistence.repository.ClassifierCategoryRepository;
 import com.simulator112.classifier.adapter.out.persistence.repository.ClassifierEntryRepository;
 import com.simulator112.classifier.adapter.out.persistence.repository.RoutingRuleRepository;
+import com.simulator112.classifier.adapter.out.persistence.repository.DispatchServiceRepository;
 import com.simulator112.classifier.application.port.out.ClassifierRepository;
 import com.simulator112.classifier.domain.model.ClassifierCandidate;
 import com.simulator112.classifier.domain.model.ClassifierCategory;
 import com.simulator112.classifier.domain.model.ClassifierEntry;
+import com.simulator112.classifier.domain.model.DispatchService;
 import com.simulator112.classifier.domain.model.RoutingRule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -25,6 +27,18 @@ public class ClassifierPersistenceAdapter implements ClassifierRepository {
     private final ClassifierCategoryRepository categoryRepository;
     private final ClassifierEntryRepository entryRepository;
     private final RoutingRuleRepository routingRuleRepository;
+    private final DispatchServiceRepository dispatchServiceRepository;
+
+    @Override
+    public List<DispatchService> findAllServices() {
+        return dispatchServiceRepository.findAllByOrderByNameAsc().stream()
+                .map(service -> new DispatchService(service.getId(), service.getCode(), service.getName())).toList();
+    }
+
+    @Override
+    public boolean hasService(String code) {
+        return dispatchServiceRepository.existsByCode(code);
+    }
 
     @Override
     public List<ClassifierCategory> findAllCategories() {

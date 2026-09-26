@@ -1,6 +1,7 @@
 package com.simulator112.adminservice.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -50,7 +51,10 @@ public class LokiClient {
       // reliably surface "the last N lines" for a container that hasn't logged very recently.
       Instant start = since != null ? since.plusNanos(1) : Instant.now().minus(Duration.ofDays(7));
       uri.append("&start=").append(toNanos(start)).append("&end=").append(toNanos(Instant.now()));
-      JsonNode response = restClient.get().uri(uri.toString()).retrieve().body(JsonNode.class);
+      // .uri(URI) - not .uri(String) - takes the string verbatim: the latter runs it back
+      // through Spring's UriBuilderFactory, which double-encodes the "%7B"/"%22" the LogQL
+      // query already has, so Loki sees a literal "%" and rejects it ("unexpected %").
+      JsonNode response = restClient.get().uri(URI.create(uri.toString())).retrieve().body(JsonNode.class);
       if (response == null) return entries;
       for (JsonNode stream : response.path("data").path("result")) {
         for (JsonNode value : stream.path("values")) {

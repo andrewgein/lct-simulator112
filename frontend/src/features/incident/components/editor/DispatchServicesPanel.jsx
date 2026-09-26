@@ -60,13 +60,13 @@ export function automaticServices(classifier, incidentTypes) {
   return [...new Set(classifier.flatMap((category) => category.entries).filter((entry) => selectedTypes.has(entry.code)).flatMap((entry) => entry.primaryServices || []).map((service) => service.code))];
 }
 
-export default function DispatchServicesPanel({ classifier, services = [], readonly = false, status, statusHistory = [], statusEditor, onChange }) {
+export default function DispatchServicesPanel({ classifier, dispatchServices = [], services = [], readonly = false, status, statusHistory = [], statusEditor, onChange }) {
   const dialogRef = useRef(null);
   const historyId = `dispatch-service-history-${useId().replace(/:/g, "")}`;
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState([]);
   const [query, setQuery] = useState("");
-  const catalog = serviceCatalog(classifier);
+  const catalog = [...new Map([...serviceCatalog(classifier), ...dispatchServices].map((service) => [service.code, service])).values()];
   const byCode = new Map(catalog.map((service) => [service.code, service]));
   const latestStatus = statusHistory.at(-1);
   const filtered = catalog.filter((service) => `${service.name} ${service.code}`.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru")));

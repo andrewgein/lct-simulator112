@@ -13,13 +13,13 @@ class ProfessionalProfileTests {
         assertDoesNotThrow(() -> new ProfessionalProfile(TrainingTrack.SYSTEM_112, null));
         assertThrows(
                 InvalidProfessionalProfileException.class,
-                () -> new ProfessionalProfile(TrainingTrack.SYSTEM_112, DdsService.AMBULANCE));
+                () -> new ProfessionalProfile(TrainingTrack.SYSTEM_112, "AMBULANCE"));
     }
 
     @Test
     void ddsMustHaveService() {
         assertDoesNotThrow(
-                () -> new ProfessionalProfile(TrainingTrack.DDS, DdsService.AMBULANCE));
+                () -> new ProfessionalProfile(TrainingTrack.DDS, "AMBULANCE"));
         assertThrows(
                 InvalidProfessionalProfileException.class,
                 () -> new ProfessionalProfile(TrainingTrack.DDS, null));

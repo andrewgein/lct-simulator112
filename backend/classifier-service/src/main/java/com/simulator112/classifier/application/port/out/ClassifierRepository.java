@@ -3,6 +3,7 @@ package com.simulator112.classifier.application.port.out;
 import com.simulator112.classifier.domain.model.ClassifierCandidate;
 import com.simulator112.classifier.domain.model.ClassifierCategory;
 import com.simulator112.classifier.domain.model.ClassifierEntry;
+import com.simulator112.classifier.domain.model.DispatchService;
 import com.simulator112.classifier.domain.model.RoutingRule;
 
 import java.util.List;
@@ -10,6 +11,10 @@ import java.util.Optional;
 
 public interface ClassifierRepository {
     List<ClassifierCategory> findAllCategories();
+
+    List<DispatchService> findAllServices();
+
+    boolean hasService(String code);
 
     List<ClassifierCandidate> findCandidates();
 

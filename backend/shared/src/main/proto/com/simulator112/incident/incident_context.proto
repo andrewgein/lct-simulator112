@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package incident;
 
-import "com/simulator112/common/dds_service.proto";
 
 option java_package = "com.simulator112.incident.grpc.contract";
 option java_multiple_files = true;
@@ -67,9 +66,9 @@ message PreparedCardTemplate {
 }
 
 message InitialAssignment {
-  common.DdsService emergency_service = 1;
   string classifier_code = 2;
   string instructions = 3;
+  string emergency_service_code = 4;
 }
 
 message DdsStageTransition {

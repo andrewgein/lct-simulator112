@@ -22,6 +22,11 @@ public class ClassifierController {
         return ClassifierWebMapper.toView(classifier.getClassifier());
     }
 
+    @GetMapping("/services")
+    public java.util.List<com.simulator112.classifier.adapter.in.web.dto.DispatchServiceView> getServices() {
+        return classifier.getServices().stream().map(ClassifierWebMapper::toView).toList();
+    }
+
     @PostMapping("/{classifierCode}/routing")
     public RoutingResultView resolveRouting(
             @PathVariable String classifierCode,

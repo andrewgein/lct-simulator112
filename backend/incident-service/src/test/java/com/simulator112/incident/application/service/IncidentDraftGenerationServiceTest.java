@@ -102,6 +102,7 @@ class IncidentDraftGenerationServiceTest {
     private IncidentDraftGenerationService service(String content, AtomicReference<List<String>> searched) {
         var classifier = new ClassifierCatalogPort() {
             @Override public void requireEntry(String code) {}
+            @Override public void requireService(String code) {}
             @Override public List<Candidate> search(String query, int limit, List<String> codes) {
                 if (searched != null) searched.set(codes);
                 assertThat(query).isNotBlank();

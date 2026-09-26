@@ -44,7 +44,7 @@ public final class IncidentContextMapper {
             value.setPreparedCardAdditionalInfo(new LinkedHashMap<>(proto.getPreparedCardTemplate().getAdditionalInfoMap()));
         }
         if (proto.hasInitialAssignment()) {
-            value.setInitialAssignmentService(proto.getInitialAssignment().getEmergencyService().name());
+            value.setInitialAssignmentService(proto.getInitialAssignment().getEmergencyServiceCode());
             value.setInitialAssignmentClassifierCode(proto.getInitialAssignment().getClassifierCode());
             value.setInitialAssignmentInstructions(proto.getInitialAssignment().getInstructions());
         }
@@ -97,7 +97,7 @@ public final class IncidentContextMapper {
                         .setVictimCount(value.getCardVictimCount()).putAllAdditionalInfo(value.getPreparedCardAdditionalInfo()));
         if (value.getInitialAssignmentService() != null) builder.setInitialAssignment(
                 com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
-                        .setEmergencyService(com.simulator112.common.grpc.contract.DdsService.valueOf(value.getInitialAssignmentService()))
+                        .setEmergencyServiceCode(value.getInitialAssignmentService())
                         .setClassifierCode(orEmpty(value.getInitialAssignmentClassifierCode())).setInstructions(orEmpty(value.getInitialAssignmentInstructions())));
         if (value.getInitialStageId() != null) builder.setDdsInitialStageId(value.getInitialStageId().toString());
         value.getTransitions().forEach(item -> builder.addDdsStageTransitions(

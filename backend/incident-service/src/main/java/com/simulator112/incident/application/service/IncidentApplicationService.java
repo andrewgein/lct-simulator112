@@ -73,9 +73,10 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             if (dds.preparedCardTemplate() == null || dds.initialAssignment() == null) {
                 throw new IllegalArgumentException("Сценарий ДДС требует карточку и первичное назначение");
             }
-            if (dds.initialAssignment().emergencyService() == null) {
+            if (dds.initialAssignment().emergencyService() == null || dds.initialAssignment().emergencyService().isBlank()) {
                 throw new IllegalArgumentException("Служба первичного назначения обязательна");
             }
+            classifierCatalog.requireService(dds.initialAssignment().emergencyService());
             requireClassifierCodes(dds.preparedCardTemplate().classifierCodes());
             requireClassifierCode(dds.initialAssignment().classifierCode());
             validateDdsStageCalls(dds);

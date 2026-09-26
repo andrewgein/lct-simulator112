@@ -2,6 +2,7 @@ package com.simulator112.course.application.service;
 
 import com.simulator112.course.application.port.out.CourseRepository;
 import com.simulator112.course.adapter.out.storage.MaterialFileStorage;
+import com.simulator112.course.application.port.out.DispatchServiceCatalogPort;
 import com.simulator112.course.application.port.out.IncidentCatalogPort;
 import com.simulator112.course.domain.course.Assignment;
 import com.simulator112.course.domain.course.AssignmentDifficulty;
@@ -9,7 +10,6 @@ import com.simulator112.course.domain.course.AssignmentExecutionMode;
 import com.simulator112.course.domain.course.Course;
 import com.simulator112.course.domain.course.CourseTargetType;
 import com.simulator112.course.domain.course.CourseMaterial;
-import com.simulator112.course.domain.course.DdsService;
 import com.simulator112.course.domain.exception.CourseAccessDeniedException;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,6 +30,7 @@ class CourseApplicationServiceTest {
     private final CourseRepository repository = mock(CourseRepository.class);
     private final EnrollmentRepository enrollments = mock(EnrollmentRepository.class);
     private final IncidentCatalogPort incidents = mock(IncidentCatalogPort.class);
+    private final DispatchServiceCatalogPort dispatchServices = mock(DispatchServiceCatalogPort.class);
     private final MaterialFileStorage fileStorage = mock(MaterialFileStorage.class);
     private final CourseApplicationService service = new CourseApplicationService(
             repository, enrollments, incidents, dispatchServices, fileStorage);
@@ -45,8 +47,20 @@ class CourseApplicationServiceTest {
     }
 
     @Test
+    void rejectsUnknownDdsSpecialization() {
+        Course course = new Course(null, "Курс ДДС", null, CourseTargetType.DDS, "UNKNOWN",
+                authorId, List.of(), List.of());
+        doThrow(new IllegalArgumentException("Служба не найдена в классификаторе: UNKNOWN"))
+                .when(dispatchServices).requireService("UNKNOWN");
+
+        assertThatThrownBy(() -> service.createCourse(course))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("не найдена в классификаторе");
+    }
+
+    @Test
     void rejectsDdsSpecializationForSystem112() {
-        Course course = new Course(null, "Курс 112", null, CourseTargetType.SYSTEM_112, DdsService.FIRE,
+        Course course = new Course(null, "Курс 112", null, CourseTargetType.SYSTEM_112, "MCHS",
                 authorId, List.of(), List.of());
 
         assertThatThrownBy(() -> service.createCourse(course))

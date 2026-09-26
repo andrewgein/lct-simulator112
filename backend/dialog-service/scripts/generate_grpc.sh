@@ -9,7 +9,6 @@ python3 -m grpc_tools.protoc \
   --python_out=app/grpc \
   --pyi_out=app/grpc \
   --grpc_python_out=app/grpc \
-  "$PROTO_ROOT"/com/simulator112/common/dds_service.proto \
   "$PROTO_ROOT"/com/simulator112/incident/incident_context.proto \
   "$PROTO_ROOT"/com/simulator112/context/context_service.proto
 

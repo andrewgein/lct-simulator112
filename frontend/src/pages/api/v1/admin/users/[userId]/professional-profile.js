@@ -1,8 +1,7 @@
 import { assignProfessionalProfile } from "../../../../../../features/profile/api/UserProfileApi";
+import { isDispatchService } from "../../../../../../features/incident/api/dispatchServiceValidation.js";
 
 export const prerender = false;
-
-const DDS_SERVICES = new Set(["FIRE", "POLICE", "AMBULANCE", "GAS", "ANTI_TERROR"]);
 
 export async function PUT({ params, request, cookies }) {
     if (cookies.get("role")?.value !== "ADMIN") {
@@ -14,7 +13,7 @@ export async function PUT({ params, request, cookies }) {
 
     const { trainingTrack, ddsService = null } = await request.json();
     const validSystem112 = trainingTrack === "SYSTEM_112" && ddsService === null;
-    const validDds = trainingTrack === "DDS" && DDS_SERVICES.has(ddsService);
+    const validDds = trainingTrack === "DDS" && await isDispatchService(ddsService, cookies.get("accessToken")?.value);
     if (!validSystem112 && !validDds) {
         return new Response(JSON.stringify({ message: "Некорректный профиль обучения" }), {
             status: 400,

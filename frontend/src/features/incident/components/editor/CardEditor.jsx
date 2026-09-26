@@ -135,9 +135,10 @@ function classifierDetails(incident, values, routingFacts) {
   return [...features, ...selectedFacts];
 }
 
-export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, routingFacts = [], readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor }) {
+export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, routingFacts = [], dispatchServices, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor }) {
   const loadedClassifierState = useClassifier();
   const classifierState = classifier ? { classifier, routingFacts, loading: false, error: null } : loadedClassifierState;
+  const [serviceCatalog, setServiceCatalog] = useState(dispatchServices || []);
   const [seconds, setSeconds] = useState(0);
   const [savedEditMode, setSavedEditMode] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -159,6 +160,15 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const routingReady = !Object.values(routingPending).some(Boolean) && !Object.values(routingErrors).some(Boolean);
   const canSave = !editor.cardSaved && routingReady && Number.isInteger(editor.victimCount) && editor.victimCount >= 0 && incidentTypes.length === editor.incidentTypes.length && incidentTypes.length > 0 && (editor.operation !== "LINK" || !!selectedCard);
   const aoh = call.phone || editor.applicant.phone;
+
+  useEffect(() => {
+    if (dispatchServices) {
+      setServiceCatalog(dispatchServices);
+      return;
+    }
+    fetch("/api/v1/classifier/services").then((response) => response.ok ? response.json() : [])
+      .then(setServiceCatalog).catch((error) => console.error("Failed to load dispatch services", error));
+  }, [dispatchServices]);
 
   useEffect(() => {
     setSavedEditMode(false);
@@ -344,7 +354,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
       </div>
       <footer class="workspace-footer workspace-footer--readonly wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
-        <DispatchServicesPanel classifier={classifierState.classifier} services={editor.services} readonly status={readonlyServiceStatus} statusHistory={readonlyServiceHistory} statusEditor={readonlyServiceEditor} onChange={() => {}} />
+        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} readonly status={readonlyServiceStatus} statusHistory={readonlyServiceHistory} statusEditor={readonlyServiceEditor} onChange={() => {}} />
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {!readOnly && <wa-button class="workspace-save" size="l" type="button" appearance="outlined" variant="neutral" onClick={() => setSavedEditMode(true)}><wa-icon slot="start" name="pencil"></wa-icon>Редактировать</wa-button>}
           {!readOnly && relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button>}
@@ -383,7 +393,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
       </div>
       <footer class={`workspace-footer ${editingCard ? "workspace-footer--readonly" : "workspace-footer--editable"} wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap`}>
-        <DispatchServicesPanel classifier={classifierState.classifier} services={editor.services} readonly={!!editingCard} onChange={(services) => onChange({ ...editor, services })} />
+        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} readonly={!!editingCard} onChange={(services) => onChange({ ...editor, services })} />
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {isDev && <wa-button size="l" type="button" appearance="outlined" onClick={autofill}><wa-icon name="wand-magic-sparkles" label="Автозаполнение"></wa-icon></wa-button>}
           <wa-button class="workspace-save" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canSave} loading={editor.saving} onClick={save}>Сохранить</wa-button>

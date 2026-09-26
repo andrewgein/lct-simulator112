@@ -193,7 +193,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "FIRE",
+      "emergencyService": "MCHS",
       "classifierCode": "1050101",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
@@ -293,7 +293,7 @@
       "victimCount": 1
     },
     "initialAssignment": {
-      "emergencyService": "GAS",
+      "emergencyService": "MOSGAZ",
       "classifierCode": "13020201",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
@@ -591,7 +591,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "ANTI_TERROR",
+      "emergencyService": "FSB",
       "classifierCode": "15130600",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }
@@ -796,7 +796,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "FIRE",
+      "emergencyService": "MCHS",
       "classifierCode": "1050401",
       "instructions": "Передать вызов профильной службе и сохранить ключевые факты из опроса."
     }

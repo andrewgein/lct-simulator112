@@ -82,7 +82,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "FIRE",
+      "emergencyService": "MCHS",
       "classifierCode": "1050101",
       "instructions": "Направить ближайший пожарный расчёт к жилому дому."
     },
@@ -188,7 +188,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "GAS",
+      "emergencyService": "MOSGAZ",
       "classifierCode": "13020500",
       "instructions": "Срочный выезд; не допускать источников огня и искры."
     },
@@ -612,7 +612,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "FIRE",
+      "emergencyService": "MCHS",
       "classifierCode": "1990043",
       "instructions": "Направить расчёт и оценить опасные материалы."
     },
@@ -718,7 +718,7 @@
       "victimCount": 1
     },
     "initialAssignment": {
-      "emergencyService": "GAS",
+      "emergencyService": "MOSGAZ",
       "classifierCode": "22340200",
       "instructions": "Срочный выезд; при симптомах организовать СМП."
     },
@@ -930,7 +930,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "FIRE",
+      "emergencyService": "MCHS",
       "classifierCode": "1010201",
       "instructions": "Оценить угрозу перехода огня на постройки."
     },
