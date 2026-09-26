@@ -22,3 +22,10 @@ review:
     threshold: 0.8
   course-service:
     base-url: http://localhost:8088
+  recordings:
+    s3:
+      endpoint: http://localhost:9000
+      region: us-east-1
+      bucket: call-recordings
+      access-key: minioadmin
+      secret-key: minioadmin

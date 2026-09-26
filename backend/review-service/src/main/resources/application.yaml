@@ -26,6 +26,13 @@ review:
     threshold: ${MLSERVER_ENTAILMENT_THRESHOLD:0.8}
   course-service:
     base-url: ${COURSE_SERVICE_URL:http://localhost:8088}
+  recordings:
+    s3:
+      endpoint: ${S3_ENDPOINT:http://localhost:9000}
+      region: ${S3_REGION:us-east-1}
+      bucket: ${S3_RECORDINGS_BUCKET:call-recordings}
+      access-key: ${S3_ACCESS_KEY:minioadmin}
+      secret-key: ${S3_SECRET_KEY:minioadmin}
 management:
   endpoints:
     web:
