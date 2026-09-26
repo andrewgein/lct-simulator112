@@ -31,12 +31,6 @@ public class StudyGroupPersistenceAdapter implements StudyGroupRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public List<StudyGroup> findAll() {
-        return repository.findAll().stream().map(mapper::toDomain).toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public List<StudyGroup> findAllByOwnerId(UUID ownerId) {
         return repository.findAllByOwnerId(ownerId).stream().map(mapper::toDomain).toList();
     }

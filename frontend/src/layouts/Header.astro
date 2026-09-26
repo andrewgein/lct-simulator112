@@ -31,7 +31,6 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
             <wa-button class:list={{ 'header-nav-active': isActive('/teacher/courses') }} appearance="plain" variant="brand" href="/teacher/courses" aria-current={isActive('/teacher/courses') ? 'page' : undefined}>Курсы</wa-button>
             <wa-button class:list={{ 'header-nav-active': isActive('/teacher/groups') }} appearance="plain" variant="brand" href="/teacher/groups" aria-current={isActive('/teacher/groups') ? 'page' : undefined}>Группы</wa-button>
             <wa-button class:list={{ 'header-nav-active': isActive('/teacher/assignments') }} appearance="plain" variant="brand" href="/teacher/assignments" aria-current={isActive('/teacher/assignments') ? 'page' : undefined}>Назначение курсов</wa-button>
-            <wa-button class:list={{ 'header-nav-active': isActive('/teacher/analytics') }} appearance="plain" variant="brand" href="/teacher/analytics" aria-current={isActive('/teacher/analytics') ? 'page' : undefined}>Аналитика</wa-button>
             <wa-button class:list={{ 'header-nav-active': isActive('/admin/incidents') }} appearance="plain" variant="brand" href="/admin/incidents" aria-current={isActive('/admin/incidents') ? 'page' : undefined}>Сценарии</wa-button>
             {isAdmin && <wa-button class:list={{ 'header-nav-active': isAdminPanelActive }} appearance="plain" variant="brand" href="/admin/users" aria-current={isAdminPanelActive ? 'page' : undefined}>Настройки</wa-button>}
           </nav>

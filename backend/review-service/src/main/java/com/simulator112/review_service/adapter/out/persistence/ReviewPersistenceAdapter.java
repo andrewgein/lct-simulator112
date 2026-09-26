@@ -51,7 +51,7 @@ public class ReviewPersistenceAdapter implements ReviewStore {
         return target;
     }
 
-    static Review toDomain(ReviewJpaEntity source) {
+    private static Review toDomain(ReviewJpaEntity source) {
         return new Review(source.getContextId(), source.getUserId(), source.getAssignmentId(), source.getStatus(),
                 source.getResults().stream().map(ReviewPersistenceAdapter::toDomain).toList(),
                 source.getAutomaticScore(), source.getFinalScore(), source.getMaxScore(),

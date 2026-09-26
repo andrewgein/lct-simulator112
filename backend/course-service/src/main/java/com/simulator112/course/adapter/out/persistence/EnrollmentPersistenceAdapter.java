@@ -64,11 +64,4 @@ public class EnrollmentPersistenceAdapter implements EnrollmentRepository {
     public List<Enrollment> findAllByGroupId(UUID groupId) {
         return repository.findAllByGroupId(groupId).stream().map(mapper::toDomain).toList();
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Enrollment> findAllByGroupIds(List<UUID> groupIds) {
-        if (groupIds.isEmpty()) return List.of();
-        return repository.findAllByGroupIdIn(groupIds).stream().map(mapper::toDomain).toList();
-    }
 }
