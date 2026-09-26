@@ -10,104 +10,203 @@ export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
 
 const token = Astro.locals.accessToken;
+const selectedGroupId = Astro.url.searchParams.get("group") || "";
 let error = null;
-let courseStats = [];
+let course = null;
+let courseGroups = [];
+let students = [];
 
 const scorePercent = (review) => {
+  if (review.maxScore > 0) return Math.round((review.finalScore ?? review.automaticScore ?? 0) / review.maxScore * 100);
   const criteria = review.criterionResults || [];
   const score = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
   const maxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
   return maxScore ? Math.round(score / maxScore * 100) : null;
 };
+const mean = (values) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
+const studentName = (student) => student?.profile
+  ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ")
+  : student?.email || "Обучающийся";
 
 try {
-  const [coursesResponse, groupsResponse, students] = await Promise.all([
+  const [coursesResponse, groupsResponse, allStudents] = await Promise.all([
     getCourses(token),
     getStudyGroups(token),
     getStudents(token)
   ]);
   if (!coursesResponse.ok || !groupsResponse.ok) throw new Error();
 
-  const courses = (await coursesResponse.json()).filter((course) => String(course.id) === String(Astro.params.id));
-  if (!courses.length) return Astro.redirect('/teacher/courses');
+  course = (await coursesResponse.json()).find((item) => String(item.id) === String(Astro.params.id));
+  if (!course) return Astro.redirect("/teacher/courses");
   const groups = await groupsResponse.json();
   const groupCourses = await Promise.all(groups.map(async (group) => {
     const response = await getStudyGroupCourses(group.id, token);
     if (!response.ok) throw new Error();
     return { group, courses: await response.json() };
   }));
-  const studentsById = new Map(students.map((student) => [String(student.id), student]));
-  const courseStudents = new Map(courses.map((course) => [String(course.id), new Map()]));
+  courseGroups = groupCourses
+    .filter(({ courses }) => courses.some((item) => String(item.id) === String(course.id)))
+    .map(({ group }) => group);
 
-  groupCourses.forEach(({ group, courses: assignedCourses }) => {
-    assignedCourses.forEach((course) => {
-      const entries = courseStudents.get(String(course.id));
-      if (!entries) return;
-      (group.studentIds || []).forEach((studentId) => {
-        const key = String(studentId);
-        const current = entries.get(key) || { student: studentsById.get(key), groups: [] };
-        current.groups.push(group.title);
-        entries.set(key, current);
-      });
-    });
-  });
+  const studentsById = new Map(allStudents.map((student) => [String(student.id), student]));
+  const courseStudents = new Map();
+  courseGroups
+    .filter((group) => !selectedGroupId || String(group.id) === selectedGroupId)
+    .forEach((group) => (group.studentIds || []).forEach((studentId) => {
+      const key = String(studentId);
+      const current = courseStudents.get(key) || { student: studentsById.get(key), groups: [] };
+      current.groups.push(group.title);
+      courseStudents.set(key, current);
+    }));
 
-  const studentIds = [...new Set([...courseStudents.values()].flatMap((entries) => [...entries.keys()]))];
-  const reviewResponses = await Promise.all(studentIds.map(async (studentId) => {
+  const reviewsByStudent = new Map(await Promise.all([...courseStudents.keys()].map(async (studentId) => {
     const response = await getStudentReviews(studentId, token);
     if (!response.ok) throw new Error();
     return [studentId, (await response.json()).reviews || []];
-  }));
-  const reviewsByStudent = new Map(reviewResponses);
+  })));
 
-  courseStats = courses.map((course) => {
-    const assignmentIds = new Set((course.assignments || []).map((assignment) => String(assignment.id)));
-    const assignmentTitles = new Map((course.assignments || []).map((assignment) => [String(assignment.id), assignment.title]));
-    const studentStats = [...(courseStudents.get(String(course.id)) || new Map()).values()].map(({ student, groups }) => {
-      const attempts = (reviewsByStudent.get(String(student?.id)) || [])
-        .filter((review) => assignmentIds.has(String(review.assignmentId)))
-        .map((review) => ({ ...review, percent: scorePercent(review), assignmentTitle: assignmentTitles.get(String(review.assignmentId)) || "Задание" }))
-        .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime());
-      const completedByAssignment = new Map();
-      attempts.filter((attempt) => attempt.status === "DONE").forEach((attempt) => {
-        const key = String(attempt.assignmentId);
-        if (!completedByAssignment.has(key)) completedByAssignment.set(key, attempt);
-      });
-      const completed = [...completedByAssignment.values()];
-      const scored = completed.filter((review) => review.percent !== null);
-      const average = scored.length ? Math.round(scored.reduce((sum, review) => sum + review.percent, 0) / scored.length) : null;
-      const name = student?.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : student?.email || "Обучающийся";
-      return { student, name, groups: [...new Set(groups)], attempts, completed: completed.length, average, lastActivity: attempts[0]?.createdAt || null };
-    }).sort((left, right) => left.name.localeCompare(right.name, "ru"));
-    const completed = studentStats.reduce((sum, student) => sum + student.completed, 0);
-    const possible = studentStats.length * assignmentIds.size;
-    const averages = studentStats.map((student) => student.average).filter((value) => value !== null);
-    const average = averages.length ? Math.round(averages.reduce((sum, value) => sum + value, 0) / averages.length) : null;
-    return { course, students: studentStats, completed, possible, average };
-  });
+  const assignmentIds = new Set((course.assignments || []).map((assignment) => String(assignment.id)));
+  const assignmentTitles = new Map((course.assignments || []).map((assignment) => [String(assignment.id), assignment.title]));
+  students = [...courseStudents.entries()].map(([studentId, { student, groups }]) => {
+    const attempts = (reviewsByStudent.get(studentId) || [])
+      .filter((review) => assignmentIds.has(String(review.assignmentId)))
+      .map((review) => ({ ...review, percent: scorePercent(review), assignmentTitle: assignmentTitles.get(String(review.assignmentId)) || "Задание" }))
+      .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime());
+    const done = attempts.filter((attempt) => attempt.status === "DONE");
+    const latestByAssignment = new Map();
+    done.forEach((attempt) => {
+      const key = String(attempt.assignmentId);
+      if (!latestByAssignment.has(key)) latestByAssignment.set(key, attempt);
+    });
+    const latest = [...latestByAssignment.values()];
+    return {
+      student,
+      name: studentName(student),
+      groups: [...new Set(groups)],
+      attempts,
+      done,
+      latestByAssignment,
+      completed: latest.length,
+      average: mean(latest.map((attempt) => attempt.percent).filter((value) => value !== null)),
+      lastActivity: attempts[0]?.createdAt || null
+    };
+  }).sort((left, right) => left.name.localeCompare(right.name, "ru"));
 } catch {
   error = "Не удалось загрузить статистику прохождений";
 }
 
-const allStudents = new Set(courseStats.flatMap(({ students }) => students.map(({ student }) => String(student?.id))));
-const completedTotal = courseStats.reduce((sum, course) => sum + course.completed, 0);
-const possibleTotal = courseStats.reduce((sum, course) => sum + course.possible, 0);
-const allAverages = courseStats.map((course) => course.average).filter((value) => value !== null);
-const averageTotal = allAverages.length ? Math.round(allAverages.reduce((sum, value) => sum + value, 0) / allAverages.length) : null;
+const assignments = course?.assignments || [];
+const doneAttempts = students.flatMap((student) => student.done);
+const completedTotal = students.reduce((sum, student) => sum + student.completed, 0);
+const possibleTotal = students.length * assignments.length;
+const completedShare = possibleTotal ? Math.round(completedTotal / possibleTotal * 100) : 0;
+const averageTotal = mean(students.map((student) => student.average).filter((value) => value !== null));
+const averageDuration = mean(doneAttempts.map((attempt) => Number(attempt.durationSeconds)).filter((value) => value > 0));
+const overtimeShare = doneAttempts.length ? Math.round(doneAttempts.filter((attempt) => Number(attempt.overtimeSeconds) > 0).length / doneAttempts.length * 100) : null;
+const formatDuration = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const rest = seconds % 60;
+  return minutes ? `${minutes} мин ${rest} с` : `${rest} с`;
+};
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+const dayFormatter = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" });
+
+const trendByDay = new Map();
+doneAttempts.filter((attempt) => attempt.percent !== null && attempt.createdAt).forEach((attempt) => {
+  const date = new Date(attempt.createdAt);
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  if (!trendByDay.has(key)) trendByDay.set(key, { date: new Date(date.getFullYear(), date.getMonth(), date.getDate()), values: [] });
+  trendByDay.get(key).values.push(attempt.percent);
+});
+const chart = { width: 640, height: 220, left: 40, right: 24, top: 20, bottom: 28 };
+const trendDays = [...trendByDay.entries()].sort(([left], [right]) => left.localeCompare(right)).slice(-30).map(([, day]) => day);
+const trendStep = trendDays.length > 1 ? (chart.width - chart.left - chart.right) / (trendDays.length - 1) : 0;
+const yOf = (value) => chart.top + (100 - value) * (chart.height - chart.top - chart.bottom) / 100;
+const trendPoints = trendDays.map((day, index) => {
+  const value = mean(day.values);
+  return {
+    value,
+    count: day.values.length,
+    label: dayFormatter.format(day.date),
+    x: trendDays.length > 1 ? chart.left + index * trendStep : (chart.left + chart.width - chart.right) / 2,
+    y: yOf(value)
+  };
+});
+const trendHitWidth = trendDays.length > 1 ? trendStep : chart.width - chart.left - chart.right;
+
+const errorLabel = (criterion) => {
+  const feedback = (criterion.feedback || "").trim();
+  if (!feedback) return criterion.criterionName;
+  if (feedback.startsWith("Норматив превышен")) return "Превышен норматив времени";
+  const text = feedback
+    .replace(/^Звонок №\s*\d+:\s*/, "")
+    .replace(/^Для звонка №\s*\d+\s*/, "")
+    .replace(/(звонка|звонок)\s*№\s*\d+/gi, "$1")
+    .replace(/\s+/g, " ")
+    .replace(/\.$/, "")
+    .trim();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+const pluralAttempts = (count) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} попытка`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} попытки`;
+  return `${count} попыток`;
+};
+const errorCounts = new Map();
+doneAttempts.forEach((attempt) => {
+  const labels = new Set((attempt.criterionResults || [])
+    .filter((criterion) => criterion.score < criterion.maxScore || (criterion.feedback || "").startsWith("Норматив превышен"))
+    .map(errorLabel));
+  labels.forEach((label) => errorCounts.set(label, (errorCounts.get(label) || 0) + 1));
+});
+const topErrors = [...errorCounts.entries()]
+  .map(([label, count]) => ({ label, count, share: Math.round(count / doneAttempts.length * 100) }))
+  .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label, "ru"))
+  .slice(0, 7);
+
+const assignmentAverages = assignments.map((assignment) => {
+  const values = students.map((student) => student.latestByAssignment.get(String(assignment.id))?.percent).filter((value) => value !== null && value !== undefined);
+  return { average: mean(values), completed: values.length };
+});
+
+const criterionLoss = (attempts) => {
+  const totals = new Map();
+  attempts.forEach((attempt) => (attempt.criterionResults || []).forEach((criterion) => {
+    const current = totals.get(criterion.criterionName) || { score: 0, maxScore: 0 };
+    current.score += criterion.score;
+    current.maxScore += criterion.maxScore;
+    totals.set(criterion.criterionName, current);
+  }));
+  return new Map([...totals.entries()]
+    .filter(([, value]) => value.maxScore > 0)
+    .map(([name, value]) => [name, Math.round((value.maxScore - value.score) / value.maxScore * 100)]));
+};
+const latestAttempts = students.flatMap((student) => [...student.latestByAssignment.values()]);
+const overallLoss = criterionLoss(latestAttempts);
+const criteriaColumns = [...overallLoss.entries()].sort((left, right) => right[1] - left[1]).map(([name, loss]) => ({ name, loss }));
+const errorMap = students
+  .filter((student) => student.latestByAssignment.size)
+  .map((student) => ({ name: student.name, loss: criterionLoss([...student.latestByAssignment.values()]) }));
+
+const scoreCellStyle = (value) => `--cell-weight: ${Math.round(10 + value * 0.8)}%`;
+const lossCellStyle = (value) => `--cell-weight: ${value === 0 ? 0 : Math.round(12 + value * 0.78)}%`;
 
 const reportData = {
-  summary: { assignments: courseStats[0]?.course.assignments?.length || 0, students: allStudents.size, completed: completedTotal, possible: possibleTotal, average: averageTotal },
-  courses: courseStats.map(({ course, students, completed, possible, average }) => ({
+  summary: { assignments: assignments.length, students: students.length, completed: completedTotal, possible: possibleTotal, average: averageTotal },
+  courses: course ? [{
     title: course.title,
-    assignmentsCount: course.assignments?.length || 0,
-    completed, possible, average,
+    assignmentsCount: assignments.length,
+    completed: completedTotal,
+    possible: possibleTotal,
+    average: averageTotal,
     students: students.map((student) => ({
       name: student.name,
       email: student.student?.email || "",
       groups: student.groups,
       completed: student.completed,
-      assignmentsCount: course.assignments?.length || 0,
+      assignmentsCount: assignments.length,
       average: student.average,
       lastActivity: student.lastActivity,
       attempts: student.attempts.map((attempt) => ({
@@ -124,18 +223,18 @@ const reportData = {
         }))
       }))
     }))
-  }))
+  }] : []
 };
 const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toString("base64");
 ---
 
 <Page {error}>
   <Header slot="header" />
-  <MainHeader slot="main-header" title={courseStats[0]?.course.title || "Статистика курса"}>
+  <MainHeader slot="main-header" title={course?.title || "Статистика курса"}>
     <div class="wa-cluster wa-gap-xs">
       <wa-button href="/teacher/courses" appearance="outlined">Все курсы</wa-button>
-      {courseStats[0] && <wa-button href={`/teacher/courses/${courseStats[0].course.id}`} appearance="outlined">Редактировать курс</wa-button>}
-      {courseStats.length > 0 && (
+      {course && <wa-button href={`/teacher/courses/${course.id}`} appearance="outlined">Редактировать курс</wa-button>}
+      {course && (
         <>
           <wa-button id="export-excel" appearance="outlined"><wa-icon slot="start" name="file-excel"></wa-icon>Excel</wa-button>
           <wa-button id="export-pdf" appearance="outlined"><wa-icon slot="start" name="file-pdf"></wa-icon>PDF</wa-button>
@@ -144,96 +243,248 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
     </div>
   </MainHeader>
   <script type="application/json" id="report-data" set:text={reportDataEncoded}></script>
-  {!error && (
-    <div class="statistics-page wa-stack wa-gap-xl">
+  {!error && course && (
+    <div class="statistics-page wa-stack wa-gap-l">
+      {courseGroups.length > 1 && (
+        <form id="group-filter" class="group-filter" method="get">
+          <wa-select name="group" label="Группа" value={selectedGroupId} placeholder="Все группы" with-clear>
+            {courseGroups.map((group) => <wa-option value={String(group.id)}>{group.title}</wa-option>)}
+          </wa-select>
+        </form>
+      )}
+
       <dl class="summary-strip">
         <div class="summary-item wa-stack wa-gap-2xs">
-          <dt>Задания</dt>
-          <dd>{courseStats[0]?.course.assignments?.length || 0}</dd>
-        </div>
-        <div class="summary-item wa-stack wa-gap-2xs">
           <dt>Обучающиеся</dt>
-          <dd>{allStudents.size}</dd>
+          <dd>{students.length}</dd>
+          <small>{assignments.length} заданий в курсе</small>
         </div>
         <div class="summary-item wa-stack wa-gap-2xs">
           <dt>Выполнено заданий</dt>
           <dd>{completedTotal} из {possibleTotal}</dd>
+          <wa-progress-bar class="summary-progress" value={completedShare} label={`Выполнено ${completedShare}%`}></wa-progress-bar>
         </div>
         <div class="summary-item wa-stack wa-gap-2xs">
           <dt>Средний результат</dt>
           <dd>{averageTotal === null ? "—" : `${averageTotal}%`}</dd>
+          <small>Завершено: {pluralAttempts(doneAttempts.length)}</small>
+        </div>
+        <div class="summary-item wa-stack wa-gap-2xs">
+          <dt>Среднее время</dt>
+          <dd>{averageDuration === null ? "—" : formatDuration(averageDuration)}</dd>
+          <small>{overtimeShare === null ? "Нет данных" : `${overtimeShare}% попыток сверх норматива`}</small>
         </div>
       </dl>
 
-      {!courseStats.length && <wa-callout>Статистика курса недоступна.</wa-callout>}
-      {courseStats.map(({ course, students, completed, possible, average }) => {
-        const progress = possible ? Math.round(completed / possible * 100) : 0;
-        return (
-          <wa-details appearance="filled-outlined" open>
-            <div slot="summary" class="course-heading wa-split wa-gap-m">
-              <div class="wa-stack wa-gap-2xs">
-                <h2 class="wa-heading-l">{course.title}</h2>
-                <span class="wa-caption-m">{students.length} обучающихся · {course.assignments?.length || 0} заданий</span>
-              </div>
-              <div class="wa-cluster wa-gap-xs">
-                <wa-badge variant={progress === 100 ? "success" : "brand"} appearance="filled-outlined">{progress}% выполнено</wa-badge>
-                <wa-badge variant="neutral" appearance="outlined">Средний балл: {average === null ? "—" : `${average}%`}</wa-badge>
-              </div>
-            </div>
-            {!students.length ? (
-              <wa-callout variant="neutral">Курс пока не назначен группе с обучающимися.</wa-callout>
-            ) : (
-              <wa-scroller>
-                <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
+      {!students.length ? (
+        <wa-callout variant="neutral">Курс пока не назначен группе с обучающимися.</wa-callout>
+      ) : (
+        <>
+          <section class="panel-grid">
+            <article class="panel">
+              <header class="panel-heading">
+                <h2>Динамика результатов</h2>
+                <p>Средний балл завершённых попыток по дням</p>
+              </header>
+              {trendPoints.length ? (
+                <svg class="trend-chart" viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="Средний балл по дням">
+                  {[0, 50, 100].map((tick) => (
+                    <g class="grid">
+                      <line x1={chart.left} x2={chart.width - chart.right} y1={yOf(tick)} y2={yOf(tick)}></line>
+                      <text x={chart.left - 8} y={yOf(tick) + 4}>{tick}%</text>
+                    </g>
+                  ))}
+                  {trendPoints.length > 1 && <polyline points={trendPoints.map((point) => `${point.x},${point.y}`).join(" ")}></polyline>}
+                  {trendPoints.map((point) => (
+                    <g class="point" tabindex="0" data-tip-value={`${point.value}%`} data-tip-label={`${point.label} · ${pluralAttempts(point.count)}`}>
+                      <rect x={point.x - trendHitWidth / 2} y={chart.top} width={trendHitWidth} height={chart.height - chart.top - chart.bottom}></rect>
+                      <line x1={point.x} x2={point.x} y1={chart.top} y2={chart.height - chart.bottom}></line>
+                      <circle cx={point.x} cy={point.y} r="4"></circle>
+                    </g>
+                  ))}
+                  <text class="point-label" x={trendPoints.at(-1).x} y={trendPoints.at(-1).y - 12}>{trendPoints.at(-1).value}%</text>
+                  <text class="axis-label" x={trendPoints[0].x} y={chart.height - 6} text-anchor={trendPoints.length > 1 ? "start" : "middle"}>{trendPoints[0].label}</text>
+                  {trendPoints.length > 1 && <text class="axis-label" x={trendPoints.at(-1).x} y={chart.height - 6} text-anchor="end">{trendPoints.at(-1).label}</text>}
+                </svg>
+              ) : <p class="empty-note">Пока нет завершённых попыток.</p>}
+            </article>
+
+            <article class="panel">
+              <header class="panel-heading">
+                <h2>Частые ошибки</h2>
+                <p>Доля завершённых попыток, где встретилась ошибка</p>
+              </header>
+              {topErrors.length ? (
+                <ol class="error-list">
+                  {topErrors.map((item) => (
+                    <li tabindex="0" data-tip-value={`${item.share}%`} data-tip-label={`${item.label} · ${item.count} из ${doneAttempts.length}`}>
+                      <div class="error-row"><span title={item.label}>{item.label}</span><strong>{item.share}%</strong></div>
+                      <div class="error-track"><span style={`width: ${Math.max(item.share, 2)}%`}></span></div>
+                    </li>
+                  ))}
+                </ol>
+              ) : <p class="empty-note">{doneAttempts.length ? "Ошибок в завершённых попытках нет." : "Пока нет завершённых попыток."}</p>}
+            </article>
+          </section>
+
+          {assignments.length > 0 && (
+            <section class="panel">
+              <header class="panel-heading">
+                <div>
+                  <h2>Результаты по заданиям</h2>
+                  <p>Балл последней завершённой попытки. Нажмите на ячейку, чтобы открыть разбор</p>
+                </div>
+                <div class="heat-legend" aria-hidden="true"><span>0%</span><i class="scale-score"></i><span>100%</span></div>
+              </header>
+              <div class="heatmap-scroll">
+                <table class="heatmap wa-tabular-nums">
                   <thead>
-                    <tr>
-                      <th>Обучающийся</th>
-                      <th>Группа</th>
-                      <th>Прогресс</th>
-                      <th>Средний балл</th>
-                      <th>Последняя активность</th>
-                      <th>Попытки</th>
-                    </tr>
+                    <tr><th>Обучающийся</th>{assignments.map((assignment) => <th title={assignment.title}>{assignment.title}</th>)}</tr>
                   </thead>
                   <tbody>
-                    {students.map((student) => {
-                      const assignmentCount = course.assignments?.length || 0;
-                      const studentProgress = assignmentCount ? Math.round(student.completed / assignmentCount * 100) : 0;
-                      return (
-                        <tr>
-                          <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
-                          <td>{student.groups.join(", ")}</td>
-                          <td>
-                            <div class="progress-cell wa-stack wa-gap-2xs">
-                              <span>{student.completed} из {assignmentCount}</span>
-                              <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
-                            </div>
-                          </td>
-                          <td>{student.average === null ? "—" : `${student.average}%`}</td>
-                          <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
-                          <td>
-                            {student.attempts.length ? (
-                              <div class="attempt-links wa-stack wa-gap-2xs">
-                                {student.attempts.map((attempt) => (
-                                  <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
-                                ))}
-                              </div>
-                            ) : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {students.map((student) => (
+                      <tr>
+                        <th>{student.name}</th>
+                        {assignments.map((assignment) => {
+                          const attempt = student.latestByAssignment.get(String(assignment.id));
+                          const tipLabel = `${student.name} · ${assignment.title}`;
+                          if (!attempt) return <td class="empty" tabindex="0" data-tip-value="Не выполнено" data-tip-label={tipLabel}>—</td>;
+                          return (
+                            <td class:list={["score", { strong: attempt.percent >= 60 }]} style={scoreCellStyle(attempt.percent ?? 0)}>
+                              <a href={`/review/${encodeURIComponent(attempt.contextId)}`} data-tip-value={attempt.percent === null ? "—" : `${attempt.percent}%`} data-tip-label={tipLabel}>{attempt.percent === null ? "—" : attempt.percent}</a>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
                   </tbody>
+                  <tfoot>
+                    <tr>
+                      <th>В среднем</th>
+                      {assignmentAverages.map((item) => <td>{item.average === null ? "—" : `${item.average}%`}<small>{item.completed} из {students.length}</small></td>)}
+                    </tr>
+                  </tfoot>
                 </table>
-              </wa-scroller>
-            )}
+              </div>
+            </section>
+          )}
+
+          {criteriaColumns.length > 0 && (
+            <section class="panel">
+              <header class="panel-heading">
+                <div>
+                  <h2>Карта ошибок</h2>
+                  <p>Доля потерянных баллов по критериям в последних попытках. Чем темнее, тем больше ошибок</p>
+                </div>
+                <div class="heat-legend" aria-hidden="true"><span>0%</span><i class="scale-loss"></i><span>100%</span></div>
+              </header>
+              <div class="heatmap-scroll">
+                <table class="heatmap wa-tabular-nums">
+                  <thead>
+                    <tr><th>Обучающийся</th>{criteriaColumns.map((criterion) => <th title={criterion.name}>{criterion.name}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {errorMap.map((row) => (
+                      <tr>
+                        <th>{row.name}</th>
+                        {criteriaColumns.map((criterion) => {
+                          const value = row.loss.get(criterion.name);
+                          const tipLabel = `${row.name} · ${criterion.name}`;
+                          if (value === undefined) return <td class="empty" tabindex="0" data-tip-value="Нет данных" data-tip-label={tipLabel}>—</td>;
+                          return <td class:list={["loss", { strong: value >= 55 }]} style={lossCellStyle(value)} tabindex="0" data-tip-value={`${value}% потеряно`} data-tip-label={tipLabel}>{value}</td>;
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th>В среднем</th>
+                      {criteriaColumns.map((criterion) => <td>{criterion.loss}%</td>)}
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
+          )}
+
+          <wa-details appearance="filled-outlined" summary="Обучающиеся и попытки">
+            <wa-scroller>
+              <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
+                <thead>
+                  <tr>
+                    <th>Обучающийся</th>
+                    <th>Группа</th>
+                    <th>Прогресс</th>
+                    <th>Средний балл</th>
+                    <th>Последняя активность</th>
+                    <th>Попытки</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => {
+                    const studentProgress = assignments.length ? Math.round(student.completed / assignments.length * 100) : 0;
+                    return (
+                      <tr>
+                        <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
+                        <td>{student.groups.join(", ")}</td>
+                        <td>
+                          <div class="progress-cell wa-stack wa-gap-2xs">
+                            <span>{student.completed} из {assignments.length}</span>
+                            <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
+                          </div>
+                        </td>
+                        <td>{student.average === null ? "—" : `${student.average}%`}</td>
+                        <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
+                        <td>
+                          {student.attempts.length ? (
+                            <div class="attempt-links wa-stack wa-gap-2xs">
+                              {student.attempts.map((attempt) => (
+                                <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
+                              ))}
+                            </div>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </wa-scroller>
           </wa-details>
-        );
-      })}
+        </>
+      )}
+      <div class="chart-tip" role="tooltip" hidden><strong></strong><span></span></div>
     </div>
   )}
 </Page>
 <script>
+  const groupFilter = document.querySelector('#group-filter');
+  groupFilter?.querySelector('wa-select')?.addEventListener('change', () => groupFilter.requestSubmit());
+
+  const tip = document.querySelector('.chart-tip');
+  const showTip = (target) => {
+    if (!tip) return;
+    tip.querySelector('strong').textContent = target.dataset.tipValue;
+    tip.querySelector('span').textContent = target.dataset.tipLabel;
+    tip.hidden = false;
+    const rect = (target.querySelector('circle') || target).getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    const left = Math.min(Math.max(8, rect.left + rect.width / 2 - tipRect.width / 2), window.innerWidth - tipRect.width - 8);
+    const top = rect.top - tipRect.height - 8 < 8 ? rect.bottom + 8 : rect.top - tipRect.height - 8;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+  };
+  const hideTip = () => { if (tip) tip.hidden = true; };
+  ['pointerover', 'focusin'].forEach((type) => document.addEventListener(type, (event) => {
+    const target = event.target.closest?.('[data-tip-value]');
+    if (target) showTip(target);
+  }));
+  ['pointerout', 'focusout'].forEach((type) => document.addEventListener(type, (event) => {
+    const target = event.target.closest?.('[data-tip-value]');
+    if (target && !target.contains(event.relatedTarget)) hideTip();
+  }));
+  window.addEventListener('scroll', hideTip, { passive: true });
+
   const reportDataEl = document.querySelector('#report-data');
   const decodeBase64Utf8 = (encoded) => {
     const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
@@ -338,7 +589,7 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
     }
   });
 </script>
-<style>
+<style is:global>
   .pdf-report { position: fixed; left: -9999px; top: 0; width: 190mm; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
   .pdf-report h1 { font-size: 18px; }
   .pdf-report h2 { font-size: 15px; margin-block-start: 20px; }
@@ -348,18 +599,75 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
 </style>
 
 <style>
-  .statistics-page { min-width: 0; }
+  .statistics-page { min-width: 0; padding-block-end: var(--wa-space-2xl); }
+  .group-filter { max-width: 24rem; }
   .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(18ch, 1fr)); margin: 0; border-block: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
   .summary-item { padding: var(--wa-space-l); }
   .summary-item + .summary-item { border-inline-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
-  .summary-item dt { color: var(--wa-color-text-quiet); }
+  .summary-item dt, .summary-item small { color: var(--wa-color-text-quiet); }
   .summary-item dd { margin: 0; font-size: var(--wa-font-size-2xl); font-weight: var(--wa-font-weight-bold); line-height: 1; }
-  .course-heading { width: 100%; }
-  .course-heading h2 { margin: 0; }
+  .summary-progress { --track-height: var(--wa-space-2xs); }
+
+  .panel-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--wa-space-l); }
+  .panel { min-width: 0; padding: var(--wa-space-l); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .panel-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--wa-space-m); margin-block-end: var(--wa-space-l); }
+  .panel-heading h2 { margin: 0; font-size: var(--wa-font-size-l); }
+  .panel-heading p { margin: var(--wa-space-3xs) 0 0; color: var(--wa-color-text-quiet); }
+  .empty-note { margin: 0; color: var(--wa-color-text-quiet); }
+
+  .trend-chart { display: block; width: 100%; height: auto; overflow: visible; }
+  .trend-chart .grid line { stroke: var(--wa-color-neutral-border-quiet); stroke-width: 1; }
+  .trend-chart text { fill: var(--wa-color-text-quiet); font-size: 12px; }
+  .trend-chart .grid text { text-anchor: end; }
+  .trend-chart polyline { fill: none; stroke: var(--wa-color-brand-fill-loud); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .trend-chart .point { outline: none; cursor: default; }
+  .trend-chart .point rect { fill: transparent; }
+  .trend-chart .point line { stroke: var(--wa-color-neutral-border-loud); stroke-width: 1; opacity: 0; }
+  .trend-chart .point circle { fill: var(--wa-color-brand-fill-loud); stroke: var(--wa-color-surface-raised); stroke-width: 2; }
+  .trend-chart .point:hover line, .trend-chart .point:focus-visible line { opacity: 1; }
+  .trend-chart .point:hover circle, .trend-chart .point:focus-visible circle { r: 6; }
+  .trend-chart .point-label { fill: var(--wa-color-text-normal); font-weight: var(--wa-font-weight-bold); text-anchor: middle; pointer-events: none; }
+
+  .error-list { display: grid; gap: var(--wa-space-m); margin: 0; padding: 0; list-style: none; }
+  .error-list li { outline: none; }
+  .error-list li:focus-visible { outline: var(--wa-focus-ring); outline-offset: 2px; }
+  .error-row { display: flex; justify-content: space-between; gap: var(--wa-space-s); }
+  .error-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .error-track { height: var(--wa-space-xs); margin-block-start: var(--wa-space-2xs); background: var(--wa-color-neutral-fill-normal); }
+  .error-track span { display: block; height: 100%; border-radius: 0 4px 4px 0; background: var(--wa-color-danger-fill-loud); }
+  .error-list li:hover .error-track span { background: var(--wa-color-danger-on-quiet); }
+
+  .heat-legend { display: flex; align-items: center; gap: var(--wa-space-xs); color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+  .heat-legend i { width: 7rem; height: var(--wa-space-xs); }
+  .scale-score { background: linear-gradient(to right, color-mix(in srgb, var(--wa-color-brand-fill-loud) 10%, var(--wa-color-surface-raised)), var(--wa-color-brand-fill-loud) 90%); }
+  .scale-loss { background: linear-gradient(to right, var(--wa-color-neutral-fill-quiet), var(--wa-color-danger-fill-loud) 90%); }
+  .heatmap-scroll { overflow-x: auto; }
+  .heatmap { width: 100%; margin: 0; border-collapse: separate; border-spacing: 2px; }
+  .heatmap th { max-width: 14rem; padding: var(--wa-space-xs); overflow: hidden; font-size: var(--wa-font-size-s); font-weight: var(--wa-font-weight-semibold); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+  .heatmap thead th:not(:first-child) { max-width: 9rem; text-align: center; }
+  .heatmap tbody th, .heatmap tfoot th { position: sticky; left: 0; z-index: 1; background: var(--wa-color-surface-raised); }
+  .heatmap td { min-width: 4.5rem; height: 2.25rem; padding: 0; text-align: center; font-weight: var(--wa-font-weight-semibold); }
+  .heatmap td.score { background: color-mix(in srgb, var(--wa-color-brand-fill-loud) var(--cell-weight), var(--wa-color-surface-raised)); }
+  .heatmap td.loss { background: color-mix(in srgb, var(--wa-color-danger-fill-loud) var(--cell-weight), var(--wa-color-neutral-fill-quiet)); }
+  .heatmap td.strong, .heatmap td.strong a { color: #ffffff; }
+  .heatmap td.empty { border: 1px dashed var(--wa-color-neutral-border-quiet); color: var(--wa-color-text-quiet); font-weight: normal; }
+  .heatmap td a { display: grid; place-items: center; width: 100%; height: 100%; color: var(--wa-color-text-normal); text-decoration: none; }
+  .heatmap td.score:hover, .heatmap td.loss:hover, .heatmap td:focus-within, .heatmap td:focus-visible { outline: 2px solid var(--wa-color-text-normal); outline-offset: -2px; }
+  .heatmap tfoot td, .heatmap tfoot th { padding-block: var(--wa-space-xs); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .heatmap tfoot td small { display: block; color: var(--wa-color-text-quiet); font-weight: normal; }
+
+  .chart-tip { position: fixed; z-index: 1000; display: grid; gap: 2px; max-width: 20rem; padding: var(--wa-space-xs) var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); box-shadow: 0 4px 12px rgb(38 50 56 / 16%); pointer-events: none; }
+  .chart-tip[hidden] { display: none; }
+  .chart-tip strong { font-size: var(--wa-font-size-m); }
+  .chart-tip span { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+
   .statistics-table { min-width: 90ch; margin: 0; }
   .statistics-table td { vertical-align: top; }
   .statistics-table td:first-child small { display: block; color: var(--wa-color-text-quiet); }
   .progress-cell { min-width: 14ch; }
   .student-progress { --track-height: var(--wa-space-xs); }
   .attempt-links { min-width: 20ch; }
+
+  @media (max-width: 60rem) { .panel-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 40rem) { .panel { padding: var(--wa-space-m); } .summary-item + .summary-item { border-inline-start: 0; border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); } }
 </style>
