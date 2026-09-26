@@ -11,3 +11,4 @@ num2words==0.5.14
 regex>=2024.11.6
 silero-stress==1.4
 prometheus-fastapi-instrumentator>=7,<8
+boto3>=1.35,<2

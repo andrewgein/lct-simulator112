@@ -283,9 +283,15 @@ services:
       TTS_MAX_GENERATION_TOKENS: 512
       TTS_TEMPERATURE: 0.7
       TTS_STRESS_MODE: all
+      S3_ENDPOINT: http://${COMPOSE_PROJECT_NAME}-minio:9000
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}
+      S3_RECORDINGS_BUCKET: call-recordings
     networks: [default, monitoring]
     depends_on:
       context-service:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8005/health')\" || exit 1"]
