@@ -28,6 +28,9 @@ public class ReviewPersistenceAdapter implements ReviewStore {
         target.setAutomaticScore(source.automaticScore());
         target.setFinalScore(source.finalScore());
         target.setMaxScore(source.maxScore());
+        target.setThreshold3(source.threshold3());
+        target.setThreshold4(source.threshold4());
+        target.setThreshold5(source.threshold5());
         target.setDurationSeconds(source.durationSeconds());
         target.setTimeLimitSeconds(source.timeLimitSeconds());
         target.setOvertimeSeconds(source.overtimeSeconds());
@@ -57,7 +60,8 @@ public class ReviewPersistenceAdapter implements ReviewStore {
                 source.getAutomaticScore(), source.getFinalScore(), source.getMaxScore(),
                 source.getDurationSeconds(), source.getTimeLimitSeconds(), source.getOvertimeSeconds(),
                 source.getExpertId(), source.getExpertComment(), source.getConfirmedAt(),
-                source.getCreatedAt(), source.getUpdatedAt());
+                source.getCreatedAt(), source.getUpdatedAt(),
+                source.getThreshold3(), source.getThreshold4(), source.getThreshold5());
     }
 
     private static CriterionResult toDomain(CriterionResultJpaEntity source) {

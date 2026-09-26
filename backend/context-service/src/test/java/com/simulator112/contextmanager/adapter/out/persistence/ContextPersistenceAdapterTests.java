@@ -38,6 +38,9 @@ class ContextPersistenceAdapterTests {
         TrainingContext context = new TrainingContext();
         context.setAssignmentId(UUID.randomUUID());
         context.setLevelTitle("Проверочный уровень");
+        context.setThreshold3(40);
+        context.setThreshold4(60);
+        context.setThreshold5(80);
         context.setUserId(UUID.randomUUID());
         context.setTargetType(IncidentTargetType.SYSTEM_112);
         context.setDifficulty(Difficulty.NORMAL);
@@ -71,6 +74,9 @@ class ContextPersistenceAdapterTests {
         TrainingContext saved = store.save(context);
         TrainingContext restored = store.findById(saved.getId()).orElseThrow();
 
+        assertThat(restored.getThreshold3()).isEqualTo(40);
+        assertThat(restored.getThreshold4()).isEqualTo(60);
+        assertThat(restored.getThreshold5()).isEqualTo(80);
         assertThat(restored.getIncidents()).hasSize(1);
         assertThat(restored.getIncidents().getFirst().getStages().getFirst().getCalls().getFirst().getSourceId())
                 .isEqualTo(call.getSourceId());

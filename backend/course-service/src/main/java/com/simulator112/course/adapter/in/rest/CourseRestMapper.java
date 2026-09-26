@@ -49,12 +49,13 @@ public class CourseRestMapper {
 
     public AssignmentView toView(Assignment assignment, int position) {
         return new AssignmentView(assignment.id(), position, assignment.title(), assignment.description(),
-                assignment.difficulty(), assignment.executionMode(), assignment.incidentIds());
+                assignment.difficulty(), assignment.executionMode(), assignment.incidentIds(),
+                assignment.threshold3(), assignment.threshold4(), assignment.threshold5());
     }
 
     private Assignment toDomain(AssignmentRequest request) {
         return new Assignment(request.id(), request.title(), request.description(), request.difficulty(),
-                request.executionMode(), request.incidentIds());
+                request.executionMode(), request.incidentIds(), request.threshold3(), request.threshold4(), request.threshold5());
     }
 
     private List<CourseMaterialView> materials(Course course) {

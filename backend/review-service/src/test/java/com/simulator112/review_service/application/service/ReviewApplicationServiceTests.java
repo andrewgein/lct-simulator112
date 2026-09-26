@@ -42,6 +42,8 @@ class ReviewApplicationServiceTests {
         assertThat(result.assignmentId()).isEqualTo(assignmentId);
         assertThat(result.status()).isEqualTo(ReviewStatus.DONE);
         assertThat(result.finalScore()).isEqualTo(result.automaticScore());
+        assertThat(result.grade()).isNull();
+        assertThat(result.passed()).isNull();
     }
 
     @Test
@@ -80,6 +82,42 @@ class ReviewApplicationServiceTests {
         assertThat(result.status()).isEqualTo(ReviewStatus.DONE);
         assertThat(result.expertId()).isEqualTo(expertId);
         assertThat(result.finalScore()).isZero();
+    }
+
+    @Test
+    void belowPassingThresholdIsNotCreditedAndCorrectionRecalculatesGrade() {
+        when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        UUID contextId = UUID.randomUUID();
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(),
+                new ReviewSubmission.EvaluationCriteria(List.of()));
+        var submission = new ReviewSubmission(contextId, UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(), List.of(), List.of(),
+                null, null, 40, 60, 80);
+
+        Review review = service.submit(submission);
+        assertThat(review.grade()).isEqualTo(2);
+        assertThat(review.passed()).isFalse();
+        assertThat(review.status()).isEqualTo(ReviewStatus.DONE);
+
+        when(store.findByContextId(contextId)).thenReturn(Optional.of(review));
+        Review corrected = service.confirm(contextId, UUID.randomUUID(), 60, "Исправлено");
+        assertThat(corrected.grade()).isEqualTo(4);
+        assertThat(corrected.passed()).isTrue();
+        assertThat(corrected.threshold3()).isEqualTo(40);
+        assertThat(corrected.confirm(UUID.randomUUID(), 39, null, Instant.now()).passed()).isFalse();
+    }
+
+    @Test
+    void gradesTotalScoreAcrossIncidentsWithoutPerIncidentMinimum() {
+        Review review = new Review(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), ReviewStatus.DONE,
+                List.of(), 159, 159, 200, 0, 30, 0, null, null, null, null, null, 40, 60, 80);
+
+        assertThat(review.grade()).isEqualTo(4);
+        assertThat(review.passed()).isTrue();
+        assertThat(review.confirm(UUID.randomUUID(), 160, null, Instant.now()).grade()).isEqualTo(5);
+        assertThat(review.confirm(UUID.randomUUID(), 120, null, Instant.now()).grade()).isEqualTo(4);
+        assertThat(review.confirm(UUID.randomUUID(), 80, null, Instant.now()).grade()).isEqualTo(3);
+        assertThat(review.confirm(UUID.randomUUID(), 79, null, Instant.now()).passed()).isFalse();
     }
 
     @Test

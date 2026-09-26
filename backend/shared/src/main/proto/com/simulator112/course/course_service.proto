@@ -27,6 +27,9 @@ message Assignment {
   AssignmentDifficulty difficulty = 5;
   AssignmentExecutionMode execution_mode = 6;
   repeated string incident_ids = 7;
+  optional int32 threshold_3 = 8;
+  optional int32 threshold_4 = 9;
+  optional int32 threshold_5 = 10;
 }
 
 enum CourseTargetType {

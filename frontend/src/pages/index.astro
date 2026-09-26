@@ -17,7 +17,7 @@ try {
   if (!response.ok || !reviewsResponse.ok) throw new Error();
   const enrollments = await response.json();
   const reviews = (await reviewsResponse.json()).reviews || [];
-  const completed = new Set(reviews.filter((review) => review.status === "DONE").map((review) => String(review.assignmentId)));
+  const completed = new Set(reviews.filter((review) => review.status === "DONE" && review.passed === true).map((review) => String(review.assignmentId)));
   courses = (await Promise.all(enrollments.map(async (enrollment) => {
     const courseResponse = await getCourse(enrollment.courseId, Astro.locals.accessToken);
     if (!courseResponse.ok) return null;

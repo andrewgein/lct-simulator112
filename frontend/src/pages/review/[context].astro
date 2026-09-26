@@ -36,8 +36,10 @@ const groupedIncidents = review.criterionResults.reduce((acc, current) => {
   return acc;
 }, {});
 
-const totalScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.score, 0);
-const maxTotalScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+const criteriaScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.score, 0);
+const criteriaMaxScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+const totalScore = review.finalScore ?? criteriaScore;
+const maxTotalScore = review.maxScore ?? criteriaMaxScore;
 const percentage = maxTotalScore > 0 ? Math.round((totalScore / maxTotalScore) * 100) : 0;
 
 export const prerender = false;
@@ -51,11 +53,26 @@ export const prerender = false;
   <div class="review-sections wa-stack wa-gap-2xl">
     <section class="wa-stack wa-gap-l" aria-labelledby="summary-heading">
       <h2 id="summary-heading" class="wa-heading-xl">Общая информация</h2>
-      <div>
-        <span><strong>Статус:</strong> {review.status === "DONE" ? "Проверка завершена" : "Результат формируется"}</span>
-      </div>
-      <span><strong>Общий балл:</strong> {totalScore} из {maxTotalScore} ({percentage}%)</span>
-      <wa-progress-bar value={percentage} label="Процент выполнения"></wa-progress-bar>
+      <wa-card appearance="filled-outlined">
+        <div class="wa-stack wa-gap-l">
+          {review.grade !== null && review.grade !== undefined && (
+            <div class="wa-split wa-gap-s">
+              <strong>Оценка:</strong>
+              <span>{review.grade}</span>
+            </div>
+          )}
+          <div class="wa-stack wa-gap-xs">
+            <div class="wa-split wa-gap-s">
+              <strong>Общий балл:</strong>
+              <span>{totalScore} из {maxTotalScore} ({percentage}%)</span>
+            </div>
+            <wa-progress-bar value={percentage} label="Общий балл"></wa-progress-bar>
+          </div>
+          {review.grade !== null && review.grade !== undefined && (
+            <wa-callout variant={review.passed ? "success" : "danger"}>{review.passed ? "Задание пройдено" : "Задание не пройдено"}</wa-callout>
+          )}
+        </div>
+      </wa-card>
     </section>
     <wa-divider></wa-divider>
     <section class="recordings-section wa-stack wa-gap-l" aria-labelledby="recordings-heading">

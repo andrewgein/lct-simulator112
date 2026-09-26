@@ -42,7 +42,8 @@ class ContextServiceTests {
                 com.simulator112.shared.dto.Difficulty.NORMAL,
                 com.simulator112.contextmanager.domain.common.ExecutionMode.PARALLEL,
                 java.util.stream.IntStream.range(0, incidentProtos.size())
-                        .mapToObj(index -> IncidentContextMapper.toDomain(incidentProtos.get(index), index)).toList());
+                        .mapToObj(index -> IncidentContextMapper.toDomain(incidentProtos.get(index), index)).toList(),
+                40, 60, 80);
         when(courseAssignments.getAssignmentForUser(assignmentId, userId)).thenReturn(scenario);
         when(repository.save(any())).thenAnswer(invocation -> {
             TrainingContext context = invocation.getArgument(0);
@@ -52,6 +53,13 @@ class ContextServiceTests {
 
         TrainingContext context = service.create(userId, assignmentId);
 
+        assertThat(context.getThreshold3()).isEqualTo(40);
+        assertThat(context.getThreshold4()).isEqualTo(60);
+        assertThat(context.getThreshold5()).isEqualTo(80);
+        var proto = com.simulator112.contextmanager.adapter.grpc.mapper.FullContextMapper.toProto(context);
+        assertThat(proto.getAssignmentContext().getThreshold3()).isEqualTo(40);
+        assertThat(proto.getAssignmentContext().getThreshold4()).isEqualTo(60);
+        assertThat(proto.getAssignmentContext().getThreshold5()).isEqualTo(80);
         assertThat(context.getIncidents())
                 .allMatch(incident -> incident.getStatus() == IncidentProgressStatus.ACTIVE);
         assertThat(context.getIncidents())

@@ -28,7 +28,8 @@ try {
 const assignments = courses.flatMap(({ course }) => course.assignments.map((assignment) =>
   [String(assignment.id), { ...assignment, courseTitle: course.title }]));
 const assignmentsById = new Map(assignments);
-const completedAssignmentIds = new Set(reviews.filter((review) => review.status === "DONE")
+const completedAssignmentIds = new Set(reviews
+  .filter((review) => review.status === "DONE" && review.passed === true)
   .map((review) => String(review.assignmentId)));
 const done = assignments.filter(([assignmentId]) => completedAssignmentIds.has(assignmentId)).length;
 const overallProgress = assignments.length ? Math.round(done / assignments.length * 100) : 0;
@@ -66,7 +67,9 @@ const reviewResults = reviews.map((review) => {
         <wa-scroller><table class="wa-zebra-rows wa-hover-rows wa-tabular-nums"><thead><tr><th>Дата</th><th>Курс / задание</th><th>Результат</th></tr></thead><tbody>
           {reviewResults.map((review) => <tr><td>{review.createdAt ? reviewDateFormatter.format(new Date(review.createdAt)) : "—"}</td>
             <td><a href={`/review/${encodeURIComponent(review.contextId)}`}>{review.assignment?.courseTitle || "Курс недоступен"} · {review.assignment?.title || "Задание недоступно"}</a></td>
-            <td>{review.status === "DONE" ? `${review.score} / ${review.max}` : "Формируется"}</td></tr>)}
+            <td>{review.status !== "DONE" ? "Формируется" : review.grade !== null && review.grade !== undefined
+              ? `Оценка ${review.grade} · ${review.passed ? "зачтено" : "не зачтено"}`
+              : `${review.score} / ${review.max}`}</td></tr>)}
         </tbody></table></wa-scroller>}
     </section>
   </div>}

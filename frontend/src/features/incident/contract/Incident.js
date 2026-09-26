@@ -132,6 +132,9 @@
  * @property {Difficulty} difficulty
  * @property {ExecutionMode} executionMode
  * @property {string[]} incidentIds
+ * @property {number | null} threshold3
+ * @property {number | null} threshold4
+ * @property {number | null} threshold5
  */
 
 /** @typedef {Omit<Level, "id">} LevelRequest */

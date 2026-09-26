@@ -19,8 +19,10 @@ let students = [];
 const scorePercent = (review) => {
   if (review.maxScore > 0) return Math.round((review.finalScore ?? review.automaticScore ?? 0) / review.maxScore * 100);
   const criteria = review.criterionResults || [];
-  const score = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
-  const maxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+  const criteriaScore = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
+  const criteriaMaxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+  const score = review.finalScore ?? criteriaScore;
+  const maxScore = review.maxScore ?? criteriaMaxScore;
   return maxScore ? Math.round(score / maxScore * 100) : null;
 };
 const mean = (values) => values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
@@ -213,6 +215,8 @@ const reportData = {
         assignmentTitle: attempt.assignmentTitle,
         status: attempt.status,
         percent: attempt.percent,
+        grade: attempt.grade,
+        passed: attempt.passed,
         createdAt: attempt.createdAt,
         criteria: (attempt.criterionResults || []).map((criterion) => ({
           incidentOrder: criterion.incidentOrder,
@@ -493,7 +497,11 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
   const reportData = reportDataEl ? JSON.parse(decodeBase64Utf8(reportDataEl.textContent.trim())) : null;
   const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
   const percentLabel = (value) => (value === null || value === undefined ? '—' : `${value}%`);
-  const statusLabel = (attempt) => (attempt.status === 'DONE' ? percentLabel(attempt.percent) : 'формируется');
+  const statusLabel = (attempt) => {
+    if (attempt.status !== 'DONE') return 'формируется';
+    if (attempt.grade !== null && attempt.grade !== undefined) return `оценка ${attempt.grade}, ${attempt.passed ? 'зачтено' : 'не зачтено'}`;
+    return percentLabel(attempt.percent);
+  };
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
   function groupAttemptCriteria(attempt) {

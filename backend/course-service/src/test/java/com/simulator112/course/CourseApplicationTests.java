@@ -49,7 +49,7 @@ class CourseApplicationTests {
                 List.of(new CourseMaterial(null, "Введение", "materials/test/introduction.md", "introduction.md", "text/markdown", 12L),
                         new CourseMaterial(null, "Регламент", "materials/test/rules.md", "rules.md", "text/markdown", 12L)),
                 List.of(new Assignment(null, "Первое задание", null, AssignmentDifficulty.NORMAL,
-                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())),
+                                AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID()), 40, 60, 80),
                         new Assignment(null, "Второе задание", null, AssignmentDifficulty.NORMAL,
                                 AssignmentExecutionMode.SEQUENTIAL, List.of(UUID.randomUUID())))));
 
@@ -61,6 +61,10 @@ class CourseApplicationTests {
                 && assignment.executionMode() == AssignmentExecutionMode.SEQUENTIAL);
         assertThat(loaded.assignments()).extracting(Assignment::title)
                 .containsExactly("Первое задание", "Второе задание");
+        assertThat(loaded.assignments().getFirst().threshold3()).isEqualTo(40);
+        assertThat(loaded.assignments().getFirst().threshold4()).isEqualTo(60);
+        assertThat(loaded.assignments().getFirst().threshold5()).isEqualTo(80);
+        assertThat(loaded.assignments().get(1).threshold3()).isNull();
         assertThat(courseRepository.findAllByAuthorId(authorId)).hasSize(1);
     }
 

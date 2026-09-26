@@ -39,12 +39,16 @@ public class CourseGrpcController extends CourseServiceGrpc.CourseServiceImplBas
                     .setDifficulty(AssignmentDifficulty.valueOf("ASSIGNMENT_DIFFICULTY_" + assignment.difficulty().name()))
                     .setExecutionMode(AssignmentExecutionMode.valueOf(
                             "ASSIGNMENT_EXECUTION_MODE_" + assignment.executionMode().name()))
-                    .addAllIncidentIds(assignment.incidentIds().stream().map(UUID::toString).toList())
-                    .build();
+                    .addAllIncidentIds(assignment.incidentIds().stream().map(UUID::toString).toList());
+            if (assignment.threshold3() != null) {
+                assignmentProto.setThreshold3(assignment.threshold3())
+                        .setThreshold4(assignment.threshold4())
+                        .setThreshold5(assignment.threshold5());
+            }
             observer.onNext(AssignmentForUserResponse.newBuilder()
                     .setCourseTargetType(CourseTargetType.valueOf(
                             "COURSE_TARGET_TYPE_" + course.targetType().name()))
-                    .setAssignment(assignmentProto).build());
+                    .setAssignment(assignmentProto.build()).build());
             observer.onCompleted();
         } catch (EnrollmentNotFoundException exception) {
             observer.onError(Status.PERMISSION_DENIED.withDescription("Курс не назначен пользователю")
