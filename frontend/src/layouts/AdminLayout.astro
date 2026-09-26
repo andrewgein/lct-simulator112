@@ -38,7 +38,14 @@ const sections = [
 </Page>
 
 <style>
-  .admin-nav { padding: var(--wa-space-m); inline-size: 14rem; box-sizing: border-box; }
+  .admin-nav { padding: var(--wa-space-m) 0; inline-size: 14rem; box-sizing: border-box; }
   .admin-nav wa-button { width: 100%; }
   .admin-nav wa-button::part(button) { justify-content: flex-start; }
+
+  /* style.css pads .navigation-slot and .main-header-slot generously (3xl+xl) for the general
+     case - on admin panel pages that adds up to a wide gap between the sidebar and the title.
+     Scoped to :has(.admin-nav) so only these pages are affected. */
+  :global(wa-page:has(.admin-nav) .navigation-slot) { padding-inline: var(--wa-space-m) var(--wa-space-xs) !important; }
+  :global(wa-page:has(.admin-nav) > .main-header-slot[slot="main-header"]) { padding-inline: var(--wa-space-s) var(--wa-space-xl) !important; }
+  :global(wa-page:has(.admin-nav) > main) { padding-inline-start: var(--wa-space-s) !important; }
 </style>

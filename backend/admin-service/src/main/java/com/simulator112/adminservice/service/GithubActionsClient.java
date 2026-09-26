@@ -37,7 +37,12 @@ public class GithubActionsClient {
   public void dispatch(String workflowFile, Map<String, String> inputs) {
     restClient
         .post()
-        .uri("/repos/{repo}/actions/workflows/{workflow}/dispatches", repository, workflowFile)
+        // "repository" is "owner/repo" - substituting it into a single {repo} template variable
+        // makes Spring's UriComponentsBuilder percent-encode the slash as %2F, producing a path
+        // GitHub doesn't recognize (silent 404 on every call). Pre-building the path string and
+        // passing it to .uri(String) skips template-variable encoding entirely; workflowFile is
+        // always one of our own static ".yml" filenames, never user input, so this is safe.
+        .uri("/repos/" + repository + "/actions/workflows/" + workflowFile + "/dispatches")
         .body(Map.of("ref", "main", "inputs", inputs == null ? Map.of() : inputs))
         .retrieve()
         .toBodilessEntity();
@@ -50,10 +55,7 @@ public class GithubActionsClient {
       JsonNode response =
           restClient
               .get()
-              .uri(
-                  "/repos/{repo}/actions/workflows/{workflow}/runs?per_page=1",
-                  repository,
-                  workflowFile)
+              .uri("/repos/" + repository + "/actions/workflows/" + workflowFile + "/runs?per_page=1")
               .retrieve()
               .body(JsonNode.class);
       JsonNode run = response == null ? null : response.path("workflow_runs").path(0);
