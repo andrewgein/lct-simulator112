@@ -1,6 +1,7 @@
 package com.simulator112.incident.adapter.in.rest;
 
 import com.simulator112.incident.application.service.IncidentGenerationException;
+import com.simulator112.incident.application.service.ClassifierUnavailableException;
 import com.simulator112.incident.domain.common.exception.ClassifierEntryNotFoundException;
 import com.simulator112.incident.domain.common.exception.IncidentNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,9 @@ public class IncidentExceptionHandler {
     @ExceptionHandler(IncidentGenerationException.class)
     ResponseEntity<ErrorResponse> generationFailed(IncidentGenerationException exception) {
         log.warn("Incident generation failed", exception);
+        if (exception instanceof ClassifierUnavailableException) {
+            return response(HttpStatus.BAD_GATEWAY, exception.getMessage());
+        }
         return response(HttpStatus.BAD_GATEWAY, exception.getCause() instanceof InterruptedException
                 ? "Генерация прервана" : "Не удалось получить корректный ответ модели");
     }

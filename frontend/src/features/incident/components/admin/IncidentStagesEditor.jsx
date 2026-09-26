@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { classifierInfo, loadClassifier } from "../../storage/classifierStorage";
 import StageEditor from "./StageEditor.jsx";
-import { findIncident, normalizeStage, personIsIncomplete, personValue, request, splitLines } from "./editorHelpers";
+import { findIncident, moveItem, normalizeStage, personIsIncomplete, personValue, request, serializeStage, splitLines } from "./editorHelpers";
 
 /**
  * @param {{ initialStages?: import("../../contract/Incident").IncidentStage[] }} props
@@ -43,25 +43,25 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
     const form = document.querySelector("#incident-form");
     if (!form) return;
 
-    const applyGenerated = (event) => {
-      const generated = event.detail;
-      if (!Array.isArray(generated)) return;
+    form.prepareGeneratedStages = (generated) => {
+      if (!Array.isArray(generated)) throw new Error("Модель вернула некорректные этапы");
       const previous = stagesRef.current;
       const next = generated.map((stage, index) => {
         const existing = previous[index];
         const calls = (stage.calls || []).map((call, callIndex) => ({ ...call, id: existing?.dialups[callIndex]?.id || null }));
         return normalizeStage({ ...stage, id: existing?.id || null, calls }, existing?.key || crypto.randomUUID());
       });
-      stagesRef.current = next;
-      setStages(next);
-      setOpenStage("");
-      setOpenDialup("");
+      return () => {
+        stagesRef.current = next;
+        setStages(next);
+        setOpenStage("");
+        setOpenDialup("");
+      };
     };
-    form.addEventListener("apply-generated-stages", applyGenerated);
 
     form.validateIncidentStructure = () => {
       for (const stage of stagesRef.current) {
-        if (!stage.typeId) {
+        if (!stage.classifierCodes.length || stage.classifierCodes.some((code) => !code)) {
           setOpenStage(stage.key);
           throw new Error("Выберите тип происшествия для этапа");
         }
@@ -82,28 +82,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
       }
     };
 
-    form.getIncidentStages = () => stagesRef.current.map((stage, position) => ({
-      id: stage.id || null,
-      title: stage.title || `Этап ${position + 1}`,
-      position,
-      classifierCodes: stage.typeId ? [stage.typeId] : [],
-      victimCount: Number(stage.victimCount || 0),
-      description: stage.description || null,
-      type: null,
-      timeLimitSeconds: null,
-      calls: stage.dialups.map((dialup, callPosition) => ({
-        id: dialup.id || null,
-        position: callPosition,
-        direction: "INBOUND",
-        counterparty: "CALLER",
-        person: personValue(dialup.applicant),
-        gender: dialup.gender || null,
-        knownFacts: splitLines(dialup.knownFacts),
-        hiddenFacts: splitLines(dialup.hiddenFacts),
-        aiContext: dialup.aiContext || null,
-        emotionalState: dialup.emotionalState || null
-      }))
-    }));
+    form.getIncidentStages = () => stagesRef.current.map(serializeStage);
 
     form.saveIncidentStructure = async (incidentId) => {
       form.validateIncidentStructure();
@@ -156,7 +135,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
     };
 
     return () => {
-      form.removeEventListener("apply-generated-stages", applyGenerated);
+      delete form.prepareGeneratedStages;
       delete form.validateIncidentStructure;
       delete form.getIncidentStages;
       delete form.saveIncidentStructure;

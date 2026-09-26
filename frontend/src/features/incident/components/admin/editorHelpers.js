@@ -67,6 +67,7 @@ export function normalizeStage(stage = {}, key = clientId()) {
     id: stage.id || "",
     title: stage.title || "",
     typeId: stage.type?.id || stage.typeId || stage.classifierCodes?.[0] || "",
+    classifierCodes: stage.classifierCodes?.length ? [...stage.classifierCodes] : [stage.type?.id || stage.typeId || ""],
     description: stage.description || "",
     victimCount: stage.victimCount ?? 0,
     additionalInfo,
@@ -94,4 +95,30 @@ export async function request(path, method, body) {
   if (response.ok) return response.status === 204 ? null : response.json();
   const error = await response.json().catch(() => ({}));
   throw new Error(error.message || error.detail || "Не удалось сохранить этапы и звонки");
+}
+
+export function serializeStage(stage, position) {
+  return {
+    id: stage.id || null,
+    title: stage.title || `Этап ${position + 1}`,
+    position,
+    classifierCodes: [...new Set(stage.classifierCodes)],
+    additionalInfo: { ...stage.additionalInfo },
+    victimCount: Number(stage.victimCount || 0),
+    description: stage.description || null,
+    type: null,
+    timeLimitSeconds: null,
+    calls: stage.dialups.map((dialup, callPosition) => ({
+      id: dialup.id || null,
+      position: callPosition,
+      direction: "INBOUND",
+      counterparty: "CALLER",
+      person: personValue(dialup.applicant),
+      gender: dialup.gender || null,
+      knownFacts: splitLines(dialup.knownFacts),
+      hiddenFacts: splitLines(dialup.hiddenFacts),
+      aiContext: dialup.aiContext || null,
+      emotionalState: dialup.emotionalState || null
+    }))
+  };
 }

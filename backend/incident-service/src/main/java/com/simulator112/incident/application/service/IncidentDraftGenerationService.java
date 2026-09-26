@@ -21,7 +21,7 @@ public class IncidentDraftGenerationService implements GenerateIncidentDraftUseC
             Изменение сложности: {"message":"Сложность изменена","incident":{"difficulty":"HARD"}}.
             Допустимые поля incident: title (строка), difficulty (EASY|NORMAL|HARD),
             address:{city,street,house,building,apartment,floor},
-            stages:[{title,description,classifierCodes:["код из списка"],victimCount,additionalInfo:{},calls:[{
+            stages:[{title,description,classifierCodes:["код из списка"],victimCount,additionalInfo:{"ключ":"строковое значение"},calls:[{
             direction:"INBOUND",counterparty:"CALLER",gender:"MAN" или "WOMEN",
             person:{firstName,lastName,middleName,age,phone,contactPhone,onScenePhone,address,additionalInfo},
             knownFacts:[строки],hiddenFacts:[строки],aiContext:строка,emotionalState:строка}]}],
@@ -52,13 +52,13 @@ public class IncidentDraftGenerationService implements GenerateIncidentDraftUseC
                 .map(Message::content).reduce("", (left, right) -> left + " " + right);
         searchQuery += " " + command.draft().path("title").asText("");
         if (searchQuery.length() > 4000) searchQuery = searchQuery.substring(searchQuery.length() - 4000);
-        List<ClassifierCatalogPort.Candidate> candidates;
+        List<ClassifierCatalogPort.Candidate> candidates = List.of();
+        Exception classifierFailure = null;
         try {
             candidates = classifierCatalog.search(searchQuery, 80, includedCodes);
         } catch (Exception e) {
-            throw new IncidentGenerationException("Не удалось получить коды классификатора", e);
+            classifierFailure = e;
         }
-        if (candidates.isEmpty()) throw new IncidentGenerationException("No classifier candidates");
         var classifierNames = new LinkedHashMap<String, String>();
         for (var candidate : candidates) {
             classifierNames.put(candidate.code(), candidate.categoryName() + ": " + candidate.finalName());
@@ -71,7 +71,11 @@ public class IncidentDraftGenerationService implements GenerateIncidentDraftUseC
             for (var message : command.messages()) {
                 messages.add(new IncidentLanguageModelPort.Message(message.role(), message.content()));
             }
-            return validator.validate(model.generate(messages), classifierNames.keySet());
+            var content = model.generate(messages);
+            if (mapper.readTree(content).path("incident").has("stages") && candidates.isEmpty()) {
+                throw new ClassifierUnavailableException(classifierFailure);
+            }
+            return validator.validate(content, classifierNames.keySet());
         } catch (IncidentGenerationException e) {
             throw e;
         } catch (Exception e) {

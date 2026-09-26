@@ -71,7 +71,15 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
           </wa-divider>
           <div class="dialog-section wa-stack wa-gap-m">
             <h3 class="wa-heading-l">Информация о происшествии</h3>
-            <IncidentTypeSelect classifierState={{ classifier, loading: false, error: "" }} id={`stage-${stage.key}-incident-type`} name={null} value={stage.typeId} required onChange={(typeId) => onChange({ ...stage, typeId, additionalInfo: {} })} />
+            {stage.classifierCodes.map((code, codeIndex) => (
+              <div class="wa-cluster" key={codeIndex}>
+                <IncidentTypeSelect classifierState={{ classifier, loading: false, error: "" }} id={`stage-${stage.key}-incident-type-${codeIndex}`} name={null} value={code} required onChange={(value) => { const classifierCodes = stage.classifierCodes.map((item, index) => index === codeIndex ? value : item); onChange({ ...stage, classifierCodes, typeId: classifierCodes[0] }); }} />
+                {stage.classifierCodes.length > 1 && (
+                  <wa-button type="button" appearance="plain" variant="danger" onClick={() => { const classifierCodes = stage.classifierCodes.filter((_, index) => index !== codeIndex); onChange({ ...stage, classifierCodes, typeId: classifierCodes[0] }); }}>Удалить тип</wa-button>
+                )}
+              </div>
+            ))}
+            <wa-button type="button" appearance="plain" onClick={() => onChange({ ...stage, classifierCodes: [...stage.classifierCodes, ""] })}>Добавить тип происшествия</wa-button>
             <wa-textarea value={stage.description} label="Описание ситуации" rows="5" onInput={changeStageField("description")}>
             </wa-textarea>
             <div class="wa-stack wa-gap-m">

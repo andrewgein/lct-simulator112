@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +44,7 @@ class IncidentApplicationTests {
                 new Person("Иван", "Иванов", null, 35, "+70000000000", null, null, null, null),
                 Gender.MAN, List.of("Виден дым"), List.of("Есть пострадавший"), "caller", "WORRIED");
         var stage = new System112Stage(null, "Первичный вызов", 0,
-                List.of("101", "102"), 1, "Описание", List.of(call));
+                List.of("101", "102"), 1, "Описание", List.of(call), Map.of("smoke", "true"));
         var incident = new System112Incident(null, "Пожар",
                 new Address("Москва", "Тверская", "1", null, null, 1), Difficulty.EASY,
                 List.of(stage), new System112Criteria(List.of(
@@ -56,6 +57,8 @@ class IncidentApplicationTests {
         assertThat(loaded.stages()).hasSize(1);
         assertThat(loaded.stages()).hasOnlyElementsOfType(System112Stage.class);
         assertThat(((System112Stage) loaded.stages().getFirst()).classifierCodes()).containsExactly("101", "102");
+        assertThat(((System112Stage) loaded.stages().getFirst()).additionalInfo()).containsEntry("smoke", "true");
+        assertThat(loaded.difficulty()).isEqualTo(Difficulty.EASY);
         assertThat(loaded.stages().getFirst().calls()).hasSize(1);
         assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.INBOUND);
         assertThat(((System112Incident) loaded).criteria().dialogueCriteria()).singleElement()
@@ -73,13 +76,13 @@ class IncidentApplicationTests {
         var original = new System112Incident(null, "Пожар",
                 new Address("Москва", "Тверская", "1", null, null, 1), Difficulty.EASY,
                 List.of(new System112Stage(stageId, "Первичный вызов", 0,
-                        List.of("101"), 0, "Исходное описание", List.of())),
+                        List.of("101"), 0, "Исходное описание", List.of(), Map.of("smoke", "false"))),
                 new System112Criteria(List.of()));
         var saved = incidentRepository.save(original);
         var updated = new System112Incident(saved.id(), "Пожар",
                 saved.address(), saved.difficulty(),
                 List.of(new System112Stage(stageId, "Первичный вызов", 0,
-                        List.of("101", "102"), 2, "Новое описание", List.of())),
+                        List.of("101", "102"), 2, "Новое описание", List.of(), Map.of("smoke", "true"))),
                 new System112Criteria(List.of()));
 
         incidentRepository.save(updated);
@@ -88,6 +91,7 @@ class IncidentApplicationTests {
         assertThat(loaded.stages()).singleElement().satisfies(stage -> {
             assertThat(stage.description()).isEqualTo("Новое описание");
             assertThat(stage.victimCount()).isEqualTo(2);
+            assertThat(stage.additionalInfo()).containsExactlyEntriesOf(Map.of("smoke", "true"));
             assertThat(stage.classifierCodes()).containsExactly("101", "102");
         });
         assertThat(detailCount("SYSTEM112_STAGE_DETAILS", saved.id())).isEqualTo(1);

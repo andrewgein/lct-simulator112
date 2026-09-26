@@ -3,3 +3,5 @@ prod/monitoring/.env
 prod/monitoring/prometheus.yml
 prod/edge/nginx.conf
 secrets/
+.idea/inspectionProfiles/profiles_settings.xml
+*.xml
