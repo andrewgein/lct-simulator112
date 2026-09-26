@@ -24,9 +24,12 @@
     "astro-leaflet": "^1.12.0",
     "d3-hierarchy": "^3.1.2",
     "dompurify": "^3.4.15",
+    "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",
+    "mammoth": "^1.12.3",
     "marked": "^18.0.14",
-    "preact": "^10.29.8"
+    "preact": "^10.29.8",
+    "xlsx": "^0.18.5"
   },
   "allowScripts": {
     "esbuild": true

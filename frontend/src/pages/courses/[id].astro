@@ -48,6 +48,8 @@ const contentType = selectedMaterial?.fileContentType?.toLowerCase() || "";
 const fileName = selectedMaterial?.fileName?.toLowerCase() || "";
 const isMarkdown = contentType.includes("markdown") || fileName.endsWith(".md");
 const isPdf = contentType.includes("pdf") || fileName.endsWith(".pdf");
+const isWord = contentType.includes("word") || fileName.endsWith(".doc") || fileName.endsWith(".docx");
+const isExcel = contentType.includes("sheet") || contentType.includes("excel") || fileName.endsWith(".xls") || fileName.endsWith(".xlsx");
 const activeAssignmentDone = activeAssignment ? completed.has(String(activeAssignment.id)) : false;
 const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id) === String(activeAssignment.id);
 const activeReview = activeAssignment ? completedReviews.get(String(activeAssignment.id)) : null;
@@ -102,8 +104,10 @@ const activeReview = activeAssignment ? completedReviews.get(String(activeAssign
           </div>
           {isMarkdown && selectedMaterial.downloadUrl && <div id="markdown-viewer" class="document-viewer markdown-viewer wa-prose" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
           {isPdf && selectedMaterial.downloadUrl && <iframe class="document-viewer pdf-viewer" src={selectedMaterial.downloadUrl} title={selectedMaterial.title || selectedMaterial.fileName}></iframe>}
+          {isWord && selectedMaterial.downloadUrl && <div id="docx-viewer" class="document-viewer markdown-viewer wa-prose" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
+          {isExcel && selectedMaterial.downloadUrl && <div id="xlsx-viewer" class="document-viewer xlsx-viewer" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
           {!selectedMaterial.downloadUrl && <wa-callout>Файл материала недоступен.</wa-callout>}
-          {selectedMaterial.downloadUrl && !isMarkdown && !isPdf && <wa-callout>Предпросмотр этого формата пока недоступен. <a href={selectedMaterial.downloadUrl} download>Скачать файл</a></wa-callout>}
+          {selectedMaterial.downloadUrl && !isMarkdown && !isPdf && !isWord && !isExcel && <wa-callout>Предпросмотр этого формата пока недоступен. <a href={selectedMaterial.downloadUrl} download>Скачать файл</a></wa-callout>}
         </div>
       )}
       {activeAssignment && (
@@ -150,6 +154,36 @@ const activeReview = activeAssignment ? completedReviews.get(String(activeAssign
       });
   }
 
+  const docxViewer = document.querySelector('#docx-viewer');
+  if (docxViewer) {
+    Promise.all([import('mammoth/mammoth.browser'), fetch(docxViewer.dataset.source).then((response) => {
+      if (!response.ok) throw new Error();
+      return response.arrayBuffer();
+    })])
+      .then(([mammoth, arrayBuffer]) => mammoth.convertToHtml({ arrayBuffer }))
+      .then(({ value }) => {
+        docxViewer.innerHTML = DOMPurify.sanitize(value);
+      })
+      .catch(() => {
+        docxViewer.innerHTML = '<p>Не удалось загрузить материал.</p>';
+      });
+  }
+
+  const xlsxViewer = document.querySelector('#xlsx-viewer');
+  if (xlsxViewer) {
+    Promise.all([import('xlsx'), fetch(xlsxViewer.dataset.source).then((response) => {
+      if (!response.ok) throw new Error();
+      return response.arrayBuffer();
+    })])
+      .then(([XLSX, arrayBuffer]) => {
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        xlsxViewer.innerHTML = DOMPurify.sanitize(workbook.SheetNames.map((sheetName) => `<h3>${sheetName}</h3>${XLSX.utils.sheet_to_html(workbook.Sheets[sheetName])}`).join(''));
+      })
+      .catch(() => {
+        xlsxViewer.innerHTML = '<p>Не удалось загрузить материал.</p>';
+      });
+  }
+
   document.querySelectorAll('.start-assignment').forEach((button) => button.addEventListener('click', async () => {
     button.loading = true;
     const response = await fetch('/api/v1/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignmentId: button.dataset.assignmentId }) });
@@ -176,6 +210,9 @@ const activeReview = activeAssignment ? completedReviews.get(String(activeAssign
   .markdown-viewer { max-width: none; padding: var(--wa-space-xl); }
   .markdown-viewer > :first-child { margin-block-start: 0; }
   .markdown-viewer > :last-child { margin-block-end: 0; }
+  .xlsx-viewer { padding: var(--wa-space-xl); overflow: auto; }
+  .xlsx-viewer table { border-collapse: collapse; margin-block-end: var(--wa-space-l); }
+  .xlsx-viewer td { border: var(--wa-border-width-s) solid var(--wa-color-surface-border); padding: var(--wa-space-3xs) var(--wa-space-xs); }
   .assignment-card { width: 100%; --spacing: var(--wa-space-xl); }
   .assignment-description p { margin-block-start: 0; white-space: pre-wrap; }
   .completion-summary { width: 100%; }
