@@ -95,6 +95,38 @@ const possibleTotal = courseStats.reduce((sum, course) => sum + course.possible,
 const allAverages = courseStats.map((course) => course.average).filter((value) => value !== null);
 const averageTotal = allAverages.length ? Math.round(allAverages.reduce((sum, value) => sum + value, 0) / allAverages.length) : null;
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+
+const reportData = {
+  summary: { assignments: courseStats[0]?.course.assignments?.length || 0, students: allStudents.size, completed: completedTotal, possible: possibleTotal, average: averageTotal },
+  courses: courseStats.map(({ course, students, completed, possible, average }) => ({
+    title: course.title,
+    assignmentsCount: course.assignments?.length || 0,
+    completed, possible, average,
+    students: students.map((student) => ({
+      name: student.name,
+      email: student.student?.email || "",
+      groups: student.groups,
+      completed: student.completed,
+      assignmentsCount: course.assignments?.length || 0,
+      average: student.average,
+      lastActivity: student.lastActivity,
+      attempts: student.attempts.map((attempt) => ({
+        assignmentTitle: attempt.assignmentTitle,
+        status: attempt.status,
+        percent: attempt.percent,
+        createdAt: attempt.createdAt,
+        criteria: (attempt.criterionResults || []).map((criterion) => ({
+          incidentOrder: criterion.incidentOrder,
+          criterionName: criterion.criterionName,
+          score: criterion.score,
+          maxScore: criterion.maxScore,
+          feedback: criterion.feedback
+        }))
+      }))
+    }))
+  }))
+};
+const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toString("base64");
 ---
 
 <Page {error}>
@@ -103,8 +135,15 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", ti
     <div class="wa-cluster wa-gap-xs">
       <wa-button href="/teacher/courses" appearance="outlined">Все курсы</wa-button>
       {courseStats[0] && <wa-button href={`/teacher/courses/${courseStats[0].course.id}`} appearance="outlined">Редактировать курс</wa-button>}
+      {courseStats.length > 0 && (
+        <>
+          <wa-button id="export-excel" appearance="outlined"><wa-icon slot="start" name="file-excel"></wa-icon>Excel</wa-button>
+          <wa-button id="export-pdf" appearance="outlined"><wa-icon slot="start" name="file-pdf"></wa-icon>PDF</wa-button>
+        </>
+      )}
     </div>
   </MainHeader>
+  <script type="application/json" id="report-data" set:text={reportDataEncoded}></script>
   {!error && (
     <div class="statistics-page wa-stack wa-gap-xl">
       <dl class="summary-strip">
@@ -194,6 +233,115 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", ti
     </div>
   )}
 </Page>
+<script>
+  const reportDataEl = document.querySelector('#report-data');
+  const reportData = reportDataEl ? JSON.parse(atob(reportDataEl.textContent.trim())) : null;
+  const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
+  const percentLabel = (value) => (value === null || value === undefined ? '—' : `${value}%`);
+  const statusLabel = (attempt) => (attempt.status === 'DONE' ? percentLabel(attempt.percent) : 'формируется');
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+
+  function groupAttemptCriteria(attempt) {
+    const incidents = new Map();
+    (attempt.criteria || []).forEach((criterion) => {
+      const incidentKey = criterion.incidentOrder || 0;
+      if (!incidents.has(incidentKey)) incidents.set(incidentKey, new Map());
+      const criteria = incidents.get(incidentKey);
+      if (!criteria.has(criterion.criterionName)) criteria.set(criterion.criterionName, { score: 0, maxScore: 0 });
+      const totals = criteria.get(criterion.criterionName);
+      totals.score += criterion.score;
+      totals.maxScore += criterion.maxScore;
+    });
+    return [...incidents.entries()].sort((left, right) => left[0] - right[0]).map(([incidentOrder, criteria]) => ({
+      label: incidentOrder ? `Сценарий ${incidentOrder}` : 'Критерии',
+      criteria: [...criteria.entries()].map(([name, totals]) => ({ name, ...totals }))
+    }));
+  }
+
+  document.querySelector('#export-excel')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.loading = true;
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      const summarySheet = XLSX.utils.aoa_to_sheet([
+        ['Показатель', 'Значение'],
+        ['Заданий', reportData.summary.assignments],
+        ['Обучающихся', reportData.summary.students],
+        ['Выполнено заданий', `${reportData.summary.completed} из ${reportData.summary.possible}`],
+        ['Средний результат', percentLabel(reportData.summary.average)]
+      ]);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Сводка');
+
+      const studentsRows = [['Курс', 'Обучающийся', 'Email', 'Группы', 'Выполнено заданий', 'Средний балл', 'Последняя активность']];
+      const attemptsRows = [['Курс', 'Обучающийся', 'Задание', 'Статус', 'Балл', 'Дата', 'Сценарий', 'Критерий', 'Балл по критерию', 'Максимум по критерию']];
+      reportData.courses.forEach((course) => {
+        course.students.forEach((student) => {
+          studentsRows.push([course.title, student.name, student.email, student.groups.join(', '), `${student.completed} из ${student.assignmentsCount}`, percentLabel(student.average), student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : 'Нет попыток']);
+          student.attempts.forEach((attempt) => {
+            attemptsRows.push([course.title, student.name, attempt.assignmentTitle, attempt.status, statusLabel(attempt), attempt.createdAt ? dateFormatter.format(new Date(attempt.createdAt)) : '', '', '', '', '']);
+            groupAttemptCriteria(attempt).forEach((incident) => {
+              incident.criteria.forEach((criterion) => {
+                attemptsRows.push([course.title, student.name, attempt.assignmentTitle, attempt.status, statusLabel(attempt), attempt.createdAt ? dateFormatter.format(new Date(attempt.createdAt)) : '', incident.label, criterion.name, criterion.score, criterion.maxScore]);
+              });
+            });
+          });
+        });
+      });
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(studentsRows), 'Обучающиеся');
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(attemptsRows), 'Попытки и критерии');
+      XLSX.writeFile(workbook, `Отчёт — ${reportData.courses[0]?.title || 'курс'}.xlsx`);
+    } finally {
+      button.loading = false;
+    }
+  });
+
+  document.querySelector('#export-pdf')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.loading = true;
+    const container = document.createElement('div');
+    container.className = 'pdf-report';
+    let html = `<h1>Отчёт по курсу «${escapeHtml(reportData.courses[0]?.title || '')}»</h1>`;
+    html += `<p><strong>Заданий:</strong> ${reportData.summary.assignments} · <strong>Обучающихся:</strong> ${reportData.summary.students} · <strong>Выполнено заданий:</strong> ${reportData.summary.completed} из ${reportData.summary.possible} · <strong>Средний результат:</strong> ${escapeHtml(percentLabel(reportData.summary.average))}</p>`;
+    reportData.courses.forEach((course) => {
+      course.students.forEach((student) => {
+        html += `<h2>${escapeHtml(student.name)} <small>(${escapeHtml(student.email)})</small></h2>`;
+        html += `<p>Группы: ${escapeHtml(student.groups.join(', ') || '—')} · Выполнено: ${student.completed} из ${student.assignmentsCount} · Средний балл: ${escapeHtml(percentLabel(student.average))} · Последняя активность: ${escapeHtml(student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : 'Нет попыток')}</p>`;
+        if (!student.attempts.length) html += '<p>Попыток нет.</p>';
+        student.attempts.forEach((attempt) => {
+          html += `<h3>${escapeHtml(attempt.assignmentTitle)} — ${escapeHtml(statusLabel(attempt))}${attempt.createdAt ? ` (${escapeHtml(dateFormatter.format(new Date(attempt.createdAt)))})` : ''}</h3>`;
+          const incidents = groupAttemptCriteria(attempt);
+          if (incidents.length) {
+            html += '<table class="pdf-criteria-table"><thead><tr><th>Сценарий</th><th>Критерий</th><th>Балл</th></tr></thead><tbody>';
+            incidents.forEach((incident) => {
+              incident.criteria.forEach((criterion, index) => {
+                html += `<tr>${index === 0 ? `<td rowspan="${incident.criteria.length}">${escapeHtml(incident.label)}</td>` : ''}<td>${escapeHtml(criterion.name)}</td><td>${criterion.score} / ${criterion.maxScore}</td></tr>`;
+              });
+            });
+            html += '</tbody></table>';
+          }
+        });
+      });
+    });
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      await html2pdf().set({ margin: 10, filename: `Отчёт — ${reportData.courses[0]?.title || 'курс'}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
+    } finally {
+      container.remove();
+      button.loading = false;
+    }
+  });
+</script>
+<style>
+  .pdf-report { position: fixed; left: -9999px; top: 0; width: 190mm; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
+  .pdf-report h1 { font-size: 18px; }
+  .pdf-report h2 { font-size: 15px; margin-block-start: 20px; }
+  .pdf-report h3 { font-size: 13px; margin-block-start: 12px; }
+  .pdf-report table.pdf-criteria-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .pdf-report table.pdf-criteria-table th, .pdf-report table.pdf-criteria-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+</style>
 
 <style>
   .statistics-page { min-width: 0; }
