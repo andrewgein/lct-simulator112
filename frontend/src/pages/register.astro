@@ -1,10 +1,11 @@
 ---
-import RegisterCard from '../features/auth/components/RegisterCard.astro';
 import Page from '../layouts/Page.astro';
+import AuthScreen from '../features/auth/components/AuthScreen.astro';
+import RegisterCard from '../features/auth/components/RegisterCard.astro';
 export const prerender = false;
 ---
 <Page>
-  <div class="centered-page">
+  <AuthScreen>
     <RegisterCard />
-  </div>
+  </AuthScreen>
 </Page>
