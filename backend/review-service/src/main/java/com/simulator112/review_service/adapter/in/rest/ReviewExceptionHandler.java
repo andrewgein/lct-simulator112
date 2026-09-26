@@ -1,5 +1,6 @@
 package com.simulator112.review_service.adapter.in.rest;
 
+import com.simulator112.review_service.application.exception.CertificateNotFoundException;
 import com.simulator112.review_service.application.exception.ReviewCommentForbiddenException;
 import com.simulator112.review_service.application.exception.ReviewNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,12 @@ import java.util.Map;
 public class ReviewExceptionHandler {
     @ExceptionHandler(ReviewNotFoundException.class)
     ResponseEntity<Map<String, Object>> handleNotFound(ReviewNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "timestamp", Instant.now().toString(), "message", exception.getMessage()));
+    }
+
+    @ExceptionHandler(CertificateNotFoundException.class)
+    ResponseEntity<Map<String, Object>> handleNotFound(CertificateNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "timestamp", Instant.now().toString(), "message", exception.getMessage()));
     }
