@@ -168,12 +168,6 @@ def _lines(items) -> str:
     return "\n".join(f"- {value}" for value in values) if values else "- Не указано"
 
 
-def _person_name(person: Person) -> str:
-    return " ".join(
-        part for part in (person.last_name, person.first_name, person.middle_name) if part
-    ) or "не указано"
-
-
 def build_call_scenario(call: CallScenario) -> str:
     """Build the confidential prompt for a caller or DDS brigade conversation."""
     person = call.person
@@ -191,7 +185,9 @@ def build_call_scenario(call: CallScenario) -> str:
 - Собеседник: {role}
 
 СОБЕСЕДНИК
-- Имя: {_person_name(person)}
+- Фамилия: {person.last_name or "не указана"}
+- Имя: {person.first_name or "не указано"}
+- Отчество: {person.middle_name or "не указано"}
 - Возраст: {person.age if person.age is not None else "не указан"}
 - Телефон: {person.phone or "не указан"}
 - Контактный телефон: {person.contact_phone or "не указан"}
@@ -199,8 +195,10 @@ def build_call_scenario(call: CallScenario) -> str:
 - Дополнительные сведения: {person.additional_info or "не указаны"}
 - Пол: {call.gender.value.lower()}
 - Эмоциональное состояние: {call.emotional_state or "не указано"}
-Говори от лица этого собеседника. Личные данные раскрывай только в ответ на
-соответствующие вопросы и не заменяй их догадками.
+Говори от лица этого собеседника. На вопрос «Как вас зовут?» или «Представьтесь»
+называй фамилию, имя и отчество (если указано). Если просят только имя или фамилию,
+называй только запрошенную часть. Личные данные сообщай точно, не додумывай
+и не раскрывай без вопроса.
 
 ИЗВЕСТНЫЕ СОБЕСЕДНИКУ ФАКТЫ
 {_lines(call.known_facts)}
