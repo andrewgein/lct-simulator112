@@ -1,0 +1,178 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { getCertificate } from "../../../features/certificate/api/CertificateApi";
+
+export const prerender = false;
+const profile = Astro.locals.profile;
+if (!profile) return Astro.redirect("/profile/certificates");
+
+const response = await getCertificate(Astro.params.id, Astro.locals.accessToken);
+if (!response.ok) return Astro.redirect("/profile/certificates");
+const certificate = await response.json();
+
+const honors = certificate.type === "HONORS";
+const studentName = [profile.surname, profile.name, profile.patronymic].filter(Boolean).join(" ");
+const issuedDate = new Date(certificate.issuedAt);
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" });
+const verifyId = certificate.id.replace(/-/g, "").slice(0, 8).toUpperCase();
+const certId = `SIM112-${issuedDate.getFullYear()}-${verifyId}`;
+---
+<Page>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Сертификат">
+    <div class="wa-cluster wa-gap-xs">
+      <wa-button href="/profile/certificates" appearance="outlined">Все сертификаты</wa-button>
+      <wa-button id="download-pdf" appearance="filled" variant="brand"><wa-icon slot="start" name="file-pdf"></wa-icon>Скачать PDF</wa-button>
+    </div>
+  </MainHeader>
+
+  <div class="certificate-preview">
+    <main class="certificate" id="certificate">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-main"><span class="num">112</span><span class="sim">симулятор</span></div>
+          <div class="brand-sub">simulator112</div>
+        </div>
+        <div class="side-chip">СЕРТИФИЦИРОВАННЫЙ РЕЗУЛЬТАТ</div>
+      </aside>
+
+      <section class="content">
+        <div class="topline">
+          <div>
+            <div class="eyebrow">Simulator112</div>
+            <h1>Сертификат о прохождении</h1>
+          </div>
+          <div class="result">
+            <div class="result-label">Результат</div>
+            <div class="result-value">{certificate.percent}%</div>
+            {honors && <div class="badge">С отличием</div>}
+          </div>
+        </div>
+        <div class="thin-accent"></div>
+
+        <div class="intro">Настоящий сертификат подтверждает, что</div>
+        <div class="name">{studentName}</div>
+        <div class="name-rule"></div>
+
+        <div class="course-label">успешно прошёл(ла) обучение по курсу</div>
+        <div class="course">{certificate.courseTitle}</div>
+        <div class="description">Сертификат подтверждает прохождение сценариев симулятора, выполнение практических заданий и итоговой проверки знаний.</div>
+
+        <div class="footer">
+          <div class="meta">
+            <div><strong>ID сертификата:</strong> {certId}</div>
+            <div><strong>Проверка:</strong> simulator112.ru/certificate/{verifyId}</div>
+          </div>
+          <div class="signature">
+            <div class="sign-mark">S112</div>
+            <div class="sign-line">Команда Simulator112</div>
+          </div>
+          <div class="date">
+            Дата выдачи
+            <strong>{dateFormatter.format(issuedDate)}</strong>
+          </div>
+        </div>
+        <div class="corner"></div>
+      </section>
+    </main>
+  </div>
+</Page>
+<script>
+  document.querySelector('#download-pdf')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.loading = true;
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const node = document.querySelector('#certificate');
+      await html2pdf().set({
+        margin: 0,
+        filename: `Сертификат — ${node.querySelector('.course')?.textContent?.trim() || 'Simulator112'}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      }).from(node).save();
+    } finally {
+      button.loading = false;
+    }
+  });
+</script>
+<style>
+  .certificate-preview { display: grid; place-items: center; padding: var(--wa-space-xl) 0; }
+  .certificate {
+    --brand: #2ca9e8;
+    --brand-deep: #0d79bd;
+    --ink: #102033;
+    --muted: #607487;
+    --paper: #ffffff;
+    position: relative;
+    width: min(1120px, 100%);
+    aspect-ratio: 1120 / 790;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(21, 76, 108, .18);
+    border: 1px solid rgba(30, 120, 180, .12);
+    display: grid;
+    grid-template-columns: 290px 1fr;
+  }
+  .sidebar {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0a4f7d 0%, #0d79bd 55%, #2ca9e8 100%);
+  }
+  .sidebar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.02) 0%, rgba(4,69,112,.06) 52%, rgba(5,56,90,.26) 100%);
+  }
+  .brand { position: absolute; left: 34px; top: 34px; z-index: 2; color: white; }
+  .brand-main { display: flex; align-items: flex-end; gap: 12px; font-weight: 800; letter-spacing: -.04em; }
+  .brand-main .num { font-size: 58px; line-height: .9; }
+  .brand-main .sim { font-size: 20px; line-height: 1.05; text-transform: uppercase; letter-spacing: .02em; }
+  .brand-sub { margin-top: 10px; font-size: 12px; opacity: .86; letter-spacing: .18em; text-transform: uppercase; }
+  .side-chip {
+    position: absolute; left: 34px; bottom: 38px; z-index: 2; color: white;
+    border: 1px solid rgba(255,255,255,.48); background: rgba(10,80,125,.26);
+    backdrop-filter: blur(8px); padding: 10px 14px; border-radius: 999px; font-size: 12px; letter-spacing: .06em;
+  }
+
+  .content { position: relative; padding: 54px 58px 42px 62px; display: flex; flex-direction: column; }
+  .topline { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+  .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .18em; color: var(--brand-deep); text-transform: uppercase; margin-bottom: 9px; }
+  h1 { font-size: 34px; line-height: 1.05; margin: 0; letter-spacing: -.035em; }
+  .result { min-width: 155px; text-align: right; }
+  .result-label { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .result-value { font-size: 42px; font-weight: 800; line-height: 1; margin: 6px 0 8px; }
+  .badge { display: inline-block; background: #0c1d2c; color: #fff; padding: 8px 13px; border-radius: 9px; font-size: 13px; font-weight: 700; }
+
+  .intro { margin-top: 72px; font-size: 18px; color: var(--muted); }
+  .name { font-size: 46px; line-height: 1.05; margin-top: 16px; font-weight: 750; letter-spacing: -.04em; }
+  .name-rule { width: 86px; height: 4px; border-radius: 8px; background: linear-gradient(90deg, var(--brand-deep), #78d8ff); margin-top: 20px; }
+  .course-label { margin-top: 46px; font-size: 17px; color: var(--muted); }
+  .course { margin-top: 10px; font-size: 30px; font-weight: 700; line-height: 1.2; max-width: 670px; letter-spacing: -.025em; color: var(--brand-deep); }
+  .description { margin-top: 16px; max-width: 650px; font-size: 15px; line-height: 1.65; color: #587084; }
+
+  .footer { margin-top: auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 24px; align-items: end; }
+  .meta { font-size: 12px; color: #6b7f90; line-height: 1.7; }
+  .meta strong { color: #314a5d; }
+  .signature { text-align: center; }
+  .sign-mark { font-family: "Segoe Script", "Comic Sans MS", cursive; font-size: 33px; line-height: 1; color: #14344a; margin-bottom: 8px; transform: rotate(-6deg); }
+  .sign-line { border-top: 1px solid #bcd0de; padding-top: 8px; font-size: 11px; color: #667d8e; }
+  .date { text-align: right; font-size: 12px; color: #61798a; line-height: 1.55; }
+  .date strong { display: block; color: #203c4e; font-size: 14px; }
+
+  .corner { position: absolute; right: -80px; bottom: -80px; width: 210px; height: 210px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(74,197,248,.35), rgba(74,197,248,0) 68%); }
+  .thin-accent { position: absolute; right: 58px; top: 150px; width: 88px; height: 6px; border-radius: 10px; background: linear-gradient(90deg, #dff5ff, #42bdf5); }
+
+  @media (max-width: 800px) {
+    .certificate { width: 100%; grid-template-columns: 220px 1fr; }
+    .content { padding: 34px; }
+    .intro { margin-top: 42px; }
+    .name { font-size: 36px; }
+    .course { font-size: 25px; }
+  }
+</style>

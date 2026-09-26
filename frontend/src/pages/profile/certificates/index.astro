@@ -1,0 +1,69 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { getMyCertificates } from "../../../features/certificate/api/CertificateApi";
+
+export const prerender = false;
+let error = null;
+const profile = Astro.locals.profile;
+let certificates = [];
+try {
+  if (!profile) throw new Error();
+  const response = await getMyCertificates(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  certificates = (await response.json()).certificates || [];
+} catch { error = "Не удалось загрузить сертификаты"; }
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
+---
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Сертификаты">
+    <wa-button href="/profile" appearance="outlined">К статистике</wa-button>
+  </MainHeader>
+  {profile && (
+    !certificates.length ? (
+      <wa-card appearance="filled-outlined">Пройдите курс полностью, чтобы получить сертификат.</wa-card>
+    ) : (
+      <wa-card appearance="filled-outlined" class="certificates-card">
+        <div class="wa-stack wa-gap-0">
+          {certificates.map((certificate) => {
+            const honors = certificate.type === "HONORS";
+            return (
+              <a class="certificate-row" href={`/profile/certificates/${certificate.id}`}>
+                <wa-icon class:list={["certificate-row-icon", { honors }]} name={honors ? "award" : "circle-check"} variant="solid">
+                </wa-icon>
+                <div class="wa-stack wa-gap-3xs certificate-row-info">
+                  <strong>{certificate.courseTitle}</strong>
+                  <span class="wa-caption-m">
+                    {honors ? `Сертификат с отличием. ${certificate.percent}% пройдено` : `${certificate.percent}% пройдено`}
+                    {" · "}{dateFormatter.format(new Date(certificate.issuedAt))}
+                  </span>
+                </div>
+                <wa-icon name="chevron-right" class="certificate-row-chevron"></wa-icon>
+              </a>
+            );
+          })}
+        </div>
+      </wa-card>
+    )
+  )}
+</Page>
+<style>
+  .certificates-card::part(base) { padding: 0; }
+  .certificate-row {
+    display: flex;
+    align-items: center;
+    gap: var(--wa-space-m);
+    padding: var(--wa-space-m) var(--wa-space-l);
+    text-decoration: none;
+    color: inherit;
+    border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+  }
+  .certificate-row:last-child { border-block-end: none; }
+  .certificate-row:hover { background: var(--wa-color-neutral-fill-quiet); }
+  .certificate-row-icon { font-size: 1.5rem; color: var(--wa-color-success-fill-loud); flex: 0 0 auto; }
+  .certificate-row-icon.honors { color: var(--wa-color-warning-fill-loud); }
+  .certificate-row-info { min-width: 0; flex: 1 1 auto; }
+  .certificate-row-chevron { color: var(--wa-color-text-quiet); flex: 0 0 auto; }
+</style>
