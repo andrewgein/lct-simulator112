@@ -9,12 +9,21 @@ option java_multiple_files = true;
 
 service ClassifierService {
   rpc GetClassifierEntry(GetClassifierEntryRequest) returns (ClassifierEntry);
+  rpc HasDispatchService(HasDispatchServiceRequest) returns (HasDispatchServiceResponse);
   rpc SearchClassifierEntries(SearchClassifierEntriesRequest) returns (SearchClassifierEntriesResponse);
   rpc ResolveRouting(ResolveRoutingRequest) returns (RoutingResult);
 }
 
 message GetClassifierEntryRequest {
   string classifier_code = 1;
+}
+
+message HasDispatchServiceRequest {
+  string service_code = 1;
+}
+
+message HasDispatchServiceResponse {
+  bool exists = 1;
 }
 
 message SearchClassifierEntriesRequest {

@@ -1,5 +1,5 @@
 /** @typedef {"SYSTEM_112" | "DDS"} TrainingTrack */
-/** @typedef {"FIRE" | "POLICE" | "AMBULANCE" | "GAS" | "ANTI_TERROR" | null} DdsService */
+/** @typedef {string | null} DdsService */
 
 /**
  * @typedef {Object} UserProfileRequest

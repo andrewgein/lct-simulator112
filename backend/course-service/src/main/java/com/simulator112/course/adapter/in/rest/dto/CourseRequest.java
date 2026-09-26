@@ -1,7 +1,6 @@
 package com.simulator112.course.adapter.in.rest.dto;
 
 import com.simulator112.course.domain.course.CourseTargetType;
-import com.simulator112.course.domain.course.DdsService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -13,7 +12,7 @@ public record CourseRequest(
         @NotBlank String title,
         String description,
         @NotNull CourseTargetType targetType,
-        DdsService ddsService,
+        String ddsService,
         @NotNull List<@Valid CourseMaterialRequest> materials,
         @NotEmpty List<@Valid AssignmentRequest> assignments) {
 }

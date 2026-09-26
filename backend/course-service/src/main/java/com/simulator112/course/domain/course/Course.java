@@ -10,7 +10,7 @@ public record Course(
         String title,
         String description,
         CourseTargetType targetType,
-        DdsService ddsService,
+        String ddsService,
         UUID authorId,
         List<CourseMaterial> materials,
         List<Assignment> assignments,
@@ -20,7 +20,7 @@ public record Course(
         assignments = assignments == null ? List.of() : List.copyOf(assignments);
     }
 
-    public Course(UUID id, String title, String description, CourseTargetType targetType, DdsService ddsService,
+    public Course(UUID id, String title, String description, CourseTargetType targetType, String ddsService,
             UUID authorId, List<CourseMaterial> materials, List<Assignment> assignments) {
         this(id, title, description, targetType, ddsService, authorId, materials, assignments, null);
     }

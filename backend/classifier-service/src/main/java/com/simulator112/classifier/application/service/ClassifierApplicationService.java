@@ -6,6 +6,7 @@ import com.simulator112.classifier.application.port.out.ClassifierRepository;
 import com.simulator112.classifier.domain.exception.ClassifierEntryNotFoundException;
 import com.simulator112.classifier.domain.model.ClassifierCategory;
 import com.simulator112.classifier.domain.model.ClassifierEntry;
+import com.simulator112.classifier.domain.model.DispatchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,18 @@ public class ClassifierApplicationService
     @Transactional(readOnly = true)
     public List<ClassifierCategory> getClassifier() {
         return repository.findAllCategories();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DispatchService> getServices() {
+        return repository.findAllServices();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasService(String code) {
+        return repository.hasService(code);
     }
 
     @Override

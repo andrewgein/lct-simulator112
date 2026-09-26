@@ -16,6 +16,22 @@ import org.junit.jupiter.api.Test;
 
 class IncidentContextMapperTests {
     @Test
+    void preservesClassifierServiceCode() {
+        var source = IncidentContext.newBuilder()
+                .setId(UUID.randomUUID().toString())
+                .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.INCIDENT_TARGET_TYPE_DDS)
+                .setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_EASY)
+                .setInitialAssignment(com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
+                        .setEmergencyServiceCode("CUSTOM_DISPATCH"))
+                .build();
+
+        var incident = IncidentContextMapper.toDomain(source, 0);
+        assertThat(incident.getInitialAssignmentService()).isEqualTo("CUSTOM_DISPATCH");
+        assertThat(IncidentContextMapper.toProto(incident).getInitialAssignment().getEmergencyServiceCode())
+                .isEqualTo("CUSTOM_DISPATCH");
+    }
+
+    @Test
     void preservesCallParticipantWithoutUsingIncidentAddress() {
         Person caller = Person.newBuilder()
                 .setFirstName("Анна")

@@ -22,6 +22,8 @@ class IncidentApplicationTests {
     private JdbcTemplate jdbcTemplate;
     @Autowired
     private IncidentRepository incidentRepository;
+    @Autowired
+    private com.simulator112.incident.adapter.in.grpc.IncidentGrpcMapper grpcMapper;
     @Test
     void createsNormalizedIncidentSchema() {
         assertThat(tableCount("INCIDENTS")).isEqualTo(1);
@@ -108,13 +110,16 @@ class IncidentApplicationTests {
         var incident = new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
                 new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of()),
-                new InitialAssignment(EmergencyService.FIRE, "101", "Направить ближайшую бригаду"),
+                new InitialAssignment("CUSTOM_DISPATCH", "101", "Направить ближайшую бригаду"),
                 initialStageId,
                 List.of(new DdsStageTransition(initialStageId, successStageId, failureStageId)));
 
         var saved = incidentRepository.save(incident);
         var loaded = (DdsIncident) incidentRepository.findById(saved.id()).orElseThrow();
 
+        assertThat(loaded.initialAssignment().emergencyService()).isEqualTo("CUSTOM_DISPATCH");
+        assertThat(grpcMapper.toProto(loaded).getInitialAssignment().getEmergencyServiceCode())
+                .isEqualTo("CUSTOM_DISPATCH");
         assertThat(loaded.stages()).hasOnlyElementsOfType(DdsStage.class);
         assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.OUTBOUND);
         assertThat(loaded.stages().getFirst().type()).isEqualTo(DdsStageType.CALL_BRIGADE_FOR_STATUS);

@@ -2,7 +2,6 @@ package com.simulator112.incident.adapter.out.persistence.entity.common;
 
 import com.simulator112.incident.adapter.out.persistence.entity.dds.DdsStageTransitionEmbeddable;
 import com.simulator112.incident.domain.common.Difficulty;
-import com.simulator112.incident.domain.common.EmergencyService;
 import com.simulator112.incident.domain.common.IncidentTargetType;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -43,9 +42,8 @@ public class IncidentJpaEntity {
     })
     private AddressEmbeddable address;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "emergency_service")
-    private EmergencyService emergencyService;
+    private String emergencyService;
 
     @Column(name = "dds_initial_stage_id")
     private UUID ddsInitialStageId;

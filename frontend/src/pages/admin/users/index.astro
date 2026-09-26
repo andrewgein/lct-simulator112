@@ -2,6 +2,7 @@
 import AdminLayout from "../../../layouts/AdminLayout.astro";
 import { getAllUsers } from "../../../features/auth/api/AdminUserApi";
 import { getAllUserProfiles } from "../../../features/profile/api/UserProfileApi";
+import { getDispatchServices } from "../../../features/incident/api/IncidentApi";
 
 export const prerender = false;
 
@@ -11,17 +12,20 @@ if (Astro.cookies.get("role")?.value !== "ADMIN") {
 
 let users = [];
 let profiles = [];
+let services = [];
 let error = null;
 
 try {
-  const [usersResponse, profilesResponse] = await Promise.all([
+  const [usersResponse, profilesResponse, servicesResponse] = await Promise.all([
     getAllUsers(Astro.locals.accessToken),
-    getAllUserProfiles(Astro.locals.accessToken)
+    getAllUserProfiles(Astro.locals.accessToken),
+    getDispatchServices(Astro.locals.accessToken)
   ]);
-  if (!usersResponse.ok || !profilesResponse.ok) throw new Error();
+  if (!usersResponse.ok || !profilesResponse.ok || !servicesResponse.ok) throw new Error();
   const usersData = await usersResponse.json();
   users = usersData.data || [];
   profiles = await profilesResponse.json();
+  services = await servicesResponse.json();
 } catch {
   error = "Не удалось загрузить пользователей";
 }
@@ -100,11 +104,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
                         <div class="dds-service-field" hidden={!isDds || !canEditTrainingTrack}>
                           <wa-select class="dds-service" aria-label={`Служба ДДС пользователя ${user.email}`} value={profile.ddsService || ""} disabled={!isDds || !canEditTrainingTrack}>
                             <wa-option value="">Не выбрана</wa-option>
-                            <wa-option value="FIRE">Пожарная охрана</wa-option>
-                            <wa-option value="POLICE">Полиция</wa-option>
-                            <wa-option value="AMBULANCE">Скорая помощь</wa-option>
-                            <wa-option value="GAS">Газовая служба</wa-option>
-                            <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+                            {services.map((service) => <wa-option value={service.code}>{service.name}</wa-option>)}
                           </wa-select>
                         </div>
                       )}

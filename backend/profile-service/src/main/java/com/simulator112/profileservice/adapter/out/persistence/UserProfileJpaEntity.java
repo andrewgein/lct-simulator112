@@ -1,6 +1,5 @@
 package com.simulator112.profileservice.adapter.out.persistence;
 
-import com.simulator112.profileservice.domain.model.DdsService;
 import com.simulator112.profileservice.domain.model.TrainingTrack;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -34,9 +33,8 @@ class UserProfileJpaEntity {
     @Column(name = "training_track")
     private TrainingTrack trainingTrack;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "dds_service")
-    private DdsService ddsService;
+    private String ddsService;
 
     @Version
     @Column(nullable = false)

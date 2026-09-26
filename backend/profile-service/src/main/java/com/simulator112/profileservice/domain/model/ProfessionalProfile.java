@@ -2,7 +2,7 @@ package com.simulator112.profileservice.domain.model;
 
 import com.simulator112.profileservice.domain.exception.InvalidProfessionalProfileException;
 
-public record ProfessionalProfile(TrainingTrack trainingTrack, DdsService ddsService) {
+public record ProfessionalProfile(TrainingTrack trainingTrack, String ddsService) {
 
     public ProfessionalProfile {
         if (trainingTrack == null) {
@@ -12,7 +12,7 @@ public record ProfessionalProfile(TrainingTrack trainingTrack, DdsService ddsSer
             throw new InvalidProfessionalProfileException(
                     "Для направления SYSTEM_112 служба ДДС не указывается");
         }
-        if (trainingTrack == TrainingTrack.DDS && ddsService == null) {
+        if (trainingTrack == TrainingTrack.DDS && (ddsService == null || ddsService.isBlank())) {
             throw new InvalidProfessionalProfileException(
                     "Для направления DDS требуется служба ДДС");
         }

@@ -31,6 +31,8 @@ class ClassifierApplicationTests {
     @Autowired
     private ClassifierController classifierController;
     @Autowired
+    private com.simulator112.classifier.application.port.in.GetClassifierUseCase serviceCatalog;
+    @Autowired
     private MockMvc mockMvc;
 
     @Test
@@ -39,6 +41,21 @@ class ClassifierApplicationTests {
         assertThat(count("classifier_entries")).isEqualTo(1283);
         assertThat(count("dispatch_services")).isEqualTo(58);
         assertThat(count("routing_rules")).isEqualTo(22484);
+    }
+
+    @Test
+    void exposesAllDispatchServices() throws Exception {
+        assertThat(classifierController.getServices()).hasSize(58)
+                .noneMatch(service -> service.name().contains("Классификатор"))
+                .anySatisfy(service -> {
+                    assertThat(service.code()).isEqualTo("MCHS");
+                    assertThat(service.name()).isEqualTo("МЧС");
+                });
+        assertThat(serviceCatalog.hasService("MCHS")).isTrue();
+        assertThat(serviceCatalog.hasService("NOT_A_SERVICE")).isFalse();
+        mockMvc.perform(get("/api/v1/classifier/services"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").isNotEmpty());
     }
 
     @Test
@@ -72,6 +89,9 @@ class ClassifierApplicationTests {
 
         assertThat(entry.features()).isNotEmpty();
         assertThat(entry.routingFactCodes()).contains("ACCESS_STATUS");
+        assertThat(view.categories()).flatExtracting(category -> category.entries())
+                .flatExtracting(entryView -> entryView.primaryServices())
+                .noneMatch(service -> service.name().contains("Классификатор"));
         assertThat(view.routingFacts()).anySatisfy(fact -> {
             assertThat(fact.code()).isEqualTo("ACCESS_STATUS");
             assertThat(fact.options()).extracting("value").containsExactly("AVAILABLE", "NO_ACCESS");

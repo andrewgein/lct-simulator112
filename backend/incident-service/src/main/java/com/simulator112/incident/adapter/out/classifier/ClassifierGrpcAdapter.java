@@ -2,6 +2,7 @@ package com.simulator112.incident.adapter.out.classifier;
 
 import com.simulator112.classifier.grpc.contract.ClassifierServiceGrpc;
 import com.simulator112.classifier.grpc.contract.GetClassifierEntryRequest;
+import com.simulator112.classifier.grpc.contract.HasDispatchServiceRequest;
 import com.simulator112.classifier.grpc.contract.SearchClassifierEntriesRequest;
 import com.simulator112.incident.application.port.out.ClassifierCatalogPort;
 import com.simulator112.incident.domain.common.exception.ClassifierEntryNotFoundException;
@@ -34,6 +35,13 @@ public class ClassifierGrpcAdapter implements ClassifierCatalogPort {
             }
             throw exception;
         }
+    }
+
+    @Override
+    public void requireService(String serviceCode) {
+        boolean exists = stub.withDeadlineAfter(2, TimeUnit.SECONDS).hasDispatchService(
+                HasDispatchServiceRequest.newBuilder().setServiceCode(serviceCode).build()).getExists();
+        if (!exists) throw new IllegalArgumentException("Служба не найдена в классификаторе: " + serviceCode);
     }
 
     @Override

@@ -1,0 +1,7 @@
+---
+import { getDispatchServices } from "../api/IncidentApi.js";
+
+const response = await getDispatchServices(Astro.locals.accessToken || Astro.cookies.get("accessToken")?.value);
+const services = response.ok ? await response.json() : [];
+---
+{services.map((service) => <wa-option value={service.code}>{service.name}</wa-option>)}

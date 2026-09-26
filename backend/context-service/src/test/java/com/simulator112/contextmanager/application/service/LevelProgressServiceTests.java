@@ -125,18 +125,18 @@ class LevelProgressServiceTests {
         IncidentSnapshot incident = incident(incidentId, assignmentId,
                 List.of(stage(assignmentId, DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE),
                         stage(responseId, DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.PENDING)));
-        ServiceReaction reaction = new ServiceReaction("FIRE");
+        ServiceReaction reaction = new ServiceReaction("MCHS");
         reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, Instant.now(), null));
         reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.RECEIVED_BY_SERVICE, Instant.now(), null));
         incident.getServiceReactions().add(reaction);
-        incident.setInitialAssignmentService("FIRE");
+        incident.setInitialAssignmentService("MCHS");
         incident.setTransitions(new ArrayList<>(List.of(new DdsStageTransition(assignmentId, responseId, null))));
         context.getIncidents().add(incident);
         when(repository.findById(contextId)).thenReturn(Optional.of(context));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         var progress = service.applyReactionStatus(
-                contextId, incidentId, "FIRE", ReactionStatus.ACCEPTED, null);
+                contextId, incidentId, "MCHS", ReactionStatus.ACCEPTED, null);
 
         assertThat(progress.incidents().getFirst().serviceReactions().getFirst().currentStatus())
                 .isEqualTo(ReactionStatus.ACCEPTED);
@@ -152,15 +152,15 @@ class LevelProgressServiceTests {
         TrainingContext context = context(contextId);
         IncidentSnapshot incident = incident(incidentId, assignmentId,
                 List.of(stage(assignmentId, DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE)));
-        ServiceReaction reaction = new ServiceReaction("FIRE");
+        ServiceReaction reaction = new ServiceReaction("MCHS");
         reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.RECEIVED_BY_SERVICE, Instant.now(), null));
         incident.getServiceReactions().add(reaction);
-        incident.setInitialAssignmentService("FIRE");
+        incident.setInitialAssignmentService("MCHS");
         context.getIncidents().add(incident);
         when(repository.findById(contextId)).thenReturn(Optional.of(context));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.applyReactionStatus(
-                contextId, incidentId, "FIRE", ReactionStatus.NOT_ACCEPTED, " "))
+                contextId, incidentId, "MCHS", ReactionStatus.NOT_ACCEPTED, " "))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("комментарий");
     }
@@ -174,7 +174,7 @@ class LevelProgressServiceTests {
         when(repository.findById(contextId)).thenReturn(Optional.of(context));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.applyReactionStatus(
-                contextId, UUID.randomUUID(), "FIRE", ReactionStatus.ACCEPTED, null))
+                contextId, UUID.randomUUID(), "MCHS", ReactionStatus.ACCEPTED, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("DDS");
     }
