@@ -104,7 +104,7 @@ const activeReview = activeAssignment ? completedReviews.get(String(activeAssign
           </div>
           {isMarkdown && selectedMaterial.downloadUrl && <div id="markdown-viewer" class="document-viewer markdown-viewer wa-prose" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
           {isPdf && selectedMaterial.downloadUrl && <iframe class="document-viewer pdf-viewer" src={selectedMaterial.downloadUrl} title={selectedMaterial.title || selectedMaterial.fileName}></iframe>}
-          {isWord && selectedMaterial.downloadUrl && <div id="docx-viewer" class="document-viewer markdown-viewer wa-prose" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
+          {isWord && selectedMaterial.downloadUrl && <div id="docx-viewer" class="document-viewer docx-viewer" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
           {isExcel && selectedMaterial.downloadUrl && <div id="xlsx-viewer" class="document-viewer xlsx-viewer" data-source={selectedMaterial.downloadUrl}><p>Загрузка материала…</p></div>}
           {!selectedMaterial.downloadUrl && <wa-callout>Файл материала недоступен.</wa-callout>}
           {selectedMaterial.downloadUrl && !isMarkdown && !isPdf && !isWord && !isExcel && <wa-callout>Предпросмотр этого формата пока недоступен. <a href={selectedMaterial.downloadUrl} download>Скачать файл</a></wa-callout>}
@@ -156,13 +156,13 @@ const activeReview = activeAssignment ? completedReviews.get(String(activeAssign
 
   const docxViewer = document.querySelector('#docx-viewer');
   if (docxViewer) {
-    Promise.all([import('mammoth/mammoth.browser'), fetch(docxViewer.dataset.source).then((response) => {
+    Promise.all([import('docx-preview'), fetch(docxViewer.dataset.source).then((response) => {
       if (!response.ok) throw new Error();
-      return response.arrayBuffer();
+      return response.blob();
     })])
-      .then(([mammoth, arrayBuffer]) => mammoth.convertToHtml({ arrayBuffer }))
-      .then(({ value }) => {
-        docxViewer.innerHTML = DOMPurify.sanitize(value);
+      .then(([docxPreview, blob]) => {
+        docxViewer.innerHTML = '';
+        return docxPreview.renderAsync(blob, docxViewer, docxViewer, { className: 'docx', inWrapper: true });
       })
       .catch(() => {
         docxViewer.innerHTML = '<p>Не удалось загрузить материал.</p>';
@@ -213,6 +213,9 @@ const activeReview = activeAssignment ? completedReviews.get(String(activeAssign
   .xlsx-viewer { padding: var(--wa-space-xl); overflow: auto; }
   .xlsx-viewer table { border-collapse: collapse; margin-block-end: var(--wa-space-l); }
   .xlsx-viewer td { border: var(--wa-border-width-s) solid var(--wa-color-surface-border); padding: var(--wa-space-3xs) var(--wa-space-xs); }
+  .docx-viewer { overflow: auto; background: var(--wa-color-neutral-fill-loud, #52525b); padding: var(--wa-space-xl); display: flex; flex-direction: column; align-items: center; }
+  .docx-viewer :global(.docx-wrapper) { background: transparent; padding: 0; }
+  .docx-viewer :global(.docx-wrapper > section.docx) { margin-block-end: var(--wa-space-l); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25); }
   .assignment-card { width: 100%; --spacing: var(--wa-space-xl); }
   .assignment-description p { margin-block-start: 0; white-space: pre-wrap; }
   .completion-summary { width: 100%; }

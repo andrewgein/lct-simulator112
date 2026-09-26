@@ -235,7 +235,11 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
 </Page>
 <script>
   const reportDataEl = document.querySelector('#report-data');
-  const reportData = reportDataEl ? JSON.parse(atob(reportDataEl.textContent.trim())) : null;
+  const decodeBase64Utf8 = (encoded) => {
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  };
+  const reportData = reportDataEl ? JSON.parse(decodeBase64Utf8(reportDataEl.textContent.trim())) : null;
   const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
   const percentLabel = (value) => (value === null || value === undefined ? '—' : `${value}%`);
   const statusLabel = (attempt) => (attempt.status === 'DONE' ? percentLabel(attempt.percent) : 'формируется');
