@@ -10,7 +10,7 @@ import wave
 import httpx
 import numpy as np
 
-from app.adapter.out.processing.voice_profiles import VoiceProfile
+from app.adapter.out.processing.voice_profiles import VOICE_PROFILES, VoiceProfile
 
 
 OUTPUT_SAMPLE_RATE = 24000
@@ -69,6 +69,21 @@ class TTSModel:
             logging.getLogger(__name__).warning(
                 "F5_TTS_BASE_URL is not configured; speech synthesis is unavailable"
             )
+
+    def register_all_voices(self) -> None:
+        """Preloads reference audio for every voice profile into the F5-TTS server.
+
+        Called once at service startup so the first dialog for each voice
+        doesn't pay the upload cost.
+        """
+        if not self.base_url:
+            return
+
+        with httpx.Client(base_url=self.base_url + "/", timeout=self.timeout) as client:
+            for profile in VOICE_PROFILES:
+                reference_audio = profile.audio_path.read_bytes()
+                voice = self._voice_name(profile, reference_audio)
+                self._register_voice(client, profile, reference_audio, voice)
 
     def generate(self, text: str, profile: VoiceProfile):
         with self._lock:
