@@ -28,11 +28,12 @@ import static org.mockito.Mockito.when;
 
 class CourseApplicationServiceTest {
     private final CourseRepository repository = mock(CourseRepository.class);
+    private final EnrollmentRepository enrollments = mock(EnrollmentRepository.class);
     private final IncidentCatalogPort incidents = mock(IncidentCatalogPort.class);
     private final DispatchServiceCatalogPort dispatchServices = mock(DispatchServiceCatalogPort.class);
     private final MaterialFileStorage fileStorage = mock(MaterialFileStorage.class);
     private final CourseApplicationService service = new CourseApplicationService(
-            repository, incidents, dispatchServices, fileStorage);
+            repository, enrollments, incidents, dispatchServices, fileStorage);
 
     private final UUID authorId = UUID.randomUUID();
 
@@ -127,6 +128,7 @@ class CourseApplicationServiceTest {
         service.deleteCourse(courseId, authorId);
 
         verify(repository).save(argThat(course -> courseId.equals(course.id()) && course.deletedAt() != null));
+        verify(enrollments).deleteAllByCourseId(courseId);
     }
 
     @Test

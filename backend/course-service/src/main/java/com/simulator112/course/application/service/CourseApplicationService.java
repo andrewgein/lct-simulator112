@@ -30,6 +30,7 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         FindAuthoredCoursesUseCase, DeleteCourseUseCase {
 
     private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final IncidentCatalogPort incidentCatalog;
     private final DispatchServiceCatalogPort dispatchServices;
     private final MaterialFileStorage fileStorage;
@@ -77,6 +78,7 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
             throw new CourseAccessDeniedException("Удалить курс может только его автор");
         }
         courseRepository.save(course.archive(Instant.now()));
+        enrollmentRepository.deleteAllByCourseId(courseId);
     }
 
     private void validate(Course course) {
