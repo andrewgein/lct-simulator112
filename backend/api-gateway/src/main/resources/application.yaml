@@ -227,6 +227,16 @@ spring:
                   args:
                     roles: ADMIN
 
+            - id: admin-service-logs
+              uri: ${ADMIN_SERVICE_URL:http://localhost:8089}
+              predicates:
+                - Path=/api/v1/admin/logs,/api/v1/admin/logs/**
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
 
           httpclient:
             websocket:

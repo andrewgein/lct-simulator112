@@ -70,6 +70,35 @@ services:
     depends_on:
       - prometheus
 
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: prod-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    networks:
+      - monitoring
+
+  # Discovers running containers via docker.sock (read-only, standard Grafana Labs pattern - it
+  # only ever calls the Docker API's read-only container/log-listing endpoints, never
+  # exec/create/start) and ships their stdout/stderr to Loki. admin-service itself never touches
+  # docker.sock - it only queries Loki's HTTP API for the /admin/logs page.
+  promtail:
+    image: grafana/promtail:3.3.2
+    container_name: prod-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yaml
+    volumes:
+      - ./promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
 networks:
   monitoring:
     external: true
@@ -78,3 +107,4 @@ networks:
 volumes:
   prometheus_data:
   grafana_data:
+  loki_data:
