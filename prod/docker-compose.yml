@@ -102,6 +102,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       CLASSIFIER_GRPC_HOST: ${COMPOSE_PROJECT_NAME}-classifier
       CLASSIFIER_GRPC_PORT: 9093
+      OLLAMA_CHAT_URL: http://${OLLAMA_SERVER_TAILSCALE_HOST:?OLLAMA_SERVER_TAILSCALE_HOST is required}:11434/api/chat
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b-instruct-2507-q4_K_M}
     networks: [default, monitoring]
     depends_on:
       postgres:
