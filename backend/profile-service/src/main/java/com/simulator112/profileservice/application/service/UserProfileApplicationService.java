@@ -3,10 +3,12 @@ package com.simulator112.profileservice.application.service;
 import com.simulator112.profileservice.application.port.in.AssignProfessionalProfileUseCase;
 import com.simulator112.profileservice.application.port.in.GetProfessionalProfileUseCase;
 import com.simulator112.profileservice.application.port.in.UserProfileUseCase;
+import com.simulator112.profileservice.application.port.out.DispatchServiceCatalogPort;
 import com.simulator112.profileservice.application.port.out.UserProfileRepository;
 import com.simulator112.profileservice.domain.exception.ProfessionalProfileNotAssignedException;
 import com.simulator112.profileservice.domain.exception.ProfileNotFoundException;
 import com.simulator112.profileservice.domain.model.ProfessionalProfile;
+import com.simulator112.profileservice.domain.model.TrainingTrack;
 import com.simulator112.profileservice.domain.model.UserProfile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ public class UserProfileApplicationService
         implements UserProfileUseCase, GetProfessionalProfileUseCase, AssignProfessionalProfileUseCase {
 
     private final UserProfileRepository repository;
+    private final DispatchServiceCatalogPort dispatchServices;
 
     @Override
     @Transactional(readOnly = true)
@@ -50,6 +53,7 @@ public class UserProfileApplicationService
     @Transactional
     public UserProfile assignProfessionalProfile(
             UUID userId, ProfessionalProfile professionalProfile) {
+        validate(professionalProfile);
         UserProfile updated = repository.save(
                 getProfileOrThrow(userId).assignProfessionalProfile(professionalProfile));
         log.info(
@@ -63,6 +67,7 @@ public class UserProfileApplicationService
     @Transactional
     public UserProfile createProfile(
             UUID userId, String name, String surname, String patronymic, ProfessionalProfile professionalProfile) {
+        validate(professionalProfile);
         UserProfile profile = repository.save(
                 UserProfile.create(userId, name, surname, patronymic, professionalProfile));
         log.info(
@@ -80,6 +85,7 @@ public class UserProfileApplicationService
             String surname,
             String patronymic,
             ProfessionalProfile professionalProfile) {
+        validate(professionalProfile);
         UserProfile updated = repository.save(
                 getProfileOrThrow(userId)
                         .updatePersonalData(name, surname, patronymic)
@@ -94,6 +100,12 @@ public class UserProfileApplicationService
         UserProfile profile = getProfileOrThrow(userId);
         repository.delete(profile);
         log.info("Удалён сотрудник с id {}", userId);
+    }
+
+    private void validate(ProfessionalProfile profile) {
+        if (profile != null && profile.trainingTrack() == TrainingTrack.DDS) {
+            dispatchServices.requireService(profile.ddsService());
+        }
     }
 
     private UserProfile getProfileOrThrow(UUID userId) {

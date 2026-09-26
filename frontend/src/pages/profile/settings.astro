@@ -2,6 +2,7 @@
 import Page from "../../layouts/Page.astro";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
+import DispatchServiceOptions from "../../features/incident/components/DispatchServiceOptions.astro";
 
 export const prerender = false;
 const isTeacher = Astro.cookies.get("role")?.value === "SUPERVISOR";
@@ -39,11 +40,7 @@ const error = profile ? null : "Не удалось загрузить проф�
               </wa-select>
               <div id="settings-dds-service-field" hidden={profile.trainingTrack !== "DDS"}>
                 <wa-select name="ddsService" label="Служба ДДС" value={profile.ddsService || ""} placeholder="Выберите службу" disabled={profile.trainingTrack !== "DDS"} required={profile.trainingTrack === "DDS"}>
-                  <wa-option value="FIRE">Пожарная охрана</wa-option>
-                  <wa-option value="POLICE">Полиция</wa-option>
-                  <wa-option value="AMBULANCE">Скорая помощь</wa-option>
-                  <wa-option value="GAS">Аварийная газовая служба</wa-option>
-                  <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+                  <DispatchServiceOptions />
                 </wa-select>
               </div>
             </section>

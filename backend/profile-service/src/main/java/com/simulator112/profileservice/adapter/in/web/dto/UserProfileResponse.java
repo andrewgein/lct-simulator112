@@ -1,6 +1,5 @@
 package com.simulator112.profileservice.adapter.in.web.dto;
 
-import com.simulator112.profileservice.domain.model.DdsService;
 import com.simulator112.profileservice.domain.model.TrainingTrack;
 
 import java.time.Instant;
@@ -13,6 +12,6 @@ public record UserProfileResponse(
         String surname,
         String patronymic,
         TrainingTrack trainingTrack,
-        DdsService ddsService,
+        String ddsService,
         Instant updatedAt) {
 }

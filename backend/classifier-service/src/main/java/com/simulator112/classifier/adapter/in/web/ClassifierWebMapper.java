@@ -54,8 +54,9 @@ final class ClassifierWebMapper {
         }
     }
 
-    private static DispatchServiceView toView(DispatchService service) {
-        return new DispatchServiceView(service.id(), service.code(), service.name());
+    static DispatchServiceView toView(DispatchService service) {
+        return new DispatchServiceView(
+                service.id(), service.code(), service.name().replace("Классификатор", "").strip());
     }
 
     private static RoutingDecisionView toView(RoutingDecision decision) {

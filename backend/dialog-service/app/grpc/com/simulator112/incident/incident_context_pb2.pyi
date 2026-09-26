@@ -1,4 +1,3 @@
-from app.grpc.com.simulator112.common import dds_service_pb2 as _dds_service_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -183,14 +182,14 @@ class PreparedCardTemplate(_message.Message):
     def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., applicant: _Optional[_Union[Person, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class InitialAssignment(_message.Message):
-    __slots__ = ("emergency_service", "classifier_code", "instructions")
-    EMERGENCY_SERVICE_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("classifier_code", "instructions", "emergency_service_code")
     CLASSIFIER_CODE_FIELD_NUMBER: _ClassVar[int]
     INSTRUCTIONS_FIELD_NUMBER: _ClassVar[int]
-    emergency_service: _dds_service_pb2.DdsService
+    EMERGENCY_SERVICE_CODE_FIELD_NUMBER: _ClassVar[int]
     classifier_code: str
     instructions: str
-    def __init__(self, emergency_service: _Optional[_Union[_dds_service_pb2.DdsService, str]] = ..., classifier_code: _Optional[str] = ..., instructions: _Optional[str] = ...) -> None: ...
+    emergency_service_code: str
+    def __init__(self, classifier_code: _Optional[str] = ..., instructions: _Optional[str] = ..., emergency_service_code: _Optional[str] = ...) -> None: ...
 
 class DdsStageTransition(_message.Message):
     __slots__ = ("stage_id", "success_stage_id", "failure_stage_id")

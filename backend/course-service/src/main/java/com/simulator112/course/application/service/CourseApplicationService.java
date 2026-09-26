@@ -6,6 +6,7 @@ import com.simulator112.course.application.port.in.FindAuthoredCoursesUseCase;
 import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.UpdateCourseUseCase;
 import com.simulator112.course.application.port.out.CourseRepository;
+import com.simulator112.course.application.port.out.DispatchServiceCatalogPort;
 import com.simulator112.course.application.port.out.IncidentCatalogPort;
 import com.simulator112.course.domain.course.Assignment;
 import com.simulator112.course.domain.course.Course;
@@ -30,6 +31,7 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
 
     private final CourseRepository courseRepository;
     private final IncidentCatalogPort incidentCatalog;
+    private final DispatchServiceCatalogPort dispatchServices;
     private final MaterialFileStorage fileStorage;
 
     @Override
@@ -90,8 +92,11 @@ public class CourseApplicationService implements CreateCourseUseCase, UpdateCour
         if (course.targetType() == null) {
             throw new IllegalArgumentException("Профиль курса обязателен");
         }
-        if (course.targetType() == CourseTargetType.DDS && course.ddsService() == null) {
+        if (course.targetType() == CourseTargetType.DDS && (course.ddsService() == null || course.ddsService().isBlank())) {
             throw new IllegalArgumentException("Для курса ДДС выберите специализацию");
+        }
+        if (course.targetType() == CourseTargetType.DDS) {
+            dispatchServices.requireService(course.ddsService());
         }
         if (course.targetType() == CourseTargetType.SYSTEM_112 && course.ddsService() != null) {
             throw new IllegalArgumentException("Специализация ДДС недоступна для курса Системы-112");

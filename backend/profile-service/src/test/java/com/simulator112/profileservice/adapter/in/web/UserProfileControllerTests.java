@@ -4,7 +4,6 @@ import com.simulator112.profileservice.adapter.in.web.dto.CreateUserProfileReque
 import com.simulator112.profileservice.adapter.in.web.dto.UpdateUserProfileRequest;
 import com.simulator112.profileservice.application.port.in.UserProfileUseCase;
 import com.simulator112.profileservice.domain.exception.InvalidProfessionalProfileException;
-import com.simulator112.profileservice.domain.model.DdsService;
 import com.simulator112.profileservice.domain.model.ProfessionalProfile;
 import com.simulator112.profileservice.domain.model.TrainingTrack;
 import com.simulator112.profileservice.domain.model.UserProfile;
@@ -73,9 +72,9 @@ class UserProfileControllerTests {
     void supervisorUpdatesOptionalProfessionalProfile() {
         UUID userId = UUID.randomUUID();
         ProfessionalProfile professionalProfile =
-                new ProfessionalProfile(TrainingTrack.DDS, DdsService.FIRE);
+                new ProfessionalProfile(TrainingTrack.DDS, "MCHS");
         UpdateUserProfileRequest request =
-                new UpdateUserProfileRequest("Иван", "Иванов", null, TrainingTrack.DDS, DdsService.FIRE);
+                new UpdateUserProfileRequest("Иван", "Иванов", null, TrainingTrack.DDS, "MCHS");
         UserProfile profile = UserProfile.create(userId, "Иван", "Иванов", null, professionalProfile);
         when(userProfiles.updateProfile(userId, "Иван", "Иванов", null, professionalProfile))
                 .thenReturn(profile);
@@ -83,7 +82,7 @@ class UserProfileControllerTests {
         var response = controller.updateProfile(userId, "SUPERVISOR", request);
 
         assertEquals(TrainingTrack.DDS, response.trainingTrack());
-        assertEquals(DdsService.FIRE, response.ddsService());
+        assertEquals("MCHS", response.ddsService());
         verify(userProfiles).updateProfile(userId, "Иван", "Иванов", null, professionalProfile);
     }
 

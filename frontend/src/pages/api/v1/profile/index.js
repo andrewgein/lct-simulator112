@@ -1,5 +1,6 @@
 import { createProfile, updateProfile } from "../../../../features/profile/api/UserProfileApi";
 import { setProfileSnapshot } from "../../../../features/profile/profileSnapshot";
+import { isDispatchService } from "../../../../features/incident/api/dispatchServiceValidation.js";
 
 export const prerender = false;
 const isDev = import.meta.env.DEV;
@@ -24,8 +25,7 @@ export async function POST({ request, locals, cookies, redirect }) {
     if (trainingTrack && trainingTrack !== "SYSTEM_112" && trainingTrack !== "DDS") {
         return redirect("/profile/create?error=" + encodeURIComponent("Выбран неизвестный профиль"));
     }
-    const ddsServices = new Set(["FIRE", "POLICE", "AMBULANCE", "GAS", "ANTI_TERROR"]);
-    if (trainingTrack === "DDS" && !ddsServices.has(ddsService)) {
+    if (trainingTrack === "DDS" && !(await isDispatchService(ddsService, locals.accessToken))) {
         return redirect("/profile/create?error=" + encodeURIComponent("Не выбрана служба ДДС"));
     }
 
@@ -69,7 +69,7 @@ export async function PATCH({ request, locals, cookies }) {
     if (trainingTrack && trainingTrack !== "SYSTEM_112" && trainingTrack !== "DDS") {
         return Response.json({ message: "Выбран неизвестный профиль" }, { status: 400 });
     }
-    if (trainingTrack === "DDS" && !new Set(["FIRE", "POLICE", "AMBULANCE", "GAS", "ANTI_TERROR"]).has(ddsService)) {
+    if (trainingTrack === "DDS" && !(await isDispatchService(ddsService, locals.accessToken))) {
         return Response.json({ message: "Не выбрана служба ДДС" }, { status: 400 });
     }
     const profileResponse = await updateProfile({ name, surname, patronymic, trainingTrack, ddsService }, locals.accessToken);

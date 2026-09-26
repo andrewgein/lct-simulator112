@@ -66,7 +66,7 @@ class SolutionServiceTests {
         attachCall(activeCallId);
         SolutionCardRevision target = card(UUID.randomUUID());
         stub(target);
-        var request = new SolutionContextRequest(person(), null, Map.of(), List.of("FIRE"), List.of("101"),
+        var request = new SolutionContextRequest(person(), null, Map.of(), List.of("TYPE_A"), List.of("101"),
                 null, null, SolutionContextOperation.LINK, target.getCardId());
 
         var response = service.createCardForCall(context.getId(), activeCallId, request);
@@ -82,7 +82,7 @@ class SolutionServiceTests {
         SolutionCardRevision card = card(activeCallId);
         card.setMainCardId(UUID.randomUUID());
         card.setApplicant(new PersonInfo("79990000000", null, null, "Иванов", "Иван", null, "очевидец", "Москва", null));
-        card.setIncidentTypes(new java.util.ArrayList<>(List.of("FIRE", "GAS")));
+        card.setIncidentTypes(new java.util.ArrayList<>(List.of("TYPE_A", "TYPE_B")));
         card.setServices(new java.util.ArrayList<>(List.of("101", "104")));
         card.setAdditionalInfoProvided(true);
         card.getAdditionalInfo().put("floor", "3");
@@ -97,7 +97,7 @@ class SolutionServiceTests {
         var assembled = service.getCards(context.getId()).getFirst();
         assertEquals("Иван", assembled.applicant().firstName());
         assertEquals(Map.of("floor", "3"), assembled.additionalInfo());
-        assertEquals(List.of("FIRE", "GAS"), assembled.incidentTypes());
+        assertEquals(List.of("TYPE_A", "TYPE_B"), assembled.incidentTypes());
         assertEquals(List.of("101", "104"), assembled.services());
     }
 
@@ -131,7 +131,7 @@ class SolutionServiceTests {
 
     private SolutionContextRequest request(SolutionContextOperation operation,
                                            SolutionCardRevision card, UUID mainCardId) {
-        return new SolutionContextRequest(person(), null, Map.of("floor", "5"), List.of("FIRE"), List.of("101"),
+        return new SolutionContextRequest(person(), null, Map.of("floor", "5"), List.of("TYPE_A"), List.of("101"),
                 card.getCardId(), card.getVersion(), operation, mainCardId);
     }
 

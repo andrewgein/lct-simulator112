@@ -8,7 +8,7 @@ import DdsProgressDetails from "./DdsProgressDetails.jsx";
 import DdsStageActions from "./DdsStageActions.jsx";
 import LevelCommandBar from "./LevelCommandBar.jsx";
 import RemainingTime from "./RemainingTime.jsx";
-import { editorFor, incidentCard, notificationStatus, reactionForService, READONLY_CALL, REACTION_STATUS_OPTIONS, serviceInfo, serviceStatusHistory } from "./ddsLevelHelpers.js";
+import { editorFor, incidentCard, notificationStatus, reactionForService, READONLY_CALL, REACTION_STATUS_OPTIONS, serviceStatusHistory } from "./ddsLevelHelpers.js";
 
 const styles = `
 .dds-level-message { margin: var(--wa-space-l) var(--wa-space-l) 0; }
@@ -35,6 +35,7 @@ const styles = `
 
 export default function DdsLevelApp({ contextId, incidents, classifier, routingFacts, userService }) {
   const [progress, setProgress] = useState(null);
+  const [services, setServices] = useState([]);
   const [incidentDefinitions, setIncidentDefinitions] = useState(incidents);
   const [editor, setEditor] = useState({ open: false });
   const [error, setError] = useState("");
@@ -54,6 +55,10 @@ export default function DdsLevelApp({ contextId, incidents, classifier, routingF
       setError("Не удалось обновить состояние происшествий");
     }
   }, [contextId]);
+
+  useEffect(() => {
+    fetch("/api/v1/classifier/services").then((response) => response.ok ? response.json() : []).then(setServices).catch((requestError) => console.error("Failed to load dispatch services", requestError));
+  }, []);
 
   useEffect(() => {
     loadProgress();
@@ -121,12 +126,12 @@ export default function DdsLevelApp({ contextId, incidents, classifier, routingF
   return (
     <div class="level-app wa-stack wa-gap-0">
       <style>{styles}</style>
-      <LevelCommandBar call={READONLY_CALL} now={now} modeLabel={`Учебный режим · АРМ ДДС · ${serviceInfo(userService).label}`} idleLabel="Обработка карточек" idleIcon="tower-broadcast">
+      <LevelCommandBar call={READONLY_CALL} now={now} modeLabel={`Учебный режим · АРМ ДДС · ${services.find((service) => service.code === userService)?.name || userService || "Служба не указана"}`} idleLabel="Обработка карточек" idleIcon="tower-broadcast">
         <LevelSearchInput value={query} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setQuery(event.currentTarget.value)} />
       </LevelCommandBar>
       {error && <wa-callout class="dds-level-message" variant="danger"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{error}</wa-callout>}
       {finished && <LevelCompletionNotice className="dds-level-message" complete ready finishing={finishing} completeMessage="Все происшествия обработаны. Завершите уровень, чтобы перейти к разбору." onFinish={finishLevel} />}
-      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} routingFacts={routingFacts} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} onApply={applyReactionStatus} /> : null} onChange={setEditor} onClose={() => {}} />}
+      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} routingFacts={routingFacts} dispatchServices={services} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} onApply={applyReactionStatus} /> : null} onChange={setEditor} onClose={() => {}} />}
       <ActiveCards cards={cards} loading={!progress} error={false} classifierState={classifierState} searchQuery={query} onOpen={(card) => setEditor(editorFor(card))} getCardMeta={getCardMeta} heading="Список происшествий" emptyMessage="Карточки ДДС пока не поступили" statusLabel="Статус" />
     </div>
   );

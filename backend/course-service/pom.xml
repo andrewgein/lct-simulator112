@@ -152,6 +152,7 @@
                 <configuration>
                     <protoSourceRoot>${project.basedir}/../shared/src/main/proto</protoSourceRoot>
                     <includes>
+                        <include>com/simulator112/classifier/*.proto</include>
                         <include>com/simulator112/incident/*.proto</include>
                         <include>com/simulator112/common/*.proto</include>
                         <include>com/simulator112/course/*.proto</include>

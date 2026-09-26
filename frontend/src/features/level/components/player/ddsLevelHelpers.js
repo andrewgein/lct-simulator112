@@ -1,13 +1,5 @@
 import { emptyPerson, normalizePerson } from "../../../incident/components/editor/editorHelpers.js";
 
-export const SERVICES = [
-  { value: "FIRE", short: "101", label: "Пожарная охрана" },
-  { value: "POLICE", short: "102", label: "Полиция" },
-  { value: "AMBULANCE", short: "103", label: "Скорая помощь" },
-  { value: "GAS", short: "104", label: "Газовая служба" },
-  { value: "ANTI_TERROR", short: "АТК", label: "Антитеррор" }
-];
-
 export const STAGE_ACTIONS = {
   ASSIGN_BRIGADE: { label: "Принята", signal: "BRIGADE_ASSIGNED" },
   WAIT_FOR_BRIGADE_STATUS_CHANGE: { label: "Начало реагирования", signal: "BRIGADE_STATUS_CHANGED" },
@@ -54,7 +46,6 @@ export const STAGE_STATUSES = {
 };
 
 export const READONLY_CALL = { phase: "idle", activeCallId: null, phone: "" };
-export const serviceInfo = (value) => SERVICES.find((service) => service.value === value) || { short: "ДДС", label: value || "Служба не указана" };
 export const addressText = (address = {}) => [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(", ") || "Адрес не указан";
 export const dateTime = (value) => value ? new Date(value).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
 export const timeOnly = (value) => value ? new Date(value).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";

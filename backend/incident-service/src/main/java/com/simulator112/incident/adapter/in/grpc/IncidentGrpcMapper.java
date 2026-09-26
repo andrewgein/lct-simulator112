@@ -112,7 +112,7 @@ public class IncidentGrpcMapper {
     private com.simulator112.incident.grpc.contract.InitialAssignment toProto(
             com.simulator112.incident.domain.dds.InitialAssignment value) {
         return com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
-                .setEmergencyService(toProto(value.emergencyService()))
+                .setEmergencyServiceCode(string(value.emergencyService()))
                 .setClassifierCode(string(value.classifierCode())).setInstructions(string(value.instructions())).build();
     }
 
@@ -174,17 +174,6 @@ public class IncidentGrpcMapper {
         return switch (value) {
             case MAN -> com.simulator112.incident.grpc.contract.Gender.GENDER_MAN;
             case WOMEN -> com.simulator112.incident.grpc.contract.Gender.GENDER_WOMEN;
-        };
-    }
-
-    private com.simulator112.common.grpc.contract.DdsService toProto(
-            com.simulator112.incident.domain.common.EmergencyService value) {
-        return switch (value) {
-            case FIRE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_FIRE;
-            case POLICE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_POLICE;
-            case AMBULANCE -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_AMBULANCE;
-            case GAS -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_GAS;
-            case ANTI_TERROR -> com.simulator112.common.grpc.contract.DdsService.DDS_SERVICE_ANTI_TERROR;
         };
     }
 

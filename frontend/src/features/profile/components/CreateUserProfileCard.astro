@@ -1,5 +1,6 @@
 ---
-const error = Astro.url.searchParams.get("error");
+import DispatchServiceOptions from "../../incident/components/DispatchServiceOptions.astro";
+const error =  Astro.url.searchParams.get("error");
 const role = Astro.cookies.get("role")?.value;
 const isAdmin = role === "ADMIN";
 const profileRequired = role === "STUDENT";
@@ -24,11 +25,7 @@ const profileRequired = role === "STUDENT";
           </wa-select>
           <div id="dds-service-field" hidden>
             <wa-select name="ddsService" label="Служба ДДС" placeholder="Выберите службу" disabled>
-              <wa-option value="FIRE">Пожарная охрана</wa-option>
-              <wa-option value="POLICE">Полиция</wa-option>
-              <wa-option value="AMBULANCE">Скорая помощь</wa-option>
-              <wa-option value="GAS">Аварийная газовая служба</wa-option>
-              <wa-option value="ANTI_TERROR">Антитеррор</wa-option>
+              <DispatchServiceOptions />
             </wa-select>
           </div>
         </>

@@ -7,14 +7,6 @@ import VictimFields from "../../VictimFields.jsx";
 import { emptyPerson, findIncident, personValue } from "../editorHelpers.js";
 import DdsStageGraph, { ddsTreeValue, validateDdsTree } from "./DdsStageGraph.jsx";
 
-const SERVICES = [
-  { value: "FIRE", label: "Пожарная охрана" },
-  { value: "POLICE", label: "Полиция" },
-  { value: "AMBULANCE", label: "Скорая медицинская помощь" },
-  { value: "GAS", label: "Аварийная газовая служба" },
-  { value: "ANTI_TERROR", label: "Антитеррор" }
-];
-
 const normalizePrepared = (value = {}) => ({
   classifierCodes: value.classifierCodes?.length ? value.classifierCodes : [""],
   applicant: emptyPerson(value.applicant),
@@ -24,6 +16,8 @@ const normalizePrepared = (value = {}) => ({
 
 export default function DdsIncidentConstructor({ incident = {} }) {
   const [classifierState, setClassifierState] = useState(classifierInfo.state);
+  const [services, setServices] = useState([]);
+  const [servicesError, setServicesError] = useState("");
   const [prepared, setPrepared] = useState(() => normalizePrepared(incident.preparedCardTemplate));
   const [assignment, setAssignment] = useState(() => ({ emergencyService: incident.initialAssignment?.emergencyService || "", classifierCode: incident.initialAssignment?.classifierCode || "", instructions: incident.initialAssignment?.instructions || "" }));
   const [tree, setTree] = useState(null);
@@ -34,6 +28,10 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   useEffect(() => {
     const unsubscribe = classifierInfo.subscribe((state) => setClassifierState({ ...state, classifier: [...state.classifier] }));
     loadClassifier().catch((error) => console.error("Failed to load incident classifier:", error));
+    fetch("/api/v1/classifier/services").then((response) => {
+      if (!response.ok) throw new Error("Не удалось загрузить службы");
+      return response.json();
+    }).then((items) => { setServices(items); setServicesError(""); }).catch((error) => { console.error("Failed to load dispatch services:", error); setServicesError("Не удалось загрузить службы из классификатора"); });
     const addressChange = (event) => setIncidentAddress(event.detail || "");
     window.addEventListener("incident-address-change", addressChange);
     return () => { unsubscribe(); window.removeEventListener("incident-address-change", addressChange); };
@@ -101,9 +99,12 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           <h2 class="wa-heading-xl">Первичное назначение</h2>
           <p class="dds-section-hint">Служба и классификация, с которыми карточка поступит диспетчеру.</p>
         </div>
+        {servicesError && <wa-callout variant="danger">
+          {servicesError}
+        </wa-callout>}
         <div class="wa-grid">
           <wa-select value={assignment.emergencyService} label="Служба ДДС" required onChange={(event) => setAssignment((current) => ({ ...current, emergencyService: event.currentTarget.value }))}>
-            {SERVICES.map((service) => <wa-option key={service.value} value={service.value}>{service.label}</wa-option>)}
+            {services.map((service) => <wa-option key={service.code} value={service.code}>{service.name}</wa-option>)}
           </wa-select>
           <IncidentTypeSelect classifierState={classifierState} id="dds-assignment-type" name={null} value={assignment.classifierCode} required onChange={(classifierCode) => setAssignment((current) => ({ ...current, classifierCode }))} />
         </div>
