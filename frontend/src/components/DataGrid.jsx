@@ -54,7 +54,7 @@ export default function DataGrid({ data = [], columns = [], label = "Табли�
   const currentPage = Math.min(page, pageCount - 1);
   const visibleRows = sortedRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   const activateRow = (event, row) => {
-    if (!onRowClick || event.target.closest("button, a, input, wa-button, wa-checkbox")) return;
+    if (!onRowClick || event.target.closest("button, a, input, wa-button, wa-checkbox, [data-ignore-row-click]")) return;
     onRowClick(row);
   };
   return (

@@ -23,7 +23,7 @@ const styles = `
 .cards-table .data-grid__heading:first-child, .cards-table .data-grid__cell--details { width: 3rem; padding-inline: var(--wa-space-xs); text-align: center; }
 .cards-table .data-grid__cell--relation { width: 6rem; color: var(--app-dispatch-text-secondary); }
 .card-relation-indent { display: inline-flex; align-items: center; gap: var(--wa-space-xs); padding-inline-start: calc(var(--card-depth) * var(--wa-space-l)); }
-.card-collapse, .card-details-toggle, .card-open { --wa-color-fill-quiet: transparent; --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
+.card-collapse, .card-details-toggle { --wa-color-fill-quiet: transparent; --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
 .cards-table .data-grid__cell--id { width: 9rem; color: var(--app-dispatch-text-secondary); }
 .cards-table .data-grid__cell--date, .cards-table .data-grid__cell--time { width: 6rem; }
 .cards-table .data-grid__cell--time { font-weight: var(--wa-font-weight-semibold); }
@@ -153,7 +153,7 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
     { field: "victimSummary", label: "Постр.", sortValue: (row) => row.victimCount },
     { field: "address", label: "Адрес" },
     { field: "status", label: statusLabel },
-    { field: "open", label: "Карточка", sortable: false, render: (row) => <wa-button class="card-open" type="button" size="xs" appearance="plain" variant="neutral" aria-label={`Открыть карточку ${row.id}`} onClick={() => onOpen(row.card)}><wa-icon name="clipboard" aria-hidden="true"></wa-icon></wa-button> }
+    { field: "open", label: "", sortable: false, render: (row) => <span data-ignore-row-click><wa-icon name="clipboard" label={`Карточка ${row.id}`}></wa-icon></span> }
   ];
   return (
     <section class="active-cards wa-stack wa-gap-0" aria-labelledby="active-cards-heading">
