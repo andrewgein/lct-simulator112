@@ -2,7 +2,7 @@
 import Page from "../../layouts/Page.astro";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
-import { getUserReviews } from "../../features/review/api/ReviewApi";
+import { getUserReviews, getMyStatistics } from "../../features/review/api/ReviewApi";
 import { getMyEnrollments } from "../../features/course/api/EnrollmentApi";
 import { getCourse } from "../../features/course/api/CourseApi";
 
@@ -11,6 +11,8 @@ let error = null;
 const profile = Astro.locals.profile;
 let reviews = [];
 let courses = [];
+/** @type {import("../../features/review/contract/Review").PersonalStatistics | null} */
+let statistics = null;
 try {
   if (!profile) throw new Error();
   const responses = await Promise.all([
@@ -25,6 +27,12 @@ try {
     return response.ok ? { enrollment, course: await response.json() } : null;
   }))).filter(Boolean);
 } catch { error = "Не удалось загрузить данные профиля"; }
+if (profile) {
+  try {
+    const response = await getMyStatistics(Astro.locals.accessToken);
+    if (response.ok) statistics = await response.json();
+  } catch { /* рекомендации ИИ не критичны для отображения профиля */ }
+}
 const assignments = courses.flatMap(({ course }) => course.assignments.map((assignment) =>
   [String(assignment.id), { ...assignment, courseTitle: course.title }]));
 const assignmentsById = new Map(assignments);
@@ -60,6 +68,22 @@ const reviewResults = reviews.map((review) => {
         </div>
       </div>
     </wa-card>
+    {statistics && statistics.errorStatistics.length > 0 && <section class="wa-stack wa-gap-m">
+      <h2>Статистика ошибок и рекомендации</h2>
+      <wa-card appearance="filled-outlined">
+        <div class="wa-stack wa-gap-l">
+          <wa-scroller><table class="wa-zebra-rows wa-tabular-nums"><thead><tr><th>Критерий</th><th>Ошибок</th><th>Балл</th></tr></thead><tbody>
+            {statistics.errorStatistics.map((stat) => <tr><td>{stat.criterionName}</td>
+              <td>{stat.failedCount} / {stat.attempts}</td>
+              <td>{stat.scoreEarned} / {stat.scoreMax}</td></tr>)}
+          </tbody></table></wa-scroller>
+          {statistics.recommendations.length > 0 && <div class="wa-stack wa-gap-xs">
+            <strong>Рекомендации ИИ</strong>
+            <ul>{statistics.recommendations.map((recommendation) => <li>{recommendation}</li>)}</ul>
+          </div>}
+        </div>
+      </wa-card>
+    </section>}
     <section class="wa-stack wa-gap-m">
       <h2>История прохождений</h2>
       {!reviewResults.length ? <wa-card>Пройдите первое задание, чтобы увидеть результат. <a href="/">К курсам</a></wa-card> :
