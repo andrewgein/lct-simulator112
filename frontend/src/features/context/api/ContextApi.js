@@ -8,6 +8,11 @@ export function createContext(assignmentId, token) {
     return apiCall(API_PREFIX, "POST", { assignmentId }, token);
 }
 
+/** @param {string} assignmentId @param {string} token */
+export function findActiveContext(assignmentId, token) {
+    return apiCall(`${API_PREFIX}?assignmentId=${segment(assignmentId)}`, "GET", undefined, token);
+}
+
 /** @param {string} contextId @param {string} callId @param {import("../contract/Context").SolutionCardRequest} card @param {string} token */
 export function createCardForCall(contextId, callId, card, token) {
     return apiCall(`${API_PREFIX}/${segment(contextId)}/calls/${segment(callId)}/cards`, "POST", card, token);
