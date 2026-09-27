@@ -122,6 +122,9 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}-course
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/course
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REVIEW_GRPC_HOST: ${COMPOSE_PROJECT_NAME}-review
+      REVIEW_GRPC_PORT: 9092
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD}
       INCIDENT_GRPC_HOST: ${COMPOSE_PROJECT_NAME}-incident
@@ -141,6 +144,8 @@ services:
       classifier-service:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8088/actuator/health | grep -q '\"status\":\"UP\"'"]
@@ -195,7 +200,8 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      COURSE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-course:8088
+      COURSE_GRPC_HOST: ${COMPOSE_PROJECT_NAME}-course
+      COURSE_GRPC_PORT: 9095
       S3_ENDPOINT: http://${COMPOSE_PROJECT_NAME}-minio:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:?S3_ACCESS_KEY is required}
       S3_SECRET_KEY: ${S3_SECRET_KEY:?S3_SECRET_KEY is required}

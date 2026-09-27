@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface SpringDataReviewRepository extends JpaRepository<ReviewJpaEntity, UUID> {
     List<ReviewJpaEntity> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
+
+    List<ReviewJpaEntity> findAllByUserIdAndAssignmentIdInOrderByCreatedAtDesc(UUID userId, List<UUID> assignmentIds);
 }

@@ -1,44 +1,31 @@
 package com.simulator112.review_service.adapter.out.course;
 
+import com.simulator112.course.grpc.contract.CourseServiceGrpc;
+import com.simulator112.course.grpc.contract.TeacherStudentRequest;
 import com.simulator112.review_service.application.port.out.TeacherStudentAccessPort;
+import io.grpc.StatusRuntimeException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
 
-import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 public class CourseServiceTeacherStudentAccessAdapter implements TeacherStudentAccessPort {
-    private final RestClient restClient;
-
-    public CourseServiceTeacherStudentAccessAdapter(RestClient.Builder restClientBuilder,
-                                                     @Value("${review.course-service.base-url}") String baseUrl) {
-        this.restClient = restClientBuilder.baseUrl(baseUrl).build();
-    }
+    private final CourseServiceGrpc.CourseServiceBlockingStub stub;
 
     @Override
     public boolean isStudentOfTeacher(UUID teacherId, UUID studentId) {
         try {
-            StudyGroupSummary[] groups = restClient.get()
-                    .uri("/api/v1/study-groups")
-                    .header("X-User-Id", teacherId.toString())
-                    .retrieve()
-                    .body(StudyGroupSummary[].class);
-            if (groups == null) return false;
-            return List.of(groups).stream().anyMatch(group -> group.studentIds().contains(studentId));
-        } catch (RuntimeException exception) {
-            log.error("Не удалось проверить принадлежность ученика {} преподавателю {}",
-                    studentId, teacherId, exception);
+            return stub.withDeadlineAfter(2, TimeUnit.SECONDS).isStudentOfTeacher(TeacherStudentRequest.newBuilder()
+                    .setTeacherId(teacherId.toString()).setStudentId(studentId.toString()).build())
+                    .getBelongsToTeacher();
+        } catch (StatusRuntimeException exception) {
+            log.error("Не удалось проверить принадлежность ученика {} преподавателю {}", studentId, teacherId, exception);
             return false;
-        }
-    }
-
-    private record StudyGroupSummary(UUID id, UUID ownerId, List<UUID> studentIds) {
-        private StudyGroupSummary {
-            studentIds = studentIds == null ? List.of() : studentIds;
         }
     }
 }

@@ -30,8 +30,4 @@ public class EnrollmentRestController {
         return mapper.toView(getEnrollment.getEnrollment(courseId, userId));
     }
 
-    @GetMapping("/for-assignment/{assignmentId}")
-    public EnrollmentView getForAssignment(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID assignmentId) {
-        return mapper.toView(getEnrollment.getEnrollmentForAssignment(assignmentId, userId));
-    }
 }

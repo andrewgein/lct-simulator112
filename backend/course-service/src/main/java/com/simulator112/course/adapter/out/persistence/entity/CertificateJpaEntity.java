@@ -1,6 +1,6 @@
-package com.simulator112.review_service.adapter.out.persistence.entity;
+package com.simulator112.course.adapter.out.persistence.entity;
 
-import com.simulator112.review_service.domain.model.CertificateType;
+import com.simulator112.course.domain.model.CertificateType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

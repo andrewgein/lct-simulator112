@@ -1,4 +1,4 @@
-package com.simulator112.review_service.domain.model;
+package com.simulator112.course.domain.model;
 
 import java.time.Instant;
 import java.util.UUID;

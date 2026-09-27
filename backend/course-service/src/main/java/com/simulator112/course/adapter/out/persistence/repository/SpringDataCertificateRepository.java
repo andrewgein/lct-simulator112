@@ -1,6 +1,6 @@
-package com.simulator112.review_service.adapter.out.persistence.repository;
+package com.simulator112.course.adapter.out.persistence.repository;
 
-import com.simulator112.review_service.adapter.out.persistence.entity.CertificateJpaEntity;
+import com.simulator112.course.adapter.out.persistence.entity.CertificateJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

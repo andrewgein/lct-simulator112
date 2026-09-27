@@ -1,4 +1,4 @@
-package com.simulator112.review_service.adapter.out.messaging.dto;
+package com.simulator112.course.adapter.out.messaging.dto;
 
 import java.time.Instant;
 import java.util.UUID;

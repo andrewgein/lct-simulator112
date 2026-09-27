@@ -1,5 +1,6 @@
 package com.simulator112.course.adapter.in.rest;
 
+import com.simulator112.course.application.exception.CertificateNotFoundException;
 import com.simulator112.course.domain.exception.AssignmentLockedException;
 import com.simulator112.course.domain.exception.CourseAccessDeniedException;
 import com.simulator112.course.domain.exception.CourseNotFoundException;
@@ -17,7 +18,7 @@ import java.time.Instant;
 @RestControllerAdvice
 public class CourseExceptionHandler {
     @ExceptionHandler({CourseNotFoundException.class, StudyGroupNotFoundException.class,
-            EnrollmentNotFoundException.class, IncidentNotFoundException.class})
+            EnrollmentNotFoundException.class, IncidentNotFoundException.class, CertificateNotFoundException.class})
     ResponseEntity<ErrorResponse> notFound(RuntimeException exception) {
         return response(HttpStatus.NOT_FOUND, exception.getMessage());
     }

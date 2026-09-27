@@ -1,6 +1,8 @@
 package com.simulator112.review_service.application.service;
 
 import com.simulator112.review_service.application.exception.ReviewNotFoundException;
+import com.simulator112.review_service.application.event.ReviewResultChanged;
+import org.springframework.context.ApplicationEventPublisher;
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
 import com.simulator112.review_service.application.port.in.SubmitReviewUseCase;
@@ -32,7 +34,7 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
     private final ReviewStore store;
     private final List<ReviewRubric> rubrics;
     private final DialogueAnalysisPort dialogueAnalysisPort;
-    private final CertificateApplicationService certificates;
+    private final ApplicationEventPublisher events;
 
     @Override
     @Transactional
@@ -50,7 +52,7 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
                 Math.max(0, duration - timeLimit), null, null, null, null, null,
                 submission.threshold3(), submission.threshold4(), submission.threshold5());
         Review saved = store.save(review);
-        certificates.issueIfEligible(saved);
+        events.publishEvent(new ReviewResultChanged(saved.userId(), saved.assignmentId()));
         return saved;
     }
 
@@ -61,7 +63,9 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
         if (review.status() != ReviewStatus.DONE) {
             throw new IllegalStateException("Автоматическая проверка ещё не завершена");
         }
-        return store.save(review.confirm(expertId, finalScore, comment, Instant.now()));
+        Review saved = store.save(review.confirm(expertId, finalScore, comment, Instant.now()));
+        events.publishEvent(new ReviewResultChanged(saved.userId(), saved.assignmentId()));
+        return saved;
     }
 
     @Override
