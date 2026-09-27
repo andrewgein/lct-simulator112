@@ -85,7 +85,7 @@ class AuthServiceTest {
         assertThat(response.getTokenType()).isEqualTo("Bearer");
         assertThat(response.getRole()).isEqualTo("STUDENT");
 
-        verify(refreshTokenRepository).deleteAllByUserId(user.getId());
+        verify(refreshTokenRepository, never()).deleteAllByUserId(any());
 
         ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
         verify(refreshTokenRepository).save(tokenCaptor.capture());
@@ -139,7 +139,7 @@ class AuthServiceTest {
 
         verify(userRepository).save(user);
         verify(emailVerificationTokenRepository).save(verificationToken);
-        verify(refreshTokenRepository).deleteAllByUserId(user.getId());
+        verify(refreshTokenRepository, never()).deleteAllByUserId(any());
         verify(kafkaEventPublisher).publishUserCreated(user.getId(), "user@example.com");
 
         ArgumentCaptor<RefreshToken> tokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);

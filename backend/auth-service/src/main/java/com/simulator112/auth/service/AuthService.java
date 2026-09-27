@@ -259,8 +259,6 @@ public class AuthService {
     }
 
     private AuthResponse buildTokenPair(UUID userId, String email, String role) {
-        refreshTokenRepository.deleteAllByUserId(userId);
-
         String accessToken = jwtService.generateAccessToken(new UserDetails(email, userId, role));
         String refreshTokenValue = jwtService.generateRefreshToken();
 
