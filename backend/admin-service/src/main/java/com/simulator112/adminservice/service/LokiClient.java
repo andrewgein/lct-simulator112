@@ -13,8 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-/** Reads container logs back out of Loki (shipped there by Promtail - see
- * prod/monitoring/promtail-config.yaml). admin-service never touches docker.sock itself. */
 @Slf4j
 @Component
 public class LokiClient {
@@ -25,12 +23,11 @@ public class LokiClient {
     this.restClient = RestClient.builder().baseUrl(baseUrl).build();
   }
 
-  /** Last {@code limit} lines for a container, oldest first. */
   public List<LogEntry> recentLogs(String container, int limit) {
     return query(container, null, limit, "backward");
   }
 
-  /** Lines strictly after {@code since}, oldest first - for polling only what's new. */
+ 
   public List<LogEntry> logsSince(String container, Instant since, int limit) {
     return query(container, since, limit, "forward");
   }
@@ -46,14 +43,10 @@ public class LokiClient {
               .append(limit)
               .append("&direction=")
               .append(direction);
-      // Always pass an explicit start/end - without one, Loki's own default window is too
-      // narrow (and unreliable while Promtail is still backfilling older container logs) to
-      // reliably surface "the last N lines" for a container that hasn't logged very recently.
+
       Instant start = since != null ? since.plusNanos(1) : Instant.now().minus(Duration.ofDays(7));
       uri.append("&start=").append(toNanos(start)).append("&end=").append(toNanos(Instant.now()));
-      // .uri(URI) - not .uri(String) - takes the string verbatim: the latter runs it back
-      // through Spring's UriBuilderFactory, which double-encodes the "%7B"/"%22" the LogQL
-      // query already has, so Loki sees a literal "%" and rejects it ("unexpected %").
+
       JsonNode response = restClient.get().uri(URI.create(uri.toString())).retrieve().body(JsonNode.class);
       if (response == null) return entries;
       for (JsonNode stream : response.path("data").path("result")) {

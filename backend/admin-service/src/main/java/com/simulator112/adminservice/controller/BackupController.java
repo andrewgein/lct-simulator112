@@ -61,13 +61,7 @@ public class BackupController {
         .map(BackupRunResponse::from);
   }
 
-  /**
-   * Streams every object from this run's MinIO prefix (all database dumps, plus the encrypted
-   * secrets archive if present) as a single ZIP, built on the fly - nothing is buffered on disk
-   * or fully in memory. Goes through this service rather than a presigned MinIO URL because MinIO
-   * is only reachable on the internal docker network (S3_ENDPOINT is a container-name host), so a
-   * browser could never resolve a presigned URL built against it.
-   */
+
   @GetMapping("/api/v1/admin/backups/{id}/download")
   public ResponseEntity<StreamingResponseBody> download(@PathVariable UUID id) {
     BackupRun run =

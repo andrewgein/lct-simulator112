@@ -7,12 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
-/**
- * Triggers workflow_dispatch runs on the repo's own GitHub Actions - the only way this project
- * starts/stops/updates a compose service. Deliberately does NOT touch /var/run/docker.sock:
- * everything goes through the already-reviewed CI workflows running on the self-hosted runner,
- * which already has whatever docker access it needs. admin-service itself never gets that access.
- */
 @Slf4j
 @Component
 public class GithubActionsClient {

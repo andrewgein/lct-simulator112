@@ -35,16 +35,10 @@ public class AuditLogController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTo,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "50") int size) {
-    // The admin UI sends <input type="datetime-local"> values (no timezone) - interpreted in the
-    // server's local zone, which is acceptable precision for an audit-log filter.
+
     Instant from = dateFrom != null ? dateFrom.atZone(ZoneId.systemDefault()).toInstant() : null;
     Instant to = dateTo != null ? dateTo.atZone(ZoneId.systemDefault()).toInstant() : null;
 
-    // Built as a Specification (rather than a hand-rolled "(:param is null or column = :param)"
-    // JPQL query) so each parameter is only ever bound where it has a concrete, unambiguous
-    // column type. The JPQL null-check pattern hits a known Postgres/Hibernate limitation -
-    // "could not determine data type of parameter" - when a bind parameter appears standalone in
-    // an IS NULL check with no other type context in that prepared statement.
     List<Specification<AuditLogEntry>> predicates = new ArrayList<>();
     if (userId != null) predicates.add((root, query, cb) -> cb.equal(root.get("actorUserId"), userId));
     if (action != null) predicates.add((root, query, cb) -> cb.equal(root.get("action"), action));
