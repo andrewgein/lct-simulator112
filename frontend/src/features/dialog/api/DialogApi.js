@@ -44,7 +44,9 @@ export function requestDialogStatus() {
 
 export function startDialog(apiEndpoint, contextId) {
     const websocketEndpoint = websocketUrl(apiEndpoint, "/api/v1/dialog/process-call", contextId);
-    audioContext = new AudioContext();
+    // Fixed at 16kHz (Vosk's native rate) so capture, VAD and STT never drift
+    // apart depending on the device's default audio hardware rate.
+    audioContext = new AudioContext({ sampleRate: 16000 });
     audioContext.resume().catch((error) => console.error("Can't start audio playback", error));
 
     websocket = new WebSocket(websocketEndpoint);
@@ -77,7 +79,7 @@ export function startDialog(apiEndpoint, contextId) {
     };
 
     navigator.mediaDevices
-        .getUserMedia({ audio: true })
+        .getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } })
         .then((stream) => {
             audioStream = stream;
             const source = audioContext.createMediaStreamSource(audioStream);
