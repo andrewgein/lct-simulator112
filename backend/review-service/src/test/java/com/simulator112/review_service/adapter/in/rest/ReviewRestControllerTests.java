@@ -2,6 +2,7 @@ package com.simulator112.review_service.adapter.in.rest;
 
 import com.simulator112.review_service.adapter.in.rest.dto.ConfirmReviewRequest;
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
+import com.simulator112.review_service.application.port.in.GetPersonalStatisticsUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
 import com.simulator112.review_service.application.port.out.CallRecordingStore;
 import com.simulator112.review_service.domain.model.CallRecording;
@@ -24,7 +25,8 @@ class ReviewRestControllerTests {
     private final GetReviewUseCase getReview = mock(GetReviewUseCase.class);
     private final ConfirmReviewUseCase confirmReview = mock(ConfirmReviewUseCase.class);
     private final CallRecordingStore callRecordings = mock(CallRecordingStore.class);
-    private final ReviewRestController controller = new ReviewRestController(getReview, confirmReview, callRecordings);
+    private final GetPersonalStatisticsUseCase getStatistics = mock(GetPersonalStatisticsUseCase.class);
+    private final ReviewRestController controller = new ReviewRestController(getReview, confirmReview, callRecordings, getStatistics);
 
     @Test
     void supervisorCanReadStudentReviews() {
