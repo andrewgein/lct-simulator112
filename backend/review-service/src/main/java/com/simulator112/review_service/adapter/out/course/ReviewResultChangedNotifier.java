@@ -20,10 +20,6 @@ public class ReviewResultChangedNotifier {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void notifyCourse(ReviewResultChanged event) {
-        // AFTER_COMMIT listeners run synchronously on the same thread as the inbound gRPC call,
-        // so they inherit its Context. If that call is cancelled/times out, the cancellation
-        // propagates to this call too, failing it instantly regardless of withDeadlineAfter.
-        // Detach from it so this notification gets its own lifecycle.
         Context previous = Context.ROOT.attach();
         try {
             stub.withDeadlineAfter(5, TimeUnit.SECONDS).notifyReviewResult(ReviewResultNotification.newBuilder()
