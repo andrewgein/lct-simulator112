@@ -5,6 +5,7 @@ import MainHeader from "../../../../layouts/MainHeader.astro";
 import { getCourses, getStudyGroups, getStudyGroupCourses } from "../../../../features/course/api/CourseApi";
 import { getStudents } from "../../../../features/course/api/StudentApi";
 import { getStudentReviews } from "../../../../features/review/api/ReviewApi";
+import StudentsStatisticsTable from "../../../../features/course/components/StudentsStatisticsTable.jsx";
 
 export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
@@ -98,6 +99,23 @@ try {
 }
 
 const assignments = course?.assignments || [];
+const studentsTable = students.map((student, index) => ({
+  id: student.student?.id ?? index,
+  name: student.name,
+  email: student.student?.email || "",
+  groups: student.groups.join(", "),
+  completed: student.completed,
+  assignmentsCount: assignments.length,
+  progress: assignments.length ? Math.round(student.completed / assignments.length * 100) : 0,
+  average: student.average,
+  lastActivity: student.lastActivity,
+  lastActivityTime: student.lastActivity ? new Date(student.lastActivity).getTime() : 0,
+  attempts: student.attempts.map((attempt) => ({
+    href: `/review/${encodeURIComponent(attempt.contextId)}`,
+    label: attempt.assignmentTitle,
+    text: attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"
+  }))
+}));
 const doneAttempts = students.flatMap((student) => student.done);
 const completedTotal = students.reduce((sum, student) => sum + student.completed, 0);
 const possibleTotal = students.length * assignments.length;
@@ -110,7 +128,6 @@ const formatDuration = (seconds) => {
   const rest = seconds % 60;
   return minutes ? `${minutes} мин ${rest} с` : `${rest} с`;
 };
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 const dayFormatter = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" });
 
 const trendByDay = new Map();
@@ -285,48 +302,7 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
       ) : (
         <>
           <wa-details class="students-panel" appearance="filled-outlined" summary="Обучающиеся и попытки">
-            <wa-scroller>
-              <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
-                <thead>
-                  <tr>
-                    <th>Обучающийся</th>
-                    <th>Группа</th>
-                    <th>Прогресс</th>
-                    <th>Средний балл</th>
-                    <th>Последняя активность</th>
-                    <th>Попытки</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((student) => {
-                    const studentProgress = assignments.length ? Math.round(student.completed / assignments.length * 100) : 0;
-                    return (
-                      <tr>
-                        <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
-                        <td>{student.groups.join(", ")}</td>
-                        <td>
-                          <div class="progress-cell wa-stack wa-gap-2xs">
-                            <span>{student.completed} из {assignments.length}</span>
-                            <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
-                          </div>
-                        </td>
-                        <td>{student.average === null ? "—" : `${student.average}%`}</td>
-                        <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
-                        <td>
-                          {student.attempts.length ? (
-                            <div class="attempt-links wa-stack wa-gap-2xs">
-                              {student.attempts.map((attempt) => (
-                                <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
-                              ))}
-                            </div>
-                          ) : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </wa-scroller>
+            <StudentsStatisticsTable students={studentsTable} client:load />
           </wa-details>
 
           <section class="panel-grid">
@@ -612,6 +588,13 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
   .pdf-report h3 { font-size: 13px; margin-block-start: 12px; }
   .pdf-report table.pdf-criteria-table { width: 100%; border-collapse: collapse; font-size: 11px; }
   .pdf-report table.pdf-criteria-table th, .pdf-report table.pdf-criteria-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+
+  .statistics-table { min-width: 90ch; margin: 0; }
+  .statistics-table td { vertical-align: top; }
+  .statistics-table td:first-child small { display: block; color: var(--wa-color-text-quiet); }
+  .progress-cell { min-width: 14ch; }
+  .student-progress { --track-height: var(--wa-space-xs); }
+  .attempt-links { min-width: 20ch; }
 </style>
 
 <style>
@@ -678,13 +661,6 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
   .chart-tip[hidden] { display: none; }
   .chart-tip strong { font-size: var(--wa-font-size-m); }
   .chart-tip span { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
-
-  .statistics-table { min-width: 90ch; margin: 0; }
-  .statistics-table td { vertical-align: top; }
-  .statistics-table td:first-child small { display: block; color: var(--wa-color-text-quiet); }
-  .progress-cell { min-width: 14ch; }
-  .student-progress { --track-height: var(--wa-space-xs); }
-  .attempt-links { min-width: 20ch; }
 
   @media (max-width: 60rem) { .panel-grid { grid-template-columns: 1fr; } }
   @media (max-width: 40rem) { .panel { padding: var(--wa-space-m); } .summary-item + .summary-item { border-inline-start: 0; border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); } }
