@@ -331,6 +331,51 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
             </article>
           </section>
 
+          <wa-details class="students-panel" appearance="filled-outlined" summary="Обучающиеся и попытки">
+            <wa-scroller>
+              <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
+                <thead>
+                  <tr>
+                    <th>Обучающийся</th>
+                    <th>Группа</th>
+                    <th>Прогресс</th>
+                    <th>Средний балл</th>
+                    <th>Последняя активность</th>
+                    <th>Попытки</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => {
+                    const studentProgress = assignments.length ? Math.round(student.completed / assignments.length * 100) : 0;
+                    return (
+                      <tr>
+                        <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
+                        <td>{student.groups.join(", ")}</td>
+                        <td>
+                          <div class="progress-cell wa-stack wa-gap-2xs">
+                            <span>{student.completed} из {assignments.length}</span>
+                            <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
+                          </div>
+                        </td>
+                        <td>{student.average === null ? "—" : `${student.average}%`}</td>
+                        <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
+                        <td>
+                          {student.attempts.length ? (
+                            <div class="attempt-links wa-stack wa-gap-2xs">
+                              {student.attempts.map((attempt) => (
+                                <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
+                              ))}
+                            </div>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </wa-scroller>
+          </wa-details>
+
           {assignments.length > 0 && (
             <section class="panel">
               <div class="panel-heading">
@@ -410,51 +455,6 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
               </div>
             </section>
           )}
-
-          <wa-details appearance="filled-outlined" summary="Обучающиеся и попытки">
-            <wa-scroller>
-              <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
-                <thead>
-                  <tr>
-                    <th>Обучающийся</th>
-                    <th>Группа</th>
-                    <th>Прогресс</th>
-                    <th>Средний балл</th>
-                    <th>Последняя активность</th>
-                    <th>Попытки</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((student) => {
-                    const studentProgress = assignments.length ? Math.round(student.completed / assignments.length * 100) : 0;
-                    return (
-                      <tr>
-                        <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
-                        <td>{student.groups.join(", ")}</td>
-                        <td>
-                          <div class="progress-cell wa-stack wa-gap-2xs">
-                            <span>{student.completed} из {assignments.length}</span>
-                            <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
-                          </div>
-                        </td>
-                        <td>{student.average === null ? "—" : `${student.average}%`}</td>
-                        <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
-                        <td>
-                          {student.attempts.length ? (
-                            <div class="attempt-links wa-stack wa-gap-2xs">
-                              {student.attempts.map((attempt) => (
-                                <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
-                              ))}
-                            </div>
-                          ) : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </wa-scroller>
-          </wa-details>
         </>
       )}
       <div class="chart-tip" role="tooltip" hidden><strong></strong><span></span></div>
@@ -617,7 +617,7 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
 <style>
   .statistics-page { min-width: 0; padding-block-end: var(--wa-space-2xl); }
   .group-filter { max-width: 24rem; }
-  .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(18ch, 1fr)); margin: 0; border-block: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(18ch, 1fr)); margin: 0; border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
   .summary-item { padding: var(--wa-space-l); }
   .summary-item + .summary-item { border-inline-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
   .summary-item dt, .summary-item small { color: var(--wa-color-text-quiet); }
@@ -629,6 +629,7 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
   .panel-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--wa-space-m); margin-block-end: var(--wa-space-l); }
   .panel-heading h2 { margin: 0; font-size: var(--wa-font-size-l); }
   .panel-heading p { margin: var(--wa-space-3xs) 0 0; color: var(--wa-color-text-quiet); }
+  .students-panel { --wa-color-neutral-fill-quiet: var(--wa-color-surface-raised); --wa-color-neutral-border-quiet: var(--wa-color-surface-border); }
   .empty-note { margin: 0; color: var(--wa-color-text-quiet); }
 
   .trend-chart { display: block; width: 100%; height: auto; overflow: visible; }
