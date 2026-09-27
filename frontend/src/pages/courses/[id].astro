@@ -96,7 +96,8 @@ if (activeAssignmentCurrent) {
               const failed = finishedReviews.get(assignmentId)?.passed === false;
               const current = String(currentAssignment?.id) === assignmentId;
               const active = String(activeAssignment?.id) === assignmentId;
-              return <wa-button class="course-menu-button" href={`/courses/${course.id}?assignment=${encodeURIComponent(assignment.id)}`} appearance={active ? "filled" : "plain"} variant={active ? "brand" : "neutral"} aria-current={active ? "page" : undefined} with-start with-end={!done && !current}>{done ? <wa-icon slot="start" class="assignment-state-icon completed-icon" name="circle-check" label="Выполнено"></wa-icon> : failed ? <wa-icon slot="start" class="assignment-state-icon failed-icon" name="circle-xmark" label="Не пройдено"></wa-icon> : <wa-icon slot="start" class="assignment-state-icon" name="circle" variant="regular" label="Не выполнено"></wa-icon>}{assignment.title}{!done && !current && <wa-icon slot="end" name="lock"></wa-icon>}</wa-button>;
+              const locked = !done && !current;
+              return <wa-button class="course-menu-button" href={`/courses/${course.id}?assignment=${encodeURIComponent(assignment.id)}`} appearance={active ? "filled" : "plain"} variant={active ? "brand" : "neutral"} aria-current={active ? "page" : undefined} with-start>{done ? <wa-icon slot="start" class="assignment-state-icon completed-icon" name="circle-check" label="Выполнено"></wa-icon> : failed ? <wa-icon slot="start" class="assignment-state-icon failed-icon" name="circle-xmark" label="Не пройдено"></wa-icon> : locked ? <wa-icon slot="start" class="assignment-state-icon" name="lock" label="Недоступно"></wa-icon> : <wa-icon slot="start" class="assignment-state-icon" name="circle" variant="regular" label="Не выполнено"></wa-icon>}{assignment.title}</wa-button>;
             })}
           </div>
         ) : <p class="menu-empty wa-caption-s">Задания не добавлены</p>}
