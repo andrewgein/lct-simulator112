@@ -5,6 +5,7 @@ import MainHeader from "../../layouts/MainHeader.astro";
 import { getCourse } from "../../features/course/api/CourseApi";
 import { getEnrollment } from "../../features/course/api/EnrollmentApi";
 import { getUserReviews } from "../../features/review/api/ReviewApi";
+import { findActiveContext } from "../../features/context/api/ContextApi";
 
 export const prerender = false;
 let course;
@@ -53,6 +54,17 @@ const isExcel = contentType.includes("sheet") || contentType.includes("excel") |
 const activeAssignmentDone = activeAssignment ? completed.has(String(activeAssignment.id)) : false;
 const activeAssignmentCurrent = activeAssignment && String(currentAssignment?.id) === String(activeAssignment.id);
 const activeReview = activeAssignment ? finishedReviews.get(String(activeAssignment.id)) : null;
+let activeContextId = null;
+if (activeAssignmentCurrent) {
+  try {
+    const activeContextResponse = await findActiveContext(activeAssignment.id, Astro.locals.accessToken);
+    if (activeContextResponse.status === 200) {
+      activeContextId = JSON.parse(await activeContextResponse.text());
+    }
+  } catch {
+    activeContextId = null;
+  }
+}
 ---
 <Page {error}>
   <Header slot="header" />
@@ -129,7 +141,14 @@ const activeReview = activeAssignment ? finishedReviews.get(String(activeAssignm
             </article>
           </wa-card>
           {activeReview && <wa-callout variant={activeReview.passed ? "success" : "danger"}><wa-icon slot="icon" name={activeReview.passed ? "circle-check" : "circle-exclamation"}></wa-icon><div class="completion-summary wa-split wa-align-items-center"><strong>{activeReview.passed ? "Задание выполнено" : "Задание не пройдено"}</strong><a href={`/review/${encodeURIComponent(activeReview.contextId)}`}>Посмотреть детальный разбор <wa-icon name="arrow-right"></wa-icon></a></div></wa-callout>}
-          {activeAssignmentCurrent && <wa-button class="start-assignment" variant="brand" size="large" data-course-id={course.id} data-assignment-id={activeAssignment.id}>Начать</wa-button>}
+          {activeAssignmentCurrent && (
+            <div class="assignment-actions wa-cluster wa-gap-s">
+              {activeContextId && (
+                <wa-button href={`/courses/${course.id}/assignments/${activeAssignment.id}?context=${activeContextId}`} variant="brand" size="large">Продолжить уровень</wa-button>
+              )}
+              <wa-button class="start-assignment" appearance={activeContextId ? "outlined" : "filled"} variant={activeContextId ? "neutral" : "brand"} size="large" data-course-id={course.id} data-assignment-id={activeAssignment.id}>{activeContextId ? "Начать заново" : "Начать"}</wa-button>
+            </div>
+          )}
         </div>
       )}
       {!selectedMaterial && !activeAssignment && <wa-callout>В курсе пока нет вводных материалов и заданий.</wa-callout>}
@@ -187,14 +206,19 @@ const activeReview = activeAssignment ? finishedReviews.get(String(activeAssignm
 
   document.querySelectorAll('.start-assignment').forEach((button) => button.addEventListener('click', async () => {
     button.loading = true;
-    const response = await fetch('/api/v1/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignmentId: button.dataset.assignmentId }) });
-    if (!response.ok) {
-      button.loading = false;
+    try {
+      const response = await fetch('/api/v1/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assignmentId: button.dataset.assignmentId }) });
+      if (!response.ok) {
+        alert('Не удалось начать задание');
+        return;
+      }
+      const { contextId } = await response.json();
+      location.href = `/courses/${button.dataset.courseId}/assignments/${button.dataset.assignmentId}?context=${contextId}`;
+    } catch {
       alert('Не удалось начать задание');
-      return;
+    } finally {
+      button.loading = false;
     }
-    const { contextId } = await response.json();
-    location.href = `/courses/${button.dataset.courseId}/assignments/${button.dataset.assignmentId}?context=${contextId}`;
   }));
 </script>
 <style>
@@ -222,4 +246,6 @@ const activeReview = activeAssignment ? finishedReviews.get(String(activeAssignm
   .assignment-description p { margin-block-start: 0; white-space: pre-wrap; }
   .completion-summary { width: 100%; }
   .start-assignment { align-self: stretch; }
+  .assignment-actions { align-self: stretch; }
+  .assignment-actions wa-button { flex: 1 1 auto; }
 </style>
