@@ -151,8 +151,8 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
     { field: "time", label: "Время", sortable: false },
     { field: "incident", label: "Тип происшествия", sortable: false, render: (row) => <strong title={row.incident}>{row.incident}</strong> },
     { field: "victimSummary", label: "Постр.", sortable: false },
-    { field: "status", label: statusLabel, sortable: false, render: (row) => <span class="card-status-content wa-cluster wa-gap-xs wa-flex-nowrap"><wa-icon name={row.complete ? "circle-check" : "triangle-exclamation"} aria-hidden="true"></wa-icon><span>{row.status}</span></span> },
     { field: "address", label: "Адрес", sortable: false },
+    { field: "status", label: statusLabel, sortable: false, render: (row) => <span class="card-status-content wa-cluster wa-gap-xs wa-flex-nowrap"><wa-icon name={row.complete ? "circle-check" : "triangle-exclamation"} aria-hidden="true"></wa-icon><span>{row.status}</span></span> },
     { field: "open", label: "Карточка", sortable: false, render: (row) => <wa-button class="card-open" type="button" size="xs" appearance="plain" variant="neutral" aria-label={`Открыть карточку ${row.id}`} onClick={() => onOpen(row.card)}><wa-icon name="clipboard" aria-hidden="true"></wa-icon></wa-button> }
   ];
   return (
