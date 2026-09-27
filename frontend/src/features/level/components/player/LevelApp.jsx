@@ -36,7 +36,20 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
   const nextCallTimer = useRef();
   const firstCallRequested = useRef(false);
   const latest = useRef();
+  const ringtone = useRef();
   latest.current = { call, editor };
+
+  useEffect(() => {
+    const audio = ringtone.current;
+    if (!audio) return;
+    if (call.phase === "incoming") {
+      audio.currentTime = 0;
+      audio.play().catch((error) => console.error("Can't play ringtone", error));
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [call.phase]);
 
   const cardsReady = !cardsLoading && !cardsError && !classifierState.loading && !classifierState.error && cards.length > 0;
   const allCardsComplete = cardsReady && cards.every((card) => cardIsComplete(card, classifierState.classifier));
@@ -128,6 +141,7 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
 
   return (
     <div class="level-app wa-stack wa-gap-0">
+      <audio ref={ringtone} src="/audio/incoming-call.mp3" loop preload="auto" />
       <LevelCommandBar call={call} now={now} onAccept={acceptCall} onDrop={stopDialog} exitHref={`/courses/${courseId}`}>
         <LevelSearchInput value={cardSearch} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setCardSearch(event.currentTarget.value)} />
       </LevelCommandBar>
