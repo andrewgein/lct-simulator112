@@ -2,6 +2,7 @@ package com.simulator112.incident.adapter.out.ollama;
 
 import com.simulator112.incident.application.port.out.IncidentLanguageModelPort;
 import com.simulator112.incident.application.service.IncidentGenerationException;
+import com.simulator112.incident.application.service.IncidentGenerationLimitException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
@@ -33,15 +34,19 @@ public class OllamaIncidentGenerationAdapter implements IncidentLanguageModelPor
     @Override
     public String generate(List<Message> messages) {
         try {
-            var body = mapper.writeValueAsString(Map.of("model", model, "stream", false, "format", "json",
-                    "messages", messages, "options", Map.of("temperature", 0.3, "num_ctx", 16384)));
+            var body = mapper.writeValueAsString(Map.of("model", model, "stream", false, "format", "json", "keep_alive", "10m",
+                    "messages", messages, "options", Map.of("temperature", 0.3, "num_ctx", 8192, "num_predict", 4096)));
             var request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(120))
                     .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
             var response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
                 throw new IncidentGenerationException("Ollama HTTP " + response.statusCode());
             }
-            var content = mapper.readTree(response.body()).path("message").path("content");
+            var result = mapper.readTree(response.body());
+            if ("length".equals(result.path("done_reason").asText())) {
+                throw new IncidentGenerationLimitException();
+            }
+            var content = result.path("message").path("content");
             if (!content.isTextual()) throw new IncidentGenerationException("Ollama returned no message content");
             return content.asText();
         } catch (InterruptedException e) {
