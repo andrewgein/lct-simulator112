@@ -1,0 +1,118 @@
+---
+import Page from "../../../../layouts/Page.astro";
+import Header from "../../../../layouts/Header.astro";
+import MainHeader from "../../../../layouts/MainHeader.astro";
+import StatisticsReport from "../../../../features/course/components/StatisticsReport.astro";
+import { getCourses, getStudyGroup, getStudyGroupCourses } from "../../../../features/course/api/CourseApi";
+import { getStudents } from "../../../../features/course/api/StudentApi";
+import { getStudentReviews } from "../../../../features/review/api/ReviewApi";
+import { buildStudentStats, buildSummary, buildTrend, buildTopErrors, buildAssignmentAverages, buildCriteriaMap, buildReportEntry, buildStudentsTableRows } from "../../../../features/course/statisticsUtils";
+
+export const prerender = false;
+if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
+
+const token = Astro.locals.accessToken;
+let error = null;
+let group = null;
+let groupCourses = [];
+let course = null;
+let selectedCourseId = Astro.url.searchParams.get("course") || "";
+let students = [];
+
+try {
+  const [groupResponse, coursesResponse, groupCoursesResponse, allStudents] = await Promise.all([
+    getStudyGroup(Astro.params.id, token),
+    getCourses(token),
+    getStudyGroupCourses(Astro.params.id, token),
+    getStudents(token)
+  ]);
+  if (!groupResponse.ok || !coursesResponse.ok || !groupCoursesResponse.ok) throw new Error();
+
+  group = await groupResponse.json();
+  const allCourses = await coursesResponse.json();
+  const assignedIds = new Set((await groupCoursesResponse.json()).map((item) => String(item.id)));
+  groupCourses = allCourses.filter((item) => assignedIds.has(String(item.id)));
+  if (!selectedCourseId && groupCourses.length) selectedCourseId = String(groupCourses[0].id);
+  course = groupCourses.find((item) => String(item.id) === selectedCourseId) || null;
+
+  if (course) {
+    const studentsById = new Map(allStudents.map((student) => [String(student.id), student]));
+    const groupStudentIds = (group.studentIds || []).map(String);
+
+    const reviewsByStudent = new Map(await Promise.all(groupStudentIds.map(async (studentId) => {
+      const response = await getStudentReviews(studentId, token);
+      if (!response.ok) throw new Error();
+      return [studentId, (await response.json()).reviews || []];
+    })));
+
+    const assignmentIds = new Set((course.assignments || []).map((assignment) => String(assignment.id)));
+    const assignmentTitles = new Map((course.assignments || []).map((assignment) => [String(assignment.id), assignment.title]));
+    students = groupStudentIds.map((studentId) => ({
+      ...buildStudentStats({ student: studentsById.get(studentId), reviews: reviewsByStudent.get(studentId), assignmentIds, assignmentTitles }),
+      groups: [group.title]
+    })).sort((left, right) => left.name.localeCompare(right.name, "ru"));
+  }
+} catch {
+  error = "Не удалось загрузить статистику прохождений";
+}
+
+const assignments = course?.assignments || [];
+const { doneAttempts, completedTotal, possibleTotal, completedShare, averageTotal, averageDuration, overtimeShare } = buildSummary(students, assignments.length);
+const summary = { assignmentsCount: assignments.length, studentsCount: students.length, completedTotal, possibleTotal, completedShare, averageTotal, doneAttemptsCount: doneAttempts.length, averageDuration, overtimeShare };
+const trend = buildTrend(doneAttempts);
+const topErrors = buildTopErrors(doneAttempts);
+const assignmentAverages = buildAssignmentAverages(assignments, students);
+const { criteriaColumns, errorMap } = buildCriteriaMap(students);
+const studentsTable = buildStudentsTableRows(students, assignments);
+
+const reportData = {
+  summary: { assignments: assignments.length, students: students.length, completed: completedTotal, possible: possibleTotal, average: averageTotal },
+  fileNameBase: `${group?.title || "группа"} — ${course?.title || "курс"}`,
+  courses: course ? [buildReportEntry({ title: course.title, assignments, students, completedTotal, possibleTotal, averageTotal })] : []
+};
+const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toString("base64");
+
+const filter = groupCourses.length > 1 ? {
+  formId: "course-filter",
+  paramName: "course",
+  label: "Курс",
+  value: selectedCourseId,
+  placeholder: "Выберите курс",
+  allowClear: false,
+  options: groupCourses.map((item) => ({ value: String(item.id), label: item.title }))
+} : null;
+---
+
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title={group?.title || "Статистика группы"}>
+    <div class="wa-cluster wa-gap-xs">
+      <wa-button href="/teacher/groups" appearance="outlined">Все группы</wa-button>
+      {group && <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined">Редактировать группу</wa-button>}
+      {course && (
+        <>
+          <wa-button id="export-excel" appearance="outlined"><wa-icon slot="start" name="file-excel"></wa-icon>Excel</wa-button>
+          <wa-button id="export-pdf" appearance="outlined"><wa-icon slot="start" name="file-pdf"></wa-icon>PDF</wa-button>
+        </>
+      )}
+    </div>
+  </MainHeader>
+  {!error && group && !groupCourses.length && <wa-callout variant="neutral">Группе пока не назначены курсы.</wa-callout>}
+  {!error && course && (
+    <StatisticsReport
+      filter={filter}
+      summary={summary}
+      emptyMessage="В группе пока нет обучающихся."
+      studentsTable={studentsTable}
+      students={students}
+      assignments={assignments}
+      assignmentAverages={assignmentAverages}
+      trend={trend}
+      topErrors={topErrors}
+      criteriaColumns={criteriaColumns}
+      errorMap={errorMap}
+      reportDataEncoded={reportDataEncoded}
+      exportFileNameBase={course.title}
+    />
+  )}
+</Page>
