@@ -3,6 +3,7 @@ import Page from "../../layouts/Page.astro";
 import { getReview, getReviewComments, getReviewRecordings } from "../../features/review/api/ReviewApi";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
+import ReviewIncidentsPanel from "../../features/review/components/ReviewIncidentsPanel.jsx";
 
 const accessToken = Astro.cookies.get("accessToken").value;
 const role = Astro.cookies.get("role")?.value || "";
@@ -75,31 +76,9 @@ export const prerender = false;
             <wa-callout variant={review.passed ? "success" : "danger"}>{review.passed ? "Задание пройдено" : "Задание не пройдено"}</wa-callout>
           )}
           {!!review.incidents?.length && (
-            <div class="wa-stack wa-gap-xs">
+            <div class="wa-stack wa-gap-m">
               <strong>Инцидент:</strong>
-              {review.incidents.map((incident) => (
-                <div class="wa-stack wa-gap-2xs">
-                  <span>Сценарий {incident.order}: {incident.title || "Без названия"}</span>
-                  <span class="wa-caption-m">Пострадавших: {incident.victimCount}{!!incident.classifierCodes.length && `, классификация: ${incident.classifierCodes.join(", ")}`}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {!!review.cards?.length && (
-            <div class="wa-stack wa-gap-xs">
-              <strong>Карточка диспетчера:</strong>
-              {review.cards.map((card) => (
-                <div class="wa-stack wa-gap-2xs card-summary">
-                  {card.applicant && <span>Заявитель: {[card.applicant.lastName, card.applicant.firstName, card.applicant.middleName].filter(Boolean).join(" ") || "не указан"}{card.applicant.phone && `, тел. ${card.applicant.phone}`}</span>}
-                  {card.applicant?.address && <span>Адрес: {card.applicant.address}</span>}
-                  {card.victimCount !== null && card.victimCount !== undefined && <span>Пострадавших: {card.victimCount}</span>}
-                  {!!card.incidentTypes.length && <span>Вид происшествия: {card.incidentTypes.join(", ")}</span>}
-                  {!!card.services.length && <span>Привлечённые службы: {card.services.join(", ")}</span>}
-                  {!!Object.keys(card.additionalInfo || {}).length && (
-                    <span>Доп. информация: {Object.entries(card.additionalInfo).map(([key, value]) => `${key}: ${value}`).join("; ")}</span>
-                  )}
-                </div>
-              ))}
+              <ReviewIncidentsPanel contextId={context} incidents={review.incidents} cards={review.cards} canLinkToScenario={isTeacher} client:load />
             </div>
           )}
         </div>
@@ -296,10 +275,6 @@ export const prerender = false;
   .criteria-form-actions {
     display: flex;
     justify-content: flex-end;
-  }
-
-  .card-summary {
-    padding: var(--wa-space-s) 0;
   }
 
   @media (max-width: 600px) {

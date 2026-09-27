@@ -94,8 +94,14 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
 
     private List<DispatcherCardSummary> cardSummaries(ReviewSubmission submission) {
         if (submission.cardRevisions().isEmpty()) return List.of();
+        Map<String, String> incidentIdByCallId = submission.incidents().stream()
+                .flatMap(incident -> incident.stages().stream()
+                        .flatMap(stage -> stage.calls().stream())
+                        .map(call -> Map.entry(call.id(), incident.id())))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
         return System112ReviewRubric.assemble(submission.cardRevisions()).values().stream()
-                .map(card -> new DispatcherCardSummary(card.cardId(), card.callId(), card.applicant(),
+                .map(card -> new DispatcherCardSummary(card.cardId(), card.callId(),
+                        incidentIdByCallId.get(card.callId()), card.applicant(),
                         card.victimCount(), card.incidentTypes(), card.services(), card.additionalInfo()))
                 .toList();
     }

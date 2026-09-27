@@ -62,6 +62,7 @@
  * @typedef {Object} DispatcherCard
  * @property {string} cardId
  * @property {string} callId
+ * @property {string | null} incidentId
  * @property {DispatcherCardPerson | null} applicant
  * @property {number | null} victimCount
  * @property {string[]} incidentTypes
