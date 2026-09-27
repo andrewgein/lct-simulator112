@@ -1,0 +1,52 @@
+---
+import Page from "../layouts/Page.astro";
+import Header from "../layouts/Header.astro";
+import MainHeader from "../layouts/MainHeader.astro";
+import { getMyEnrollments } from "../features/course/api/EnrollmentApi";
+import { getCourse } from "../features/course/api/CourseApi";
+
+export const prerender = false;
+let courses = [];
+let error = null;
+try {
+  const response = await getMyEnrollments(Astro.locals.accessToken);
+  if (!response.ok) throw new Error();
+  const enrollments = await response.json();
+  courses = (await Promise.all(enrollments.map(async (enrollment) => {
+    const courseResponse = await getCourse(enrollment.courseId, Astro.locals.accessToken);
+    if (!courseResponse.ok) return null;
+    return courseResponse.json();
+  }))).filter((course) => course && (course.materials || []).length);
+} catch {
+  error = "Не удалось загрузить базу знаний";
+}
+
+const materialKey = (material, index) => String(material.id ?? index);
+---
+<Page {error}>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="База знаний" />
+  {!error && !courses.length && <wa-callout>В ваших курсах пока нет методических материалов.</wa-callout>}
+  <div class="knowledge-base wa-stack wa-gap-l">
+    {courses.map((course) => (
+      <section class="wa-stack wa-gap-xs">
+        <h2 class="wa-heading-m">{course.title}</h2>
+        <div class="wa-stack wa-gap-3xs">
+          {course.materials.map((material, index) => (
+            <a class="material-row" href={`/courses/${course.id}?material=${encodeURIComponent(materialKey(material, index))}`}>
+              <wa-icon name={material.fileContentType?.toLowerCase().includes("pdf") ? "file-pdf" : "file-lines"}></wa-icon>
+              <span>{material.title || material.fileName}</span>
+              <wa-icon class="wa-color-text-quiet" name="chevron-right"></wa-icon>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Page>
+<style>
+  .knowledge-base { width: 100%; }
+  .material-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--wa-space-s); padding: var(--wa-space-m); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); color: var(--wa-color-text-normal); text-decoration: none; }
+  .material-row:hover { border-color: var(--wa-color-brand-border-loud); background: var(--wa-color-brand-fill-quiet); }
+  .material-row:focus-visible { outline: var(--wa-focus-ring-width) var(--wa-focus-ring-style) var(--wa-color-focus); outline-offset: var(--wa-focus-ring-offset); }
+</style>
