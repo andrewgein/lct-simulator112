@@ -13,10 +13,10 @@ class BufferedAudioProcessor extends AudioWorkletProcessor {
     energyIntegration = 1;
 
     voiceTrend = 0;
-    voiceTrendMax = 50;
-    voiceTrendMin = -50;
-    voiceTrendStart = 10;
-    voiceTrendEnd = -25;
+    voiceTrendMax = 80;
+    voiceTrendMin = -80;
+    voiceTrendStart = 15;
+    voiceTrendEnd = -60;
     vadState = false;
 
     process(inputChannels) {
