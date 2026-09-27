@@ -56,4 +56,20 @@
  * @property {Review[]} reviews
  */
 
+/**
+ * @typedef {Object} ErrorStatistic
+ * @property {string} criterionName
+ * @property {number} attempts
+ * @property {number} failedCount
+ * @property {number} scoreEarned
+ * @property {number} scoreMax
+ * @property {number} errorRate
+ */
+
+/**
+ * @typedef {Object} PersonalStatistics
+ * @property {ErrorStatistic[]} errorStatistics
+ * @property {string[]} recommendations
+ */
+
 export {};

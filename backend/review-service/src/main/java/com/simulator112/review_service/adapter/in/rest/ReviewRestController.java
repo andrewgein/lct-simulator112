@@ -3,9 +3,11 @@ package com.simulator112.review_service.adapter.in.rest;
 import com.simulator112.review_service.adapter.in.rest.dto.ConfirmReviewRequest;
 import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingsResponse;
+import com.simulator112.review_service.adapter.in.rest.dto.PersonalStatisticsResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.ReviewResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.UserReviewsResponse;
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
+import com.simulator112.review_service.application.port.in.GetPersonalStatisticsUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
 import com.simulator112.review_service.application.port.out.CallRecordingStore;
 import jakarta.validation.Valid;
@@ -28,6 +30,7 @@ public class ReviewRestController {
     private final GetReviewUseCase getReview;
     private final ConfirmReviewUseCase confirmReview;
     private final CallRecordingStore callRecordings;
+    private final GetPersonalStatisticsUseCase getStatistics;
 
     @GetMapping
     public UserReviewsResponse getUserReviews(@RequestHeader("X-User-Id") UUID userId) {
@@ -40,6 +43,19 @@ public class ReviewRestController {
             @PathVariable UUID studentId) {
         requireReviewer(role);
         return reviewsFor(studentId);
+    }
+
+    @GetMapping("/statistics")
+    public PersonalStatisticsResponse getMyStatistics(@RequestHeader("X-User-Id") UUID userId) {
+        return ReviewRestMapper.toResponse(getStatistics.getForUser(userId));
+    }
+
+    @GetMapping("/users/{studentId}/statistics")
+    public PersonalStatisticsResponse getStudentStatistics(
+            @RequestHeader("X-User-Role") String role,
+            @PathVariable UUID studentId) {
+        requireReviewer(role);
+        return ReviewRestMapper.toResponse(getStatistics.getForUser(studentId));
     }
 
     @GetMapping("/{contextId}")
