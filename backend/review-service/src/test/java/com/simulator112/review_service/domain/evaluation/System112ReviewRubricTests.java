@@ -108,6 +108,31 @@ class System112ReviewRubricTests {
     }
 
     @Test
+    void awardsHalfScoreForTypoInNameOrSurname() {
+        var expected = new ReviewSubmission.Person("Анна", "Иванова", null, null, null, null, null, null);
+        var typo = new ReviewSubmission.Person("Ана", "Ивонова", null, null, null, null, null, null);
+        var call = new ReviewSubmission.CallScenario("call", 0, expected);
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+                new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 0, null, List.of(call))),
+                criteria());
+        var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident),
+                List.of(card("card", "call", "", typo)), List.of(), List.of(), null, null);
+
+        var results = new System112ReviewRubric().evaluate(submission).stream()
+                .filter(result -> result.criterionName().equals("Поля")).toList();
+
+        assertThat(results).anySatisfy(result -> {
+            assertThat(result.feedback()).contains("Имя указано с грамматической ошибкой");
+            assertThat(result.score()).isEqualTo(result.maxScore() / 2);
+        });
+        assertThat(results).anySatisfy(result -> {
+            assertThat(result.feedback()).contains("Фамилия указано с грамматической ошибкой");
+            assertThat(result.score()).isEqualTo(result.maxScore() / 2);
+        });
+    }
+
+    @Test
     void feedbackDoesNotRevealExpectedValuesOrRequiredQuestions() {
         var expected = new ReviewSubmission.Person("СекретноеИмя", null, null, null,
                 null, null, null, null);

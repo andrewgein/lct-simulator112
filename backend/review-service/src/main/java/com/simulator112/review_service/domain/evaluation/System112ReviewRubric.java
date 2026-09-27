@@ -60,6 +60,35 @@ public final class System112ReviewRubric implements ReviewRubric {
         return normalize(first).equals(normalize(second));
     }
 
+    /**
+     * Сравнивает Имя/Фамилию с толерантностью к опечаткам: точное совпадение — 1.0,
+     * опечатка (расстояние Левенштейна в пределах ~30% длины слова) — 0.5, иначе — 0.0.
+     */
+    private static double nameCorrectness(String expected, String actual) {
+        String a = normalize(expected);
+        String b = normalize(actual);
+        if (a.equals(b)) return 1;
+        if (b.isEmpty()) return 0;
+        int distance = levenshtein(a, b);
+        int threshold = Math.max(1, a.length() / 3);
+        return distance <= threshold ? 0.5 : 0;
+    }
+
+    private static int levenshtein(String first, String second) {
+        int[] previous = new int[second.length() + 1];
+        int[] current = new int[second.length() + 1];
+        for (int j = 0; j <= second.length(); j++) previous[j] = j;
+        for (int i = 1; i <= first.length(); i++) {
+            current[0] = i;
+            for (int j = 1; j <= second.length(); j++) {
+                int cost = first.charAt(i - 1) == second.charAt(j - 1) ? 0 : 1;
+                current[j] = Math.min(Math.min(current[j - 1] + 1, previous[j] + 1), previous[j - 1] + cost);
+            }
+            System.arraycopy(current, 0, previous, 0, current.length);
+        }
+        return previous[second.length()];
+    }
+
     private static boolean sameSet(List<String> expected, List<String> actual) {
         Set<String> expectedCodes = new HashSet<>();
         expected.forEach(value -> expectedCodes.add(normalize(value)));
@@ -145,8 +174,8 @@ public final class System112ReviewRubric implements ReviewRubric {
             }
             double checkWeight = callWeight / checks.size();
             String prefix = "Звонок №" + (callIndex + 1) + ": ";
-            checks.forEach(check -> result.add(new WeightedCheck(check.correct(), checkWeight,
-                    prefix + (check.correct() ? check.successFeedback() : check.failureFeedback()))));
+            checks.forEach(check -> result.add(new WeightedCheck(check.correctness(), checkWeight,
+                    prefix + (check.correctness() >= 1 ? check.successFeedback() : check.failureFeedback()))));
         }
         return result;
     }
@@ -234,7 +263,7 @@ public final class System112ReviewRubric implements ReviewRubric {
             WeightedCheck check = checks.get(index);
             int max = points[index];
             results.add(new CriterionResult(incident.id(), incident.order(), category,
-                    check.correct() ? max : 0, max, check.feedback()));
+                    (int) Math.round(max * check.correctness()), max, check.feedback()));
         }
         return results;
     }
@@ -271,9 +300,9 @@ public final class System112ReviewRubric implements ReviewRubric {
 
     private void personChecks(List<AtomicCheck> checks, ReviewSubmission.Person expected,
                               ReviewSubmission.Person actual) {
-        fieldCheck(checks, "Имя", expected.firstName(), actual == null ? null : actual.firstName());
-        fieldCheck(checks, "Фамилия", expected.lastName(), actual == null ? null : actual.lastName());
-        fieldCheck(checks, "Отчество", expected.middleName(), actual == null ? null : actual.middleName());
+        nameFieldCheck(checks, "Имя", expected.firstName(), actual == null ? null : actual.firstName());
+        nameFieldCheck(checks, "Фамилия", expected.lastName(), actual == null ? null : actual.lastName());
+        nameFieldCheck(checks, "Отчество", expected.middleName(), actual == null ? null : actual.middleName());
         fieldCheck(checks, "Телефон", expected.phone(), actual == null ? null : actual.phone());
         fieldCheck(checks, "Контактный телефон", expected.contactPhone(),
                 actual == null ? null : actual.contactPhone());
@@ -290,12 +319,26 @@ public final class System112ReviewRubric implements ReviewRubric {
                 ? field + " не указано." : field + " указано неверно.", field + " указано верно."));
     }
 
-    private enum Operation {CREATE, LINK}
-
-    private record AtomicCheck(boolean correct, String failureFeedback, String successFeedback) {
+    private void nameFieldCheck(List<AtomicCheck> checks, String field, String expected, String actual) {
+        if (blank(expected)) return;
+        double correctness = nameCorrectness(expected, actual);
+        String failureFeedback = actual == null || actual.isBlank() ? field + " не указано."
+                : correctness > 0 ? field + " указано с грамматической ошибкой." : field + " указано неверно.";
+        checks.add(new AtomicCheck(correctness, failureFeedback, field + " указано верно."));
     }
 
-    private record WeightedCheck(boolean correct, double weight, String feedback) {
+    private enum Operation {CREATE, LINK}
+
+    private record AtomicCheck(double correctness, String failureFeedback, String successFeedback) {
+        AtomicCheck(boolean correct, String failureFeedback, String successFeedback) {
+            this(correct ? 1 : 0, failureFeedback, successFeedback);
+        }
+    }
+
+    private record WeightedCheck(double correctness, double weight, String feedback) {
+        WeightedCheck(boolean correct, double weight, String feedback) {
+            this(correct ? 1 : 0, weight, feedback);
+        }
     }
 
     private record ExpectedCall(ReviewSubmission.CallScenario call, ReviewSubmission.StageScenario stage,
