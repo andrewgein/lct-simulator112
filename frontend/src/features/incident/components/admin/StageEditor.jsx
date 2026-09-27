@@ -8,6 +8,7 @@ import { findIncident, moveItem, normalizeDialup } from "./editorHelpers";
 
 export default function StageEditor({ stage, index, count, firstDialupNumber, classifier, incidentAddress, openStage, openDialup, dialupError, onChange, onOpenStage, onCloseStage, onOpenDialup, onCloseDialup, onRemove, onMove }) {
   const incidentType = findIncident(classifier, stage.typeId);
+  const incidentTypes = stage.classifierCodes.filter(Boolean).map((code) => findIncident(classifier, code)?.finalName || code);
   const snapshot = useRef(null);
   const changeStageField = (field) => (event) => onChange({ ...stage, [field]: event.currentTarget.value });
   const openEditor = () => {
@@ -44,6 +45,10 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
             <wa-icon name="trash" label="Удалить">
             </wa-icon>
           </wa-button>
+        </div>
+        <div class="stage-types wa-cluster wa-gap-xs">
+          <span class="stage-types-label">Тип происшествия:</span>
+          <span>{incidentTypes.length ? incidentTypes.join(", ") : "не выбран"}</span>
         </div>
         <div class="dialups wa-cluster wa-gap-m">
           {stage.dialups.map((dialup, dialupIndex) => (
