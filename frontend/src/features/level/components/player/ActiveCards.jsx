@@ -13,7 +13,7 @@ const styles = `
 .cards-grid { background: var(--app-dispatch-workspace); --wa-color-surface-border: var(--app-dispatch-border); }
 .cards-table { min-width: 78rem; border-collapse: separate; border-spacing: 0 var(--wa-space-2xs); color: var(--app-dispatch-text); --wa-color-fill-quiet: var(--app-dispatch-row-hover); --wa-color-border-quiet: var(--app-dispatch-border); --wa-color-border-normal: var(--wa-color-neutral-50); }
 .cards-table thead { background: var(--app-dispatch-workspace); color: var(--wa-color-neutral-90); }
-.cards-table th { padding: var(--wa-space-s) var(--wa-space-m); border-block-end-color: var(--wa-color-neutral-70); font-weight: var(--wa-font-weight-semibold); white-space: nowrap; }
+.cards-table th { padding: var(--wa-space-s) var(--wa-space-m); border-block-end-color: var(--wa-color-neutral-70); font-weight: var(--wa-font-weight-semibold); white-space: nowrap; vertical-align: middle; }
 .cards-table td { box-sizing: border-box; max-width: 24rem; padding: var(--wa-space-xs) var(--wa-space-s); overflow: hidden; border-inline-end: var(--wa-border-width-s) solid var(--app-dispatch-border); background: var(--app-dispatch-row-alternate); text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
 .cards-table tbody .data-grid__row td { border-block: var(--wa-border-width-s) solid var(--app-dispatch-border); }
 .cards-table tbody .data-grid__row td:first-child { border-inline-start: var(--wa-border-width-s) solid var(--app-dispatch-border); }
