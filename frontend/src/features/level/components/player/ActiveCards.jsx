@@ -23,7 +23,7 @@ const styles = `
 .cards-table .data-grid__heading:first-child, .cards-table .data-grid__cell--details { width: 3rem; padding-inline: var(--wa-space-xs); text-align: center; }
 .cards-table .data-grid__cell--relation { width: 6rem; color: var(--app-dispatch-text-secondary); }
 .card-relation-indent { display: inline-flex; align-items: center; gap: var(--wa-space-xs); padding-inline-start: calc(var(--card-depth) * var(--wa-space-l)); }
-.card-collapse, .card-details-toggle, .card-open { --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
+.card-collapse, .card-details-toggle, .card-open { --wa-color-fill-quiet: transparent; --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
 .cards-table .data-grid__cell--id { width: 9rem; color: var(--app-dispatch-text-secondary); }
 .cards-table .data-grid__cell--date, .cards-table .data-grid__cell--time { width: 6rem; }
 .cards-table .data-grid__cell--time { font-weight: var(--wa-font-weight-semibold); }
