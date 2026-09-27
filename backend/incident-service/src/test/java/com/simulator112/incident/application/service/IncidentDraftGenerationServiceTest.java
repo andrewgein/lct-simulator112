@@ -150,7 +150,7 @@ class IncidentDraftGenerationServiceTest {
             @Override public List<Candidate> search(String query, int limit, List<String> codes) {
                 if (searched != null) searched.set(codes);
                 assertThat(query).isNotBlank();
-                assertThat(limit).isEqualTo(80);
+                assertThat(limit).isEqualTo(40);
                 return List.of(new Candidate("1050101", "Пожары", "Пожар"));
             }
         };
