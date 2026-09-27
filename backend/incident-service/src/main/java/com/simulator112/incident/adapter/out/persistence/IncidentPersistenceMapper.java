@@ -74,7 +74,7 @@ public class IncidentPersistenceMapper {
         return new System112Stage(
                 entity.getId(), entity.getTitle(), entity.getPosition(), details.getClassifierCodes(),
                 details.getVictimCount(), entity.getDescription(),
-                entity.getCalls().stream().map(this::toDomain).toList(), details.getAdditionalInfo());
+                entity.getCalls().stream().map(this::toDomain).toList());
     }
 
     private DdsStage toDdsStage(IncidentStageJpaEntity entity) {
@@ -91,7 +91,6 @@ public class IncidentPersistenceMapper {
         details.setStageId(entity.getId());
         details.setClassifierCodes(new java.util.ArrayList<>(stage.classifierCodes()));
         details.setVictimCount(stage.victimCount());
-        details.setAdditionalInfo(new java.util.LinkedHashMap<>(stage.additionalInfo()));
         entity.setSystem112Details(details);
         return entity;
     }

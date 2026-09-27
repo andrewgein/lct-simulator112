@@ -103,7 +103,6 @@ export function serializeStage(stage, position) {
     title: stage.title || `Этап ${position + 1}`,
     position,
     classifierCodes: [...new Set(stage.classifierCodes)],
-    additionalInfo: { ...stage.additionalInfo },
     victimCount: Number(stage.victimCount || 0),
     description: stage.description || null,
     type: null,

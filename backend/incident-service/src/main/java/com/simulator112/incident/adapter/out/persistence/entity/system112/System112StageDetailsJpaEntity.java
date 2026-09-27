@@ -8,8 +8,6 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.UUID;
 
 @Getter
@@ -32,12 +30,6 @@ public class System112StageDetailsJpaEntity {
     @OrderColumn(name = "position")
     @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> classifierCodes = new ArrayList<>();
-
-    @ElementCollection
-    @CollectionTable(name = "system112_stage_additional_info", joinColumns = @JoinColumn(name = "stage_id"))
-    @MapKeyColumn(name = "info_key")
-    @Column(name = "info_value", columnDefinition = "text")
-    private Map<String, String> additionalInfo = new LinkedHashMap<>();
 
     @Column(name = "victim_count", nullable = false)
     private int victimCount;

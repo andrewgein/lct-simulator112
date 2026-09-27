@@ -66,13 +66,6 @@ public class GeneratedIncidentPatchValidator {
             }
             for (var stage : incident.path("stages")) {
                 validateOptionalText(stage, "title", "description");
-                if (stage.has("additionalInfo")) {
-                    var info = stage.path("additionalInfo");
-                    if (!info.isObject() || info.properties().stream().anyMatch(field ->
-                            field.getKey().isBlank() || !field.getValue().isTextual())) {
-                        throw new IllegalStateException("Invalid additional info");
-                    }
-                }
                 if (!stage.path("calls").isArray() || !stage.path("classifierCodes").isArray()
                         || stage.path("classifierCodes").isEmpty() || stage.path("calls").isEmpty()
                         || stage.path("calls").size() > 10 || !stage.path("victimCount").isIntegralNumber() || !stage.path("victimCount").canConvertToInt()
