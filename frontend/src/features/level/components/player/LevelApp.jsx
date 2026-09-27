@@ -125,6 +125,11 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
     startDialog(dialogEndpoint, contextId);
   };
 
+  const restartCall = () => {
+    openEditor(null, call.phone);
+    startDialog(dialogEndpoint, contextId, { restart: true });
+  };
+
   const finishLevel = async () => {
     if (!cardsReady) return;
     setFinishing(true);
@@ -142,7 +147,7 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
   return (
     <div class="level-app wa-stack wa-gap-0">
       <audio ref={ringtone} src="/audio/incoming-call.mp3" loop preload="auto" />
-      <LevelCommandBar call={call} now={now} onAccept={acceptCall} onDrop={stopDialog} exitHref={`/courses/${courseId}`}>
+      <LevelCommandBar call={call} now={now} onAccept={acceptCall} onRestart={restartCall} onDrop={stopDialog} exitHref={`/courses/${courseId}`}>
         <LevelSearchInput value={cardSearch} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setCardSearch(event.currentTarget.value)} />
       </LevelCommandBar>
       <CardEditor contextId={contextId} cards={cards} call={call} editor={editor} isDev={isDev} dadataApiKey={dadataApiKey} onChange={setEditor} onClose={closeEditor} />
