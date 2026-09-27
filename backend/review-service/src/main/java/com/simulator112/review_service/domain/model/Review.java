@@ -30,11 +30,15 @@ public record Review(UUID contextId, UUID userId, UUID assignmentId, ReviewStatu
     }
 
     public Integer grade() {
-        if (threshold3 == null || finalScore == null) return null;
-        if (maxScore <= 0 || finalScore < 0 || finalScore > maxScore) {
+        return finalScore == null ? null : gradeFor(finalScore, maxScore, threshold3, threshold4, threshold5);
+    }
+
+    public static Integer gradeFor(int score, int maxScore, Integer threshold3, Integer threshold4, Integer threshold5) {
+        if (threshold3 == null) return null;
+        if (maxScore <= 0 || score < 0 || score > maxScore) {
             throw new IllegalStateException("Некорректный итоговый балл задания");
         }
-        long percent = (long) finalScore * 100;
+        long percent = (long) score * 100;
         if (percent >= (long) threshold5 * maxScore) return 5;
         if (percent >= (long) threshold4 * maxScore) return 4;
         if (percent >= (long) threshold3 * maxScore) return 3;

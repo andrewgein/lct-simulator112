@@ -1,6 +1,6 @@
-package com.simulator112.review_service.application.port.out;
+package com.simulator112.course.application.port.out;
 
-import com.simulator112.review_service.domain.model.Certificate;
+import com.simulator112.course.domain.model.Certificate;
 
 import java.util.List;
 import java.util.Optional;

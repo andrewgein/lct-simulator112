@@ -1,4 +1,4 @@
-package com.simulator112.review_service.adapter.in.rest.dto;
+package com.simulator112.course.adapter.in.rest.dto;
 
 import java.util.List;
 

@@ -9,6 +9,23 @@ option java_multiple_files = true;
 
 service ReviewService {
   rpc sendOnReview(SendOnReviewRequest) returns (ReviewStatusResponse);
+  rpc GetAssignmentResults(GetAssignmentResultsRequest) returns (GetAssignmentResultsResponse);
+}
+
+message GetAssignmentResultsRequest {
+  string user_id = 1;
+  repeated string assignment_ids = 2;
+}
+
+message GetAssignmentResultsResponse {
+  repeated AssignmentResult results = 1;
+}
+
+message AssignmentResult {
+  string assignment_id = 1;
+  int32 score = 2;
+  int32 max_score = 3;
+  optional int32 grade = 4;
 }
 
 message SendOnReviewRequest {

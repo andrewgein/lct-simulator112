@@ -1,6 +1,6 @@
-package com.simulator112.review_service.application.port.in;
+package com.simulator112.course.application.port.in;
 
-import com.simulator112.review_service.domain.model.Certificate;
+import com.simulator112.course.domain.model.Certificate;
 
 import java.util.List;
 import java.util.UUID;

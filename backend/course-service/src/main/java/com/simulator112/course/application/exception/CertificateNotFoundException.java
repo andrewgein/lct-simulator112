@@ -1,4 +1,4 @@
-package com.simulator112.review_service.application.exception;
+package com.simulator112.course.application.exception;
 
 import java.util.UUID;
 

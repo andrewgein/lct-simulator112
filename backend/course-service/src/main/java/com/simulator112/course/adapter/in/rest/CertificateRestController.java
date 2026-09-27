@@ -1,9 +1,9 @@
-package com.simulator112.review_service.adapter.in.rest;
+package com.simulator112.course.adapter.in.rest;
 
-import com.simulator112.review_service.adapter.in.rest.dto.CertificateResponse;
-import com.simulator112.review_service.adapter.in.rest.dto.CertificatesResponse;
-import com.simulator112.review_service.application.port.in.GetCertificatesUseCase;
-import com.simulator112.review_service.domain.model.Certificate;
+import com.simulator112.course.adapter.in.rest.dto.CertificateResponse;
+import com.simulator112.course.adapter.in.rest.dto.CertificatesResponse;
+import com.simulator112.course.application.port.in.GetCertificatesUseCase;
+import com.simulator112.course.domain.model.Certificate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/review/certificates")
+@RequestMapping("/api/v1/certificates")
 @RequiredArgsConstructor
 public class CertificateRestController {
     private final GetCertificatesUseCase certificates;

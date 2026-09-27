@@ -1,9 +1,9 @@
-package com.simulator112.review_service.adapter.out.persistence;
+package com.simulator112.course.adapter.out.persistence;
 
-import com.simulator112.review_service.adapter.out.persistence.entity.CertificateJpaEntity;
-import com.simulator112.review_service.adapter.out.persistence.repository.SpringDataCertificateRepository;
-import com.simulator112.review_service.application.port.out.CertificateStore;
-import com.simulator112.review_service.domain.model.Certificate;
+import com.simulator112.course.adapter.out.persistence.entity.CertificateJpaEntity;
+import com.simulator112.course.adapter.out.persistence.repository.SpringDataCertificateRepository;
+import com.simulator112.course.application.port.out.CertificateStore;
+import com.simulator112.course.domain.model.Certificate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
