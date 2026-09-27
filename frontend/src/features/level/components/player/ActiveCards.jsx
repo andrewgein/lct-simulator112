@@ -9,8 +9,10 @@ function arrangeCards(cards) {
     if (!childrenByMain.has(card.mainCardId)) childrenByMain.set(card.mainCardId, []);
     childrenByMain.get(card.mainCardId).push(card);
   });
-  const roots = cards.filter((card) => !card.mainCardId || !cards.some((item) => item.cardId === card.mainCardId));
-  return roots.map((card) => ({ card, children: childrenByMain.get(card.cardId) || [] }));
+  const cardIds = new Set(cards.map((card) => card.cardId));
+  const roots = cards.filter((card) => !card.mainCardId || !cardIds.has(card.mainCardId));
+  const buildNode = (card) => ({ card, children: (childrenByMain.get(card.cardId) || []).map(buildNode) });
+  return roots.map(buildNode);
 }
 
 function createRow(card, kind, depth, relationCount, expanded, classifierState, getCardMeta) {
@@ -45,12 +47,11 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
   };
 }
 
-function flattenBranches(branches, collapsed, classifierState, getCardMeta) {
-  const rows = [];
-  branches.forEach((branch) => {
-    const expanded = !collapsed.has(branch.card.cardId);
-    rows.push(createRow(branch.card, "primary", 0, branch.children.length, expanded, classifierState, getCardMeta));
-    if (expanded) branch.children.forEach((card) => rows.push(createRow(card, "child", 1, 0, false, classifierState, getCardMeta)));
+function flattenBranches(nodes, depth, collapsed, classifierState, getCardMeta, rows = []) {
+  nodes.forEach((node) => {
+    const expanded = !collapsed.has(node.card.cardId);
+    rows.push(createRow(node.card, depth === 0 ? "primary" : "child", depth, node.children.length, expanded, classifierState, getCardMeta));
+    if (expanded) flattenBranches(node.children, depth + 1, collapsed, classifierState, getCardMeta, rows);
   });
   return rows;
 }
@@ -58,7 +59,7 @@ function flattenBranches(branches, collapsed, classifierState, getCardMeta) {
 export default function ActiveCards({ cards, loading, error, classifierState, searchQuery = "", onOpen, getCardMeta, heading = "Список происшествий", emptyMessage = "Активных карточек пока нет", statusLabel = "Заполнение" }) {
   const [collapsed, setCollapsed] = useState(() => new Set());
   const [expandedDetails, setExpandedDetails] = useState(() => new Set());
-  const rows = flattenBranches(arrangeCards(cards), collapsed, classifierState, getCardMeta);
+  const rows = flattenBranches(arrangeCards(cards), 0, collapsed, classifierState, getCardMeta);
   const toggle = (id) => setCollapsed((current) => {
     const next = new Set(current);
     next.has(id) ? next.delete(id) : next.add(id);

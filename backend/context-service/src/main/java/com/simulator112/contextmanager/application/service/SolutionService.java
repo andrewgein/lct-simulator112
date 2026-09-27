@@ -95,7 +95,7 @@ public class SolutionService implements ManageSystem112CardUseCase {
         if (cardId.equals(targetId)) {
             throw new IllegalArgumentException("Карточку нельзя связать с самой собой");
         }
-        requireIndependentCard(requireCard(context.getId(), targetId));
+        requireCard(context.getId(), targetId);
         return save(context, revisionFrom(context, card, targetId, request));
     }
 
@@ -116,7 +116,7 @@ public class SolutionService implements ManageSystem112CardUseCase {
     private SolutionContextSaveResponse createSubordinateCard(TrainingContext context, UUID callId,
                                                               SolutionContextRequest request) {
         UUID mainCardId = requireRelationTarget(request);
-        requireIndependentCard(requireCard(context.getId(), mainCardId));
+        requireCard(context.getId(), mainCardId);
         return createCard(context, callId, request, mainCardId);
     }
 
