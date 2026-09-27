@@ -2,36 +2,45 @@ import { useState } from "preact/hooks";
 import DataGrid from "../../../../components/DataGrid.jsx";
 import { applicantName, cardAddress, cardIsComplete, findIncident } from "../../../incident/components/editor/editorHelpers";
 
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit" });
+const timeFormatter = new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+
 const styles = `
 .active-cards { padding: var(--wa-space-l); }
 .incident-list-heading { padding: var(--wa-space-m) var(--wa-space-l); color: var(--wa-color-surface-default); }
 .incident-list-heading h2 { margin: 0; font-size: var(--wa-font-size-xl); }
 .incident-list-heading span { color: var(--wa-color-neutral-80); font-size: var(--wa-font-size-s); }
 .cards-grid { background: var(--app-dispatch-workspace); --wa-color-surface-border: var(--app-dispatch-border); }
-.cards-table { min-width: 68rem; color: var(--app-dispatch-text); --wa-color-fill-quiet: var(--app-dispatch-row-hover); --wa-color-border-quiet: var(--app-dispatch-border); --wa-color-border-normal: var(--wa-color-neutral-50); }
+.cards-table { min-width: 78rem; border-collapse: separate; border-spacing: 0 var(--wa-space-2xs); color: var(--app-dispatch-text); --wa-color-fill-quiet: var(--app-dispatch-row-hover); --wa-color-border-quiet: var(--app-dispatch-border); --wa-color-border-normal: var(--wa-color-neutral-50); }
 .cards-table thead { background: var(--app-dispatch-workspace); color: var(--wa-color-neutral-90); }
 .cards-table th { padding: var(--wa-space-s) var(--wa-space-m); border-block-end-color: var(--wa-color-neutral-70); font-weight: var(--wa-font-weight-semibold); white-space: nowrap; }
-.cards-table td { box-sizing: border-box; max-width: 24rem; padding: var(--wa-space-s) var(--wa-space-m); overflow: hidden; border-inline-end: var(--wa-border-width-s) solid var(--app-dispatch-border); background: var(--app-dispatch-row); text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
-.cards-table tbody tr { border-block-start: var(--wa-border-width-s) solid var(--app-dispatch-border); }
-.cards-table tbody tr:nth-child(even) td { background: var(--app-dispatch-row-alternate); }
-.cards-table tbody tr:hover td, .cards-table tbody tr:focus-visible td { background: var(--app-dispatch-row-hover); }
+.cards-table td { box-sizing: border-box; max-width: 24rem; padding: var(--wa-space-xs) var(--wa-space-s); overflow: hidden; border-inline-end: var(--wa-border-width-s) solid var(--app-dispatch-border); background: var(--app-dispatch-row-alternate); text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.cards-table tbody .data-grid__row td { border-block: var(--wa-border-width-s) solid var(--app-dispatch-border); }
+.cards-table tbody .data-grid__row td:first-child { border-inline-start: var(--wa-border-width-s) solid var(--app-dispatch-border); }
+.cards-table tbody .data-grid__row .data-grid__cell--time, .cards-table tbody .data-grid__row .data-grid__cell--incident, .cards-table tbody .data-grid__row .data-grid__cell--address { background: var(--app-dispatch-row); }
+.cards-table tbody .data-grid__row:hover td, .cards-table tbody .data-grid__row:focus-visible td { filter: brightness(1.12); }
 .cards-table tbody tr:focus-visible { outline: var(--wa-focus-ring-width) var(--wa-focus-ring-style) var(--wa-color-focus); outline-offset: calc(-1 * var(--wa-focus-ring-width)); }
 .cards-table .data-grid__heading:first-child, .cards-table .data-grid__cell--details { width: 3rem; padding-inline: var(--wa-space-xs); text-align: center; }
-.cards-table .data-grid__cell--relation { width: 7rem; color: var(--app-dispatch-text-secondary); }
+.cards-table .data-grid__cell--relation { width: 6rem; color: var(--app-dispatch-text-secondary); }
 .card-relation-indent { display: inline-flex; align-items: center; gap: var(--wa-space-xs); padding-inline-start: calc(var(--card-depth) * var(--wa-space-l)); }
-.card-collapse, .card-details-toggle { --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
-.cards-table .data-grid__cell--id { width: 9rem; color: var(--wa-color-neutral-70); }
-.cards-table .data-grid__cell--incident { width: 25%; color: var(--wa-color-neutral-on-loud); }
-.cards-table .data-grid__cell--applicant { width: 18%; }
-.cards-table .data-grid__cell--address { width: 27%; color: var(--wa-color-neutral-90); }
-.cards-table .data-grid__cell--kindLabel { width: 8rem; color: var(--wa-color-neutral-70); }
-.cards-table .data-grid__cell--status { width: 10rem; color: var(--app-dispatch-text-secondary); }
+.card-collapse, .card-details-toggle, .card-open { --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
+.cards-table .data-grid__cell--id { width: 9rem; color: var(--app-dispatch-text-secondary); }
+.cards-table .data-grid__cell--date, .cards-table .data-grid__cell--time { width: 6rem; }
+.cards-table .data-grid__cell--time { font-weight: var(--wa-font-weight-semibold); }
+.cards-table .data-grid__cell--incident { width: 25%; }
+.cards-table .data-grid__cell--victimSummary { width: 7rem; }
+.cards-table .data-grid__cell--status { width: 13rem; color: var(--app-dispatch-text-secondary); }
+.cards-table .data-grid__cell--address { width: 32%; }
+.cards-table .data-grid__cell--open { width: 4rem; padding-inline: var(--wa-space-xs); text-align: center; }
 .is-complete .data-grid__cell--status wa-icon { color: var(--app-dispatch-text-success); }
 .is-incomplete .data-grid__cell--status { color: var(--wa-color-warning-fill-normal); }
-.cards-table .data-grid__expanded-row td { max-width: none; padding: 0; border-block-start: var(--wa-border-width-s) solid var(--app-dispatch-border); background: var(--app-dispatch-row-alternate); white-space: normal; }
+.cards-table .data-grid__expanded-row td { max-width: none; padding: 0; border: var(--wa-border-width-s) solid var(--app-dispatch-border); border-block-start: 0; background: var(--app-dispatch-row-alternate); white-space: normal; }
 .cards-table .data-grid__expanded-row:hover td { background: var(--app-dispatch-row-alternate); }
-.incident-row-details { display: grid; color: var(--app-dispatch-text); }
-.incident-row-details > div { display: flex; align-items: baseline; gap: var(--wa-space-s); min-width: 0; padding: var(--wa-space-xs) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--app-dispatch-border); }
+.incident-description { display: flex; gap: var(--wa-space-m); padding: var(--wa-space-xs) var(--wa-space-s); overflow-wrap: anywhere; }
+.incident-description > span { flex: 0 0 6rem; color: var(--app-dispatch-text-muted); font-size: var(--wa-font-size-s); }
+.incident-description > p { margin: 0; }
+.incident-row-details { display: grid; border-block-start: var(--wa-border-width-s) solid var(--app-dispatch-border); }
+.incident-row-details > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--wa-space-s); min-width: 0; padding: var(--wa-space-xs) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--app-dispatch-border); }
 .incident-row-details > div:last-child { border-block-end: 0; }
 .incident-row-details span { flex: 0 0 auto; color: var(--app-dispatch-text-muted); }
 .incident-row-details strong { overflow-wrap: anywhere; }
@@ -60,21 +69,28 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
   const factsByCode = new Map((classifierState.routingFacts || []).map((fact) => [fact.code, fact]));
   const selectedFacts = (incident?.routingFactCodes || []).map((code) => factsByCode.get(code)).filter((fact) => fact && card.additionalInfo?.[fact.code]).map((fact) => `${fact.label}: ${fact.options.find((option) => option.value === card.additionalInfo[fact.code])?.label || card.additionalInfo[fact.code]}`);
   const additionalInfo = [...classifierFeatures, ...selectedFacts].join(" · ");
+  const description = card.applicant?.additionalInfo?.trim() || "Описание не указано";
+  const timestamp = meta.receivedAt ?? (getCardMeta ? null : card.createdAt);
+  const date = timestamp ? new Date(timestamp) : null;
   return {
     id: card.cardId,
     card,
+    date: date && !Number.isNaN(date.getTime()) ? dateFormatter.format(date) : "—",
+    time: date && !Number.isNaN(date.getTime()) ? timeFormatter.format(date) : "—",
     depth,
     kind,
     relationCount,
     expanded,
     incident: incidents.map((item) => item.finalName).join(" · ") || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
     applicant: applicantName(card),
+    description,
     applicantPhone: card.applicant?.phone || "Не указан",
     applicantContactPhone: card.applicant?.contactPhone || "Не указан",
     applicantOnScenePhone: card.applicant?.onScenePhone || "Не указан",
     victimSummary,
     address: cardAddress(card),
     additionalInfo: additionalInfo || "Дополнительная информация не заполнена",
+    services: card.services?.join(", ") || "Службы не указаны",
     kindLabel: meta.kindLabel || (kind === "child" ? "Связанная" : "Основная"),
     complete,
     rowClassName: meta.className || (complete ? "is-complete" : "is-incomplete"),
@@ -130,12 +146,14 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
         </span>
       )
     },
-    { field: "id", label: "Номер", sortable: false },
+    { field: "id", label: "Номер", sortable: false, searchValue: (row) => `${row.id} ${row.applicant} ${row.description}` },
+    { field: "date", label: "Дата", sortable: false },
+    { field: "time", label: "Время", sortable: false },
     { field: "incident", label: "Тип происшествия", sortable: false, render: (row) => <strong title={row.incident}>{row.incident}</strong> },
-    { field: "applicant", label: "Заявитель", sortable: false },
+    { field: "victimSummary", label: "Постр.", sortable: false },
+    { field: "status", label: statusLabel, sortable: false, render: (row) => <span class="card-status-content wa-cluster wa-gap-xs wa-flex-nowrap"><wa-icon name={row.complete ? "circle-check" : "triangle-exclamation"} aria-hidden="true"></wa-icon><span>{row.status}</span></span> },
     { field: "address", label: "Адрес", sortable: false },
-    { field: "kindLabel", label: "Вид", sortable: false },
-    { field: "status", label: statusLabel, sortable: false, render: (row) => <span class="card-status-content wa-cluster wa-gap-xs wa-flex-nowrap"><wa-icon name={row.complete ? "circle-check" : "triangle-exclamation"} aria-hidden="true"></wa-icon><span>{row.status}</span></span> }
+    { field: "open", label: "Карточка", sortable: false, render: (row) => <wa-button class="card-open" type="button" size="xs" appearance="plain" variant="neutral" aria-label={`Открыть карточку ${row.id}`} onClick={() => onOpen(row.card)}><wa-icon name="clipboard" aria-hidden="true"></wa-icon></wa-button> }
   ];
   return (
     <section class="active-cards wa-stack wa-gap-0" aria-labelledby="active-cards-heading">
@@ -149,7 +167,7 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
             <h2 id="active-cards-heading">{heading}</h2>
             <span>{rows.length} {rows.length === 1 ? "карточка" : "карточек"}</span>
           </div>
-          <DataGrid data={rows} columns={columns} label={heading} pageSize={Math.max(rows.length, 1)} searchable={false} searchValue={searchQuery} className="cards-grid" tableClassName="cards-table" onRowClick={(row) => onOpen(row.card)} getRowClassName={(row) => row.rowClassName} renderExpandedRow={(row) => expandedDetails.has(row.id) ? <div class="incident-row-details"><div><span>Заявитель:</span><strong>{row.applicant}</strong><span>АОН: {row.applicantPhone}</span><span>Предоставленный: {row.applicantContactPhone}</span><span>На место: {row.applicantOnScenePhone}</span></div><div><span>Пострадавшие:</span><strong>{row.victimSummary}</strong></div><div><span>Адрес:</span><strong>{row.address}</strong></div><div class="incident-row-information"><span>Информация:</span><strong>{row.additionalInfo}</strong></div><div><span>Карточка:</span><strong>{row.kindLabel} · {row.status}</strong></div></div> : null} />
+          <DataGrid data={rows} columns={columns} label={heading} pageSize={Math.max(rows.length, 1)} searchable={false} searchValue={searchQuery} className="cards-grid" tableClassName="cards-table" onRowClick={(row) => onOpen(row.card)} getRowClassName={(row) => row.rowClassName} renderExpandedRow={(row) => <div><div class="incident-description"><span>Описание:</span><p>{row.description}</p></div>{expandedDetails.has(row.id) && <div class="incident-row-details"><div><span>Службы:</span><strong>{row.services}</strong></div><div><span>Заявитель:</span><strong>{row.applicant}</strong><span>АОН: {row.applicantPhone}</span><span>Предоставленный: {row.applicantContactPhone}</span><span>На место: {row.applicantOnScenePhone}</span></div><div><span>Пострадавшие:</span><strong>{row.victimSummary}</strong></div><div class="incident-row-information"><span>Признаки происшествия:</span><strong>{row.additionalInfo}</strong></div><div><span>Карточка:</span><strong>{row.kindLabel} · {row.status}</strong></div></div>}</div>} />
         </>
       )}
     </section>

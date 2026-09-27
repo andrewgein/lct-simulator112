@@ -90,7 +90,8 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
   const finished = !!progress?.incidents?.length && progress.incidents.every((item) => ["COMPLETED", "FAILED"].includes(item.status));
   const getCardMeta = useCallback((card) => {
     const item = progress?.incidents?.find((entry) => String(entry.incidentId) === card.cardId);
-    return { complete: item?.status === "COMPLETED", status: notificationStatus(card.incident, item), kindLabel: "ДДС", className: item?.status === "COMPLETED" ? "is-complete" : "is-incomplete" };
+    const receivedAt = item?.serviceReactions?.flatMap((reaction) => reaction.history || []).find((event) => event.status === "RECEIVED_BY_SERVICE")?.changedAt;
+    return { complete: item?.status === "COMPLETED", status: notificationStatus(card.incident, item), receivedAt, kindLabel: "ДДС", className: item?.status === "COMPLETED" ? "is-complete" : "is-incomplete" };
   }, [progress]);
 
   const applyReactionStatus = async (incidentId, serviceCode, status, comment) => {
