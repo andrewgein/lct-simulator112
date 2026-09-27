@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SpringDataIncidentRepository extends JpaRepository<IncidentJpaEntity, UUID> {
+    List<IncidentJpaEntity> findAllByTargetType(IncidentTargetType targetType);
+
+    List<IncidentJpaEntity> findAllByDifficulty(Difficulty difficulty);
+
     List<IncidentJpaEntity> findAllByTargetTypeAndDifficulty(
             IncidentTargetType targetType, Difficulty difficulty);
 }

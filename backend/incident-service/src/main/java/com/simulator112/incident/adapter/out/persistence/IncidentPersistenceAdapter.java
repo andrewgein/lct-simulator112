@@ -34,8 +34,11 @@ public class IncidentPersistenceAdapter implements IncidentRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Incident> findAvailable(IncidentTargetType targetType, Difficulty difficulty) {
-        return repository.findAllByTargetTypeAndDifficulty(targetType, difficulty).stream()
-                .map(mapper::toDomain).toList();
+        var incidents = targetType == null
+                ? difficulty == null ? repository.findAll() : repository.findAllByDifficulty(difficulty)
+                : difficulty == null ? repository.findAllByTargetType(targetType)
+                : repository.findAllByTargetTypeAndDifficulty(targetType, difficulty);
+        return incidents.stream().map(mapper::toDomain).toList();
     }
 
     @Override
