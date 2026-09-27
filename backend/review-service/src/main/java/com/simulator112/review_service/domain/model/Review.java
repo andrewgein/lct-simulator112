@@ -1,7 +1,9 @@
 package com.simulator112.review_service.domain.model;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record Review(UUID contextId, UUID userId, UUID assignmentId, ReviewStatus status,
@@ -10,7 +12,18 @@ public record Review(UUID contextId, UUID userId, UUID assignmentId, ReviewStatu
                      long durationSeconds, long timeLimitSeconds, long overtimeSeconds,
                      UUID expertId, String expertComment, Instant confirmedAt,
                      Instant createdAt, Instant updatedAt,
-                     Integer threshold3, Integer threshold4, Integer threshold5) {
+                     Integer threshold3, Integer threshold4, Integer threshold5,
+                     List<IncidentSummary> incidents, List<DispatcherCardSummary> cards) {
+    public Review(UUID contextId, UUID userId, UUID assignmentId, ReviewStatus status,
+                  List<CriterionResult> results, int automaticScore, Integer finalScore, int maxScore,
+                  long durationSeconds, long timeLimitSeconds, long overtimeSeconds,
+                  UUID expertId, String expertComment, Instant confirmedAt, Instant createdAt, Instant updatedAt,
+                  Integer threshold3, Integer threshold4, Integer threshold5) {
+        this(contextId, userId, assignmentId, status, results, automaticScore, finalScore, maxScore,
+                durationSeconds, timeLimitSeconds, overtimeSeconds, expertId, expertComment, confirmedAt,
+                createdAt, updatedAt, threshold3, threshold4, threshold5, List.of(), List.of());
+    }
+
     public Review(UUID contextId, UUID userId, UUID assignmentId, ReviewStatus status,
                   List<CriterionResult> results, int automaticScore, Integer finalScore, int maxScore,
                   long durationSeconds, long timeLimitSeconds, long overtimeSeconds,
@@ -22,6 +35,8 @@ public record Review(UUID contextId, UUID userId, UUID assignmentId, ReviewStatu
 
     public Review {
         results = List.copyOf(results);
+        incidents = List.copyOf(incidents);
+        cards = List.copyOf(cards);
         if ((threshold3 == null && (threshold4 != null || threshold5 != null))
                 || (threshold3 != null && (threshold4 == null || threshold5 == null
                 || threshold3 < 0 || threshold4 <= threshold3 || threshold5 <= threshold4 || threshold5 > 100))) {
@@ -60,6 +75,30 @@ public record Review(UUID contextId, UUID userId, UUID assignmentId, ReviewStatu
         return new Review(contextId, userId, assignmentId, ReviewStatus.DONE, results,
                 automaticScore, score, maxScore, durationSeconds, timeLimitSeconds, overtimeSeconds,
                 reviewerId, comment == null ? null : comment.trim(), confirmedAt, createdAt, updatedAt,
-                threshold3, threshold4, threshold5);
+                threshold3, threshold4, threshold5, incidents, cards);
+    }
+
+    public Review updateCriteriaScores(UUID reviewerId, Map<UUID, Integer> corrections, Instant confirmedAt) {
+        if (status != ReviewStatus.DONE) {
+            throw new IllegalStateException("Автоматическая проверка ещё не завершена");
+        }
+        var remaining = new HashMap<>(corrections);
+        List<CriterionResult> updatedResults = results.stream().map(result -> {
+            Integer newScore = remaining.remove(result.id());
+            if (newScore == null) return result;
+            if (newScore < 0 || newScore > result.maxScore()) {
+                throw new IllegalArgumentException("Балл по критерию должен быть от 0 до " + result.maxScore());
+            }
+            return new CriterionResult(result.id(), result.reviewId(), result.incidentId(), result.incidentOrder(),
+                    result.criterionName(), newScore, result.maxScore(), result.feedback());
+        }).toList();
+        if (!remaining.isEmpty()) {
+            throw new IllegalArgumentException("Строка критерия не найдена");
+        }
+        int score = updatedResults.stream().mapToInt(CriterionResult::score).sum();
+        return new Review(contextId, userId, assignmentId, status, updatedResults,
+                automaticScore, score, maxScore, durationSeconds, timeLimitSeconds, overtimeSeconds,
+                reviewerId, expertComment, confirmedAt, createdAt, updatedAt,
+                threshold3, threshold4, threshold5, incidents, cards);
     }
 }

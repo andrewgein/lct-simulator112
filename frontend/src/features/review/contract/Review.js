@@ -28,12 +28,45 @@
 
 /**
  * @typedef {Object} CriterionResult
+ * @property {string} id
  * @property {string} incidentId
  * @property {number} incidentOrder
  * @property {string} criterionName
  * @property {number} score
  * @property {number} maxScore
  * @property {string} feedback
+ */
+
+/**
+ * @typedef {Object} IncidentSummary
+ * @property {string} id
+ * @property {number} order
+ * @property {string} title
+ * @property {number} victimCount
+ * @property {string[]} classifierCodes
+ */
+
+/**
+ * @typedef {Object} DispatcherCardPerson
+ * @property {string} firstName
+ * @property {string} lastName
+ * @property {string} middleName
+ * @property {string} phone
+ * @property {string} contactPhone
+ * @property {string} onScenePhone
+ * @property {string} address
+ * @property {string} additionalInfo
+ */
+
+/**
+ * @typedef {Object} DispatcherCard
+ * @property {string} cardId
+ * @property {string} callId
+ * @property {DispatcherCardPerson | null} applicant
+ * @property {number | null} victimCount
+ * @property {string[]} incidentTypes
+ * @property {string[]} services
+ * @property {Object<string, string>} additionalInfo
  */
 
 /**
@@ -49,6 +82,8 @@
  * @property {number | null} grade
  * @property {boolean | null} passed
  * @property {ReviewStatus} status
+ * @property {IncidentSummary[]} incidents
+ * @property {DispatcherCard[]} cards
  */
 
 /**

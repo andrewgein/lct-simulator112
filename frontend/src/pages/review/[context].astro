@@ -8,6 +8,7 @@ const accessToken = Astro.cookies.get("accessToken").value;
 const role = Astro.cookies.get("role")?.value || "";
 const isTeacher = ["ADMIN", "SUPERVISOR"].includes(role);
 const canComment = isTeacher;
+const canEditScores = isTeacher;
 const { context } = Astro.params;
 const [reviewResponse, commentsResponse, recordingsResponse] = await Promise.all([
   getReview(context, accessToken),
@@ -19,6 +20,8 @@ const comments = commentsResponse.ok ? (await commentsResponse.json()).comments 
 const recordings = recordingsResponse.ok ? (await recordingsResponse.json()).recordings || [] : [];
 const commentError = Astro.url.searchParams.get("commentError");
 const commentAdded = Astro.url.searchParams.has("commentAdded");
+const scoresError = Astro.url.searchParams.get("scoresError");
+const scoresUpdated = Astro.url.searchParams.has("scoresUpdated");
 const commentDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 
 const groupedIncidents = review.criterionResults.reduce((acc, current) => {
@@ -71,6 +74,34 @@ export const prerender = false;
           {review.grade !== null && review.grade !== undefined && (
             <wa-callout variant={review.passed ? "success" : "danger"}>{review.passed ? "Задание пройдено" : "Задание не пройдено"}</wa-callout>
           )}
+          {!!review.incidents?.length && (
+            <div class="wa-stack wa-gap-xs">
+              <strong>Инцидент:</strong>
+              {review.incidents.map((incident) => (
+                <div class="wa-stack wa-gap-2xs">
+                  <span>Сценарий {incident.order}: {incident.title || "Без названия"}</span>
+                  <span class="wa-caption-m">Пострадавших: {incident.victimCount}{!!incident.classifierCodes.length && `, классификация: ${incident.classifierCodes.join(", ")}`}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {!!review.cards?.length && (
+            <div class="wa-stack wa-gap-xs">
+              <strong>Карточка диспетчера:</strong>
+              {review.cards.map((card) => (
+                <div class="wa-stack wa-gap-2xs card-summary">
+                  {card.applicant && <span>Заявитель: {[card.applicant.lastName, card.applicant.firstName, card.applicant.middleName].filter(Boolean).join(" ") || "не указан"}{card.applicant.phone && `, тел. ${card.applicant.phone}`}</span>}
+                  {card.applicant?.address && <span>Адрес: {card.applicant.address}</span>}
+                  {card.victimCount !== null && card.victimCount !== undefined && <span>Пострадавших: {card.victimCount}</span>}
+                  {!!card.incidentTypes.length && <span>Вид происшествия: {card.incidentTypes.join(", ")}</span>}
+                  {!!card.services.length && <span>Привлечённые службы: {card.services.join(", ")}</span>}
+                  {!!Object.keys(card.additionalInfo || {}).length && (
+                    <span>Доп. информация: {Object.entries(card.additionalInfo).map(([key, value]) => `${key}: ${value}`).join("; ")}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </wa-card>
     </section>
@@ -93,6 +124,9 @@ export const prerender = false;
     <wa-divider></wa-divider>
     <section class="wa-stack wa-gap-l" aria-labelledby="criteria-heading">
       <h2 id="criteria-heading" class="wa-heading-xl">Детализация по критериям</h2>
+      {scoresUpdated && <wa-callout variant="success"><wa-icon slot="icon" name="circle-check"></wa-icon>Баллы обновлены</wa-callout>}
+      {scoresError && <wa-callout variant="danger"><wa-icon slot="icon" name="circle-exclamation"></wa-icon>{scoresError}</wa-callout>}
+      <form class="wa-stack wa-gap-l" method="POST" action={canEditScores ? `/api/v1/review/${encodeURIComponent(context)}/criteria` : undefined}>
       {Object.values(groupedIncidents).map((incident, incidentIndex) => {
         const items = Object.values(incident.criteria).flat();
         const incidentScore = items.reduce((sum, criterion) => sum + criterion.score, 0);
@@ -113,7 +147,11 @@ export const prerender = false;
                       <ul>
                         {criterionItems.map((item) => (
                           <li>
-                            <span>{item.feedback} {item.score}/{item.maxScore}</span>
+                            {canEditScores ? (
+                              <span class="criterion-item-editable">{item.feedback} <wa-input type="number" name={`score__${item.id}`} value={item.score} min="0" max={item.maxScore} size="small"></wa-input> / {item.maxScore}</span>
+                            ) : (
+                              <span>{item.feedback} {item.score}/{item.maxScore}</span>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -126,6 +164,12 @@ export const prerender = false;
           </>
         );
       })}
+      {canEditScores && (
+        <div class="criteria-form-actions">
+          <wa-button type="submit" variant="brand">Сохранить оценки</wa-button>
+        </div>
+      )}
+      </form>
     </section>
     <wa-divider></wa-divider>
     <section id="comments" class="comments-section wa-stack wa-gap-l" aria-labelledby="comments-heading">
@@ -237,6 +281,25 @@ export const prerender = false;
   .comment-form-actions {
     display: flex;
     justify-content: flex-end;
+  }
+
+  .criterion-item-editable {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wa-space-2xs);
+  }
+
+  .criterion-item-editable wa-input {
+    width: 5rem;
+  }
+
+  .criteria-form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .card-summary {
+    padding: var(--wa-space-s) 0;
   }
 
   @media (max-width: 600px) {
