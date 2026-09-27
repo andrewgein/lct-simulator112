@@ -93,6 +93,50 @@ class IncidentDraftGenerationServiceTest {
         assertThat(searched.get()).containsExactly("1050101");
     }
 
+    @Test
+    void rejectsMalformedGeneratedFields() {
+        for (var patch : List.of(
+                "{\"dialogueCriteria\":[{\"weight\":10}]}",
+                "{\"dialogueCriteria\":[{\"name\":\"Адрес\",\"hypothesis\":\"Оператор уточнил адрес\",\"weight\":1.5}]}",
+                "{\"address\":{\"floor\":2.5}}",
+                "{\"stages\":[]}")) {
+            assertThatThrownBy(() -> generateWithModelResponse("{\"message\":\"Готово\",\"incident\":" + patch + "}"))
+                    .isInstanceOf(IncidentGenerationException.class);
+        }
+        for (var field : List.of("\"hiddenFacts\":\"Дым\"", "\"knownFacts\":[{}]", "\"gender\":\"UNKNOWN\"")) {
+            assertThatThrownBy(() -> generateWithModelResponse("""
+                    {"message":"Готово","incident":{"stages":[{"classifierCodes":["1050101"],
+                    "victimCount":0,"calls":[{"person":{"firstName":"Анна","lastName":"Иванова","phone":"123"},
+                    "knownFacts":["Дым"],%s}]}]}}
+                    """.formatted(field))).isInstanceOf(IncidentGenerationException.class);
+        }
+    }
+
+    @Test
+    void acceptsDifficultyWhenClassifierIsUnavailable() {
+        var classifier = org.mockito.Mockito.mock(ClassifierCatalogPort.class);
+        org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
+                .thenThrow(new IllegalStateException("Unavailable"));
+        var service = new IncidentDraftGenerationService(classifier,
+                messages -> "{\"message\":\"Готово\",\"incident\":{\"difficulty\":\"HARD\"}}",
+                new GeneratedIncidentPatchValidator(mapper), mapper);
+        var result = service.generate(new GenerateIncidentDraftUseCase.Command(
+                List.of(new GenerateIncidentDraftUseCase.Message("user", "Измени сложность")), mapper.readTree("{}")));
+        assertThat(result.incident().path("difficulty").asText()).isEqualTo("HARD");
+    }
+
+    @Test
+    void reportsClassifierFailureWhenChangingStages() {
+        var classifier = org.mockito.Mockito.mock(ClassifierCatalogPort.class);
+        var service = new IncidentDraftGenerationService(classifier,
+                messages -> "{\"message\":\"Готово\",\"incident\":{\"stages\":[]}}",
+                new GeneratedIncidentPatchValidator(mapper), mapper);
+        assertThatThrownBy(() -> service.generate(new GenerateIncidentDraftUseCase.Command(
+                List.of(new GenerateIncidentDraftUseCase.Message("user", "Создай сценарий")), mapper.readTree("{}"))))
+                .isInstanceOf(IncidentGenerationException.class).hasMessageContaining("коды классификатора");
+    }
+
     private GenerateIncidentDraftUseCase.Result generateWithModelResponse(String content) {
         return service(content, null).generate(new GenerateIncidentDraftUseCase.Command(
                 List.of(new GenerateIncidentDraftUseCase.Message("user", "Поменяй сложность")),

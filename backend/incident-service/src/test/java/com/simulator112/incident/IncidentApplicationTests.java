@@ -53,6 +53,7 @@ class IncidentApplicationTests {
         var saved = incidentRepository.save(incident);
         var loaded = incidentRepository.findById(saved.id()).orElseThrow();
 
+        assertThat(loaded.difficulty()).isEqualTo(Difficulty.EASY);
         assertThat(loaded.stages()).hasSize(1);
         assertThat(loaded.stages()).hasOnlyElementsOfType(System112Stage.class);
         assertThat(((System112Stage) loaded.stages().getFirst()).classifierCodes()).containsExactly("101", "102");
