@@ -38,6 +38,7 @@ message System112StageDetails {
   repeated string classifier_codes = 1;
   int32 victim_count = 2;
   int32 position = 3;
+  map<string, string> expected_routing_facts = 4;
 }
 
 message DdsStageDetails {

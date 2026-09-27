@@ -36,7 +36,7 @@ public class IncidentRestMapper {
         var stages = request.stages().stream()
                 .map(stage -> new System112Stage(stage.id(), stage.title(),
                         require(stage.position(), "Позиция этапа системы 112 обязательна"),
-                        stage.classifierCodes(), requireVictimCount(stage.victimCount()), stage.description(), stage.calls()))
+                        stage.classifierCodes(), stage.expectedRoutingFacts(), requireVictimCount(stage.victimCount()), stage.description(), stage.calls()))
                 .toList();
         return new System112Incident(id, request.title(), request.address(), request.difficulty(), stages,
                 new System112Criteria(dialogueCriteria));

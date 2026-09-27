@@ -169,6 +169,12 @@ public final class System112ReviewRubric implements ReviewRubric {
                                 ? "Классификация не указана." : "Классификация выбрана неверно.",
                         "Классификация выбрана верно."));
             }
+            expected.stage().expectedRoutingFacts().forEach((code, value) -> {
+                String actual = card == null ? null : card.additionalInfo().get(code);
+                checks.add(new AtomicCheck(value.equals(actual),
+                        actual == null || actual.isBlank() ? "Признак " + code + " не указан." : "Признак " + code + " указан неверно.",
+                        "Признак " + code + " указан верно."));
+            });
             if (checks.isEmpty()) {
                 checks.add(new AtomicCheck(card != null, "Карточка по звонку отсутствует.", "Карточка создана."));
             }

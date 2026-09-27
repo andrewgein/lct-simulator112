@@ -123,7 +123,7 @@ final class ContextPersistenceMapper {
     private static StageSnapshot toDomain(StageContextEntity source) {
         StageSnapshot target = new StageSnapshot();
         target.setPersistenceId(source.getId()); target.setSourceId(source.getSourceStageId()); target.setPosition(source.getPosition());
-        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
+        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setExpectedRoutingFacts(new java.util.LinkedHashMap<>(source.getExpectedRoutingFacts())); target.setDdsStageType(source.getDdsStageType());
         target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
         target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictimCount(source.getVictimCount());
         target.setCalls(source.getCalls().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
@@ -133,7 +133,7 @@ final class ContextPersistenceMapper {
     private static StageContextEntity toEntity(StageSnapshot source) {
         StageContextEntity target = new StageContextEntity();
         target.setId(source.getPersistenceId()); target.setSourceStageId(source.getSourceId()); target.setPosition(source.getPosition());
-        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
+        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setExpectedRoutingFacts(new java.util.LinkedHashMap<>(source.getExpectedRoutingFacts())); target.setDdsStageType(source.getDdsStageType());
         target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
         target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictimCount(source.getVictimCount());
         source.getCalls().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addCall);

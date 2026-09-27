@@ -58,7 +58,8 @@
  * @property {string | null} id
  * @property {string} title
  * @property {number} position
- * @property {string} classifierCode
+ * @property {string[]} classifierCodes
+ * @property {Object.<string, string>} expectedRoutingFacts
  * @property {number} victimCount
  * @property {string | null} description
  * @property {CallScenario[]} calls

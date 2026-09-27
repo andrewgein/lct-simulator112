@@ -57,10 +57,16 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, T
         }
     }
 
-    public record StageScenario(String id, Integer position, List<String> classifierCodes, int victimCount,
+    public record StageScenario(String id, Integer position, List<String> classifierCodes, Map<String, String> expectedRoutingFacts, int victimCount,
                                 String ddsStageType, List<CallScenario> calls) {
+        public StageScenario(String id, Integer position, List<String> classifierCodes, int victimCount,
+                             String ddsStageType, List<CallScenario> calls) {
+            this(id, position, classifierCodes, Map.of(), victimCount, ddsStageType, calls);
+        }
+
         public StageScenario {
             classifierCodes = List.copyOf(classifierCodes);
+            expectedRoutingFacts = Map.copyOf(expectedRoutingFacts);
             calls = List.copyOf(calls);
         }
     }

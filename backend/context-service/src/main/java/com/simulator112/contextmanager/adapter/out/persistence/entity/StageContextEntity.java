@@ -22,6 +22,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.OrderColumn;
@@ -55,6 +56,12 @@ public class StageContextEntity {
     @OrderColumn(name = "position")
     @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> classifierCodes = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "stage_context_expected_routing_facts", joinColumns = @JoinColumn(name = "stage_context_id"))
+    @MapKeyColumn(name = "fact_code")
+    @Column(name = "expected_value", nullable = false)
+    private java.util.Map<String, String> expectedRoutingFacts = new java.util.LinkedHashMap<>();
 
     @Enumerated(EnumType.STRING)
     private DdsStageType ddsStageType;

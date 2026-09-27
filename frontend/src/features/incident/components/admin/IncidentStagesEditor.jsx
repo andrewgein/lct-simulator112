@@ -9,6 +9,7 @@ import { findIncident, moveItem, normalizeStage, personIsIncomplete, personValue
 export default function IncidentStagesEditor({ initialStages = [] }) {
   const [stages, setStages] = useState(() => initialStages.map((stage, index) => normalizeStage(stage, stage.id || `stage-${index}`)));
   const [classifier, setClassifier] = useState([]);
+  const [routingFacts, setRoutingFacts] = useState([]);
   const [incidentAddress, setIncidentAddress] = useState("");
   const [openStage, setOpenStage] = useState("");
   const [openDialup, setOpenDialup] = useState("");
@@ -19,7 +20,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
   stagesRef.current = stages;
 
   useEffect(() => {
-    const unsubscribe = classifierInfo.subscribe((state) => setClassifier([...state.classifier]));
+    const unsubscribe = classifierInfo.subscribe((state) => { setClassifier([...state.classifier]); setRoutingFacts([...state.routingFacts]); });
     loadClassifier().catch((error) => console.error("Failed to load incident classifier:", error));
     return unsubscribe;
   }, []);
@@ -151,7 +152,7 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
           const firstDialupNumber = dialupNumber;
           dialupNumber += stage.dialups.length;
           return (
-            <StageEditor key={stage.key} stage={stage} index={index} count={stages.length} firstDialupNumber={firstDialupNumber} classifier={classifier} incidentAddress={incidentAddress} openStage={openStage === stage.key} openDialup={openDialup} dialupError={dialupError} onChange={(value) => setStages((items) => items.map((item) => item.key === stage.key ? value : item))} onOpenStage={() => setOpenStage(stage.key)} onCloseStage={() => setOpenStage("")} onOpenDialup={(key) => { setDialupError({ key: "", message: "" }); setOpenDialup(key); }} onCloseDialup={() => setOpenDialup("")} onRemove={() => setStages((items) => items.filter((item) => item.key !== stage.key))} onMove={(direction) => setStages((items) => moveItem(items, index, direction))} />
+            <StageEditor key={stage.key} stage={stage} index={index} count={stages.length} firstDialupNumber={firstDialupNumber} classifier={classifier} routingFacts={routingFacts} incidentAddress={incidentAddress} openStage={openStage === stage.key} openDialup={openDialup} dialupError={dialupError} onChange={(value) => setStages((items) => items.map((item) => item.key === stage.key ? value : item))} onOpenStage={() => setOpenStage(stage.key)} onCloseStage={() => setOpenStage("")} onOpenDialup={(key) => { setDialupError({ key: "", message: "" }); setOpenDialup(key); }} onCloseDialup={() => setOpenDialup("")} onRemove={() => setStages((items) => items.filter((item) => item.key !== stage.key))} onMove={(direction) => setStages((items) => moveItem(items, index, direction))} />
           );
         })}
       </div>

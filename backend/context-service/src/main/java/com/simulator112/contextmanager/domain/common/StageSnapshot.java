@@ -4,6 +4,8 @@ import com.simulator112.contextmanager.domain.dds.DdsStageType;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,6 +18,7 @@ public class StageSnapshot {
     private Integer position;
     private String title;
     private List<String> classifierCodes = new ArrayList<>();
+    private Map<String, String> expectedRoutingFacts = new LinkedHashMap<>();
     private DdsStageType ddsStageType;
     private Integer timeLimitSeconds;
     private StageStatus status;

@@ -72,7 +72,7 @@ public class IncidentPersistenceMapper {
     private System112Stage toSystem112Stage(IncidentStageJpaEntity entity) {
         System112StageDetailsJpaEntity details = entity.getSystem112Details();
         return new System112Stage(
-                entity.getId(), entity.getTitle(), entity.getPosition(), details.getClassifierCodes(),
+                entity.getId(), entity.getTitle(), entity.getPosition(), details.getClassifierCodes(), details.getExpectedRoutingFacts(),
                 details.getVictimCount(), entity.getDescription(),
                 entity.getCalls().stream().map(this::toDomain).toList());
     }
@@ -90,6 +90,7 @@ public class IncidentPersistenceMapper {
         System112StageDetailsJpaEntity details = new System112StageDetailsJpaEntity();
         details.setStageId(entity.getId());
         details.setClassifierCodes(new java.util.ArrayList<>(stage.classifierCodes()));
+        details.setExpectedRoutingFacts(new java.util.LinkedHashMap<>(stage.expectedRoutingFacts()));
         details.setVictimCount(stage.victimCount());
         entity.setSystem112Details(details);
         return entity;

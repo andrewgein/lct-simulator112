@@ -45,6 +45,7 @@ public class IncidentGrpcMapper {
         return toProtoBase(stage)
                 .setSystem112(com.simulator112.incident.grpc.contract.System112StageDetails.newBuilder()
                         .addAllClassifierCodes(stage.classifierCodes())
+                        .putAllExpectedRoutingFacts(stage.expectedRoutingFacts())
                         .setVictimCount(stage.victimCount())
                         .setPosition(stage.position()))
                 .build();
