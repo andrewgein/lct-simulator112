@@ -284,6 +284,51 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
         <wa-callout variant="neutral">Курс пока не назначен группе с обучающимися.</wa-callout>
       ) : (
         <>
+          <wa-details class="students-panel" appearance="filled-outlined" summary="Обучающиеся и попытки">
+            <wa-scroller>
+              <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
+                <thead>
+                  <tr>
+                    <th>Обучающийся</th>
+                    <th>Группа</th>
+                    <th>Прогресс</th>
+                    <th>Средний балл</th>
+                    <th>Последняя активность</th>
+                    <th>Попытки</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => {
+                    const studentProgress = assignments.length ? Math.round(student.completed / assignments.length * 100) : 0;
+                    return (
+                      <tr>
+                        <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
+                        <td>{student.groups.join(", ")}</td>
+                        <td>
+                          <div class="progress-cell wa-stack wa-gap-2xs">
+                            <span>{student.completed} из {assignments.length}</span>
+                            <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
+                          </div>
+                        </td>
+                        <td>{student.average === null ? "—" : `${student.average}%`}</td>
+                        <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
+                        <td>
+                          {student.attempts.length ? (
+                            <div class="attempt-links wa-stack wa-gap-2xs">
+                              {student.attempts.map((attempt) => (
+                                <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
+                              ))}
+                            </div>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </wa-scroller>
+          </wa-details>
+
           <section class="panel-grid">
             <article class="panel">
               <div class="panel-heading">
@@ -330,51 +375,6 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
               ) : <p class="empty-note">{doneAttempts.length ? "Ошибок в завершённых попытках нет." : "Пока нет завершённых попыток."}</p>}
             </article>
           </section>
-
-          <wa-details class="students-panel" appearance="filled-outlined" summary="Обучающиеся и попытки">
-            <wa-scroller>
-              <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
-                <thead>
-                  <tr>
-                    <th>Обучающийся</th>
-                    <th>Группа</th>
-                    <th>Прогресс</th>
-                    <th>Средний балл</th>
-                    <th>Последняя активность</th>
-                    <th>Попытки</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((student) => {
-                    const studentProgress = assignments.length ? Math.round(student.completed / assignments.length * 100) : 0;
-                    return (
-                      <tr>
-                        <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
-                        <td>{student.groups.join(", ")}</td>
-                        <td>
-                          <div class="progress-cell wa-stack wa-gap-2xs">
-                            <span>{student.completed} из {assignments.length}</span>
-                            <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
-                          </div>
-                        </td>
-                        <td>{student.average === null ? "—" : `${student.average}%`}</td>
-                        <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
-                        <td>
-                          {student.attempts.length ? (
-                            <div class="attempt-links wa-stack wa-gap-2xs">
-                              {student.attempts.map((attempt) => (
-                                <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
-                              ))}
-                            </div>
-                          ) : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </wa-scroller>
-          </wa-details>
 
           {assignments.length > 0 && (
             <section class="panel">
@@ -630,6 +630,7 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
   .panel-heading h2 { margin: 0; font-size: var(--wa-font-size-l); }
   .panel-heading p { margin: var(--wa-space-3xs) 0 0; color: var(--wa-color-text-quiet); }
   .students-panel { --wa-color-neutral-fill-quiet: var(--wa-color-surface-raised); --wa-color-neutral-border-quiet: var(--wa-color-surface-border); }
+  .students-panel::part(summary) { font-family: var(--wa-font-family-heading); font-weight: var(--wa-font-weight-heading); font-size: var(--wa-font-size-l); }
   .empty-note { margin: 0; color: var(--wa-color-text-quiet); }
 
   .trend-chart { display: block; width: 100%; height: auto; overflow: visible; }
