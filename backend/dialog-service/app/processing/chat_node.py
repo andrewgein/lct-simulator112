@@ -6,7 +6,6 @@ from enum import Enum
 from openai import OpenAI
 import logging
 import asyncio
-from num2words import num2words
 
 from app.grpc.com.simulator112.incident.incident_context_pb2 import DialupContext
 from app.prompts import CALLER_SYSTEM_PROMPT, build_dialup_scenario
@@ -15,23 +14,8 @@ from .processing_node import UserDialogProcessingNode
 
 logger = logging.getLogger()
 
-DELIMITERS_SEARCH_PATTERN = r'([.!?]+)'
 
-
-def _preprocess_text(text: str) -> str:
-    def replace_time(match) -> str:
-        hours = num2words(int(match.group(1)), lang="ru")
-        minutes = num2words(int(match.group(2)), lang="ru")
-        return f"{hours} {minutes}"
-    def replace_numbers(match) -> str:
-        number = num2words(int(match.group(0)), lang="ru")
-        return number
-
-    text = regex.sub(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", replace_time, text)
-    text = regex.sub(r"\d+", replace_numbers, text)
-    text = regex.sub(r'[\u2010-\u2015\u2212]', '-', text)
-
-    return text
+DELIMITERS_SEARCH_PATTERN = r'([!?]+|(?:(?<!\d)\.|(?<=\d)\.)(?!\d)(?:\.(?!\d))*)'
 
 
 class ChatNode(UserDialogProcessingNode):
@@ -112,11 +96,17 @@ class ChatNode(UserDialogProcessingNode):
                 generator = self.model.generate_answer(user_text)
 
             async for chunk in generator:
-                clean_text = _preprocess_text(chunk)
+
+                clean_text = chunk
                 if (clean_text != ""):
                     logger.info("New LLM response chunk: " + str(clean_text))
                     self._append_to_buffer(clean_text)
                     full_response_buffer.append(clean_text)
+
+            if self.pending_text.strip():
+                self.response_buffer.append(self.pending_text)
+                self.pending_text = ""
+                self._flush_buffer()
             full_response = " ".join(full_response_buffer)
             self.on_new_phrase(full_response)
         except asyncio.CancelledError:

@@ -153,8 +153,6 @@ async def process_call(ws: WebSocket):
             for offset in range(0, len(audio_chunk), MAX_AUDIO_FRAME_BYTES):
                 await ws.send_bytes(audio_chunk[offset:offset + MAX_AUDIO_FRAME_BYTES])
         except (WebSocketDisconnect, RuntimeError):
-            # The proxy/client can close while TTS is still producing audio. Stop forwarding
-            # immediately; pipeline cleanup below will stop the worker threads.
             client_disconnected.set()
 
     def output_callback(audio_chunk):
