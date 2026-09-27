@@ -10,6 +10,7 @@ import VictimStatusBar from "./VictimStatusBar.jsx";
 import { cardAddress, emptyPerson, findIncident } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
 import IncidentWorkspace from "../../../level/components/common/IncidentWorkspace.jsx";
+import ServiceLoadIndicator from "../../../level/components/common/ServiceLoadIndicator.jsx";
 
 const styles = `
 .incident-workspace { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 48rem; background: #c8d1d5; color: var(--wa-color-text-normal); }
@@ -369,6 +370,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       <header class="workspace-callbar">
         <div class="workspace-connection">
           <wa-icon name={call.phase === "active" ? "phone-volume" : "phone"} aria-hidden="true"></wa-icon>
+          {call.phase === "active" && <ServiceLoadIndicator />}
           <div class="workspace-connection-copy"><strong>{call.phase === "active" ? "На линии" : "Карточка происшествия"}</strong><span class="workspace-call-label">{call.phase === "active" ? "активное соединение" : "редактирование"}</span></div>
         </div>
         <PhoneField label="АОН" value={aoh} readonly />

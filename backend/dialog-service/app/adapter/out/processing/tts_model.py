@@ -4,12 +4,14 @@ import io
 import logging
 import math
 from os import getenv
+import time
 from threading import Lock
 import wave
 
 import httpx
 import numpy as np
 
+from app.adapter.out.processing.latency_tracker import tracker
 from app.adapter.out.processing.voice_profiles import VOICE_PROFILES, VoiceProfile
 
 
@@ -147,11 +149,13 @@ class TTSModel:
                 base_url=self.base_url + "/", timeout=self.timeout
             ) as client:
                 self._register_voice(client, profile, reference_audio, voice)
+                request_started = time.monotonic()
                 response = client.get(
                     "synthesize_speech/",
                     params={"text": text, "voice": voice},
                 )
                 response.raise_for_status()
+                tracker.record("tts", time.monotonic() - request_started)
                 content_type = (
                     response.headers.get("content-type", "")
                     .split(";")[0]

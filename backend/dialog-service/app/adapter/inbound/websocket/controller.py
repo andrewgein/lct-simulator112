@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 import logging
 import threading
 
@@ -10,8 +11,11 @@ from app.application.port.outbound import (
     NoMoreCallsError,
     VoicePipelineFactory,
 )
+from app.adapter.out.processing.latency_tracker import tracker
 from app.application.service.transcript_builder import DialogContextBuilder
 from app.domain.model import DialogProgress, DialogStatus
+
+SERVICE_LOAD_PUSH_INTERVAL_SECONDS = 5
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -110,6 +114,13 @@ def handle_error(message: str) -> dict:
     return {"type": "error", "message": message}
 
 
+async def _push_service_load(ws: WebSocket, send_lock: asyncio.Lock) -> None:
+    while True:
+        await asyncio.sleep(SERVICE_LOAD_PUSH_INTERVAL_SECONDS)
+        async with send_lock:
+            await ws.send_json({"type": "service_load", **tracker.snapshot()})
+
+
 @router.websocket("/api/v1/dialog/session")
 async def dialog_session(ws: WebSocket):
     await ws.accept()
@@ -118,28 +129,38 @@ async def dialog_session(ws: WebSocket):
         await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No contextId provided")
         return
 
+    send_lock = asyncio.Lock()
+    push_task = asyncio.create_task(_push_service_load(ws, send_lock))
     try:
-        await ws.send_json(handle_progress_request(context_id))
+        async with send_lock:
+            await ws.send_json(handle_progress_request(context_id))
         while True:
             request = await ws.receive_json()
             request_type = request.get("type")
 
             match request_type:
                 case "request_status":
-                    await ws.send_json(handle_progress_request(context_id))
+                    response = handle_progress_request(context_id)
                 case "request_next_call":
-                    await ws.send_json(handle_next_call(context_id))
+                    response = handle_next_call(context_id)
                 case _:
-                    await ws.send_json(handle_error("Unknown session command"))
+                    response = handle_error("Unknown session command")
+            async with send_lock:
+                await ws.send_json(response)
 
     except WebSocketDisconnect:
         logger.info("Control connection closed for %s", context_id)
     except Exception as exc:
         logger.exception("Dialog control session failed for %s", context_id)
         try:
-            await ws.send_json(handle_error(str(exc)))
+            async with send_lock:
+                await ws.send_json(handle_error(str(exc)))
         except WebSocketDisconnect:
             pass
+    finally:
+        push_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await push_task
 
 
 @router.websocket("/api/v1/dialog/process-call")
