@@ -62,7 +62,7 @@ class AuthApplicationServiceTest {
         assertThat(result.accessToken()).isEqualTo("access-token");
         assertThat(result.refreshToken()).isEqualTo("refresh-token");
         assertThat(result.role()).isEqualTo("STUDENT");
-        verify(refreshSessions).deleteAllByUserId(userId);
+        verify(refreshSessions, never()).deleteAllByUserId(any());
         ArgumentCaptor<RefreshSession> saved = ArgumentCaptor.forClass(RefreshSession.class);
         verify(refreshSessions).save(saved.capture());
         assertThat(saved.getValue().userId()).isEqualTo(userId);
@@ -95,7 +95,7 @@ class AuthApplicationServiceTest {
         assertThat(result.role()).isEqualTo("ADMIN");
         verify(events).userCreated(userId, "user@example.com");
         verify(emailVerifications).save(verification.markUsed());
-        verify(refreshSessions).deleteAllByUserId(userId);
+        verify(refreshSessions, never()).deleteAllByUserId(any());
     }
 
     @Test

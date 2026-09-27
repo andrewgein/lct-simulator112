@@ -152,7 +152,6 @@ public class AuthApplicationService implements AuthenticateUserUseCase {
     }
 
     private Tokens tokenPair(Account user) {
-        refreshSessions.deleteAllByUserId(user.id());
         String access = tokens.issueAccess(user.id(), user.email(), user.role().name());
         String refresh = tokens.issueRefresh();
         refreshSessions.save(new RefreshSession(refresh, user.id(),
