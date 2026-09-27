@@ -598,7 +598,7 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
   });
 </script>
 <style is:global>
-  .pdf-report { position: absolute; left: -9999px; top: 0; width: 190mm; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
+  .pdf-report { position: fixed; left: 0; top: 0; z-index: -1; width: 190mm; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
   .pdf-report h1 { font-size: 18px; }
   .pdf-report h2 { font-size: 15px; margin-block-start: 20px; }
   .pdf-report h3 { font-size: 13px; margin-block-start: 12px; }
