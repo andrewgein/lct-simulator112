@@ -2,8 +2,9 @@ class BufferedAudioProcessor extends AudioWorkletProcessor {
     buffer = new Int16Array(2048);
     bufferIndex = 0;
 
-    // TODO: sample rate may vary
-    iterationPeriod = 128 / 44100;
+    // `sampleRate` is a global provided by AudioWorkletGlobalScope; it always
+    // matches the AudioContext's actual rate, so this can't drift out of sync.
+    iterationPeriod = 128 / sampleRate;
     energyOffset = 1e-8;
     energyTresholdRatioPositive = 2;
     energyTresholdRatioNegative = 0.5;
@@ -12,10 +13,10 @@ class BufferedAudioProcessor extends AudioWorkletProcessor {
     energyIntegration = 1;
 
     voiceTrend = 0;
-    voiceTrendMax = 80;
-    voiceTrendMin = -80;
-    voiceTrendStart = 15;
-    voiceTrendEnd = -60;
+    voiceTrendMax = 50;
+    voiceTrendMin = -50;
+    voiceTrendStart = 10;
+    voiceTrendEnd = -25;
     vadState = false;
 
     process(inputChannels) {
