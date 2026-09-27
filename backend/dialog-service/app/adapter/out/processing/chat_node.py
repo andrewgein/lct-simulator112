@@ -113,7 +113,6 @@ class ChatNode(UserDialogProcessingNode):
                           previous_user_text: str | None = None,
                           previous_response: str | None = None):
         generator = None
-        full_response_buffer = []
         self._reset_buffers()
         try:
             if (previous_user_text is not None and previous_response is not None):
@@ -122,27 +121,30 @@ class ChatNode(UserDialogProcessingNode):
                 generator = self.model.generate_answer(user_text)
 
             async for chunk in generator:
-                clean_text = _preprocess_text(chunk)
-                if (clean_text != ""):
-                    logger.info("New LLM response chunk: " + str(clean_text))
-                    self._append_to_buffer(clean_text)
-                    full_response_buffer.append(clean_text)
-            full_response = " ".join(full_response_buffer)
-            self.on_new_phrase(full_response)
+                if chunk:
+                    logger.info("New LLM response chunk: " + str(chunk))
+                    self._append_to_buffer(chunk)
+            self.on_new_phrase(self._processed_response())
         except asyncio.CancelledError:
             logger.info("LLM was interrupted by user")
             if generator is not None:
                 await generator.aclose()
-            return "".join(full_response_buffer)
+            return self._processed_response()
 
     def _reset_buffers(self):
         self.response_buffer = []
         self.pending_text = ""
+        self.completed_sentences = []
+
+    def _processed_response(self):
+        tail = "".join(self.response_buffer) + self.pending_text
+        return "".join(self.completed_sentences) + (_preprocess_text(tail) if tail else "")
 
     def _flush_buffer(self):
-        sentence = "".join(self.response_buffer)
+        sentence = _preprocess_text("".join(self.response_buffer))
         logger.info("Flushing LLM response buffer: " + sentence)
         self.output_queue.put(sentence)
+        self.completed_sentences.append(sentence)
         self.response_buffer = []
 
     def _append_to_buffer(self, text):
