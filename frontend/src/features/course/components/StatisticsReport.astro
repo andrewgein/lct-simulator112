@@ -1,0 +1,444 @@
+---
+import StudentsStatisticsTable from "./StudentsStatisticsTable.jsx";
+import { formatDuration, pluralAttempts, scoreCellStyle, lossCellStyle } from "../statisticsUtils";
+
+interface FilterOption { value: string; label: string; }
+interface Filter {
+  formId: string;
+  paramName: string;
+  label: string;
+  value: string;
+  placeholder?: string;
+  allowClear?: boolean;
+  options: FilterOption[];
+}
+interface Props {
+  filter?: Filter | null;
+  summary: {
+    assignmentsCount: number;
+    studentsCount: number;
+    completedTotal: number;
+    possibleTotal: number;
+    completedShare: number;
+    averageTotal: number | null;
+    doneAttemptsCount: number;
+    averageDuration: number | null;
+    overtimeShare: number | null;
+  };
+  emptyMessage: string;
+  studentsTable: any[];
+  students: any[];
+  assignments: any[];
+  assignmentAverages: { average: number | null; completed: number }[];
+  trend: { points: any[]; chart: { width: number; height: number; left: number; right: number; top: number; bottom: number }; hitWidth: number };
+  topErrors: { label: string; count: number; share: number }[];
+  criteriaColumns: { name: string; loss: number }[];
+  errorMap: { name: string; loss: Map<string, number> }[];
+  reportDataEncoded: string;
+  exportFileNameBase: string;
+}
+const { filter = null, summary, emptyMessage, studentsTable, students, assignments, assignmentAverages, trend, topErrors, criteriaColumns, errorMap, reportDataEncoded, exportFileNameBase } = Astro.props;
+const { chart, points: trendPoints, hitWidth: trendHitWidth } = trend;
+const yOf = (value) => chart.top + (100 - value) * (chart.height - chart.top - chart.bottom) / 100;
+---
+
+<script type="application/json" id="report-data" set:text={reportDataEncoded}></script>
+<div class="statistics-page wa-stack wa-gap-l">
+  {filter && (
+    <form id={filter.formId} class="entity-filter" method="get">
+      <wa-select name={filter.paramName} label={filter.label} value={filter.value} placeholder={filter.placeholder} with-clear={filter.allowClear}>
+        {filter.options.map((option) => <wa-option value={option.value}>{option.label}</wa-option>)}
+      </wa-select>
+    </form>
+  )}
+
+  <dl class="summary-strip">
+    <div class="summary-item wa-stack wa-gap-2xs">
+      <dt>Обучающиеся</dt>
+      <dd>{summary.studentsCount}</dd>
+      <small>{summary.assignmentsCount} заданий в курсе</small>
+    </div>
+    <div class="summary-item wa-stack wa-gap-2xs">
+      <dt>Выполнено заданий</dt>
+      <dd>{summary.completedTotal} из {summary.possibleTotal}</dd>
+      <wa-progress-bar class="summary-progress" value={summary.completedShare} label={`Выполнено ${summary.completedShare}%`}></wa-progress-bar>
+    </div>
+    <div class="summary-item wa-stack wa-gap-2xs">
+      <dt>Средний результат</dt>
+      <dd>{summary.averageTotal === null ? "—" : `${summary.averageTotal}%`}</dd>
+      <small>Завершено: {pluralAttempts(summary.doneAttemptsCount)}</small>
+    </div>
+    <div class="summary-item wa-stack wa-gap-2xs">
+      <dt>Среднее время</dt>
+      <dd>{summary.averageDuration === null ? "—" : formatDuration(summary.averageDuration)}</dd>
+      <small>{summary.overtimeShare === null ? "Нет данных" : `${summary.overtimeShare}% попыток сверх норматива`}</small>
+    </div>
+  </dl>
+
+  {!studentsTable.length ? (
+    <wa-callout variant="neutral">{emptyMessage}</wa-callout>
+  ) : (
+    <>
+      <wa-details class="students-panel" appearance="filled-outlined" summary="Обучающиеся и попытки">
+        <StudentsStatisticsTable students={studentsTable} client:load />
+      </wa-details>
+
+      <section class="panel-grid">
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Динамика результатов</h2>
+            <p>Средний балл завершённых попыток по дням</p>
+          </div>
+          {trendPoints.length ? (
+            <svg class="trend-chart" viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="Средний балл по дням">
+              {[0, 50, 100].map((tick) => (
+                <g class="grid">
+                  <line x1={chart.left} x2={chart.width - chart.right} y1={yOf(tick)} y2={yOf(tick)}></line>
+                  <text x={chart.left - 8} y={yOf(tick) + 4}>{tick}%</text>
+                </g>
+              ))}
+              {trendPoints.length > 1 && <polyline points={trendPoints.map((point) => `${point.x},${point.y}`).join(" ")}></polyline>}
+              {trendPoints.map((point) => (
+                <g class="point" tabindex="0" data-tip-value={`${point.value}%`} data-tip-label={`${point.label} · ${pluralAttempts(point.count)}`}>
+                  <rect x={point.x - trendHitWidth / 2} y={chart.top} width={trendHitWidth} height={chart.height - chart.top - chart.bottom}></rect>
+                  <line x1={point.x} x2={point.x} y1={chart.top} y2={chart.height - chart.bottom}></line>
+                  <circle cx={point.x} cy={point.y} r="4"></circle>
+                </g>
+              ))}
+              <text class="point-label" x={trendPoints.at(-1).x} y={trendPoints.at(-1).y - 12}>{trendPoints.at(-1).value}%</text>
+              <text class="axis-label" x={trendPoints[0].x} y={chart.height - 6} text-anchor={trendPoints.length > 1 ? "start" : "middle"}>{trendPoints[0].label}</text>
+              {trendPoints.length > 1 && <text class="axis-label" x={trendPoints.at(-1).x} y={chart.height - 6} text-anchor="end">{trendPoints.at(-1).label}</text>}
+            </svg>
+          ) : <p class="empty-note">Пока нет завершённых попыток.</p>}
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Частые ошибки</h2>
+            <p>Доля завершённых попыток, где встретилась ошибка</p>
+          </div>
+          {topErrors.length ? (
+            <ol class="error-list">
+              {topErrors.map((item) => (
+                <li tabindex="0" data-tip-value={`${item.share}%`} data-tip-label={`${item.label} · ${item.count} из ${summary.doneAttemptsCount}`}>
+                  <div class="error-row"><span title={item.label}>{item.label}</span><strong>{item.share}%</strong></div>
+                  <div class="error-track"><span style={`width: ${Math.max(item.share, 2)}%`}></span></div>
+                </li>
+              ))}
+            </ol>
+          ) : <p class="empty-note">{summary.doneAttemptsCount ? "Ошибок в завершённых попытках нет." : "Пока нет завершённых попыток."}</p>}
+        </article>
+      </section>
+
+      {assignments.length > 0 && (
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Результаты по заданиям</h2>
+              <p>Балл последней завершённой попытки. Нажмите на ячейку, чтобы открыть разбор</p>
+            </div>
+            <div class="heat-legend" aria-hidden="true"><span>0%</span><i class="scale-score"></i><span>100%</span></div>
+          </div>
+          <div class="heatmap-scroll">
+            <table class="heatmap wa-tabular-nums">
+              <thead>
+                <tr><th>Обучающийся</th>{assignments.map((assignment) => <th title={assignment.title}>{assignment.title}</th>)}</tr>
+              </thead>
+              <tbody>
+                {students.map((student) => (
+                  <tr>
+                    <th>{student.name}</th>
+                    {assignments.map((assignment) => {
+                      const attempt = student.latestByAssignment.get(String(assignment.id));
+                      const tipLabel = `${student.name} · ${assignment.title}`;
+                      if (!attempt) return <td class="empty" tabindex="0" data-tip-value="Не выполнено" data-tip-label={tipLabel}>—</td>;
+                      return (
+                        <td class:list={["score", { strong: attempt.percent >= 60 }]} style={scoreCellStyle(attempt.percent ?? 0)}>
+                          <a href={`/review/${encodeURIComponent(attempt.contextId)}`} data-tip-value={attempt.percent === null ? "—" : `${attempt.percent}%`} data-tip-label={tipLabel}>{attempt.percent === null ? "—" : attempt.percent}</a>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th>В среднем</th>
+                  {assignmentAverages.map((item) => <td>{item.average === null ? "—" : `${item.average}%`}<small>{item.completed} из {students.length}</small></td>)}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {criteriaColumns.length > 0 && (
+        <section class="panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Карта ошибок</h2>
+              <p>Доля потерянных баллов по критериям в последних попытках. Чем темнее, тем больше ошибок</p>
+            </div>
+            <div class="heat-legend" aria-hidden="true"><span>0%</span><i class="scale-loss"></i><span>100%</span></div>
+          </div>
+          <div class="heatmap-scroll">
+            <table class="heatmap wa-tabular-nums">
+              <thead>
+                <tr><th>Обучающийся</th>{criteriaColumns.map((criterion) => <th title={criterion.name}>{criterion.name}</th>)}</tr>
+              </thead>
+              <tbody>
+                {errorMap.map((row) => (
+                  <tr>
+                    <th>{row.name}</th>
+                    {criteriaColumns.map((criterion) => {
+                      const value = row.loss.get(criterion.name);
+                      const tipLabel = `${row.name} · ${criterion.name}`;
+                      if (value === undefined) return <td class="empty" tabindex="0" data-tip-value="Нет данных" data-tip-label={tipLabel}>—</td>;
+                      return <td class:list={["loss", { strong: value >= 55 }]} style={lossCellStyle(value)} tabindex="0" data-tip-value={`${value}% потеряно`} data-tip-label={tipLabel}>{value}</td>;
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th>В среднем</th>
+                  {criteriaColumns.map((criterion) => <td>{criterion.loss}%</td>)}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+      )}
+    </>
+  )}
+  <div class="chart-tip" role="tooltip" hidden><strong></strong><span></span></div>
+</div>
+
+<script>
+  const entityFilter = document.querySelector('.entity-filter');
+  entityFilter?.querySelector('wa-select')?.addEventListener('change', () => entityFilter.requestSubmit());
+
+  const tip = document.querySelector('.chart-tip');
+  const showTip = (target) => {
+    if (!tip) return;
+    tip.querySelector('strong').textContent = target.dataset.tipValue;
+    tip.querySelector('span').textContent = target.dataset.tipLabel;
+    tip.hidden = false;
+    const rect = (target.querySelector('circle') || target).getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    const left = Math.min(Math.max(8, rect.left + rect.width / 2 - tipRect.width / 2), window.innerWidth - tipRect.width - 8);
+    const top = rect.top - tipRect.height - 8 < 8 ? rect.bottom + 8 : rect.top - tipRect.height - 8;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
+  };
+  const hideTip = () => { if (tip) tip.hidden = true; };
+  ['pointerover', 'focusin'].forEach((type) => document.addEventListener(type, (event) => {
+    const target = event.target.closest?.('[data-tip-value]');
+    if (target) showTip(target);
+  }));
+  ['pointerout', 'focusout'].forEach((type) => document.addEventListener(type, (event) => {
+    const target = event.target.closest?.('[data-tip-value]');
+    if (target && !target.contains(event.relatedTarget)) hideTip();
+  }));
+  window.addEventListener('scroll', hideTip, { passive: true });
+
+  const reportDataEl = document.querySelector('#report-data');
+  const decodeBase64Utf8 = (encoded) => {
+    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
+    return new TextDecoder('utf-8').decode(bytes);
+  };
+  const reportData = reportDataEl ? JSON.parse(decodeBase64Utf8(reportDataEl.textContent.trim())) : null;
+  const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
+  const percentLabel = (value) => (value === null || value === undefined ? '—' : `${value}%`);
+  const statusLabel = (attempt) => {
+    if (attempt.status !== 'DONE') return 'формируется';
+    if (attempt.grade !== null && attempt.grade !== undefined) return `оценка ${attempt.grade}, ${attempt.passed ? 'зачтено' : 'не зачтено'}`;
+    return percentLabel(attempt.percent);
+  };
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+
+  function groupAttemptCriteria(attempt) {
+    const incidents = new Map();
+    (attempt.criteria || []).forEach((criterion) => {
+      const incidentKey = criterion.incidentOrder || 0;
+      if (!incidents.has(incidentKey)) incidents.set(incidentKey, new Map());
+      const criteria = incidents.get(incidentKey);
+      if (!criteria.has(criterion.criterionName)) criteria.set(criterion.criterionName, { score: 0, maxScore: 0 });
+      const totals = criteria.get(criterion.criterionName);
+      totals.score += criterion.score;
+      totals.maxScore += criterion.maxScore;
+    });
+    return [...incidents.entries()].sort((left, right) => left[0] - right[0]).map(([incidentOrder, criteria]) => ({
+      label: incidentOrder ? `Сценарий ${incidentOrder}` : 'Критерии',
+      criteria: [...criteria.entries()].map(([name, totals]) => ({ name, ...totals }))
+    }));
+  }
+
+  document.querySelector('#export-excel')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.loading = true;
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      const summarySheet = XLSX.utils.aoa_to_sheet([
+        ['Показатель', 'Значение'],
+        ['Заданий', reportData.summary.assignments],
+        ['Обучающихся', reportData.summary.students],
+        ['Выполнено заданий', `${reportData.summary.completed} из ${reportData.summary.possible}`],
+        ['Средний результат', percentLabel(reportData.summary.average)]
+      ]);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Сводка');
+
+      const studentsRows = [['Курс', 'Обучающийся', 'Email', 'Группы', 'Выполнено заданий', 'Средний балл', 'Последняя активность']];
+      const attemptsRows = [['Курс', 'Обучающийся', 'Задание', 'Статус', 'Балл', 'Дата', 'Сценарий', 'Критерий', 'Балл по критерию', 'Максимум по критерию']];
+      reportData.courses.forEach((course) => {
+        course.students.forEach((student) => {
+          studentsRows.push([course.title, student.name, student.email, student.groups.join(', '), `${student.completed} из ${student.assignmentsCount}`, percentLabel(student.average), student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : 'Нет попыток']);
+          student.attempts.forEach((attempt) => {
+            attemptsRows.push([course.title, student.name, attempt.assignmentTitle, attempt.status, statusLabel(attempt), attempt.createdAt ? dateFormatter.format(new Date(attempt.createdAt)) : '', '', '', '', '']);
+            groupAttemptCriteria(attempt).forEach((incident) => {
+              incident.criteria.forEach((criterion) => {
+                attemptsRows.push([course.title, student.name, attempt.assignmentTitle, attempt.status, statusLabel(attempt), attempt.createdAt ? dateFormatter.format(new Date(attempt.createdAt)) : '', incident.label, criterion.name, criterion.score, criterion.maxScore]);
+              });
+            });
+          });
+        });
+      });
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(studentsRows), 'Обучающиеся');
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(attemptsRows), 'Попытки и критерии');
+      XLSX.writeFile(workbook, `${reportData.fileNameBase}.xlsx`);
+    } finally {
+      button.loading = false;
+    }
+  });
+
+  document.querySelector('#export-pdf')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.loading = true;
+    const container = document.createElement('div');
+    container.className = 'pdf-report';
+    let html = `<h1>Отчёт — ${escapeHtml(reportData.fileNameBase)}</h1>`;
+    html += `<p><strong>Заданий:</strong> ${reportData.summary.assignments} · <strong>Обучающихся:</strong> ${reportData.summary.students} · <strong>Выполнено заданий:</strong> ${reportData.summary.completed} из ${reportData.summary.possible} · <strong>Средний результат:</strong> ${escapeHtml(percentLabel(reportData.summary.average))}</p>`;
+    reportData.courses.forEach((course) => {
+      course.students.forEach((student) => {
+        html += `<h2>${escapeHtml(student.name)} <small>(${escapeHtml(student.email)})</small></h2>`;
+        html += `<p>Группы: ${escapeHtml(student.groups.join(', ') || '—')} · Выполнено: ${student.completed} из ${student.assignmentsCount} · Средний балл: ${escapeHtml(percentLabel(student.average))} · Последняя активность: ${escapeHtml(student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : 'Нет попыток')}</p>`;
+        if (!student.attempts.length) html += '<p>Попыток нет.</p>';
+        student.attempts.forEach((attempt) => {
+          html += `<h3>${escapeHtml(attempt.assignmentTitle)} — ${escapeHtml(statusLabel(attempt))}${attempt.createdAt ? ` (${escapeHtml(dateFormatter.format(new Date(attempt.createdAt)))})` : ''}</h3>`;
+          const incidents = groupAttemptCriteria(attempt);
+          if (incidents.length) {
+            html += '<table class="pdf-criteria-table"><thead><tr><th>Сценарий</th><th>Критерий</th><th>Балл</th></tr></thead><tbody>';
+            incidents.forEach((incident) => {
+              incident.criteria.forEach((criterion, index) => {
+                html += `<tr>${index === 0 ? `<td rowspan="${incident.criteria.length}">${escapeHtml(incident.label)}</td>` : ''}<td>${escapeHtml(criterion.name)}</td><td>${criterion.score} / ${criterion.maxScore}</td></tr>`;
+              });
+            });
+            html += '</tbody></table>';
+          }
+        });
+      });
+    });
+    container.innerHTML = html;
+    const overlay = document.createElement('div');
+    overlay.className = 'pdf-export-overlay';
+    overlay.textContent = 'Формируем PDF…';
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.append(overlay, container);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      await html2pdf().set({ margin: 10, filename: `${reportData.fileNameBase}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
+    } finally {
+      container.remove();
+      overlay.remove();
+      document.body.style.overflow = previousOverflow;
+      button.loading = false;
+    }
+  });
+</script>
+<style is:global>
+  .pdf-export-overlay { position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center; background: #fff; color: #000; font: 500 16px/1.4 Arial, sans-serif; }
+  .pdf-report { width: 190mm; margin: 0 auto; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
+  .pdf-report h1 { font-size: 18px; }
+  .pdf-report h2 { font-size: 15px; margin-block-start: 20px; }
+  .pdf-report h3 { font-size: 13px; margin-block-start: 12px; }
+  .pdf-report table.pdf-criteria-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .pdf-report table.pdf-criteria-table th, .pdf-report table.pdf-criteria-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+
+  .statistics-table { min-width: 90ch; margin: 0; }
+  .statistics-table td { vertical-align: top; }
+  .statistics-table td:first-child small { display: block; color: var(--wa-color-text-quiet); }
+  .progress-cell { min-width: 14ch; }
+  .student-progress { --track-height: var(--wa-space-xs); }
+  .attempt-links { min-width: 20ch; }
+</style>
+
+<style>
+  .statistics-page { min-width: 0; padding-block-end: var(--wa-space-2xl); }
+  .entity-filter { max-width: 24rem; }
+  .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(18ch, 1fr)); margin: 0; border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .summary-item { padding: var(--wa-space-l); }
+  .summary-item + .summary-item { border-inline-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .summary-item dt, .summary-item small { color: var(--wa-color-text-quiet); }
+  .summary-item dd { margin: 0; font-size: var(--wa-font-size-2xl); font-weight: var(--wa-font-weight-bold); line-height: 1; }
+  .summary-progress { --track-height: var(--wa-space-2xs); }
+
+  .panel-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--wa-space-l); }
+  .panel { min-width: 0; padding: var(--wa-space-l); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .panel-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--wa-space-m); margin-block-end: var(--wa-space-l); }
+  .panel-heading h2 { margin: 0; font-size: var(--wa-font-size-l); }
+  .panel-heading p { margin: var(--wa-space-3xs) 0 0; color: var(--wa-color-text-quiet); }
+  .students-panel { --wa-color-neutral-fill-quiet: var(--wa-color-surface-raised); --wa-color-neutral-border-quiet: var(--wa-color-surface-border); }
+  .students-panel::part(summary) { font-family: var(--wa-font-family-heading); font-weight: var(--wa-font-weight-heading); font-size: var(--wa-font-size-l); }
+  .empty-note { margin: 0; color: var(--wa-color-text-quiet); }
+
+  .trend-chart { display: block; width: 100%; height: auto; overflow: visible; }
+  .trend-chart .grid line { stroke: var(--wa-color-neutral-border-quiet); stroke-width: 1; }
+  .trend-chart text { fill: var(--wa-color-text-quiet); font-size: 12px; }
+  .trend-chart .grid text { text-anchor: end; }
+  .trend-chart polyline { fill: none; stroke: var(--wa-color-brand-fill-loud); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .trend-chart .point { outline: none; cursor: default; }
+  .trend-chart .point rect { fill: transparent; }
+  .trend-chart .point line { stroke: var(--wa-color-neutral-border-loud); stroke-width: 1; opacity: 0; }
+  .trend-chart .point circle { fill: var(--wa-color-brand-fill-loud); stroke: var(--wa-color-surface-raised); stroke-width: 2; }
+  .trend-chart .point:hover line, .trend-chart .point:focus-visible line { opacity: 1; }
+  .trend-chart .point:hover circle, .trend-chart .point:focus-visible circle { r: 6; }
+  .trend-chart .point-label { fill: var(--wa-color-text-normal); font-weight: var(--wa-font-weight-bold); text-anchor: middle; pointer-events: none; }
+
+  .error-list { display: grid; gap: var(--wa-space-m); margin: 0; padding: 0; list-style: none; }
+  .error-list li { outline: none; }
+  .error-list li:focus-visible { outline: var(--wa-focus-ring); outline-offset: 2px; }
+  .error-row { display: flex; justify-content: space-between; gap: var(--wa-space-s); }
+  .error-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .error-track { height: var(--wa-space-xs); margin-block-start: var(--wa-space-2xs); background: var(--wa-color-neutral-fill-normal); }
+  .error-track span { display: block; height: 100%; border-radius: 0 4px 4px 0; background: var(--wa-color-danger-fill-loud); }
+  .error-list li:hover .error-track span { background: var(--wa-color-danger-on-quiet); }
+
+  .heat-legend { display: flex; align-items: center; gap: var(--wa-space-xs); color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+  .heat-legend i { width: 7rem; height: var(--wa-space-xs); }
+  .scale-score { background: linear-gradient(to right, color-mix(in srgb, var(--wa-color-brand-fill-loud) 10%, var(--wa-color-surface-raised)), var(--wa-color-brand-fill-loud) 90%); }
+  .scale-loss { background: linear-gradient(to right, var(--wa-color-neutral-fill-quiet), var(--wa-color-danger-fill-loud) 90%); }
+  .heatmap-scroll { overflow-x: auto; }
+  .heatmap { width: 100%; margin: 0; border-collapse: separate; border-spacing: 2px; }
+  .heatmap th { max-width: 14rem; padding: var(--wa-space-xs); overflow: hidden; font-size: var(--wa-font-size-s); font-weight: var(--wa-font-weight-semibold); text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+  .heatmap thead th:not(:first-child) { max-width: 9rem; text-align: center; }
+  .heatmap tbody th, .heatmap tfoot th { position: sticky; left: 0; z-index: 1; background: var(--wa-color-surface-raised); }
+  .heatmap td { min-width: 4.5rem; height: 2.25rem; padding: 0; text-align: center; font-weight: var(--wa-font-weight-semibold); }
+  .heatmap td.score { background: color-mix(in srgb, var(--wa-color-brand-fill-loud) var(--cell-weight), var(--wa-color-surface-raised)); }
+  .heatmap td.loss { background: color-mix(in srgb, var(--wa-color-danger-fill-loud) var(--cell-weight), var(--wa-color-neutral-fill-quiet)); }
+  .heatmap td.strong, .heatmap td.strong a { color: #ffffff; }
+  .heatmap td.empty { border: 1px dashed var(--wa-color-neutral-border-quiet); color: var(--wa-color-text-quiet); font-weight: normal; }
+  .heatmap td a { display: grid; place-items: center; width: 100%; height: 100%; color: var(--wa-color-text-normal); text-decoration: none; }
+  .heatmap td.score:hover, .heatmap td.loss:hover, .heatmap td:focus-within, .heatmap td:focus-visible { outline: 2px solid var(--wa-color-text-normal); outline-offset: -2px; }
+  .heatmap tfoot td, .heatmap tfoot th { padding-block: var(--wa-space-xs); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .heatmap tfoot td small { display: block; color: var(--wa-color-text-quiet); font-weight: normal; }
+
+  .chart-tip { position: fixed; z-index: 1000; display: grid; gap: 2px; max-width: 20rem; padding: var(--wa-space-xs) var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); box-shadow: 0 4px 12px rgb(38 50 56 / 16%); pointer-events: none; }
+  .chart-tip[hidden] { display: none; }
+  .chart-tip strong { font-size: var(--wa-font-size-m); }
+  .chart-tip span { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+
+  @media (max-width: 60rem) { .panel-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 40rem) { .panel { padding: var(--wa-space-m); } .summary-item + .summary-item { border-inline-start: 0; border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); } }
+</style>
