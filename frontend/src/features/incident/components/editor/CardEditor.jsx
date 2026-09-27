@@ -159,7 +159,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const incidentTypes = editor.incidentTypes.filter(Boolean);
   const incidents = incidentTypes.map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
   const editingCard = cards.find((card) => card.cardId === editor.editingCardId);
-  const linkCards = cards.filter((card) => card.cardId !== editor.editingCardId && !card.mainCardId);
+  const linkCards = cards.filter((card) => card.cardId !== editor.editingCardId);
   const selectedCard = linkCards.find((card) => card.cardId === editor.selectedCardId);
   const relatedCard = !!editingCard?.mainCardId;
   const canUnlink = relatedCard && call.phase === "active" && call.activeCallId === editingCard.callId;

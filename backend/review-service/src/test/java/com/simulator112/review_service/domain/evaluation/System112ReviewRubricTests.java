@@ -65,6 +65,48 @@ class System112ReviewRubricTests {
     }
 
     @Test
+    void awardsFullScoreWhenSeveralCardsAreLinkedToOneMainCard() {
+        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
+        var incident = threeStageIncident(person);
+        var submission = submission(incident, List.of(card("card-1", "call-1", "", person),
+                card("card-2", "call-2", "card-1", person), card("card-3", "call-3", "card-1", person)));
+
+        assertThat(operationScores(submission)).allSatisfy(result -> assertThat(result.score()).isEqualTo(result.maxScore()));
+    }
+
+    @Test
+    void rejectsCardLinkedToUnrelatedCard() {
+        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
+        var incident = threeStageIncident(person);
+        var submission = submission(incident, List.of(card("card-1", "call-1", "", person),
+                card("card-2", "call-2", "card-1", person), card("card-3", "call-3", "card-x", person),
+                card("card-x", "call-x", "", person)));
+
+        assertThat(operationScores(submission)).anySatisfy(result -> assertThat(result.score()).isLessThan(result.maxScore()));
+    }
+
+    private ReviewSubmission.IncidentScenario threeStageIncident(ReviewSubmission.Person person) {
+        return new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
+                new ReviewSubmission.StageScenario("stage-1", 0, List.of("fire"), 0, null,
+                        List.of(new ReviewSubmission.CallScenario("call-1", 0, person))),
+                new ReviewSubmission.StageScenario("stage-2", 1, List.of("fire"), 0, null,
+                        List.of(new ReviewSubmission.CallScenario("call-2", 0, person))),
+                new ReviewSubmission.StageScenario("stage-3", 2, List.of("fire"), 0, null,
+                        List.of(new ReviewSubmission.CallScenario("call-3", 0, person)))), criteria());
+    }
+
+    private ReviewSubmission submission(ReviewSubmission.IncidentScenario incident,
+                                        List<ReviewSubmission.CardRevision> cards) {
+        return new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), cards, List.of(), List.of(), null, null);
+    }
+
+    private List<com.simulator112.review_service.domain.model.CriterionResult> operationScores(ReviewSubmission submission) {
+        return new System112ReviewRubric().evaluate(submission).stream()
+                .filter(value -> value.criterionName().equals("Операции и связи")).toList();
+    }
+
+    @Test
     void reservesConfiguredWeightForDialogueCriteria() {
         var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
         var call = new ReviewSubmission.CallScenario("call", 0, person);

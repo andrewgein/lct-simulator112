@@ -101,6 +101,7 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
         return System112ReviewRubric.assemble(submission.cardRevisions()).values().stream()
                 .map(card -> new DispatcherCardSummary(card.cardId(), card.callId(),
+                        card.mainCardId() == null || card.mainCardId().isBlank() ? null : card.mainCardId(),
                         incidentIdByCallId.get(card.callId()), card.applicant(),
                         card.victimCount(), card.incidentTypes(), card.services(), card.additionalInfo()))
                 .toList();
