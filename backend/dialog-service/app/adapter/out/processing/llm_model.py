@@ -62,12 +62,13 @@ class LLMModel:
     async def regenerate_answer(self, new_user_text: str, previous_user_text: str, partial_response: str) -> AsyncGenerator[str, Any]:
 
         logger.info(f"Regenerating new_user_text='{new_user_text}' previous_user_text='{previous_user_text}' partial_response='{partial_response}'")
-        request_messages = [self.system_message, *self.dialog_history]
+        self.dialog_history.append({"role": "user", "content": previous_user_text})
 
         if partial_response.strip():
-            request_messages.append({"role": "assistant", "content": partial_response})
+            self.dialog_history.append({"role": "assistant", "content": partial_response})
 
-        request_messages.append({"role": "user", "content": new_user_text})
+        self.dialog_history = self.dialog_history[-10:]
+        request_messages = [self.system_message, *self.dialog_history, {"role": "user", "content": new_user_text}]
 
         request_started = time.monotonic()
         stream = await self.client.chat.completions.create(
