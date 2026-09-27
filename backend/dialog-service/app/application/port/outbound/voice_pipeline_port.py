@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from typing import Protocol
 
-from app.domain.model import CallScenario
+from app.domain.model import CallScenario, DialogTranscript
 
 
 class VoicePipeline(Protocol):
@@ -17,6 +17,7 @@ class VoicePipelineFactory(Protocol):
         on_operator_phrase: Callable[[str], None],
         on_counterparty_phrase: Callable[[str], None],
         on_audio: Callable[[bytes], None],
+        history: DialogTranscript | None = None,
     ) -> VoicePipeline: ...
 
     def warm_up(self) -> None: ...

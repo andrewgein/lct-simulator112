@@ -8,7 +8,7 @@ import logging
 import asyncio
 from num2words import num2words
 
-from app.domain.model import CallScenario, CounterpartyType
+from app.domain.model import CallScenario, CounterpartyType, DialogTranscript, Speaker
 from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, build_call_scenario
 from app.adapter.out.processing.llm_model import LLMModel
 from .processing_node import UserDialogProcessingNode
@@ -36,7 +36,8 @@ def _preprocess_text(text: str) -> str:
 
 class ChatNode(UserDialogProcessingNode):
     worker: asyncio.Task | None
-    def __init__(self, context: CallScenario, on_new_phrase=lambda text: None):
+    def __init__(self, context: CallScenario, on_new_phrase=lambda text: None,
+                 history: DialogTranscript | None = None):
         super().__init__()
         self.context = context
         self.on_new_phrase = on_new_phrase
@@ -57,6 +58,12 @@ class ChatNode(UserDialogProcessingNode):
         incident_scenario = build_call_scenario(context)
         full_prompt = f"{system_prompt}\n\n{incident_scenario}"
         self.model = LLMModel(full_prompt)
+        if history is not None and history.phrases:
+            roles = {Speaker.OPERATOR: "user", Speaker.COUNTERPARTY: "assistant"}
+            self.model.dialog_history = [
+                {"role": roles[phrase.speaker], "content": phrase.text}
+                for phrase in history.phrases
+            ][-10:]
 
 
     def _run_event_loop(self):

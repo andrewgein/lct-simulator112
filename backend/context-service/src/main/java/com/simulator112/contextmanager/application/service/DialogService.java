@@ -14,6 +14,7 @@ import com.simulator112.contextmanager.domain.common.CallSnapshot;
 import com.simulator112.contextmanager.domain.common.DialogProgress;
 import com.simulator112.contextmanager.domain.common.DialogTranscript;
 import com.simulator112.contextmanager.domain.common.DialogProgressStatus;
+import com.simulator112.contextmanager.domain.common.Phrase;
 import com.simulator112.contextmanager.domain.common.CallStatus;
 import com.simulator112.contextmanager.domain.common.ContextStatus;
 import com.simulator112.contextmanager.domain.dds.DdsStageSignal;
@@ -30,13 +31,40 @@ public class DialogService implements CallUseCase {
     private final LevelProgressService levelProgressService;
 
     @Transactional
-    public void appendDialog(String id, DialogTranscript dialog) {
+    public void appendDialog(String id, String callId, DialogTranscript dialog) {
+        UUID requestedCallId = parseUuid(callId);
+        List<Phrase> tagged = dialog.phrases().stream()
+                .map(phrase -> new Phrase(phrase.speaker(), phrase.text(), requestedCallId))
+                .toList();
         TrainingContext context = find(id);
         if (context.getDialog() == null) {
-            context.setDialog(dialog);
+            context.setDialog(new DialogTranscript(tagged));
         } else {
-            context.getDialog().phrases().addAll(dialog.phrases());
+            context.getDialog().phrases().addAll(tagged);
         }
+        contextStore.save(context);
+    }
+
+    @Transactional(readOnly = true)
+    public DialogTranscript getCallTranscript(String id, String callId) {
+        UUID requestedCallId = parseUuid(callId);
+        TrainingContext context = find(id);
+        if (context.getDialog() == null) {
+            return new DialogTranscript(List.of());
+        }
+        return new DialogTranscript(context.getDialog().phrases().stream()
+                .filter(phrase -> requestedCallId.equals(phrase.callId()))
+                .toList());
+    }
+
+    @Transactional
+    public void clearCallTranscript(String id, String callId) {
+        UUID requestedCallId = parseUuid(callId);
+        TrainingContext context = find(id);
+        if (context.getDialog() == null) {
+            return;
+        }
+        context.getDialog().phrases().removeIf(phrase -> requestedCallId.equals(phrase.callId()));
         contextStore.save(context);
     }
 
