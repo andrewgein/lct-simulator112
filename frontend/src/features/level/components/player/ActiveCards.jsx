@@ -32,8 +32,6 @@ const styles = `
 .cards-table .data-grid__cell--status { width: 13rem; color: var(--app-dispatch-text-secondary); }
 .cards-table .data-grid__cell--address { width: 32%; }
 .cards-table .data-grid__cell--open { width: 4rem; padding-inline: var(--wa-space-xs); text-align: center; }
-.is-complete .data-grid__cell--status wa-icon { color: var(--app-dispatch-text-success); }
-.is-incomplete .data-grid__cell--status { color: var(--wa-color-warning-fill-normal); }
 .cards-table .data-grid__expanded-row td { max-width: none; padding: 0; border: var(--wa-border-width-s) solid var(--app-dispatch-border); border-block-start: 0; background: var(--app-dispatch-row-alternate); white-space: normal; }
 .cards-table .data-grid__expanded-row:hover td { background: var(--app-dispatch-row-alternate); }
 .incident-description { display: flex; gap: var(--wa-space-m); padding: var(--wa-space-xs) var(--wa-space-s); overflow-wrap: anywhere; }
@@ -152,7 +150,7 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
     { field: "incident", label: "Тип происшествия", sortable: false, render: (row) => <strong title={row.incident}>{row.incident}</strong> },
     { field: "victimSummary", label: "Постр.", sortable: false },
     { field: "address", label: "Адрес", sortable: false },
-    { field: "status", label: statusLabel, sortable: false, render: (row) => <span class="card-status-content wa-cluster wa-gap-xs wa-flex-nowrap"><wa-icon name={row.complete ? "circle-check" : "triangle-exclamation"} aria-hidden="true"></wa-icon><span>{row.status}</span></span> },
+    { field: "status", label: statusLabel, sortable: false },
     { field: "open", label: "Карточка", sortable: false, render: (row) => <wa-button class="card-open" type="button" size="xs" appearance="plain" variant="neutral" aria-label={`Открыть карточку ${row.id}`} onClick={() => onOpen(row.card)}><wa-icon name="clipboard" aria-hidden="true"></wa-icon></wa-button> }
   ];
   return (
