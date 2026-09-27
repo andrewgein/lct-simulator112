@@ -35,7 +35,7 @@ public class ClassifierCandidateSearchService implements SearchClassifierEntries
                 .sorted(Comparator.comparingInt(Ranked::score).reversed()
                         .thenComparing(rank -> rank.entry().code()))
                 .toList();
-        // With no keyword hits, retain the old UI's deterministic fallback to the first codes.
+
         boolean hasMatches = ranked.stream().anyMatch(rank -> rank.score() > 0);
         var selected = ranked.stream().filter(rank -> !hasMatches || rank.score() > 0)
                 .limit(hasMatches ? limit : Math.min(limit, 40)).map(Ranked::entry).toList();

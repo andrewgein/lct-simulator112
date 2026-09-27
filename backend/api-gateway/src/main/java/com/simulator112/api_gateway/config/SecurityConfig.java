@@ -14,10 +14,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
-
-  // Externalized (rather than hardcoded) so the value shows up in /actuator/env for the admin
-  // panel's read-only settings page, and so changing it is a prod/.env edit + redeploy instead
-  // of a code change.
+  
   @Value("#{'${cors.allowed-origins:*}'.split(',')}")
   private List<String> allowedOrigins;
 
