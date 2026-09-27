@@ -2,6 +2,43 @@ import { useState } from "preact/hooks";
 import DataGrid from "../../../../components/DataGrid.jsx";
 import { applicantName, cardAddress, cardIsComplete, findIncident } from "../../../incident/components/editor/editorHelpers";
 
+const styles = `
+.active-cards { padding: var(--wa-space-l); }
+.incident-list-heading { padding: var(--wa-space-m) var(--wa-space-l); color: var(--wa-color-surface-default); }
+.incident-list-heading h2 { margin: 0; font-size: var(--wa-font-size-xl); }
+.incident-list-heading span { color: var(--wa-color-neutral-80); font-size: var(--wa-font-size-s); }
+.cards-grid { background: var(--app-dispatch-workspace); --wa-color-surface-border: var(--app-dispatch-border); }
+.cards-table { min-width: 68rem; color: var(--app-dispatch-text); --wa-color-fill-quiet: var(--app-dispatch-row-hover); --wa-color-border-quiet: var(--app-dispatch-border); --wa-color-border-normal: var(--wa-color-neutral-50); }
+.cards-table thead { background: var(--app-dispatch-workspace); color: var(--wa-color-neutral-90); }
+.cards-table th { padding: var(--wa-space-s) var(--wa-space-m); border-block-end-color: var(--wa-color-neutral-70); font-weight: var(--wa-font-weight-semibold); white-space: nowrap; }
+.cards-table td { box-sizing: border-box; max-width: 24rem; padding: var(--wa-space-s) var(--wa-space-m); overflow: hidden; border-inline-end: var(--wa-border-width-s) solid var(--app-dispatch-border); background: var(--app-dispatch-row); text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+.cards-table tbody tr { border-block-start: var(--wa-border-width-s) solid var(--app-dispatch-border); }
+.cards-table tbody tr:nth-child(even) td { background: var(--app-dispatch-row-alternate); }
+.cards-table tbody tr:hover td, .cards-table tbody tr:focus-visible td { background: var(--app-dispatch-row-hover); }
+.cards-table tbody tr:focus-visible { outline: var(--wa-focus-ring-width) var(--wa-focus-ring-style) var(--wa-color-focus); outline-offset: calc(-1 * var(--wa-focus-ring-width)); }
+.cards-table .data-grid__heading:first-child, .cards-table .data-grid__cell--details { width: 3rem; padding-inline: var(--wa-space-xs); text-align: center; }
+.cards-table .data-grid__cell--relation { width: 7rem; color: var(--app-dispatch-text-secondary); }
+.card-relation-indent { display: inline-flex; align-items: center; gap: var(--wa-space-xs); padding-inline-start: calc(var(--card-depth) * var(--wa-space-l)); }
+.card-collapse, .card-details-toggle { --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
+.cards-table .data-grid__cell--id { width: 9rem; color: var(--wa-color-neutral-70); }
+.cards-table .data-grid__cell--incident { width: 25%; color: var(--wa-color-neutral-on-loud); }
+.cards-table .data-grid__cell--applicant { width: 18%; }
+.cards-table .data-grid__cell--address { width: 27%; color: var(--wa-color-neutral-90); }
+.cards-table .data-grid__cell--kindLabel { width: 8rem; color: var(--wa-color-neutral-70); }
+.cards-table .data-grid__cell--status { width: 10rem; color: var(--app-dispatch-text-secondary); }
+.is-complete .data-grid__cell--status wa-icon { color: var(--app-dispatch-text-success); }
+.is-incomplete .data-grid__cell--status { color: var(--wa-color-warning-fill-normal); }
+.cards-table .data-grid__expanded-row td { max-width: none; padding: 0; border-block-start: var(--wa-border-width-s) solid var(--app-dispatch-border); background: var(--app-dispatch-row-alternate); white-space: normal; }
+.cards-table .data-grid__expanded-row:hover td { background: var(--app-dispatch-row-alternate); }
+.incident-row-details { display: grid; color: var(--app-dispatch-text); }
+.incident-row-details > div { display: flex; align-items: baseline; gap: var(--wa-space-s); min-width: 0; padding: var(--wa-space-xs) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--app-dispatch-border); }
+.incident-row-details > div:last-child { border-block-end: 0; }
+.incident-row-details span { flex: 0 0 auto; color: var(--app-dispatch-text-muted); }
+.incident-row-details strong { overflow-wrap: anywhere; }
+.incident-row-information strong { font-weight: var(--wa-font-weight-normal); }
+@media (max-width: 40rem) { .active-cards { padding: var(--wa-space-xs); } .cards-grid { margin-inline: calc(-1 * var(--wa-space-xs)); } }
+`;
+
 function arrangeCards(cards) {
   const childrenByMain = new Map();
   cards.forEach((card) => {
@@ -102,6 +139,7 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
   ];
   return (
     <section class="active-cards wa-stack wa-gap-0" aria-labelledby="active-cards-heading">
+      <style>{styles}</style>
       {loading && <div>Загрузка...</div>}
       {error && <div>Не удалось загрузить карточки</div>}
       {!loading && !error && !cards.length && <wa-callout variant="neutral">{emptyMessage}</wa-callout>}

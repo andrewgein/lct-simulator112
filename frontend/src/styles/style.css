@@ -11,6 +11,15 @@ body {
   --wa-border-radius-scale: 0;
   --wa-shadow-scale: 0;
   --app-header-background: #35434a;
+  --app-dispatch-workspace: #899ba4;
+  --app-dispatch-row: #2b363c;
+  --app-dispatch-row-alternate: #455862;
+  --app-dispatch-row-hover: #526a75;
+  --app-dispatch-border: #71858f;
+  --app-dispatch-text: #edf2f3;
+  --app-dispatch-text-muted: #b8c6cc;
+  --app-dispatch-text-secondary: #d9e4e8;
+  --app-dispatch-text-success: #b8d5df;
   min-height: 100%;
 }
 

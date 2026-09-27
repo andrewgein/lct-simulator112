@@ -2,12 +2,12 @@ import { useEffect, useState } from "preact/hooks";
 
 const styles = `
   [data-phase="incoming"] .accept-call { animation: call-buzz 1.5s ease-in-out infinite; }
-  .call-controls-compact { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--wa-space-s); box-sizing: border-box; width: 100%; min-width: 0; padding: var(--wa-space-s) var(--wa-space-m); border-inline-start: var(--wa-border-width-s) solid #71858f; color: #ffffff; }
+  .call-controls-compact { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--wa-space-s); box-sizing: border-box; width: 100%; min-width: 0; padding: var(--wa-space-s) var(--wa-space-m); border-inline-start: var(--wa-border-width-s) solid var(--app-dispatch-border); color: var(--wa-color-neutral-on-loud); }
   .compact-call-info { min-width: 0; }
   .compact-call-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .compact-call-status { color: #b8c6cc; font-size: var(--wa-font-size-s); }
+  .compact-call-status { color: var(--app-dispatch-text-muted); font-size: var(--wa-font-size-s); }
   .compact-call-actions { width: 9.5rem; }
-  .compact-call-time { min-width: 3rem; color: #dce5e8; font-size: var(--wa-font-size-s); font-variant-numeric: tabular-nums; text-align: center; }
+  .compact-call-time { min-width: 3rem; color: var(--app-dispatch-text-secondary); font-size: var(--wa-font-size-s); font-variant-numeric: tabular-nums; text-align: center; }
   [data-phase="incoming"] .compact-call-time { visibility: hidden; }
   @keyframes call-buzz { 0%, 30%, 100% { transform: rotate(0); } 5%, 15%, 25% { transform: rotate(-8deg); } 10%, 20% { transform: rotate(8deg); } }
 `;
