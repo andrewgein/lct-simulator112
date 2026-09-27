@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -51,7 +52,7 @@ class ReviewApplicationServiceTests {
         when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         var criterion = new ReviewSubmission.DialogueCriterion(
                 "address", "Уточнение адреса", "Оператор уточнил адрес происшествия", 25);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(),
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(),
                 new ReviewSubmission.EvaluationCriteria(List.of(criterion)));
         var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(), List.of(),
@@ -88,7 +89,7 @@ class ReviewApplicationServiceTests {
     void belowPassingThresholdIsNotCreditedAndCorrectionRecalculatesGrade() {
         when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         UUID contextId = UUID.randomUUID();
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(),
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(),
                 new ReviewSubmission.EvaluationCriteria(List.of()));
         var submission = new ReviewSubmission(contextId, UUID.randomUUID(), UUID.randomUUID(),
                 ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(), List.of(), List.of(),
@@ -118,6 +119,32 @@ class ReviewApplicationServiceTests {
         assertThat(review.confirm(UUID.randomUUID(), 120, null, Instant.now()).grade()).isEqualTo(4);
         assertThat(review.confirm(UUID.randomUUID(), 80, null, Instant.now()).grade()).isEqualTo(3);
         assertThat(review.confirm(UUID.randomUUID(), 79, null, Instant.now()).passed()).isFalse();
+    }
+
+    @Test
+    void submitCapturesIncidentAndDispatcherCardSnapshots() {
+        when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var stage = new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 2, null,
+                List.of(new ReviewSubmission.CallScenario("call", 0, null)));
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Пожар в квартире", List.of(stage),
+                new ReviewSubmission.EvaluationCriteria(List.of()));
+        var applicant = new ReviewSubmission.Person("Иван", "Иванов", null, "1234567890",
+                null, null, "ул. Ленина, 1", null);
+        var card = new ReviewSubmission.CardRevision("revision", "card", 1, "call", null, applicant, 2,
+                Map.of(), false, List.of("fire"), List.of("Пожарная служба"), Instant.now());
+        var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(card), List.of(), List.of(),
+                null, null);
+
+        Review result = service.submit(submission);
+
+        assertThat(result.incidents()).hasSize(1);
+        assertThat(result.incidents().getFirst().title()).isEqualTo("Пожар в квартире");
+        assertThat(result.incidents().getFirst().victimCount()).isEqualTo(2);
+        assertThat(result.incidents().getFirst().classifierCodes()).containsExactly("fire");
+        assertThat(result.cards()).hasSize(1);
+        assertThat(result.cards().getFirst().applicant().lastName()).isEqualTo("Иванов");
+        assertThat(result.cards().getFirst().services()).containsExactly("Пожарная служба");
     }
 
     @Test

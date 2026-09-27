@@ -13,7 +13,7 @@ public final class System112ReviewRubric implements ReviewRubric {
                     criterion("Обработка звонков", 10))))
             .build();
 
-    static Map<String, ReviewSubmission.CardRevision> assemble(List<ReviewSubmission.CardRevision> revisions) {
+    public static Map<String, ReviewSubmission.CardRevision> assemble(List<ReviewSubmission.CardRevision> revisions) {
         Map<String, List<ReviewSubmission.CardRevision>> grouped = new LinkedHashMap<>();
         revisions.forEach(value -> grouped.computeIfAbsent(value.cardId(), ignored -> new ArrayList<>()).add(value));
         Map<String, ReviewSubmission.CardRevision> result = new LinkedHashMap<>();
