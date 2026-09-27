@@ -587,18 +587,26 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
       });
     });
     container.innerHTML = html;
-    document.body.appendChild(container);
+    const overlay = document.createElement('div');
+    overlay.className = 'pdf-export-overlay';
+    overlay.textContent = 'Формируем PDF…';
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.body.append(overlay, container);
     try {
       const html2pdf = (await import('html2pdf.js')).default;
-      await html2pdf().set({ margin: 10, filename: `Отчёт — ${reportData.courses[0]?.title || 'курс'}.pdf`, html2canvas: { scale: 2, scrollX: 0, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
+      await html2pdf().set({ margin: 10, filename: `Отчёт — ${reportData.courses[0]?.title || 'курс'}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
     } finally {
       container.remove();
+      overlay.remove();
+      document.body.style.overflow = previousOverflow;
       button.loading = false;
     }
   });
 </script>
 <style is:global>
-  .pdf-report { position: fixed; left: 0; top: 0; z-index: -1; width: 190mm; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
+  .pdf-export-overlay { position: fixed; inset: 0; z-index: 2147483647; display: grid; place-items: center; background: #fff; color: #000; font: 500 16px/1.4 Arial, sans-serif; }
+  .pdf-report { width: 190mm; margin: 0 auto; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
   .pdf-report h1 { font-size: 18px; }
   .pdf-report h2 { font-size: 15px; margin-block-start: 20px; }
   .pdf-report h3 { font-size: 13px; margin-block-start: 12px; }
