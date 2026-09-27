@@ -73,6 +73,7 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
   return {
     id: card.cardId,
     card,
+    timestamp: date && !Number.isNaN(date.getTime()) ? date.getTime() : 0,
     date: date && !Number.isNaN(date.getTime()) ? dateFormatter.format(date) : "—",
     time: date && !Number.isNaN(date.getTime()) ? timeFormatter.format(date) : "—",
     depth,
@@ -85,6 +86,7 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
     applicantPhone: card.applicant?.phone || "Не указан",
     applicantContactPhone: card.applicant?.contactPhone || "Не указан",
     applicantOnScenePhone: card.applicant?.onScenePhone || "Не указан",
+    victimCount: card.victimCount,
     victimSummary,
     address: cardAddress(card),
     additionalInfo: additionalInfo || "Дополнительная информация не заполнена",
@@ -144,13 +146,13 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
         </span>
       )
     },
-    { field: "id", label: "Номер", sortable: false, searchValue: (row) => `${row.id} ${row.applicant} ${row.description}` },
-    { field: "date", label: "Дата", sortable: false },
-    { field: "time", label: "Время", sortable: false },
-    { field: "incident", label: "Тип происшествия", sortable: false, render: (row) => <strong title={row.incident}>{row.incident}</strong> },
-    { field: "victimSummary", label: "Постр.", sortable: false },
-    { field: "address", label: "Адрес", sortable: false },
-    { field: "status", label: statusLabel, sortable: false },
+    { field: "id", label: "Номер", searchValue: (row) => `${row.id} ${row.applicant} ${row.description}` },
+    { field: "date", label: "Дата", sortValue: (row) => row.timestamp },
+    { field: "time", label: "Время", sortValue: (row) => row.timestamp },
+    { field: "incident", label: "Тип происшествия", render: (row) => <strong title={row.incident}>{row.incident}</strong> },
+    { field: "victimSummary", label: "Постр.", sortValue: (row) => row.victimCount },
+    { field: "address", label: "Адрес" },
+    { field: "status", label: statusLabel },
     { field: "open", label: "Карточка", sortable: false, render: (row) => <wa-button class="card-open" type="button" size="xs" appearance="plain" variant="neutral" aria-label={`Открыть карточку ${row.id}`} onClick={() => onOpen(row.card)}><wa-icon name="clipboard" aria-hidden="true"></wa-icon></wa-button> }
   ];
   return (
