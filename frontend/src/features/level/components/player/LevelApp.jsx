@@ -23,7 +23,7 @@ const editorFor = (card, phone) => emptyEditor({
   services: card?.services || []
 });
 
-export default function LevelApp({ contextId, dialogEndpoint, dadataApiKey, isDev = false }) {
+export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataApiKey, isDev = false }) {
   const [cards, setCards] = useState([]);
   const [cardsLoading, setCardsLoading] = useState(true);
   const [cardsError, setCardsError] = useState(false);
@@ -128,7 +128,7 @@ export default function LevelApp({ contextId, dialogEndpoint, dadataApiKey, isDe
 
   return (
     <div class="level-app wa-stack wa-gap-0">
-      <LevelCommandBar call={call} now={now} onAccept={acceptCall} onDrop={stopDialog}>
+      <LevelCommandBar call={call} now={now} onAccept={acceptCall} onDrop={stopDialog} exitHref={`/courses/${courseId}`}>
         <LevelSearchInput value={cardSearch} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setCardSearch(event.currentTarget.value)} />
       </LevelCommandBar>
       <CardEditor contextId={contextId} cards={cards} call={call} editor={editor} isDev={isDev} dadataApiKey={dadataApiKey} onChange={setEditor} onClose={closeEditor} />

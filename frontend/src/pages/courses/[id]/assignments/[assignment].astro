@@ -54,8 +54,8 @@ if (!error) {
 }
 ---
 <Page {error}>
-  {!error && targetType === "SYSTEM_112" && <LevelApp {contextId} {dialogEndpoint} {dadataApiKey} {isDev} client:load />}
-  {!error && targetType === "DDS" && <DdsLevelApp {contextId} {incidents} {classifier} {routingFacts} userService={profile?.ddsService} client:load />}
+  {!error && targetType === "SYSTEM_112" && <LevelApp {contextId} {courseId} {dialogEndpoint} {dadataApiKey} {isDev} client:load />}
+  {!error && targetType === "DDS" && <DdsLevelApp {contextId} {courseId} {incidents} {classifier} {routingFacts} userService={profile?.ddsService} client:load />}
 </Page>
 <style is:global>
   wa-page:has(.level-app)::part(main-content) { padding: 0; background: #899ba4; }
@@ -71,6 +71,7 @@ if (!error) {
   .level-current-date { min-width: 0; }
   .level-current-date strong { overflow: hidden; text-overflow: ellipsis; text-transform: capitalize; white-space: nowrap; }
   .level-current-date span { color: #b8c6cc; font-size: var(--wa-font-size-s); }
+  .level-exit-button { align-self: flex-start; --wa-color-neutral-on-quiet: #edf2f3; --wa-color-neutral-on-normal: #ffffff; --wa-color-neutral-border-normal: #71858f; }
   .level-connection { color: #b8c6cc; font-size: var(--wa-font-size-s); }
   .level-connection wa-icon { font-size: var(--wa-font-size-xl); }
   .level-operator-status time { align-items: center; justify-content: center; font-size: var(--wa-font-size-3xl); font-weight: var(--wa-font-weight-bold); font-variant-numeric: tabular-nums; }
