@@ -39,6 +39,32 @@ class System112ReviewRubricTests {
     }
 
     @Test
+    void awardsFullScoreForChainOfThreeLinkedCards() {
+        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
+        var first = new ReviewSubmission.CallScenario("call-1", 0, person);
+        var second = new ReviewSubmission.CallScenario("call-2", 0, person);
+        var third = new ReviewSubmission.CallScenario("call-3", 0, person);
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
+                new ReviewSubmission.StageScenario("stage-1", 0, List.of("fire"), 0, null, List.of(first)),
+                new ReviewSubmission.StageScenario("stage-2", 1, List.of("fire"), 0, null, List.of(second)),
+                new ReviewSubmission.StageScenario("stage-3", 2, List.of("fire"), 0, null, List.of(third))),
+                criteria());
+        var card1 = card("card-1", "call-1", "", person);
+        var card2 = card("card-2", "call-2", "card-1", person);
+        var card3 = card("card-3", "call-3", "card-2", person);
+        var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(card1, card2, card3), List.of(),
+                List.of(), null, null);
+
+        var results = new System112ReviewRubric().evaluate(submission);
+
+        assertThat(results.stream().mapToInt(value -> value.score()).sum()).isEqualTo(100);
+        assertThat(results.stream().mapToInt(value -> value.maxScore()).sum()).isEqualTo(100);
+        assertThat(results.stream().filter(value -> value.criterionName().equals("Операции и связи")))
+                .allSatisfy(result -> assertThat(result.score()).isEqualTo(result.maxScore()));
+    }
+
+    @Test
     void reservesConfiguredWeightForDialogueCriteria() {
         var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
         var call = new ReviewSubmission.CallScenario("call", 0, person);

@@ -1,7 +1,24 @@
 export const emptyPerson = () => ({ phone: "", contactPhone: "", onScenePhone: "", lastName: "", firstName: "", middleName: "", status: "", address: "", additionalInfo: "" });
 export const normalizePerson = (person = {}) => ({ ...emptyPerson(), ...person });
-export const applicantName = (card) => [card.applicant?.lastName, card.applicant?.firstName, card.applicant?.middleName].filter(Boolean).join(" ") || "Заявитель не указан";
+const fullName = (person) => [person?.lastName, person?.firstName, person?.middleName].filter(Boolean).join(" ");
+export const applicantName = (card) => fullName(card.applicant) || "Заявитель не указан";
 export const cardAddress = (card) => card.applicant?.address || "Адрес не указан";
+const normalizeText = (value) => (value || "").trim().toLowerCase();
+const normalizePhone = (value) => (value || "").replace(/\D/g, "");
+
+/** Finds already saved cards that look like the same case: same address, same applicant's phone or same applicant name. */
+export function findLinkSuggestions(applicant, candidateCards) {
+  const address = normalizeText(applicant?.address);
+  const name = normalizeText(fullName(applicant));
+  const phones = new Set([applicant?.phone, applicant?.contactPhone, applicant?.onScenePhone].map(normalizePhone).filter(Boolean));
+  if (!address && !name && !phones.size) return [];
+  return candidateCards.filter((card) => {
+    const cardPhones = [card.applicant?.phone, card.applicant?.contactPhone, card.applicant?.onScenePhone].map(normalizePhone).filter(Boolean);
+    return (!!address && normalizeText(card.applicant?.address) === address)
+      || (!!name && normalizeText(fullName(card.applicant)) === name)
+      || cardPhones.some((phone) => phones.has(phone));
+  });
+}
 export const formatPhone = (phone) => {
   const digits = phone?.replace(/\D/g, "") || "";
   if (digits.length === 11 && /^[78]/.test(digits)) return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9)}`;

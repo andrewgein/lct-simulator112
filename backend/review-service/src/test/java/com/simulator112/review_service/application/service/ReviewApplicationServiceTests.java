@@ -145,6 +145,7 @@ class ReviewApplicationServiceTests {
         assertThat(result.cards()).hasSize(1);
         assertThat(result.cards().getFirst().applicant().lastName()).isEqualTo("Иванов");
         assertThat(result.cards().getFirst().services()).containsExactly("Пожарная служба");
+        assertThat(result.cards().getFirst().incidentId()).isEqualTo("incident");
     }
 
     @Test
