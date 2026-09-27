@@ -200,7 +200,7 @@ public final class System112ReviewRubric implements ReviewRubric {
                 var card = matches.getFirst();
                 valid = switch (expected.operation()) {
                     case CREATE -> blank(card.mainCardId());
-                    case LINK -> linked(card.mainCardId(), expected.targetCallId(), cards);
+                    case LINK -> linked(card, expected.targetCallId(), cards, byCall);
                 };
                 feedback = valid ? "Операция с карточкой " + callLabel + " выполнена верно."
                         : "Операция или связь карточки " + callLabel + " выполнена неверно.";
@@ -210,9 +210,24 @@ public final class System112ReviewRubric implements ReviewRubric {
         return result;
     }
 
-    private boolean linked(String targetCardId, String expectedCallId, Map<String, ReviewSubmission.CardRevision> cards) {
-        var target = cards.get(targetCardId);
-        return target != null && expectedCallId.equals(target.callId());
+    private boolean linked(ReviewSubmission.CardRevision card, String expectedCallId,
+                           Map<String, ReviewSubmission.CardRevision> cards,
+                           Map<String, List<ReviewSubmission.CardRevision>> byCall) {
+        if (blank(card.mainCardId()) || !cards.containsKey(card.mainCardId())) return false;
+        String group = rootCardId(card.cardId(), cards);
+        return byCall.getOrDefault(expectedCallId, List.of()).stream()
+                .anyMatch(expected -> rootCardId(expected.cardId(), cards).equals(group));
+    }
+
+    private String rootCardId(String cardId, Map<String, ReviewSubmission.CardRevision> cards) {
+        Set<String> visited = new HashSet<>();
+        String current = cardId;
+        while (visited.add(current)) {
+            var card = cards.get(current);
+            if (card == null || blank(card.mainCardId()) || !cards.containsKey(card.mainCardId())) return current;
+            current = card.mainCardId();
+        }
+        return current;
     }
 
     private List<WeightedCheck> callChecks(ReviewSubmission submission, ReviewSubmission.IncidentScenario incident,

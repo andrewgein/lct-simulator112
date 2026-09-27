@@ -36,7 +36,7 @@ final class ReviewRestMapper {
     }
 
     private static DispatcherCardResponse toResponse(DispatcherCardSummary card) {
-        return new DispatcherCardResponse(card.cardId(), card.callId(), card.incidentId(), toResponse(card.applicant()),
+        return new DispatcherCardResponse(card.cardId(), card.callId(), card.mainCardId(), card.incidentId(), toResponse(card.applicant()),
                 card.victimCount(), card.incidentTypes(), card.services(), card.additionalInfo());
     }
 

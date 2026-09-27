@@ -149,6 +149,28 @@ class ReviewApplicationServiceTests {
     }
 
     @Test
+    void submitKeepsMainCardIdOfLinkedCardsAndDropsBlankOnes() {
+        when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Пожар", List.of(
+                new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 0, null, List.of(
+                        new ReviewSubmission.CallScenario("call-1", 0, null),
+                        new ReviewSubmission.CallScenario("call-2", 1, null)))),
+                new ReviewSubmission.EvaluationCriteria(List.of()));
+        var main = new ReviewSubmission.CardRevision("r1", "card-1", 1, "call-1", "", null, 0,
+                Map.of(), false, List.of("fire"), List.of(), Instant.now());
+        var linked = new ReviewSubmission.CardRevision("r2", "card-2", 1, "call-2", "card-1", null, 0,
+                Map.of(), false, List.of("fire"), List.of(), Instant.now());
+        var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(main, linked), List.of(), List.of(),
+                null, null);
+
+        Review result = service.submit(submission);
+
+        assertThat(result.cards().get(0).mainCardId()).isNull();
+        assertThat(result.cards().get(1).mainCardId()).isEqualTo("card-1");
+    }
+
+    @Test
     void returnsStoredReviewByContext() {
         UUID contextId = UUID.randomUUID();
         Review review = review(contextId, ReviewStatus.IN_REVIEW);
