@@ -4,20 +4,12 @@ import { findAvailableIncidents } from "./IncidentApi";
 /** @typedef {import("../contract/Incident").IncidentRequest} IncidentRequest */
 
 const API_PREFIX = "/api/v1/incidents";
-const TARGET_TYPES = ["SYSTEM_112", "DDS"];
-const DIFFICULTIES = ["EASY", "NORMAL", "HARD"];
 
 /** @param {string} token */
 export async function getIncidentLibrary(token) {
-    const responses = await Promise.all(
-        TARGET_TYPES.flatMap((targetType) => DIFFICULTIES.map((difficulty) =>
-            findAvailableIncidents(targetType, difficulty, token)))
-    );
-    if (responses.some((response) => !response.ok)) {
-        throw new Error("Не удалось загрузить сценарии");
-    }
-    const incidents = (await Promise.all(responses.map((response) => response.json()))).flat();
-    return [...new Map(incidents.map((incident) => [incident.id, incident])).values()];
+    const response = await findAvailableIncidents(null, null, token);
+    if (!response.ok) throw new Error("Не удалось загрузить сценарии");
+    return response.json();
 }
 
 /** @param {string} id @param {string} token */

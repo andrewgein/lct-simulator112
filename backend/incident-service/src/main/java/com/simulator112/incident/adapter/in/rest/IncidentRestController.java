@@ -43,8 +43,8 @@ public class IncidentRestController {
 
     @GetMapping
     public List<Incident> findAvailable(
-            @RequestParam IncidentTargetType targetType,
-            @RequestParam Difficulty difficulty) {
+            @RequestParam(required = false) IncidentTargetType targetType,
+            @RequestParam(required = false) Difficulty difficulty) {
         return findAvailableIncidents.findAvailableIncidents(targetType, difficulty);
     }
 }
