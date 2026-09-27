@@ -124,6 +124,7 @@ class ChatNode(UserDialogProcessingNode):
                 if chunk:
                     logger.info("New LLM response chunk: " + str(chunk))
                     self._append_to_buffer(chunk)
+            self._flush_pending()
             self.on_new_phrase(self._processed_response())
         except asyncio.CancelledError:
             logger.info("LLM was interrupted by user")
@@ -146,6 +147,12 @@ class ChatNode(UserDialogProcessingNode):
         self.output_queue.put(sentence)
         self.completed_sentences.append(sentence)
         self.response_buffer = []
+
+    def _flush_pending(self):
+        if self.pending_text.strip():
+            self.response_buffer.append(self.pending_text)
+            self.pending_text = ""
+            self._flush_buffer()
 
     def _append_to_buffer(self, text):
         ext = self.pending_text + text
