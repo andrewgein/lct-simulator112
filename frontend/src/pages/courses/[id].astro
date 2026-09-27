@@ -110,9 +110,12 @@ if (activeAssignmentCurrent) {
       {selectedMaterial && (
         <div class="material-view wa-stack wa-gap-m">
           <div class="content-heading wa-stack wa-gap-m">
-            <div class="wa-stack wa-gap-2xs">
-              <span class="wa-caption-s">Вводный материал</span>
-              <h2>{selectedMaterial.title || selectedMaterial.fileName}</h2>
+            <div class="wa-split wa-align-items-start wa-gap-m">
+              <div class="wa-stack wa-gap-2xs">
+                <span class="wa-caption-s">Вводный материал</span>
+                <h2>{selectedMaterial.title || selectedMaterial.fileName}</h2>
+              </div>
+              {selectedMaterial.downloadUrl && <wa-button href={selectedMaterial.downloadUrl} download={selectedMaterial.fileName} appearance="outlined" with-start><wa-icon slot="start" name="download"></wa-icon>Скачать</wa-button>}
             </div>
             <wa-divider></wa-divider>
           </div>
