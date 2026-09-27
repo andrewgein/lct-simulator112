@@ -11,7 +11,7 @@ const styles = `
 .incident-list-heading h2 { margin: 0; font-size: var(--wa-font-size-xl); }
 .incident-list-heading span { color: var(--wa-color-neutral-80); font-size: var(--wa-font-size-s); }
 .data-grid.cards-grid { border: 0; border-radius: 0; background: var(--app-dispatch-workspace); --wa-color-surface-border: var(--app-dispatch-border); }
-.cards-table { min-width: 78rem; border-collapse: separate; border-spacing: 0 var(--wa-space-2xs); color: var(--app-dispatch-text); --wa-color-fill-quiet: var(--app-dispatch-row-hover); --wa-color-border-quiet: var(--app-dispatch-border); --wa-color-border-normal: var(--wa-color-neutral-50); }
+.cards-table { min-width: 78rem; border-collapse: separate; border-spacing: 0; color: var(--app-dispatch-text); --wa-color-fill-quiet: var(--app-dispatch-row-hover); --wa-color-border-quiet: var(--app-dispatch-border); --wa-color-border-normal: var(--wa-color-neutral-50); }
 .cards-table thead { background: var(--app-dispatch-workspace); color: var(--wa-color-neutral-90); }
 .cards-table th { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: 0; font-weight: var(--wa-font-weight-semibold); white-space: nowrap; vertical-align: middle; }
 .cards-table td { box-sizing: border-box; max-width: 24rem; padding: var(--wa-space-xs) var(--wa-space-s); overflow: hidden; border-inline-end: var(--wa-border-width-s) solid var(--app-dispatch-border); background: var(--app-dispatch-row-alternate); text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
@@ -34,14 +34,17 @@ const styles = `
 .cards-table .data-grid__cell--address { width: 32%; }
 .cards-table .data-grid__cell--open { width: 4rem; padding-inline: var(--wa-space-xs); text-align: center; }
 .cards-table .data-grid__expanded-row td { max-width: none; padding: 0; border: var(--wa-border-width-s) solid var(--app-dispatch-border); border-block-start: 0; background: var(--app-dispatch-row-alternate); white-space: normal; }
+.cards-table .data-grid__expanded-row:not(:last-child) td { border-block-end: var(--wa-space-2xs) solid var(--app-dispatch-workspace); }
 .cards-table .data-grid__expanded-row:hover td { background: var(--app-dispatch-row-alternate); }
-.incident-description { display: flex; gap: var(--wa-space-m); padding: var(--wa-space-xs) var(--wa-space-s); overflow-wrap: anywhere; }
-.incident-description > span { flex: 0 0 6rem; color: var(--app-dispatch-text-muted); font-size: var(--wa-font-size-s); }
+.incident-description { display: grid; grid-template-columns: 7rem minmax(0, 1fr); align-items: baseline; gap: var(--wa-space-s); padding: var(--wa-space-xs) var(--wa-space-m); overflow-wrap: anywhere; }
+.incident-description > span { color: var(--app-dispatch-text-muted); }
 .incident-description > p { margin: 0; }
 .incident-row-details { display: grid; border-block-start: var(--wa-border-width-s) solid var(--app-dispatch-border); }
-.incident-row-details > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--wa-space-s); min-width: 0; padding: var(--wa-space-xs) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--app-dispatch-border); }
+.incident-row-details > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); align-items: baseline; gap: var(--wa-space-s); min-width: 0; padding: var(--wa-space-xs) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--app-dispatch-border); }
 .incident-row-details > div:last-child { border-block-end: 0; }
-.incident-row-details span { flex: 0 0 auto; color: var(--app-dispatch-text-muted); }
+.incident-detail-label, .incident-detail-content span { color: var(--app-dispatch-text-muted); }
+.incident-detail-content { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--wa-space-xs) var(--wa-space-s); min-width: 0; }
+.incident-detail-created { margin-inline-start: auto; }
 .incident-row-details strong { overflow-wrap: anywhere; }
 .incident-row-information strong { font-weight: var(--wa-font-weight-normal); }
 @media (max-width: 40rem) { .active-cards { padding: var(--wa-space-xs); } .cards-grid { margin-inline: calc(-1 * var(--wa-space-xs)); } }
@@ -71,6 +74,8 @@ function createRow(card, kind, relationCount, classifierState, getCardMeta) {
   const description = card.applicant?.additionalInfo?.trim() || "Описание не указано";
   const timestamp = meta.receivedAt ?? (getCardMeta ? null : card.createdAt);
   const date = timestamp ? new Date(timestamp) : null;
+  const createdAt = card.createdAt ? new Date(card.createdAt) : null;
+  const createdAtLabel = createdAt && !Number.isNaN(createdAt.getTime()) ? `${dateFormatter.format(createdAt)} ${timeFormatter.format(createdAt)}` : "—";
   return {
     id: card.cardId,
     card,
@@ -82,9 +87,9 @@ function createRow(card, kind, relationCount, classifierState, getCardMeta) {
     incident: incidents.map((item) => item.finalName).join(" · ") || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
     applicant: applicantName(card),
     description,
+    createdAtLabel,
     applicantPhone: card.applicant?.phone || "Не указан",
     applicantContactPhone: card.applicant?.contactPhone || "Не указан",
-    applicantOnScenePhone: card.applicant?.onScenePhone || "Не указан",
     victimCount: card.victimCount,
     victimSummary,
     address: cardAddress(card),
@@ -148,7 +153,7 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
             <h2 id="active-cards-heading">{heading}</h2>
             <span>{rows.length} {rows.length === 1 ? "карточка" : "карточек"}</span>
           </div>
-          <DataGrid data={rows} columns={columns} label={heading} pageSize={Math.max(rows.length, 1)} searchable={false} searchValue={searchQuery} className="cards-grid" tableClassName="cards-table" onRowClick={(row) => onOpen(row.card)} getRowClassName={(row) => row.rowClassName} renderExpandedRow={(row) => <div><div class="incident-description"><span>Описание:</span><p>{row.description}</p></div>{expandedDetails.has(row.id) && <div class="incident-row-details"><div><span>Службы:</span><strong>{row.services}</strong></div><div><span>Заявитель:</span><strong>{row.applicant}</strong><span>АОН: {row.applicantPhone}</span><span>Предоставленный: {row.applicantContactPhone}</span><span>На место: {row.applicantOnScenePhone}</span></div><div><span>Пострадавшие:</span><strong>{row.victimSummary}</strong></div><div class="incident-row-information"><span>Признаки происшествия:</span><strong>{row.additionalInfo}</strong></div><div><span>Карточка:</span><strong>{row.kindLabel} · {row.status}</strong></div></div>}</div>} />
+          <DataGrid data={rows} columns={columns} label={heading} pageSize={Math.max(rows.length, 1)} searchable={false} searchValue={searchQuery} className="cards-grid" tableClassName="cards-table" onRowClick={(row) => onOpen(row.card)} getRowClassName={(row) => row.rowClassName} renderExpandedRow={(row) => <div><div class="incident-description"><span>Описание:</span><p>{row.description}</p></div>{expandedDetails.has(row.id) && <div class="incident-row-details"><div><span class="incident-detail-label">Службы:</span><div class="incident-detail-content"><strong>{row.services}</strong></div></div><div><span class="incident-detail-label">Заявитель:</span><div class="incident-detail-content"><strong>{row.applicant}</strong><span>АОН:</span><strong>{row.applicantPhone}</strong><span>Предоставленный телефон:</span><strong>{row.applicantContactPhone}</strong><span class="incident-detail-created">Создание:</span><strong>{row.createdAtLabel}</strong></div></div><div class="incident-row-information"><span class="incident-detail-label">Информация:</span><div class="incident-detail-content"><strong>{row.additionalInfo} · Пострадавшие: {row.victimSummary}</strong></div></div><div><span class="incident-detail-label">Отработки:</span><div class="incident-detail-content"><strong>{row.kindLabel} · {row.status}</strong></div></div></div>}</div>} />
         </>
       )}
     </section>
