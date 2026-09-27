@@ -5,6 +5,7 @@ import MainHeader from "../../layouts/MainHeader.astro";
 import { getUserReviews, getMyStatistics } from "../../features/review/api/ReviewApi";
 import { getMyEnrollments } from "../../features/course/api/EnrollmentApi";
 import { getCourse } from "../../features/course/api/CourseApi";
+import { DifficultyOptions } from "../../features/incident/contract/Difficulty";
 
 export const prerender = false;
 let error = null;
@@ -41,6 +42,17 @@ const completedAssignmentIds = new Set(reviews
   .map((review) => String(review.assignmentId)));
 const done = assignments.filter(([assignmentId]) => completedAssignmentIds.has(assignmentId)).length;
 const overallProgress = assignments.length ? Math.round(done / assignments.length * 100) : 0;
+const difficultyColors = {
+  EASY: "var(--wa-color-success-fill-loud)",
+  NORMAL: "var(--wa-color-warning-fill-loud)",
+  HARD: "var(--wa-color-danger-fill-loud)"
+};
+const difficultyProgress = DifficultyOptions.map(({ value, label }) => {
+  const difficultyAssignments = assignments.filter(([, assignment]) => assignment.difficulty === value);
+  const completed = difficultyAssignments.filter(([assignmentId]) => completedAssignmentIds.has(assignmentId)).length;
+  const total = difficultyAssignments.length;
+  return { difficulty: value, label, completed, total, percentage: total ? Math.round(completed / total * 100) : 0 };
+});
 const reviewDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 const reviewResults = reviews.map((review) => {
   const criteria = review.criterionResults || [];
@@ -63,9 +75,18 @@ const reviewResults = reviews.map((review) => {
           </div>
         </div>
         <wa-divider></wa-divider>
-        <div class="wa-cluster wa-gap-l">
-          <wa-progress-ring value={overallProgress} label={`Завершено ${done} из ${assignments.length} заданий`}>{overallProgress}%</wa-progress-ring>
-          <div class="wa-stack wa-gap-xs"><strong>Прогресс по курсам</strong><span>Завершено заданий: {done} / {assignments.length}</span></div>
+        <div class="wa-flank wa-gap-xl">
+          <div class="wa-cluster wa-gap-l">
+            <wa-progress-ring value={overallProgress} label={`Завершено ${done} из ${assignments.length} заданий`}>{overallProgress}%</wa-progress-ring>
+            <div class="wa-stack wa-gap-xs"><strong>Прогресс по курсам</strong><span>Завершено заданий: {done} / {assignments.length}</span></div>
+          </div>
+          <div class="wa-stack wa-gap-m">
+            <strong>Прогресс по сложности</strong>
+            {difficultyProgress.map((progress) => <div class="wa-stack wa-gap-xs">
+              <div class="wa-split"><span>{progress.label}</span><strong>{progress.completed} / {progress.total}</strong></div>
+              <wa-progress-bar value={progress.percentage} label={`${progress.label}: завершено ${progress.completed} / ${progress.total}`} style={`--indicator-color: ${difficultyColors[progress.difficulty]};`}></wa-progress-bar>
+            </div>)}
+          </div>
         </div>
       </div>
     </wa-card>
