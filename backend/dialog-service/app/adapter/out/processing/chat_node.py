@@ -1,12 +1,8 @@
 from os import getenv
 import threading
-import time
 import regex
-from enum import Enum
-from openai import OpenAI
 import logging
 import asyncio
-from num2words import num2words
 
 from app.domain.model import CallScenario, CounterpartyType, DialogTranscript, Speaker
 from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, build_call_scenario
@@ -15,20 +11,11 @@ from .processing_node import UserDialogProcessingNode
 
 logger = logging.getLogger()
 
-DELIMITERS_SEARCH_PATTERN = r'([.!?]+)'
+DELIMITERS_SEARCH_PATTERN = r'([!?]+|(?<!\d)\.+|\.(?!\d))'
 
 
 def _preprocess_text(text: str) -> str:
-    def replace_time(match) -> str:
-        hours = num2words(int(match.group(1)), lang="ru")
-        minutes = num2words(int(match.group(2)), lang="ru")
-        return f"{hours} {minutes}"
-    def replace_numbers(match) -> str:
-        number = num2words(int(match.group(0)), lang="ru")
-        return number
-
-    text = regex.sub(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", replace_time, text)
-    text = regex.sub(r"\d+", replace_numbers, text)
+    # Keep digits and context until TTSTextPreprocessor, immediately before stress.
     text = regex.sub(r'[\u2010-\u2015\u2212]', '-', text)
 
     return text
@@ -47,9 +34,6 @@ class ChatNode(UserDialogProcessingNode):
         self.partial_response = ""
 
         self.worker = None
-        self.loop = asyncio.new_event_loop()
-        self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
-        self.loop_thread.start()
 
         default_prompt = (BRIGADE_SYSTEM_PROMPT
                           if context.counterparty == CounterpartyType.BRIGADE
@@ -64,6 +48,10 @@ class ChatNode(UserDialogProcessingNode):
                 {"role": roles[phrase.speaker], "content": phrase.text}
                 for phrase in history.phrases
             ][-10:]
+        self.loop = asyncio.new_event_loop()
+        self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
+        self._shutdown_lock = threading.Lock()
+        self.loop_thread.start()
 
 
     def _run_event_loop(self):
@@ -93,19 +81,29 @@ class ChatNode(UserDialogProcessingNode):
         old_worker = self.worker
         if old_worker is not None and not old_worker.done():
             old_worker.cancel()
-            already_generated_response_buffer = await old_worker
-            complted_sentences = self._get_complete_sentences(already_generated_response_buffer)
-            # TODO: if no sentence is generated -> Охлади свое траханье!
-            return asyncio.create_task(self._llm_worker(new_user_text, old_user_text, complted_sentences))
+            emitted_response = await old_worker
+            return asyncio.create_task(self._llm_worker(new_user_text, old_user_text, emitted_response))
         return asyncio.create_task(self._llm_worker(new_user_text))
 
-    def _get_complete_sentences(self, text: str) -> str:
-        delimiter_pos = [d.start() for d in regex.finditer(DELIMITERS_SEARCH_PATTERN, text)]
-        if not delimiter_pos:
-            return ""
+    async def _shutdown(self):
+        if self.worker is not None:
+            if not self.worker.done():
+                self.worker.cancel()
+            await asyncio.gather(self.worker, return_exceptions=True)
+        await self.model.close()
+        await self.loop.shutdown_asyncgens()
 
-        last_delimiter_pos = delimiter_pos[-1]
-        return text[:last_delimiter_pos + 1]
+    def stop(self, *, drain=False):
+        with self._shutdown_lock:
+            super().stop(drain=drain)
+            if self.loop.is_closed():
+                return
+            try:
+                asyncio.run_coroutine_threadsafe(self._shutdown(), self.loop).result()
+            finally:
+                self.loop.call_soon_threadsafe(self.loop.stop)
+                self.loop_thread.join()
+                self.loop.close()
 
 
     async def _llm_worker(self,
@@ -125,12 +123,22 @@ class ChatNode(UserDialogProcessingNode):
                     logger.info("New LLM response chunk: " + str(chunk))
                     self._append_to_buffer(chunk)
             self._flush_pending()
-            self.on_new_phrase(self._processed_response())
         except asyncio.CancelledError:
             logger.info("LLM was interrupted by user")
-            if generator is not None:
-                await generator.aclose()
-            return self._processed_response()
+            # Only sentences actually submitted to TTS belong to the transcript
+            # and regeneration history. The pending tail may be half a decimal.
+            return "".join(self.completed_sentences)
+        except Exception:
+            logger.exception("LLM generation failed")
+            return "".join(self.completed_sentences)
+        finally:
+            try:
+                if generator is not None:
+                    await generator.aclose()
+            finally:
+                emitted = "".join(self.completed_sentences)
+                if emitted.strip():
+                    self.on_new_phrase(emitted)
 
     def _reset_buffers(self):
         self.response_buffer = []
@@ -158,15 +166,19 @@ class ChatNode(UserDialogProcessingNode):
         ext = self.pending_text + text
         self.pending_text = ""
 
-        parts = regex.split(DELIMITERS_SEARCH_PATTERN, ext)
-
-        for i in range(0, len(parts) - 1, 2):
-            full_sentence = parts[i] + parts[i+1]
+        start = 0
+        for delimiter in regex.finditer(DELIMITERS_SEARCH_PATTERN, ext):
+            # A trailing dot after a digit may belong to a decimal in the next chunk.
+            if (delimiter.group() == "." and delimiter.end() == len(ext)
+                    and delimiter.start() > 0 and ext[delimiter.start() - 1].isdigit()):
+                break
+            full_sentence = ext[start:delimiter.end()]
+            start = delimiter.end()
 
             if full_sentence.strip():
                 self.response_buffer.append(full_sentence)
                 self._flush_buffer()
 
-        leftover = parts[-1]
+        leftover = ext[start:]
         if leftover:
             self.pending_text = leftover

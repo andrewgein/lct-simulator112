@@ -135,16 +135,16 @@ async def dialog_session(ws: WebSocket):
     push_task = asyncio.create_task(_push_service_load(ws, send_lock))
     try:
         async with send_lock:
-            await ws.send_json(handle_progress_request(context_id))
+            await ws.send_json(await asyncio.to_thread(handle_progress_request, context_id))
         while True:
             request = await ws.receive_json()
             request_type = request.get("type")
 
             match request_type:
                 case "request_status":
-                    response = handle_progress_request(context_id)
+                    response = await asyncio.to_thread(handle_progress_request, context_id)
                 case "request_next_call":
-                    response = handle_next_call(context_id)
+                    response = await asyncio.to_thread(handle_next_call, context_id)
                 case _:
                     response = handle_error("Unknown session command")
             async with send_lock:
@@ -157,56 +157,38 @@ async def dialog_session(ws: WebSocket):
         try:
             async with send_lock:
                 await ws.send_json(handle_error(str(exc)))
-        except WebSocketDisconnect:
+        except (WebSocketDisconnect, RuntimeError):
             pass
     finally:
         push_task.cancel()
-        with suppress(asyncio.CancelledError):
+        with suppress(asyncio.CancelledError, WebSocketDisconnect, RuntimeError):
             await push_task
 
 
 @router.websocket("/api/v1/dialog/process-call")
 async def process_call(ws: WebSocket):
     await ws.accept()
-    logger.info("New call connection")
     context_id = ws.query_params.get("contextId")
-    if context_id is None or not is_valid_context_id(context_id):
-        logger.warning("Call connection rejected: no valid contextId provided")
+    if not is_valid_context_id(context_id):
         await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No contextId provided")
         return
 
-    logger.info("Call contextId: %s", context_id)
     restart = ws.query_params.get("restart", "").lower() == "true"
     processing_context = None
+    call_recorder = None
+    call_id = None
+    completion_requested = False
     dialog_context_builder = DialogContextBuilder()
-    completed = False
-    progress = dialog_use_case().session(context_id).progress
-    if not is_call_active(progress) or not progress.active_call_id:
-        logger.info("Closing process-call for %s: no active call", context_id)
-        await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No active call")
-        return
-    call_id = progress.active_call_id
-    history = None
-    if restart:
-        call = dialog_use_case().restart_call(context_id)
-    else:
-        call = dialog_use_case().resume_call(context_id)
-        if was_call_disconnected(progress):
-            history = dialog_use_case().transcript_for_resume(context_id, call_id)
-    call_recorder = call_recorder_factory().create(context_id, call_id)
-
     loop = asyncio.get_running_loop()
     client_disconnected = threading.Event()
 
     async def send_audio_chunk(audio_chunk: bytes):
-        if client_disconnected.is_set():
-            return
         try:
             for offset in range(0, len(audio_chunk), MAX_AUDIO_FRAME_BYTES):
+                if client_disconnected.is_set():
+                    return
                 await ws.send_bytes(audio_chunk[offset:offset + MAX_AUDIO_FRAME_BYTES])
         except (WebSocketDisconnect, RuntimeError):
-            # The proxy/client can close while TTS is still producing audio. Stop forwarding
-            # immediately; pipeline cleanup below will stop the worker threads.
             client_disconnected.set()
 
     def output_callback(pcm: bytes) -> None:
@@ -214,53 +196,75 @@ async def process_call(ws: WebSocket):
             call_recorder.record_counterparty(pcm)
             asyncio.run_coroutine_threadsafe(send_audio_chunk(pcm), loop).result()
 
-    processing_context = voice_pipeline_factory().create(
-        call=call,
-        on_operator_phrase=dialog_context_builder.append_user_phrase,
-        on_counterparty_phrase=dialog_context_builder.append_llm_phrase,
-        on_audio=output_callback,
-        history=history,
-    )
-
     try:
+        session = await asyncio.to_thread(dialog_use_case().session, context_id)
+        progress = session.progress
+        if not is_call_active(progress) or not progress.active_call_id:
+            await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No active call")
+            return
+        call_id = progress.active_call_id
+        history = None
+        if restart:
+            call = await asyncio.to_thread(dialog_use_case().restart_call, context_id)
+        else:
+            call = await asyncio.to_thread(dialog_use_case().resume_call, context_id)
+            if was_call_disconnected(progress):
+                history = await asyncio.to_thread(
+                    dialog_use_case().transcript_for_resume, context_id, call_id)
+        call_recorder = await asyncio.to_thread(call_recorder_factory().create, context_id, call_id)
+        # Retain ownership if the handler is cancelled during construction, so
+        # the factory's newly started workers are still closed by finally.
+        creation = asyncio.create_task(asyncio.to_thread(
+            voice_pipeline_factory().create,
+            call=call,
+            on_operator_phrase=dialog_context_builder.append_user_phrase,
+            on_counterparty_phrase=dialog_context_builder.append_llm_phrase,
+            on_audio=output_callback,
+            history=history,
+        ))
+        try:
+            processing_context = await asyncio.shield(creation)
+        except asyncio.CancelledError:
+            processing_context = await creation
+            raise
+
         while True:
             message = await ws.receive()
             if message.get("type") == "websocket.disconnect":
-                client_disconnected.set()
-                logger.info("Process-call disconnected by client for %s", context_id)
                 break
-
-            if "text" in message:
-                text_data: str = message["text"]
-                if text_data == "end_call":
-                    logger.info(
-                        "Closing process-call for %s (call %s): end_call received",
-                        context_id,
-                        call_id,
-                    )
-                    transcript = dialog_context_builder.get()
-                    dialog_use_case().complete(context_id, call_id, transcript)
-                    completed = True
-                    logger.info("Process-call completed and persisted for %s", context_id)
-                    await ws.close(code=status.WS_1000_NORMAL_CLOSURE)
-                    return
-                processing_context.process_text(text_data)
-
-            elif "bytes" in message:
+            if message.get("text") is not None:
+                if message["text"] == "end_call":
+                    completion_requested = True
+                    break
+                processing_context.process_text(message["text"])
+            elif message.get("bytes") is not None:
                 call_recorder.record_operator(message["bytes"])
                 processing_context.process_audio(message["bytes"])
+    except WebSocketDisconnect:
+        pass
     finally:
         client_disconnected.set()
-        logger.info("Stopping process-call pipeline for %s", context_id)
-        await asyncio.to_thread(processing_context.close)
         try:
-            await asyncio.to_thread(call_recorder.close)
-        except Exception:
-            logger.exception("Could not save call recording for %s (call %s)", context_id, call_id)
-        if not completed:
+            if processing_context is not None:
+                await asyncio.to_thread(processing_context.close)
+        finally:
             try:
-                dialog_use_case().disconnect(context_id, call_id, dialog_context_builder.get())
-                logger.info("Disconnected process-call persisted for %s", context_id)
+                if call_recorder is not None:
+                    await asyncio.to_thread(call_recorder.close)
             except Exception:
-                logger.exception("Could not persist disconnected call %s", context_id)
-        logger.info("Process-call cleanup finished for %s", context_id)
+                logger.exception("Could not save call recording for %s (call %s)", context_id, call_id)
+            finally:
+                if call_id is not None:
+                    # No worker can append a phrase after this snapshot.
+                    transcript = dialog_context_builder.get()
+                    persist = dialog_use_case().complete if completion_requested else dialog_use_case().disconnect
+                    try:
+                        await asyncio.to_thread(persist, context_id, call_id, transcript)
+                    except Exception:
+                        logger.exception("Could not persist call %s", call_id)
+                        with suppress(WebSocketDisconnect, RuntimeError):
+                            await ws.close(code=status.WS_1011_INTERNAL_ERROR)
+                        raise
+                if completion_requested:
+                    with suppress(WebSocketDisconnect, RuntimeError):
+                        await ws.close(code=status.WS_1000_NORMAL_CLOSURE)

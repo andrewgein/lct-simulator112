@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -22,7 +23,7 @@ configure(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing TTS model")
-    application_components.voice_pipeline.warm_up()
+    await asyncio.to_thread(application_components.voice_pipeline.warm_up)
     yield
 
 

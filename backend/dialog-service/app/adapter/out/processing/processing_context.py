@@ -1,4 +1,6 @@
 import queue
+import threading
+import logging
 
 from .processing_node import UserDialogProcessingNode
 
@@ -6,6 +8,8 @@ from .processing_node import UserDialogProcessingNode
 class UserDialogProcessingContext:
     def __init__(self):
         self.node_list = []
+        self._closed = False
+        self._close_lock = threading.Lock()
 
     def get_input_queue(self) -> queue.Queue | None:
         if (len(self.node_list) == 0):
@@ -26,13 +30,19 @@ class UserDialogProcessingContext:
         return self
 
     def process(self, data):
-        input_queue = self.get_input_queue()
-        if input_queue is not None:
-            input_queue.put(data)
+        with self._close_lock:
+            input_queue = self.get_input_queue()
+            if not self._closed and input_queue is not None:
+                input_queue.put(data)
 
     def close(self):
-        for node in self.node_list:
-            node.stop()
-        output_queue = self.get_output_queue()
-        if output_queue is not None:
-            output_queue.join()
+        with self._close_lock:
+            if self._closed:
+                return
+            self._closed = True
+            # Stop upstream first so no producer survives its downstream consumer.
+            for node in self.node_list:
+                try:
+                    node.stop()
+                except Exception:
+                    logging.getLogger(__name__).exception("Could not stop pipeline node")

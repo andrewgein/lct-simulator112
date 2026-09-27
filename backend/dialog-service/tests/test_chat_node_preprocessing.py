@@ -34,21 +34,36 @@ class ChatNodePreprocessingTests(unittest.IsolatedAsyncioTestCase):
     async def test_number_split_across_chunks(self):
         with patch("app.adapter.out.processing.chat_node._preprocess_text", wraps=_preprocess_text) as preprocess:
             sentences, phrases = await self._run_chunks(["Нужно ", "1", "2", " человек."])
-        self.assertEqual(sentences, ["Нужно двенадцать человек."])
-        self.assertEqual(phrases, ["Нужно двенадцать человек."])
+        self.assertEqual(sentences, ["Нужно 12 человек."])
+        self.assertEqual(phrases, ["Нужно 12 человек."])
         self.assertEqual(preprocess.call_count, 1)
 
     async def test_time_split_across_chunks(self):
         sentences, phrases = await self._run_chunks(["Встреча в ", "12:", "30."])
-        self.assertEqual(sentences, ["Встреча в двенадцать тридцать."])
-        self.assertEqual(phrases, ["Встреча в двенадцать тридцать."])
+        self.assertEqual(sentences, ["Встреча в 12:30."])
+        self.assertEqual(phrases, ["Встреча в 12:30."])
 
     async def test_unfinished_sentence_still_reaches_tts(self):
         sentences, phrases = await self._run_chunks(["У нас ", "1", "2"])
-        self.assertEqual(sentences, ["У нас двенадцать"])
-        self.assertEqual(phrases, ["У нас двенадцать"])
+        self.assertEqual(sentences, ["У нас 12"])
+        self.assertEqual(phrases, ["У нас 12"])
 
     async def test_number_split_between_sentences(self):
         sentences, phrases = await self._run_chunks(["Пришёл 1", "2. Затем ", "3", " человека."])
-        self.assertEqual(sentences, ["Пришёл двенадцать.", " Затем три человека."])
-        self.assertEqual(phrases, ["Пришёл двенадцать. Затем три человека."])
+        self.assertEqual(sentences, ["Пришёл 12.", " Затем 3 человека."])
+        self.assertEqual(phrases, ["Пришёл 12. Затем 3 человека."])
+
+    async def test_decimal_split_after_dot(self):
+        sentences, phrases = await self._run_chunks(["Температура 38.", "5. На 3 этаже."])
+        self.assertEqual(sentences, ["Температура 38.5.", " На 3 этаже."])
+        self.assertEqual(phrases, ["Температура 38.5. На 3 этаже."])
+
+    async def test_final_dot_after_number_is_flushed(self):
+        sentences, phrases = await self._run_chunks(["Номер 12."])
+        self.assertEqual(sentences, ["Номер 12."])
+        self.assertEqual(phrases, ["Номер 12."])
+
+    async def test_stream_to_number_normalizer(self):
+        from app.adapter.out.processing.tts_text_preprocessor import normalize_numbers
+        sentences, _ = await self._run_chunks(["На ", "3 этаже 2 маш", "ины."])
+        self.assertEqual([normalize_numbers(s) for s in sentences], ["На третьем этаже две машины."])
