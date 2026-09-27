@@ -21,9 +21,10 @@ const styles = `
 .cards-table tbody .data-grid__row:hover td, .cards-table tbody .data-grid__row:focus-visible td { filter: brightness(1.12); }
 .cards-table tbody tr:focus-visible { outline: var(--wa-focus-ring-width) var(--wa-focus-ring-style) var(--wa-color-focus); outline-offset: calc(-1 * var(--wa-focus-ring-width)); }
 .cards-table .data-grid__heading:first-child, .cards-table .data-grid__cell--details { width: 3rem; padding-inline: var(--wa-space-xs); text-align: center; }
-.cards-table .data-grid__cell--relation { width: 6rem; color: var(--app-dispatch-text-secondary); }
-.card-relation-indent { display: inline-flex; align-items: center; gap: var(--wa-space-xs); padding-inline-start: calc(var(--card-depth) * var(--wa-space-l)); }
-.card-collapse, .card-details-toggle { --wa-color-fill-quiet: transparent; --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
+.cards-table .data-grid__cell--relation { width: 6rem; color: var(--app-dispatch-text-secondary); text-align: center; }
+.cards-table .data-grid__cell--relation:has(.card-relation-linked) { background: var(--app-dispatch-relation); color: var(--app-dispatch-text); }
+.card-relation-linked { display: inline-flex; align-items: center; justify-content: center; }
+.card-details-toggle { --wa-color-fill-quiet: transparent; --wa-color-neutral-on-quiet: var(--app-dispatch-text); --wa-color-neutral-on-normal: var(--wa-color-neutral-on-loud); }
 .cards-table .data-grid__cell--id { width: 9rem; color: var(--app-dispatch-text-secondary); }
 .cards-table .data-grid__cell--date, .cards-table .data-grid__cell--time { width: 6rem; }
 .cards-table .data-grid__cell--time { font-weight: var(--wa-font-weight-semibold); }
@@ -57,7 +58,7 @@ function arrangeCards(cards) {
   return roots.map((card) => ({ card, children: childrenByMain.get(card.cardId) || [] }));
 }
 
-function createRow(card, kind, depth, relationCount, expanded, classifierState, getCardMeta) {
+function createRow(card, kind, relationCount, classifierState, getCardMeta) {
   const meta = getCardMeta?.(card) || {};
   const complete = meta.complete ?? cardIsComplete(card, classifierState.classifier);
   const incidents = (card.incidentTypes || []).map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
@@ -76,10 +77,8 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
     timestamp: date && !Number.isNaN(date.getTime()) ? date.getTime() : 0,
     date: date && !Number.isNaN(date.getTime()) ? dateFormatter.format(date) : "—",
     time: date && !Number.isNaN(date.getTime()) ? timeFormatter.format(date) : "—",
-    depth,
     kind,
     relationCount,
-    expanded,
     incident: incidents.map((item) => item.finalName).join(" · ") || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
     applicant: applicantName(card),
     description,
@@ -98,25 +97,18 @@ function createRow(card, kind, depth, relationCount, expanded, classifierState, 
   };
 }
 
-function flattenBranches(branches, collapsed, classifierState, getCardMeta) {
+function flattenBranches(branches, classifierState, getCardMeta) {
   const rows = [];
   branches.forEach((branch) => {
-    const expanded = !collapsed.has(branch.card.cardId);
-    rows.push(createRow(branch.card, "primary", 0, branch.children.length, expanded, classifierState, getCardMeta));
-    if (expanded) branch.children.forEach((card) => rows.push(createRow(card, "child", 1, 0, false, classifierState, getCardMeta)));
+    rows.push(createRow(branch.card, "primary", branch.children.length, classifierState, getCardMeta));
+    branch.children.forEach((card) => rows.push(createRow(card, "child", 0, classifierState, getCardMeta)));
   });
   return rows;
 }
 
 export default function ActiveCards({ cards, loading, error, classifierState, searchQuery = "", onOpen, getCardMeta, heading = "Список происшествий", emptyMessage = "Активных карточек пока нет", statusLabel = "Заполнение" }) {
-  const [collapsed, setCollapsed] = useState(() => new Set());
   const [expandedDetails, setExpandedDetails] = useState(() => new Set());
-  const rows = flattenBranches(arrangeCards(cards), collapsed, classifierState, getCardMeta);
-  const toggle = (id) => setCollapsed((current) => {
-    const next = new Set(current);
-    next.has(id) ? next.delete(id) : next.add(id);
-    return next;
-  });
+  const rows = flattenBranches(arrangeCards(cards), classifierState, getCardMeta);
   const toggleDetails = (id) => setExpandedDetails((current) => {
     const next = new Set(current);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -133,18 +125,7 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
       field: "relation",
       label: "Связи",
       sortable: false,
-      render: (row) => (
-        <span class="card-relation-indent" style={{ "--card-depth": row.depth }}>
-          {row.kind !== "primary" && <wa-icon name="link" label={row.kindLabel}></wa-icon>}
-          {row.kind === "primary" && !row.relationCount && <wa-icon name="minus" aria-hidden="true"></wa-icon>}
-          {!!row.relationCount && (
-            <wa-button class="card-collapse" type="button" size="xs" appearance="plain" variant="neutral" aria-expanded={row.expanded} aria-label={`${row.expanded ? "Скрыть" : "Показать"} связанные карточки (${row.relationCount})`} onClick={() => toggle(row.id)}>
-              <wa-icon name={row.expanded ? "chevron-down" : "chevron-right"} aria-hidden="true"></wa-icon>
-              <span>{row.relationCount}</span>
-            </wa-button>
-          )}
-        </span>
-      )
+      render: (row) => row.kind !== "primary" || row.relationCount > 0 ? <span class="card-relation-linked"><wa-icon name="link" label="Есть связанная карточка"></wa-icon></span> : null
     },
     { field: "id", label: "Номер", searchValue: (row) => `${row.id} ${row.applicant} ${row.description}` },
     { field: "date", label: "Дата", sortValue: (row) => row.timestamp },
