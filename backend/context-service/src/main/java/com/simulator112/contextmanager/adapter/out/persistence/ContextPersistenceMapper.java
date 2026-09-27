@@ -33,6 +33,7 @@ final class ContextPersistenceMapper {
         TrainingContext target = new TrainingContext();
         target.setId(source.getUuid()); target.setAssignmentId(source.getAssignmentId());
         target.setLevelTitle(source.getLevelTitle());
+        target.setThreshold3(source.getThreshold3()); target.setThreshold4(source.getThreshold4()); target.setThreshold5(source.getThreshold5());
         target.setTargetType(source.getTargetType()); target.setDifficulty(source.getDifficulty());
         target.setExecutionMode(source.getExecutionMode()); target.setUserId(source.getUserId());
         target.setStatus(source.getStatus()); target.setActiveCallId(source.getActiveCallId());
@@ -41,7 +42,7 @@ final class ContextPersistenceMapper {
         target.setSolutionCards(source.getSolutionContexts().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         if (source.getDialogContext() != null) {
             target.setDialog(new DialogTranscript(source.getDialogContext().getTranscript().stream()
-                    .map(value -> new Phrase(value.getSpeaker(), value.getText())).toList()));
+                    .map(value -> new Phrase(value.getSpeaker(), value.getText(), value.getCallId())).toList()));
         }
         return target;
     }
@@ -50,6 +51,7 @@ final class ContextPersistenceMapper {
         Context target = new Context();
         target.setUuid(source.getId()); target.setAssignmentId(source.getAssignmentId());
         target.setLevelTitle(source.getLevelTitle());
+        target.setThreshold3(source.getThreshold3()); target.setThreshold4(source.getThreshold4()); target.setThreshold5(source.getThreshold5());
         target.setTargetType(source.getTargetType()); target.setDifficulty(source.getDifficulty());
         target.setExecutionMode(source.getExecutionMode()); target.setUserId(source.getUserId());
         target.setStatus(source.getStatus()); target.setActiveCallId(source.getActiveCallId()); target.setDialogStatus(source.getDialogStatus());
@@ -59,7 +61,7 @@ final class ContextPersistenceMapper {
             DialogContextEntity dialog = new DialogContextEntity();
             dialog.setContextId(source.getId());
             dialog.setTranscript(source.getDialog().phrases().stream()
-                    .map(value -> new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Phrase(value.speaker(), value.text()))
+                    .map(value -> new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Phrase(value.speaker(), value.text(), value.callId()))
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
             target.attachDialogContext(dialog);
         }

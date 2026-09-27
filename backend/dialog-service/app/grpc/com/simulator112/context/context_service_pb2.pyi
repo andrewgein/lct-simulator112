@@ -216,7 +216,7 @@ class SolutionContext(_message.Message):
     def __init__(self, applicant: _Optional[_Union[PersonInfo, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ..., incident_types: _Optional[_Iterable[str]] = ..., call_id: _Optional[str] = ..., main_card_id: _Optional[str] = ..., revision_id: _Optional[str] = ..., card_id: _Optional[str] = ..., previous_revision_id: _Optional[str] = ..., version: _Optional[int] = ..., created_at: _Optional[str] = ..., additional_info_provided: _Optional[bool] = ..., services: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class AssignmentContext(_message.Message):
-    __slots__ = ("assignment_id", "user_id", "title", "target_type", "difficulty", "execution_mode", "incidents")
+    __slots__ = ("assignment_id", "user_id", "title", "target_type", "difficulty", "execution_mode", "incidents", "threshold_3", "threshold_4", "threshold_5")
     ASSIGNMENT_ID_FIELD_NUMBER: _ClassVar[int]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     TITLE_FIELD_NUMBER: _ClassVar[int]
@@ -224,6 +224,9 @@ class AssignmentContext(_message.Message):
     DIFFICULTY_FIELD_NUMBER: _ClassVar[int]
     EXECUTION_MODE_FIELD_NUMBER: _ClassVar[int]
     INCIDENTS_FIELD_NUMBER: _ClassVar[int]
+    THRESHOLD_3_FIELD_NUMBER: _ClassVar[int]
+    THRESHOLD_4_FIELD_NUMBER: _ClassVar[int]
+    THRESHOLD_5_FIELD_NUMBER: _ClassVar[int]
     assignment_id: str
     user_id: str
     title: str
@@ -231,10 +234,13 @@ class AssignmentContext(_message.Message):
     difficulty: _incident_context_pb2.Difficulty
     execution_mode: _incident_context_pb2.ExecutionMode
     incidents: _containers.RepeatedCompositeFieldContainer[_incident_context_pb2.IncidentContext]
-    def __init__(self, assignment_id: _Optional[str] = ..., user_id: _Optional[str] = ..., title: _Optional[str] = ..., target_type: _Optional[_Union[_incident_context_pb2.IncidentTargetType, str]] = ..., difficulty: _Optional[_Union[_incident_context_pb2.Difficulty, str]] = ..., execution_mode: _Optional[_Union[_incident_context_pb2.ExecutionMode, str]] = ..., incidents: _Optional[_Iterable[_Union[_incident_context_pb2.IncidentContext, _Mapping]]] = ...) -> None: ...
+    threshold_3: int
+    threshold_4: int
+    threshold_5: int
+    def __init__(self, assignment_id: _Optional[str] = ..., user_id: _Optional[str] = ..., title: _Optional[str] = ..., target_type: _Optional[_Union[_incident_context_pb2.IncidentTargetType, str]] = ..., difficulty: _Optional[_Union[_incident_context_pb2.Difficulty, str]] = ..., execution_mode: _Optional[_Union[_incident_context_pb2.ExecutionMode, str]] = ..., incidents: _Optional[_Iterable[_Union[_incident_context_pb2.IncidentContext, _Mapping]]] = ..., threshold_3: _Optional[int] = ..., threshold_4: _Optional[int] = ..., threshold_5: _Optional[int] = ...) -> None: ...
 
 class FullContext(_message.Message):
-    __slots__ = ("uuid", "user_id", "incident_context", "dialog_context", "solution_context", "assignment_context", "solution_context_revisions", "level_progress")
+    __slots__ = ("uuid", "user_id", "incident_context", "dialog_context", "solution_context", "assignment_context", "solution_context_revisions", "level_progress", "started_at", "submitted_at")
     UUID_FIELD_NUMBER: _ClassVar[int]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     INCIDENT_CONTEXT_FIELD_NUMBER: _ClassVar[int]
@@ -243,6 +249,8 @@ class FullContext(_message.Message):
     ASSIGNMENT_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     SOLUTION_CONTEXT_REVISIONS_FIELD_NUMBER: _ClassVar[int]
     LEVEL_PROGRESS_FIELD_NUMBER: _ClassVar[int]
+    STARTED_AT_FIELD_NUMBER: _ClassVar[int]
+    SUBMITTED_AT_FIELD_NUMBER: _ClassVar[int]
     uuid: str
     user_id: str
     incident_context: _incident_context_pb2.IncidentContext
@@ -251,7 +259,9 @@ class FullContext(_message.Message):
     assignment_context: AssignmentContext
     solution_context_revisions: _containers.RepeatedCompositeFieldContainer[SolutionContext]
     level_progress: LevelProgress
-    def __init__(self, uuid: _Optional[str] = ..., user_id: _Optional[str] = ..., incident_context: _Optional[_Union[_incident_context_pb2.IncidentContext, _Mapping]] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ..., solution_context: _Optional[_Union[SolutionContext, _Mapping]] = ..., assignment_context: _Optional[_Union[AssignmentContext, _Mapping]] = ..., solution_context_revisions: _Optional[_Iterable[_Union[SolutionContext, _Mapping]]] = ..., level_progress: _Optional[_Union[LevelProgress, _Mapping]] = ...) -> None: ...
+    started_at: str
+    submitted_at: str
+    def __init__(self, uuid: _Optional[str] = ..., user_id: _Optional[str] = ..., incident_context: _Optional[_Union[_incident_context_pb2.IncidentContext, _Mapping]] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ..., solution_context: _Optional[_Union[SolutionContext, _Mapping]] = ..., assignment_context: _Optional[_Union[AssignmentContext, _Mapping]] = ..., solution_context_revisions: _Optional[_Iterable[_Union[SolutionContext, _Mapping]]] = ..., level_progress: _Optional[_Union[LevelProgress, _Mapping]] = ..., started_at: _Optional[str] = ..., submitted_at: _Optional[str] = ...) -> None: ...
 
 class GetIncidentContextRequest(_message.Message):
     __slots__ = ("uuid",)
@@ -260,12 +270,14 @@ class GetIncidentContextRequest(_message.Message):
     def __init__(self, uuid: _Optional[str] = ...) -> None: ...
 
 class AppendDialogContextRequest(_message.Message):
-    __slots__ = ("uuid", "dialog_context")
+    __slots__ = ("uuid", "dialog_context", "call_id")
     UUID_FIELD_NUMBER: _ClassVar[int]
     DIALOG_CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    CALL_ID_FIELD_NUMBER: _ClassVar[int]
     uuid: str
     dialog_context: DialogContext
-    def __init__(self, uuid: _Optional[str] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ...) -> None: ...
+    call_id: str
+    def __init__(self, uuid: _Optional[str] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ..., call_id: _Optional[str] = ...) -> None: ...
 
 class AppendSolutionContextRequest(_message.Message):
     __slots__ = ("uuid", "solution_context")
@@ -320,6 +332,22 @@ class CompleteCallRequest(_message.Message):
     def __init__(self, context_id: _Optional[str] = ..., call_id: _Optional[str] = ...) -> None: ...
 
 class DisconnectCallRequest(_message.Message):
+    __slots__ = ("context_id", "call_id")
+    CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
+    CALL_ID_FIELD_NUMBER: _ClassVar[int]
+    context_id: str
+    call_id: str
+    def __init__(self, context_id: _Optional[str] = ..., call_id: _Optional[str] = ...) -> None: ...
+
+class GetCallTranscriptRequest(_message.Message):
+    __slots__ = ("context_id", "call_id")
+    CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
+    CALL_ID_FIELD_NUMBER: _ClassVar[int]
+    context_id: str
+    call_id: str
+    def __init__(self, context_id: _Optional[str] = ..., call_id: _Optional[str] = ...) -> None: ...
+
+class ClearCallTranscriptRequest(_message.Message):
     __slots__ = ("context_id", "call_id")
     CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
     CALL_ID_FIELD_NUMBER: _ClassVar[int]

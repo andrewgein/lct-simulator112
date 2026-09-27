@@ -36,7 +36,9 @@ class WavCallRecorder:
         self,
         destination: str,
         save: Callable[[bytes], None],
-        operator_sample_rate: int = 44100,
+        # Must match the AudioContext sample rate the frontend captures at
+        # (frontend/src/features/dialog/api/DialogApi.js).
+        operator_sample_rate: int = 16000,
         counterparty_sample_rate: int = 24000,
         output_sample_rate: int = 24000,
     ):

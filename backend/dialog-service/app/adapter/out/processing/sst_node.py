@@ -4,8 +4,9 @@ from .processing_node import UserDialogProcessingNode
 import json
 
 stt_model = Model('./resources/vosk-model-small-ru-0.22')
-# TODO: sample rate may vary
-sample_rate = 44100
+# Must match the AudioContext sample rate the frontend captures at
+# (frontend/src/features/dialog/api/DialogApi.js).
+sample_rate = 16000
 
 logger = logging.getLogger(__name__)
 

@@ -38,6 +38,12 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
   const submit = document.querySelector('[type="submit"][form="course-form"]');
   let saving = false;
   let activeUploads = 0;
+  const controlsReady = Promise.all([
+    customElements.whenDefined('wa-button'),
+    customElements.whenDefined('wa-input'),
+    customElements.whenDefined('wa-select'),
+    customElements.whenDefined('wa-checkbox')
+  ]);
 
   function syncItems(list, label) {
     const items = [...list.children];
@@ -64,6 +70,17 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
     item.querySelector('.assignment-difficulty-summary').textContent = ({ EASY: 'Лёгкая', NORMAL: 'Средняя', HARD: 'Сложная' })[difficulty] || difficulty;
     item.querySelector('.assignment-mode-summary').textContent = executionMode === 'PARALLEL' ? 'Параллельно' : 'Последовательно';
     item.querySelector('.assignment-incidents-summary').textContent = `Сценариев: ${selectedCount}`;
+  }
+
+  function validateThresholds(item) {
+    const controls = ['threshold3', 'threshold4', 'threshold5'].map((field) => item.querySelector(`[data-field="${field}"]`));
+    controls.forEach((control) => control.setCustomValidity(''));
+    const values = controls.map((control) => Number(controlValue(control)));
+    if (values.every(Number.isFinite) && !(values[0] < values[1] && values[1] < values[2])) {
+      controls[1].setCustomValidity('Пороги должны возрастать: оценка 3 < оценка 4 < оценка 5.');
+      return false;
+    }
+    return controls.every((control) => control.checkValidity());
   }
 
   function syncMaterials() {
@@ -103,7 +120,6 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
       const compatible = checkbox.dataset.targetType === targetType
         && (targetType !== 'DDS' || Boolean(ddsService) && checkbox.dataset.ddsService === ddsService);
       checkbox.hidden = !compatible;
-      if (!compatible) checkbox.checked = false;
       if (compatible) visibleCount++;
     });
     const selected = checkboxes.filter((checkbox) => !checkbox.hidden && checkbox.checked);
@@ -193,6 +209,7 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
     }
 
     async function openAssignment() {
+      await controlsReady;
       await customElements.whenDefined('wa-dialog');
       snapshot = captureAssignment();
       editing = true;
@@ -211,6 +228,7 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
       dialog.open = false;
     });
     item.querySelector('.save-assignment').addEventListener('click', () => {
+      validateThresholds(item);
       const controls = [...item.querySelectorAll('[data-field]')];
       const invalidControl = controls.find((control) => !control.checkValidity());
       if (invalidControl) {
@@ -243,18 +261,22 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
       removeAfterClose = false;
     });
     item.querySelectorAll('wa-checkbox').forEach((checkbox) => {
-      checkbox.checked = checkbox.dataset.selected === 'true';
       checkbox.addEventListener('change', () => syncAssignmentIncidents(item));
     });
     item.querySelectorAll('[data-field]').forEach((control) => {
-      control.addEventListener('input', () => syncAssignmentSummary(item));
-      control.addEventListener('change', () => syncAssignmentSummary(item));
+      control.addEventListener('input', () => {
+        if (control.dataset.field.startsWith('threshold')) validateThresholds(item);
+        syncAssignmentSummary(item);
+      });
+      control.addEventListener('change', () => {
+        if (control.dataset.field.startsWith('threshold')) validateThresholds(item);
+        syncAssignmentSummary(item);
+      });
     });
     item.querySelector('[data-field="difficulty"]').addEventListener('change', () => syncAssignmentIncidents(item));
     item.querySelector('.open-incident-picker')?.addEventListener('click', () => {
       item.querySelector('.incident-dialog').open = true;
     });
-    syncAssignmentIncidents(item);
     return openAssignment;
   }
 
@@ -264,6 +286,8 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
     item.dataset.newAssignment = 'true';
     assignmentsList.append(item);
     const openAssignment = bindAssignment(item);
+    await controlsReady;
+    syncAssignmentIncidents(item);
     syncItems(assignmentsList, 'Задание');
     item.querySelector('.assignment-dialog').addEventListener('wa-after-show', () => item.querySelector('[data-field="title"]').focus(), { once: true });
     await openAssignment();
@@ -274,14 +298,16 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
   [...assignmentsList.children].forEach(bindAssignment);
   syncMaterials();
   syncItems(assignmentsList, 'Задание');
-  Promise.all([
-    customElements.whenDefined('wa-button'),
-    customElements.whenDefined('wa-select'),
-    customElements.whenDefined('wa-checkbox')
-  ]).then(() => {
+  controlsReady.then(() => {
     syncCourseProfile();
+    [...assignmentsList.children].forEach((item) => {
+      item.querySelectorAll('wa-checkbox').forEach((checkbox) => {
+        checkbox.checked = checkbox.dataset.selected === 'true';
+      });
+      validateThresholds(item);
+      syncAssignmentIncidents(item);
+    });
     syncItems(assignmentsList, 'Задание');
-    [...assignmentsList.children].forEach(syncAssignmentIncidents);
   });
 
   materialFileInput.addEventListener('change', () => addMaterialFiles(materialFileInput.files));
@@ -302,7 +328,10 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
       error.hidden = false;
       return;
     }
-    [...assignmentsList.children].forEach(syncAssignmentIncidents);
+    [...assignmentsList.children].forEach((item) => {
+      syncAssignmentIncidents(item);
+      validateThresholds(item);
+    });
     const invalidAssignment = [...assignmentsList.children].find((item) => {
       const controls = [...item.querySelectorAll('[data-field]'), item.querySelector('.incident-validation')];
       return controls.some((control) => !control.checkValidity());
@@ -328,9 +357,12 @@ const ddsService = targetType === "DDS" ? existingCourse ? course.ddsService || 
       ...fields.map((field) => [field, item.querySelector(`[data-field="${field}"]`).value.trim()])
     ]));
     try {
-      const assignments = readItems(assignmentsList, ['title', 'description', 'difficulty', 'executionMode']).map((assignment, index) => ({
+      const assignments = readItems(assignmentsList, ['title', 'description', 'difficulty', 'executionMode', 'threshold3', 'threshold4', 'threshold5']).map((assignment, index) => ({
         ...assignment,
-        incidentIds: [...assignmentsList.children[index].querySelectorAll('wa-checkbox')].filter((checkbox) => checkbox.checked).map((checkbox) => checkbox.value)
+        threshold3: Number(assignment.threshold3),
+        threshold4: Number(assignment.threshold4),
+        threshold5: Number(assignment.threshold5),
+        incidentIds: [...assignmentsList.children[index].querySelectorAll('wa-checkbox')].filter((checkbox) => checkbox.checked && !checkbox.hidden).map((checkbox) => checkbox.value)
       }));
       const materials = [...materialsList.children].map((item) => ({
         ...(validId(item.dataset.id) ? { id: item.dataset.id } : {}),

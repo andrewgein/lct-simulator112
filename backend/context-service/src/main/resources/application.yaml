@@ -29,6 +29,9 @@ spring:
 context:
   dds:
     timeout-check-delay-ms: ${DDS_TIMEOUT_CHECK_DELAY_MS:1000}
+  cleanup:
+    check-delay-ms: ${CONTEXT_CLEANUP_CHECK_DELAY_MS:3600000}
+    abandoned-after-hours: ${CONTEXT_CLEANUP_ABANDONED_AFTER_HOURS:24}
 management:
   endpoints:
     web:

@@ -10,7 +10,7 @@ public final class DialogContextMapper {
 
     public static DialogTranscript toDomain(DialogContext proto) {
         return new DialogTranscript(proto.getTranscriptList().stream()
-                .map(value -> new Phrase(SpeakerType.valueOf(value.getSpeaker().name()), value.getText()))
+                .map(value -> new Phrase(SpeakerType.valueOf(value.getSpeaker().name()), value.getText(), null))
                 .toList());
     }
 

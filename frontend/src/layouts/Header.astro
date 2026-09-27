@@ -23,7 +23,7 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
         {isStudent && (
           <div class="wa-cluster">
             <wa-button class:list={{ 'header-nav-active': isActive('/') }} appearance="plain" variant="neutral" href="/" aria-current={isActive('/') ? 'page' : undefined}>Мои курсы</wa-button>
-            <wa-button class:list={{ 'header-nav-active': isActive('/map') }} appearance="plain" variant="neutral" href="/map" aria-current={isActive('/map') ? 'page' : undefined}>Карта</wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/knowledge-base') }} appearance="plain" variant="neutral" href="/knowledge-base" aria-current={isActive('/knowledge-base') ? 'page' : undefined}>База знаний</wa-button>
           </div>
         )}
         {canManageTraining && (
@@ -47,11 +47,20 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
         </wa-button>
         <wa-popover class="profile-menu-popover" for="profile-menu-trigger" placement="bottom-end" without-arrow>
           <nav class="profile-menu wa-stack wa-gap-3xs" aria-label="Меню пользователя">
-            <wa-button appearance="plain" variant="neutral" href="/profile" data-popover="close">
-              <wa-icon slot="start" name="chart-line">
-              </wa-icon>
-              Статистика
-            </wa-button>
+            {isStudent && (
+              <wa-button appearance="plain" variant="neutral" href="/profile" data-popover="close">
+                <wa-icon slot="start" name="chart-line">
+                </wa-icon>
+                Статистика
+              </wa-button>
+            )}
+            {isStudent && (
+              <wa-button appearance="plain" variant="neutral" href="/profile/certificates" data-popover="close">
+                <wa-icon slot="start" name="award">
+                </wa-icon>
+                Сертификаты
+              </wa-button>
+            )}
             <wa-button id="notifications-menu-item" appearance="plain" variant="neutral" data-popover="close">
               <wa-icon slot="start" name="bell">
               </wa-icon>
@@ -70,13 +79,12 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
         </wa-popover>
         <span id="notifications-anchor" class="notifications-anchor" aria-hidden="true"></span>
         <wa-popover id="notifications-popover" class="notifications-popover" for="notifications-anchor" placement="bottom-end" without-arrow>
-          <div class="notifications-panel wa-stack wa-gap-2xs">
-            <div class="notifications-panel-header">
-              <span class="wa-heading-s">Уведомления</span>
-              <wa-button id="notifications-mark-all" appearance="plain" variant="neutral" size="small">
-                Прочитать всё
-              </wa-button>
-            </div>
+          <div class="notifications-panel wa-stack wa-gap-3xs">
+            <h2 class="notifications-panel-title wa-cluster wa-gap-s">
+              <wa-icon name="bell" aria-hidden="true">
+              </wa-icon>
+              Уведомления
+            </h2>
             <wa-divider>
             </wa-divider>
             <div id="notifications-list" class="notifications-list wa-stack wa-gap-2xs" aria-live="polite">
@@ -94,7 +102,6 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
   const badge = document.querySelector('#notification-unread-badge');
   const popover = document.querySelector('#notifications-popover');
   const list = document.querySelector('#notifications-list');
-  const markAllButton = document.querySelector('#notifications-mark-all');
 
   const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
   let unreadCount = 0;
@@ -131,14 +138,14 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
     for (const notification of notifications) {
       const item = document.createElement('a');
       item.href = notification.targetUrl || '#';
-      item.className = notification.read ? 'notification-item' : 'notification-item is-unread';
+      item.className = notification.read ? 'notification-item wa-stack wa-gap-3xs' : 'notification-item is-unread wa-stack wa-gap-3xs';
       const created = notification.createdAt ? dateFormatter.format(new Date(notification.createdAt)) : '';
       const title = document.createElement('strong');
       title.textContent = notification.title;
       const time = document.createElement('time');
       time.textContent = created;
       const header = document.createElement('div');
-      header.className = 'notification-item-header';
+      header.className = 'notification-item-header wa-stack wa-gap-3xs';
       header.append(title, time);
       const text = document.createElement('p');
       text.textContent = notification.text;
@@ -175,21 +182,6 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
     loadNotifications();
   });
 
-  markAllButton?.addEventListener('click', async () => {
-    markAllButton.loading = true;
-    try {
-      const response = await fetch('/api/v1/notifications/read-all', { method: 'PATCH' });
-      if (response.ok) {
-        list?.querySelectorAll('.notification-item.is-unread').forEach((el) => el.classList.remove('is-unread'));
-        setUnreadCount(0);
-      }
-    } catch {
-      // счётчик обновится при следующем открытии
-    } finally {
-      markAllButton.loading = false;
-    }
-  });
-
   refreshUnreadCount();
 </script>
 
@@ -197,58 +189,34 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
   .profile-menu-wrap { position: relative; flex: 0 0 auto; }
   .notifications-anchor { position: absolute; inset: 0; pointer-events: none; }
   #profile-menu-trigger wa-avatar { --size: 2rem; --wa-color-neutral-fill-normal: var(--wa-color-neutral-90); --wa-color-neutral-on-normal: var(--wa-color-neutral-05); font-weight: var(--wa-font-weight-bold); }
-  .profile-menu-popover { --max-width: 18rem; color: var(--wa-color-text-normal); }
-  .profile-menu-popover::part(body) { padding: var(--wa-space-2xs); }
+  :is(.profile-menu-popover, .notifications-popover) { color: var(--wa-color-text-normal); }
+  :is(.profile-menu-popover, .notifications-popover)::part(body) { padding: var(--wa-space-2xs); }
+  .profile-menu-popover { --max-width: 18rem; }
   .profile-menu { box-sizing: border-box; inline-size: 14rem; }
-  .profile-menu wa-button { box-sizing: border-box; width: 100%; margin-inline-start: 0; --wa-color-neutral-on-quiet: var(--wa-color-text-normal); }
+  .profile-menu wa-button { box-sizing: border-box; width: 100%; --wa-color-neutral-on-quiet: var(--wa-color-text-normal); }
   .profile-menu wa-button::part(button) { justify-content: flex-start; }
   .profile-menu wa-button[variant='neutral']::part(button):hover { background: var(--wa-color-neutral-fill-normal); color: var(--wa-color-text-normal); }
 
   #notifications-menu-item::part(button) { position: relative; }
   #notification-unread-badge { margin-inline-start: auto; }
+  .notifications-popover { --max-width: 26rem; }
+  .notifications-panel { inline-size: 24rem; max-inline-size: calc(100vw - var(--wa-space-xl)); }
+  .notifications-panel > wa-divider { margin: 0; }
+  .notifications-panel-title { min-block-size: var(--wa-form-control-height); margin: 0; padding-inline: var(--wa-form-control-padding-inline); font: inherit; font-weight: var(--wa-font-weight-action); line-height: var(--wa-line-height-condensed); }
+  .notifications-list { max-block-size: 26rem; overflow-y: auto; }
+  .notifications-status { padding: var(--wa-space-l) var(--wa-space-m); color: var(--wa-color-text-quiet); text-align: center; }
 </style>
 
 <style is:global>
-  .notifications-popover { --max-width: 26rem; color: var(--wa-color-text-normal); }
-  .notifications-popover::part(body) { padding: 0; }
-  .notifications-panel { box-sizing: border-box; inline-size: 24rem; max-inline-size: calc(100vw - 2rem); }
-  .notifications-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--wa-space-s);
+  .notification-item {
     padding: var(--wa-space-s) var(--wa-space-m);
-  }
-  .notifications-panel-header .wa-heading-s { margin: 0; font-weight: var(--wa-font-weight-bold); }
-  .notifications-panel > wa-divider { margin: 0; }
-  .notifications-list { max-block-size: 26rem; overflow-y: auto; padding: var(--wa-space-xs); }
-  .notifications-status { padding: var(--wa-space-xl) var(--wa-space-m); color: var(--wa-color-text-quiet); text-align: center; }
-
-  .notifications-list .notification-item {
-    display: flex;
-    flex-direction: column;
-    gap: var(--wa-space-3xs);
-    box-sizing: border-box;
-    padding: var(--wa-space-s) var(--wa-space-m);
-    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
-    border-inline-start: var(--wa-space-3xs) solid var(--wa-color-neutral-border-normal);
-    background: var(--wa-color-surface-raised);
+    border-inline-start: var(--wa-space-3xs) solid transparent;
     color: var(--wa-color-text-normal);
     text-decoration: none;
   }
-  .notifications-list .notification-item + .notification-item { margin-block-start: var(--wa-space-xs); }
-  .notifications-list .notification-item:hover { background: var(--wa-color-neutral-fill-quiet); text-decoration: none; }
-  .notifications-list .notification-item.is-unread {
-    border-inline-start-color: var(--wa-color-brand-fill-loud);
-    background: var(--wa-color-brand-fill-quiet);
-  }
-  .notifications-list .notification-item.is-unread:hover { background: var(--wa-color-brand-fill-normal); }
-
-  .notifications-list .notification-item-header {
-    display: flex;
-    flex-direction: column;
-    gap: var(--wa-space-3xs);
-  }
+  .notification-item:hover { background: var(--wa-color-neutral-fill-quiet); }
+  .notification-item.is-unread { border-inline-start-color: var(--wa-color-brand-fill-loud); background: var(--wa-color-brand-fill-quiet); }
+  .notification-item.is-unread:hover { background: var(--wa-color-brand-fill-normal); }
   .notifications-list .notification-item-header strong { font-size: var(--wa-font-size-s); font-weight: var(--wa-font-weight-bold); }
   .notifications-list .notification-item-header time { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-xs); }
   .notifications-list .notification-item p {

@@ -7,6 +7,9 @@ const title = assignment.title || `Задание ${number}`;
 const difficulty = assignment.difficulty || "NORMAL";
 const executionMode = assignment.executionMode || "SEQUENTIAL";
 const incidentIds = assignment.incidentIds || [];
+const threshold3 = assignment.threshold3 ?? 40;
+const threshold4 = assignment.threshold4 ?? 60;
+const threshold5 = assignment.threshold5 ?? 80;
 const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value === value)?.label || value;
 ---
 
@@ -37,6 +40,13 @@ const difficultyLabel = (value) => DifficultyOptions.find((item) => item.value =
           <wa-option value="PARALLEL">Параллельно</wa-option>
         </wa-select>
       </div>
+      <fieldset class="grade-thresholds wa-stack wa-gap-s" aria-label="Пороги оценок">
+        <div class="grade-threshold-inputs">
+          <wa-input data-field="threshold3" type="number" label="Оценка 3 — от" value={threshold3} min="0" max="100" step="1" required><span slot="end">%</span></wa-input>
+          <wa-input data-field="threshold4" type="number" label="Оценка 4 — от" value={threshold4} min="0" max="100" step="1" required><span slot="end">%</span></wa-input>
+          <wa-input data-field="threshold5" type="number" label="Оценка 5 — от" value={threshold5} min="0" max="100" step="1" required><span slot="end">%</span></wa-input>
+        </div>
+      </fieldset>
       <fieldset class="incident-picker wa-stack wa-gap-s">
         <legend>Сценарии</legend>
         <input class="incident-validation" type="text" required aria-label={isTemplate ? "Сценарии задания" : `Сценарии задания ${number}`}>

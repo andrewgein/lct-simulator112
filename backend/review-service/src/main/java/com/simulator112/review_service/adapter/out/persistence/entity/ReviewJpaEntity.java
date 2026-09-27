@@ -29,6 +29,9 @@ public class ReviewJpaEntity {
     private Integer automaticScore;
     private Integer finalScore;
     private Integer maxScore;
+    private Integer threshold3;
+    private Integer threshold4;
+    private Integer threshold5;
     private Long durationSeconds;
     private Long timeLimitSeconds;
     private Long overtimeSeconds;
@@ -36,6 +39,10 @@ public class ReviewJpaEntity {
     @Column(columnDefinition = "text")
     private String expertComment;
     private Instant confirmedAt;
+    @Column(columnDefinition = "text")
+    private String incidentsSnapshot;
+    @Column(columnDefinition = "text")
+    private String cardsSnapshot;
 
     public void setResults(List<CriterionResultJpaEntity> results) {
         this.results.clear();

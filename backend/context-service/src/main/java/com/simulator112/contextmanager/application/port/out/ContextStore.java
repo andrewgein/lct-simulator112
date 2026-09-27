@@ -12,10 +12,16 @@ import java.util.UUID;
 public interface ContextStore {
     Optional<TrainingContext> findById(UUID id);
 
+    Optional<TrainingContext> findActive(UUID userId, UUID assignmentId);
+
     TrainingContext save(TrainingContext context);
 
     List<TrainingContext> findWithExpiredStages(IncidentTargetType targetType,
                                                 IncidentProgressStatus incidentStatus,
                                                 StageStatus stageStatus,
                                                 Instant now);
+
+    List<TrainingContext> findAbandoned(Instant updatedBefore);
+
+    void delete(UUID id);
 }

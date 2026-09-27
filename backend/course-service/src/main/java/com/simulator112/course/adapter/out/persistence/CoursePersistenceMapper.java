@@ -80,7 +80,8 @@ public class CoursePersistenceMapper {
 
     private Assignment toDomain(AssignmentJpaEntity entity) {
         return new Assignment(entity.getId(), entity.getTitle(), entity.getDescription(), entity.getDifficulty(),
-                entity.getExecutionMode(), entity.getIncidentIds());
+                entity.getExecutionMode(), entity.getIncidentIds(), entity.getThreshold3(), entity.getThreshold4(),
+                entity.getThreshold5());
     }
 
     private AssignmentJpaEntity toEntity(Assignment assignment) {
@@ -90,6 +91,9 @@ public class CoursePersistenceMapper {
         entity.setDescription(assignment.description());
         entity.setDifficulty(assignment.difficulty());
         entity.setExecutionMode(assignment.executionMode());
+        entity.setThreshold3(assignment.threshold3());
+        entity.setThreshold4(assignment.threshold4());
+        entity.setThreshold5(assignment.threshold5());
         entity.setIncidentIds(new ArrayList<>(assignment.incidentIds()));
         return entity;
     }

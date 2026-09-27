@@ -47,7 +47,10 @@ public class CourseAssignmentGrpcClient implements CourseAssignmentPort {
             }
             return new AssignmentScenario(assignmentId, userId, assignment.getTitle(), targetType, difficulty,
                     ExecutionMode.valueOf(assignment.getExecutionMode().name()
-                            .replace("ASSIGNMENT_EXECUTION_MODE_", "")), snapshots);
+                            .replace("ASSIGNMENT_EXECUTION_MODE_", "")), snapshots,
+                    assignment.hasThreshold3() ? assignment.getThreshold3() : null,
+                    assignment.hasThreshold4() ? assignment.getThreshold4() : null,
+                    assignment.hasThreshold5() ? assignment.getThreshold5() : null);
         } catch (StatusRuntimeException exception) {
             if (exception.getStatus().getCode() == Status.Code.PERMISSION_DENIED
                     || exception.getStatus().getCode() == Status.Code.NOT_FOUND) {

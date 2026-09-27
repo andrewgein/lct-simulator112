@@ -3,11 +3,13 @@ import Page from "../../layouts/Page.astro";
 import { getReview, getReviewComments, getReviewRecordings } from "../../features/review/api/ReviewApi";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
+import ReviewIncidentsPanel from "../../features/review/components/ReviewIncidentsPanel.jsx";
 
 const accessToken = Astro.cookies.get("accessToken").value;
 const role = Astro.cookies.get("role")?.value || "";
 const isTeacher = ["ADMIN", "SUPERVISOR"].includes(role);
 const canComment = isTeacher;
+const canEditScores = isTeacher;
 const { context } = Astro.params;
 const [reviewResponse, commentsResponse, recordingsResponse] = await Promise.all([
   getReview(context, accessToken),
@@ -19,6 +21,8 @@ const comments = commentsResponse.ok ? (await commentsResponse.json()).comments 
 const recordings = recordingsResponse.ok ? (await recordingsResponse.json()).recordings || [] : [];
 const commentError = Astro.url.searchParams.get("commentError");
 const commentAdded = Astro.url.searchParams.has("commentAdded");
+const scoresError = Astro.url.searchParams.get("scoresError");
+const scoresUpdated = Astro.url.searchParams.has("scoresUpdated");
 const commentDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 
 const groupedIncidents = review.criterionResults.reduce((acc, current) => {
@@ -36,8 +40,10 @@ const groupedIncidents = review.criterionResults.reduce((acc, current) => {
   return acc;
 }, {});
 
-const totalScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.score, 0);
-const maxTotalScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+const criteriaScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.score, 0);
+const criteriaMaxScore = review.criterionResults.reduce((sum, criterion) => sum + criterion.maxScore, 0);
+const totalScore = review.finalScore ?? criteriaScore;
+const maxTotalScore = review.maxScore ?? criteriaMaxScore;
 const percentage = maxTotalScore > 0 ? Math.round((totalScore / maxTotalScore) * 100) : 0;
 
 export const prerender = false;
@@ -51,11 +57,32 @@ export const prerender = false;
   <div class="review-sections wa-stack wa-gap-2xl">
     <section class="wa-stack wa-gap-l" aria-labelledby="summary-heading">
       <h2 id="summary-heading" class="wa-heading-xl">Общая информация</h2>
-      <div>
-        <span><strong>Статус:</strong> {review.status === "DONE" ? "Проверка завершена" : "Результат формируется"}</span>
-      </div>
-      <span><strong>Общий балл:</strong> {totalScore} из {maxTotalScore} ({percentage}%)</span>
-      <wa-progress-bar value={percentage} label="Процент выполнения"></wa-progress-bar>
+      <wa-card appearance="filled-outlined">
+        <div class="wa-stack wa-gap-l">
+          {review.grade !== null && review.grade !== undefined && (
+            <div class="wa-split wa-gap-s">
+              <strong>Оценка:</strong>
+              <span>{review.grade}</span>
+            </div>
+          )}
+          <div class="wa-stack wa-gap-xs">
+            <div class="wa-split wa-gap-s">
+              <strong>Общий балл:</strong>
+              <span>{totalScore} из {maxTotalScore} ({percentage}%)</span>
+            </div>
+            <wa-progress-bar value={percentage} label="Общий балл"></wa-progress-bar>
+          </div>
+          {review.grade !== null && review.grade !== undefined && (
+            <wa-callout variant={review.passed ? "success" : "danger"}>{review.passed ? "Задание пройдено" : "Задание не пройдено"}</wa-callout>
+          )}
+          {!!review.incidents?.length && (
+            <div class="wa-stack wa-gap-m">
+              <strong>Инцидент:</strong>
+              <ReviewIncidentsPanel contextId={context} incidents={review.incidents} cards={review.cards} canLinkToScenario={isTeacher} client:load />
+            </div>
+          )}
+        </div>
+      </wa-card>
     </section>
     <wa-divider></wa-divider>
     <section class="recordings-section wa-stack wa-gap-l" aria-labelledby="recordings-heading">
@@ -76,6 +103,9 @@ export const prerender = false;
     <wa-divider></wa-divider>
     <section class="wa-stack wa-gap-l" aria-labelledby="criteria-heading">
       <h2 id="criteria-heading" class="wa-heading-xl">Детализация по критериям</h2>
+      {scoresUpdated && <wa-callout variant="success"><wa-icon slot="icon" name="circle-check"></wa-icon>Баллы обновлены</wa-callout>}
+      {scoresError && <wa-callout variant="danger"><wa-icon slot="icon" name="circle-exclamation"></wa-icon>{scoresError}</wa-callout>}
+      <form class="wa-stack wa-gap-l" method="POST" action={canEditScores ? `/api/v1/review/${encodeURIComponent(context)}/criteria` : undefined}>
       {Object.values(groupedIncidents).map((incident, incidentIndex) => {
         const items = Object.values(incident.criteria).flat();
         const incidentScore = items.reduce((sum, criterion) => sum + criterion.score, 0);
@@ -96,7 +126,11 @@ export const prerender = false;
                       <ul>
                         {criterionItems.map((item) => (
                           <li>
-                            <span>{item.feedback} {item.score}/{item.maxScore}</span>
+                            {canEditScores ? (
+                              <span class="criterion-item-editable">{item.feedback} <wa-input type="number" name={`score__${item.id}`} value={item.score} min="0" max={item.maxScore} size="small"></wa-input> / {item.maxScore}</span>
+                            ) : (
+                              <span>{item.feedback} {item.score}/{item.maxScore}</span>
+                            )}
                           </li>
                         ))}
                       </ul>
@@ -109,6 +143,12 @@ export const prerender = false;
           </>
         );
       })}
+      {canEditScores && (
+        <div class="criteria-form-actions">
+          <wa-button type="submit" variant="brand">Сохранить оценки</wa-button>
+        </div>
+      )}
+      </form>
     </section>
     <wa-divider></wa-divider>
     <section id="comments" class="comments-section wa-stack wa-gap-l" aria-labelledby="comments-heading">
@@ -218,6 +258,21 @@ export const prerender = false;
   }
 
   .comment-form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .criterion-item-editable {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--wa-space-2xs);
+  }
+
+  .criterion-item-editable wa-input {
+    width: 5rem;
+  }
+
+  .criteria-form-actions {
     display: flex;
     justify-content: flex-end;
   }

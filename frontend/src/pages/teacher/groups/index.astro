@@ -51,6 +51,7 @@ try {
               <div class="wa-split wa-gap-m">
                 <h3 class="group-section-title wa-heading-l">Состав группы</h3>
                 <div class="wa-cluster wa-gap-xs">
+                  <wa-button href={`/teacher/groups/${group.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
                   <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
                     <wa-icon name="pen" label="Редактировать">
                     </wa-icon>

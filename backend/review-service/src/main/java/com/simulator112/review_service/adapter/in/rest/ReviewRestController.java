@@ -3,10 +3,15 @@ package com.simulator112.review_service.adapter.in.rest;
 import com.simulator112.review_service.adapter.in.rest.dto.ConfirmReviewRequest;
 import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.CallRecordingsResponse;
+import com.simulator112.review_service.adapter.in.rest.dto.PersonalStatisticsResponse;
 import com.simulator112.review_service.adapter.in.rest.dto.ReviewResponse;
+import com.simulator112.review_service.adapter.in.rest.dto.UpdateCriterionScoreRequest;
+import com.simulator112.review_service.adapter.in.rest.dto.UpdateReviewCriteriaRequest;
 import com.simulator112.review_service.adapter.in.rest.dto.UserReviewsResponse;
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
+import com.simulator112.review_service.application.port.in.GetPersonalStatisticsUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
+import com.simulator112.review_service.application.port.in.UpdateCriterionScoresUseCase;
 import com.simulator112.review_service.application.port.out.CallRecordingStore;
 import jakarta.validation.Valid;
 import org.springframework.http.CacheControl;
@@ -17,8 +22,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/review")
@@ -27,7 +34,9 @@ public class ReviewRestController {
     private static final Set<String> REVIEWER_ROLES = Set.of("ADMIN", "SUPERVISOR");
     private final GetReviewUseCase getReview;
     private final ConfirmReviewUseCase confirmReview;
+    private final UpdateCriterionScoresUseCase updateCriterionScores;
     private final CallRecordingStore callRecordings;
+    private final GetPersonalStatisticsUseCase getStatistics;
 
     @GetMapping
     public UserReviewsResponse getUserReviews(@RequestHeader("X-User-Id") UUID userId) {
@@ -40,6 +49,19 @@ public class ReviewRestController {
             @PathVariable UUID studentId) {
         requireReviewer(role);
         return reviewsFor(studentId);
+    }
+
+    @GetMapping("/statistics")
+    public PersonalStatisticsResponse getMyStatistics(@RequestHeader("X-User-Id") UUID userId) {
+        return ReviewRestMapper.toResponse(getStatistics.getForUser(userId));
+    }
+
+    @GetMapping("/users/{studentId}/statistics")
+    public PersonalStatisticsResponse getStudentStatistics(
+            @RequestHeader("X-User-Role") String role,
+            @PathVariable UUID studentId) {
+        requireReviewer(role);
+        return ReviewRestMapper.toResponse(getStatistics.getForUser(studentId));
     }
 
     @GetMapping("/{contextId}")
@@ -91,6 +113,21 @@ public class ReviewRestController {
         }
         return ReviewRestMapper.toResponse(confirmReview.confirm(
                 contextId, expertId, request.finalScore(), request.comment()));
+    }
+
+    @PatchMapping("/{contextId}/criteria")
+    public ReviewResponse updateCriteria(@RequestHeader("X-User-Id") UUID expertId,
+                                         @RequestHeader("X-User-Role") String role,
+                                         @PathVariable UUID contextId,
+                                         @Valid @RequestBody UpdateReviewCriteriaRequest request) {
+        if (!REVIEWER_ROLES.contains(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Редактировать баллы может только преподаватель");
+        }
+        Map<UUID, Integer> corrections = request.corrections().stream()
+                .collect(Collectors.toMap(UpdateCriterionScoreRequest::criterionResultId,
+                        UpdateCriterionScoreRequest::score));
+        return ReviewRestMapper.toResponse(updateCriterionScores.updateScores(contextId, expertId, corrections));
     }
 
     private UserReviewsResponse reviewsFor(UUID userId) {

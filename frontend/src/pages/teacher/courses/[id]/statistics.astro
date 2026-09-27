@@ -2,140 +2,103 @@
 import Page from "../../../../layouts/Page.astro";
 import Header from "../../../../layouts/Header.astro";
 import MainHeader from "../../../../layouts/MainHeader.astro";
+import StatisticsReport from "../../../../features/course/components/StatisticsReport.astro";
 import { getCourses, getStudyGroups, getStudyGroupCourses } from "../../../../features/course/api/CourseApi";
 import { getStudents } from "../../../../features/course/api/StudentApi";
 import { getStudentReviews } from "../../../../features/review/api/ReviewApi";
+import { buildStudentStats, buildSummary, buildTrend, buildTopErrors, buildAssignmentAverages, buildCriteriaMap, buildReportEntry, buildStudentsTableRows } from "../../../../features/course/statisticsUtils";
 
 export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
 
 const token = Astro.locals.accessToken;
+const selectedGroupId = Astro.url.searchParams.get("group") || "";
 let error = null;
-let courseStats = [];
-
-const scorePercent = (review) => {
-  const criteria = review.criterionResults || [];
-  const score = criteria.reduce((sum, criterion) => sum + criterion.score, 0);
-  const maxScore = criteria.reduce((sum, criterion) => sum + criterion.maxScore, 0);
-  return maxScore ? Math.round(score / maxScore * 100) : null;
-};
+let course = null;
+let courseGroups = [];
+let students = [];
 
 try {
-  const [coursesResponse, groupsResponse, students] = await Promise.all([
+  const [coursesResponse, groupsResponse, allStudents] = await Promise.all([
     getCourses(token),
     getStudyGroups(token),
     getStudents(token)
   ]);
   if (!coursesResponse.ok || !groupsResponse.ok) throw new Error();
 
-  const courses = (await coursesResponse.json()).filter((course) => String(course.id) === String(Astro.params.id));
-  if (!courses.length) return Astro.redirect('/teacher/courses');
+  course = (await coursesResponse.json()).find((item) => String(item.id) === String(Astro.params.id));
+  if (!course) return Astro.redirect("/teacher/courses");
   const groups = await groupsResponse.json();
   const groupCourses = await Promise.all(groups.map(async (group) => {
     const response = await getStudyGroupCourses(group.id, token);
     if (!response.ok) throw new Error();
     return { group, courses: await response.json() };
   }));
-  const studentsById = new Map(students.map((student) => [String(student.id), student]));
-  const courseStudents = new Map(courses.map((course) => [String(course.id), new Map()]));
+  courseGroups = groupCourses
+    .filter(({ courses }) => courses.some((item) => String(item.id) === String(course.id)))
+    .map(({ group }) => group);
 
-  groupCourses.forEach(({ group, courses: assignedCourses }) => {
-    assignedCourses.forEach((course) => {
-      const entries = courseStudents.get(String(course.id));
-      if (!entries) return;
-      (group.studentIds || []).forEach((studentId) => {
-        const key = String(studentId);
-        const current = entries.get(key) || { student: studentsById.get(key), groups: [] };
-        current.groups.push(group.title);
-        entries.set(key, current);
-      });
-    });
-  });
+  const studentsById = new Map(allStudents.map((student) => [String(student.id), student]));
+  const courseStudents = new Map();
+  courseGroups
+    .filter((group) => !selectedGroupId || String(group.id) === selectedGroupId)
+    .forEach((group) => (group.studentIds || []).forEach((studentId) => {
+      const key = String(studentId);
+      const current = courseStudents.get(key) || { student: studentsById.get(key), groups: [] };
+      current.groups.push(group.title);
+      courseStudents.set(key, current);
+    }));
 
-  const studentIds = [...new Set([...courseStudents.values()].flatMap((entries) => [...entries.keys()]))];
-  const reviewResponses = await Promise.all(studentIds.map(async (studentId) => {
+  const reviewsByStudent = new Map(await Promise.all([...courseStudents.keys()].map(async (studentId) => {
     const response = await getStudentReviews(studentId, token);
     if (!response.ok) throw new Error();
     return [studentId, (await response.json()).reviews || []];
-  }));
-  const reviewsByStudent = new Map(reviewResponses);
+  })));
 
-  courseStats = courses.map((course) => {
-    const assignmentIds = new Set((course.assignments || []).map((assignment) => String(assignment.id)));
-    const assignmentTitles = new Map((course.assignments || []).map((assignment) => [String(assignment.id), assignment.title]));
-    const studentStats = [...(courseStudents.get(String(course.id)) || new Map()).values()].map(({ student, groups }) => {
-      const attempts = (reviewsByStudent.get(String(student?.id)) || [])
-        .filter((review) => assignmentIds.has(String(review.assignmentId)))
-        .map((review) => ({ ...review, percent: scorePercent(review), assignmentTitle: assignmentTitles.get(String(review.assignmentId)) || "Задание" }))
-        .sort((left, right) => new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime());
-      const completedByAssignment = new Map();
-      attempts.filter((attempt) => attempt.status === "DONE").forEach((attempt) => {
-        const key = String(attempt.assignmentId);
-        if (!completedByAssignment.has(key)) completedByAssignment.set(key, attempt);
-      });
-      const completed = [...completedByAssignment.values()];
-      const scored = completed.filter((review) => review.percent !== null);
-      const average = scored.length ? Math.round(scored.reduce((sum, review) => sum + review.percent, 0) / scored.length) : null;
-      const name = student?.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : student?.email || "Обучающийся";
-      return { student, name, groups: [...new Set(groups)], attempts, completed: completed.length, average, lastActivity: attempts[0]?.createdAt || null };
-    }).sort((left, right) => left.name.localeCompare(right.name, "ru"));
-    const completed = studentStats.reduce((sum, student) => sum + student.completed, 0);
-    const possible = studentStats.length * assignmentIds.size;
-    const averages = studentStats.map((student) => student.average).filter((value) => value !== null);
-    const average = averages.length ? Math.round(averages.reduce((sum, value) => sum + value, 0) / averages.length) : null;
-    return { course, students: studentStats, completed, possible, average };
-  });
+  const assignmentIds = new Set((course.assignments || []).map((assignment) => String(assignment.id)));
+  const assignmentTitles = new Map((course.assignments || []).map((assignment) => [String(assignment.id), assignment.title]));
+  students = [...courseStudents.entries()].map(([studentId, { student, groups }]) => ({
+    ...buildStudentStats({ student, reviews: reviewsByStudent.get(studentId), assignmentIds, assignmentTitles }),
+    groups: [...new Set(groups)]
+  })).sort((left, right) => left.name.localeCompare(right.name, "ru"));
 } catch {
   error = "Не удалось загрузить статистику прохождений";
 }
 
-const allStudents = new Set(courseStats.flatMap(({ students }) => students.map(({ student }) => String(student?.id))));
-const completedTotal = courseStats.reduce((sum, course) => sum + course.completed, 0);
-const possibleTotal = courseStats.reduce((sum, course) => sum + course.possible, 0);
-const allAverages = courseStats.map((course) => course.average).filter((value) => value !== null);
-const averageTotal = allAverages.length ? Math.round(allAverages.reduce((sum, value) => sum + value, 0) / allAverages.length) : null;
-const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
+const assignments = course?.assignments || [];
+const { doneAttempts, completedTotal, possibleTotal, completedShare, averageTotal, averageDuration, overtimeShare } = buildSummary(students, assignments.length);
+const summary = { assignmentsCount: assignments.length, studentsCount: students.length, completedTotal, possibleTotal, completedShare, averageTotal, doneAttemptsCount: doneAttempts.length, averageDuration, overtimeShare };
+const trend = buildTrend(doneAttempts);
+const topErrors = buildTopErrors(doneAttempts);
+const assignmentAverages = buildAssignmentAverages(assignments, students);
+const { criteriaColumns, errorMap } = buildCriteriaMap(students);
+const studentsTable = buildStudentsTableRows(students, assignments);
 
 const reportData = {
-  summary: { assignments: courseStats[0]?.course.assignments?.length || 0, students: allStudents.size, completed: completedTotal, possible: possibleTotal, average: averageTotal },
-  courses: courseStats.map(({ course, students, completed, possible, average }) => ({
-    title: course.title,
-    assignmentsCount: course.assignments?.length || 0,
-    completed, possible, average,
-    students: students.map((student) => ({
-      name: student.name,
-      email: student.student?.email || "",
-      groups: student.groups,
-      completed: student.completed,
-      assignmentsCount: course.assignments?.length || 0,
-      average: student.average,
-      lastActivity: student.lastActivity,
-      attempts: student.attempts.map((attempt) => ({
-        assignmentTitle: attempt.assignmentTitle,
-        status: attempt.status,
-        percent: attempt.percent,
-        createdAt: attempt.createdAt,
-        criteria: (attempt.criterionResults || []).map((criterion) => ({
-          incidentOrder: criterion.incidentOrder,
-          criterionName: criterion.criterionName,
-          score: criterion.score,
-          maxScore: criterion.maxScore,
-          feedback: criterion.feedback
-        }))
-      }))
-    }))
-  }))
+  summary: { assignments: assignments.length, students: students.length, completed: completedTotal, possible: possibleTotal, average: averageTotal },
+  fileNameBase: course?.title || "курс",
+  courses: course ? [buildReportEntry({ title: course.title, assignments, students, completedTotal, possibleTotal, averageTotal })] : []
 };
 const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toString("base64");
+
+const filter = courseGroups.length > 1 ? {
+  formId: "group-filter",
+  paramName: "group",
+  label: "Группа",
+  value: selectedGroupId,
+  placeholder: "Все группы",
+  allowClear: true,
+  options: courseGroups.map((group) => ({ value: String(group.id), label: group.title }))
+} : null;
 ---
 
 <Page {error}>
   <Header slot="header" />
-  <MainHeader slot="main-header" title={courseStats[0]?.course.title || "Статистика курса"}>
+  <MainHeader slot="main-header" title={course?.title || "Статистика курса"}>
     <div class="wa-cluster wa-gap-xs">
       <wa-button href="/teacher/courses" appearance="outlined">Все курсы</wa-button>
-      {courseStats[0] && <wa-button href={`/teacher/courses/${courseStats[0].course.id}`} appearance="outlined">Редактировать курс</wa-button>}
-      {courseStats.length > 0 && (
+      {course && <wa-button href={`/teacher/courses/${course.id}`} appearance="outlined">Редактировать курс</wa-button>}
+      {course && (
         <>
           <wa-button id="export-excel" appearance="outlined"><wa-icon slot="start" name="file-excel"></wa-icon>Excel</wa-button>
           <wa-button id="export-pdf" appearance="outlined"><wa-icon slot="start" name="file-pdf"></wa-icon>PDF</wa-button>
@@ -143,223 +106,21 @@ const reportDataEncoded = Buffer.from(JSON.stringify(reportData), "utf-8").toStr
       )}
     </div>
   </MainHeader>
-  <script type="application/json" id="report-data" set:text={reportDataEncoded}></script>
-  {!error && (
-    <div class="statistics-page wa-stack wa-gap-xl">
-      <dl class="summary-strip">
-        <div class="summary-item wa-stack wa-gap-2xs">
-          <dt>Задания</dt>
-          <dd>{courseStats[0]?.course.assignments?.length || 0}</dd>
-        </div>
-        <div class="summary-item wa-stack wa-gap-2xs">
-          <dt>Обучающиеся</dt>
-          <dd>{allStudents.size}</dd>
-        </div>
-        <div class="summary-item wa-stack wa-gap-2xs">
-          <dt>Выполнено заданий</dt>
-          <dd>{completedTotal} из {possibleTotal}</dd>
-        </div>
-        <div class="summary-item wa-stack wa-gap-2xs">
-          <dt>Средний результат</dt>
-          <dd>{averageTotal === null ? "—" : `${averageTotal}%`}</dd>
-        </div>
-      </dl>
-
-      {!courseStats.length && <wa-callout>Статистика курса недоступна.</wa-callout>}
-      {courseStats.map(({ course, students, completed, possible, average }) => {
-        const progress = possible ? Math.round(completed / possible * 100) : 0;
-        return (
-          <wa-details appearance="filled-outlined" open>
-            <div slot="summary" class="course-heading wa-split wa-gap-m">
-              <div class="wa-stack wa-gap-2xs">
-                <h2 class="wa-heading-l">{course.title}</h2>
-                <span class="wa-caption-m">{students.length} обучающихся · {course.assignments?.length || 0} заданий</span>
-              </div>
-              <div class="wa-cluster wa-gap-xs">
-                <wa-badge variant={progress === 100 ? "success" : "brand"} appearance="filled-outlined">{progress}% выполнено</wa-badge>
-                <wa-badge variant="neutral" appearance="outlined">Средний балл: {average === null ? "—" : `${average}%`}</wa-badge>
-              </div>
-            </div>
-            {!students.length ? (
-              <wa-callout variant="neutral">Курс пока не назначен группе с обучающимися.</wa-callout>
-            ) : (
-              <wa-scroller>
-                <table class="statistics-table wa-zebra-rows wa-hover-rows wa-tabular-nums">
-                  <thead>
-                    <tr>
-                      <th>Обучающийся</th>
-                      <th>Группа</th>
-                      <th>Прогресс</th>
-                      <th>Средний балл</th>
-                      <th>Последняя активность</th>
-                      <th>Попытки</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {students.map((student) => {
-                      const assignmentCount = course.assignments?.length || 0;
-                      const studentProgress = assignmentCount ? Math.round(student.completed / assignmentCount * 100) : 0;
-                      return (
-                        <tr>
-                          <td><strong>{student.name}</strong><small>{student.student?.email}</small></td>
-                          <td>{student.groups.join(", ")}</td>
-                          <td>
-                            <div class="progress-cell wa-stack wa-gap-2xs">
-                              <span>{student.completed} из {assignmentCount}</span>
-                              <wa-progress-bar class="student-progress" value={studentProgress} label={`Прогресс ${student.name}: ${studentProgress}%`}></wa-progress-bar>
-                            </div>
-                          </td>
-                          <td>{student.average === null ? "—" : `${student.average}%`}</td>
-                          <td>{student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : "Нет попыток"}</td>
-                          <td>
-                            {student.attempts.length ? (
-                              <div class="attempt-links wa-stack wa-gap-2xs">
-                                {student.attempts.map((attempt) => (
-                                  <a href={`/review/${encodeURIComponent(attempt.contextId)}`}>{attempt.assignmentTitle}: {attempt.status === "DONE" && attempt.percent !== null ? `${attempt.percent}%` : "формируется"}</a>
-                                ))}
-                              </div>
-                            ) : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </wa-scroller>
-            )}
-          </wa-details>
-        );
-      })}
-    </div>
+  {!error && course && (
+    <StatisticsReport
+      filter={filter}
+      summary={summary}
+      emptyMessage="Курс пока не назначен группе с обучающимися."
+      studentsTable={studentsTable}
+      students={students}
+      assignments={assignments}
+      assignmentAverages={assignmentAverages}
+      trend={trend}
+      topErrors={topErrors}
+      criteriaColumns={criteriaColumns}
+      errorMap={errorMap}
+      reportDataEncoded={reportDataEncoded}
+      exportFileNameBase={course.title}
+    />
   )}
 </Page>
-<script>
-  const reportDataEl = document.querySelector('#report-data');
-  const decodeBase64Utf8 = (encoded) => {
-    const bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0));
-    return new TextDecoder('utf-8').decode(bytes);
-  };
-  const reportData = reportDataEl ? JSON.parse(decodeBase64Utf8(reportDataEl.textContent.trim())) : null;
-  const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
-  const percentLabel = (value) => (value === null || value === undefined ? '—' : `${value}%`);
-  const statusLabel = (attempt) => (attempt.status === 'DONE' ? percentLabel(attempt.percent) : 'формируется');
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-
-  function groupAttemptCriteria(attempt) {
-    const incidents = new Map();
-    (attempt.criteria || []).forEach((criterion) => {
-      const incidentKey = criterion.incidentOrder || 0;
-      if (!incidents.has(incidentKey)) incidents.set(incidentKey, new Map());
-      const criteria = incidents.get(incidentKey);
-      if (!criteria.has(criterion.criterionName)) criteria.set(criterion.criterionName, { score: 0, maxScore: 0 });
-      const totals = criteria.get(criterion.criterionName);
-      totals.score += criterion.score;
-      totals.maxScore += criterion.maxScore;
-    });
-    return [...incidents.entries()].sort((left, right) => left[0] - right[0]).map(([incidentOrder, criteria]) => ({
-      label: incidentOrder ? `Сценарий ${incidentOrder}` : 'Критерии',
-      criteria: [...criteria.entries()].map(([name, totals]) => ({ name, ...totals }))
-    }));
-  }
-
-  document.querySelector('#export-excel')?.addEventListener('click', async (event) => {
-    const button = event.currentTarget;
-    button.loading = true;
-    try {
-      const XLSX = await import('xlsx');
-      const workbook = XLSX.utils.book_new();
-      const summarySheet = XLSX.utils.aoa_to_sheet([
-        ['Показатель', 'Значение'],
-        ['Заданий', reportData.summary.assignments],
-        ['Обучающихся', reportData.summary.students],
-        ['Выполнено заданий', `${reportData.summary.completed} из ${reportData.summary.possible}`],
-        ['Средний результат', percentLabel(reportData.summary.average)]
-      ]);
-      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Сводка');
-
-      const studentsRows = [['Курс', 'Обучающийся', 'Email', 'Группы', 'Выполнено заданий', 'Средний балл', 'Последняя активность']];
-      const attemptsRows = [['Курс', 'Обучающийся', 'Задание', 'Статус', 'Балл', 'Дата', 'Сценарий', 'Критерий', 'Балл по критерию', 'Максимум по критерию']];
-      reportData.courses.forEach((course) => {
-        course.students.forEach((student) => {
-          studentsRows.push([course.title, student.name, student.email, student.groups.join(', '), `${student.completed} из ${student.assignmentsCount}`, percentLabel(student.average), student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : 'Нет попыток']);
-          student.attempts.forEach((attempt) => {
-            attemptsRows.push([course.title, student.name, attempt.assignmentTitle, attempt.status, statusLabel(attempt), attempt.createdAt ? dateFormatter.format(new Date(attempt.createdAt)) : '', '', '', '', '']);
-            groupAttemptCriteria(attempt).forEach((incident) => {
-              incident.criteria.forEach((criterion) => {
-                attemptsRows.push([course.title, student.name, attempt.assignmentTitle, attempt.status, statusLabel(attempt), attempt.createdAt ? dateFormatter.format(new Date(attempt.createdAt)) : '', incident.label, criterion.name, criterion.score, criterion.maxScore]);
-              });
-            });
-          });
-        });
-      });
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(studentsRows), 'Обучающиеся');
-      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet(attemptsRows), 'Попытки и критерии');
-      XLSX.writeFile(workbook, `Отчёт — ${reportData.courses[0]?.title || 'курс'}.xlsx`);
-    } finally {
-      button.loading = false;
-    }
-  });
-
-  document.querySelector('#export-pdf')?.addEventListener('click', async (event) => {
-    const button = event.currentTarget;
-    button.loading = true;
-    const container = document.createElement('div');
-    container.className = 'pdf-report';
-    let html = `<h1>Отчёт по курсу «${escapeHtml(reportData.courses[0]?.title || '')}»</h1>`;
-    html += `<p><strong>Заданий:</strong> ${reportData.summary.assignments} · <strong>Обучающихся:</strong> ${reportData.summary.students} · <strong>Выполнено заданий:</strong> ${reportData.summary.completed} из ${reportData.summary.possible} · <strong>Средний результат:</strong> ${escapeHtml(percentLabel(reportData.summary.average))}</p>`;
-    reportData.courses.forEach((course) => {
-      course.students.forEach((student) => {
-        html += `<h2>${escapeHtml(student.name)} <small>(${escapeHtml(student.email)})</small></h2>`;
-        html += `<p>Группы: ${escapeHtml(student.groups.join(', ') || '—')} · Выполнено: ${student.completed} из ${student.assignmentsCount} · Средний балл: ${escapeHtml(percentLabel(student.average))} · Последняя активность: ${escapeHtml(student.lastActivity ? dateFormatter.format(new Date(student.lastActivity)) : 'Нет попыток')}</p>`;
-        if (!student.attempts.length) html += '<p>Попыток нет.</p>';
-        student.attempts.forEach((attempt) => {
-          html += `<h3>${escapeHtml(attempt.assignmentTitle)} — ${escapeHtml(statusLabel(attempt))}${attempt.createdAt ? ` (${escapeHtml(dateFormatter.format(new Date(attempt.createdAt)))})` : ''}</h3>`;
-          const incidents = groupAttemptCriteria(attempt);
-          if (incidents.length) {
-            html += '<table class="pdf-criteria-table"><thead><tr><th>Сценарий</th><th>Критерий</th><th>Балл</th></tr></thead><tbody>';
-            incidents.forEach((incident) => {
-              incident.criteria.forEach((criterion, index) => {
-                html += `<tr>${index === 0 ? `<td rowspan="${incident.criteria.length}">${escapeHtml(incident.label)}</td>` : ''}<td>${escapeHtml(criterion.name)}</td><td>${criterion.score} / ${criterion.maxScore}</td></tr>`;
-              });
-            });
-            html += '</tbody></table>';
-          }
-        });
-      });
-    });
-    container.innerHTML = html;
-    document.body.appendChild(container);
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      await html2pdf().set({ margin: 10, filename: `Отчёт — ${reportData.courses[0]?.title || 'курс'}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save();
-    } finally {
-      container.remove();
-      button.loading = false;
-    }
-  });
-</script>
-<style>
-  .pdf-report { position: fixed; left: -9999px; top: 0; width: 190mm; padding: 8mm; background: #fff; color: #000; font-family: Arial, sans-serif; }
-  .pdf-report h1 { font-size: 18px; }
-  .pdf-report h2 { font-size: 15px; margin-block-start: 20px; }
-  .pdf-report h3 { font-size: 13px; margin-block-start: 12px; }
-  .pdf-report table.pdf-criteria-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  .pdf-report table.pdf-criteria-table th, .pdf-report table.pdf-criteria-table td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
-</style>
-
-<style>
-  .statistics-page { min-width: 0; }
-  .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(18ch, 1fr)); margin: 0; border-block: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
-  .summary-item { padding: var(--wa-space-l); }
-  .summary-item + .summary-item { border-inline-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
-  .summary-item dt { color: var(--wa-color-text-quiet); }
-  .summary-item dd { margin: 0; font-size: var(--wa-font-size-2xl); font-weight: var(--wa-font-weight-bold); line-height: 1; }
-  .course-heading { width: 100%; }
-  .course-heading h2 { margin: 0; }
-  .statistics-table { min-width: 90ch; margin: 0; }
-  .statistics-table td { vertical-align: top; }
-  .statistics-table td:first-child small { display: block; color: var(--wa-color-text-quiet); }
-  .progress-cell { min-width: 14ch; }
-  .student-progress { --track-height: var(--wa-space-xs); }
-  .attempt-links { min-width: 20ch; }
-</style>

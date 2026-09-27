@@ -36,7 +36,10 @@ final class ReviewSubmissionGrpcMapper {
         return new ReviewSubmission(uuid(source.getUuid()), optionalUuid(source.getUserId()),
                 uuid(assignment.getAssignmentId()), target, incidents, source.getSolutionContextRevisionsList().stream()
                 .map(ReviewSubmissionGrpcMapper::card).toList(), runtime, transcript,
-                instant(source.getStartedAt()), instant(source.getSubmittedAt()));
+                instant(source.getStartedAt()), instant(source.getSubmittedAt()),
+                assignment.hasThreshold3() ? assignment.getThreshold3() : null,
+                assignment.hasThreshold4() ? assignment.getThreshold4() : null,
+                assignment.hasThreshold5() ? assignment.getThreshold5() : null);
     }
 
     private static ReviewSubmission.IncidentScenario incident(IncidentContext source, int order) {
@@ -44,7 +47,7 @@ final class ReviewSubmissionGrpcMapper {
                 .map(value -> new ReviewSubmission.DialogueCriterion(value.getId(), value.getName(),
                         value.getHypothesis(), value.getWeight()))
                 .toList());
-        return new ReviewSubmission.IncidentScenario(source.getId(), order,
+        return new ReviewSubmission.IncidentScenario(source.getId(), order, source.getTitle(),
                 source.getStagesList().stream().map(ReviewSubmissionGrpcMapper::stage).toList(), criteria);
     }
 

@@ -1,4 +1,6 @@
 package com.simulator112.contextmanager.domain.common;
 
-public record Phrase(SpeakerType speaker, String text) {
+import java.util.UUID;
+
+public record Phrase(SpeakerType speaker, String text, UUID callId) {
 }

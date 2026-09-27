@@ -2,15 +2,18 @@
 import Page from "../../layouts/Page.astro";
 import Header from "../../layouts/Header.astro";
 import MainHeader from "../../layouts/MainHeader.astro";
-import { getUserReviews } from "../../features/review/api/ReviewApi";
+import { getUserReviews, getMyStatistics } from "../../features/review/api/ReviewApi";
 import { getMyEnrollments } from "../../features/course/api/EnrollmentApi";
 import { getCourse } from "../../features/course/api/CourseApi";
+import { DifficultyOptions } from "../../features/incident/contract/Difficulty";
 
 export const prerender = false;
 let error = null;
 const profile = Astro.locals.profile;
 let reviews = [];
 let courses = [];
+/** @type {import("../../features/review/contract/Review").PersonalStatistics | null} */
+let statistics = null;
 try {
   if (!profile) throw new Error();
   const responses = await Promise.all([
@@ -25,13 +28,31 @@ try {
     return response.ok ? { enrollment, course: await response.json() } : null;
   }))).filter(Boolean);
 } catch { error = "Не удалось загрузить данные профиля"; }
+if (profile) {
+  try {
+    const response = await getMyStatistics(Astro.locals.accessToken);
+    if (response.ok) statistics = await response.json();
+  } catch { /* рекомендации ИИ не критичны для отображения профиля */ }
+}
 const assignments = courses.flatMap(({ course }) => course.assignments.map((assignment) =>
   [String(assignment.id), { ...assignment, courseTitle: course.title }]));
 const assignmentsById = new Map(assignments);
-const completedAssignmentIds = new Set(reviews.filter((review) => review.status === "DONE")
+const completedAssignmentIds = new Set(reviews
+  .filter((review) => review.status === "DONE" && review.passed === true)
   .map((review) => String(review.assignmentId)));
 const done = assignments.filter(([assignmentId]) => completedAssignmentIds.has(assignmentId)).length;
 const overallProgress = assignments.length ? Math.round(done / assignments.length * 100) : 0;
+const difficultyColors = {
+  EASY: "var(--wa-color-success-fill-loud)",
+  NORMAL: "var(--wa-color-warning-fill-loud)",
+  HARD: "var(--wa-color-danger-fill-loud)"
+};
+const difficultyProgress = DifficultyOptions.map(({ value, label }) => {
+  const difficultyAssignments = assignments.filter(([, assignment]) => assignment.difficulty === value);
+  const completed = difficultyAssignments.filter(([assignmentId]) => completedAssignmentIds.has(assignmentId)).length;
+  const total = difficultyAssignments.length;
+  return { difficulty: value, label, completed, total, percentage: total ? Math.round(completed / total * 100) : 0 };
+});
 const reviewDateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 const reviewResults = reviews.map((review) => {
   const criteria = review.criterionResults || [];
@@ -54,19 +75,46 @@ const reviewResults = reviews.map((review) => {
           </div>
         </div>
         <wa-divider></wa-divider>
-        <div class="wa-cluster wa-gap-l">
-          <wa-progress-ring value={overallProgress} label={`Завершено ${done} из ${assignments.length} заданий`}>{overallProgress}%</wa-progress-ring>
-          <div class="wa-stack wa-gap-xs"><strong>Прогресс по курсам</strong><span>Завершено заданий: {done} / {assignments.length}</span></div>
+        <div class="wa-flank wa-gap-xl">
+          <div class="wa-cluster wa-gap-l">
+            <wa-progress-ring value={overallProgress} label={`Завершено ${done} из ${assignments.length} заданий`}>{overallProgress}%</wa-progress-ring>
+            <div class="wa-stack wa-gap-xs"><strong>Прогресс по курсам</strong><span>Завершено заданий: {done} / {assignments.length}</span></div>
+          </div>
+          <div class="wa-stack wa-gap-m">
+            <strong>Прогресс по сложности</strong>
+            {difficultyProgress.map((progress) => <div class="wa-stack wa-gap-xs">
+              <div class="wa-split"><span>{progress.label}</span><strong>{progress.completed} / {progress.total}</strong></div>
+              <wa-progress-bar value={progress.percentage} label={`${progress.label}: завершено ${progress.completed} / ${progress.total}`} style={`--indicator-color: ${difficultyColors[progress.difficulty]};`}></wa-progress-bar>
+            </div>)}
+          </div>
         </div>
       </div>
     </wa-card>
+    {statistics && statistics.errorStatistics.length > 0 && <section class="wa-stack wa-gap-m">
+      <h2>Статистика ошибок и рекомендации</h2>
+      <wa-card appearance="filled-outlined">
+        <div class="wa-stack wa-gap-l">
+          <wa-scroller><table class="wa-zebra-rows wa-tabular-nums"><thead><tr><th>Критерий</th><th>Ошибок</th><th>Балл</th></tr></thead><tbody>
+            {statistics.errorStatistics.map((stat) => <tr><td>{stat.criterionName}</td>
+              <td>{stat.failedCount} / {stat.attempts}</td>
+              <td>{stat.scoreEarned} / {stat.scoreMax}</td></tr>)}
+          </tbody></table></wa-scroller>
+          {statistics.recommendations.length > 0 && <div class="wa-stack wa-gap-xs">
+            <strong>Рекомендации ИИ</strong>
+            <ul>{statistics.recommendations.map((recommendation) => <li>{recommendation}</li>)}</ul>
+          </div>}
+        </div>
+      </wa-card>
+    </section>}
     <section class="wa-stack wa-gap-m">
       <h2>История прохождений</h2>
       {!reviewResults.length ? <wa-card>Пройдите первое задание, чтобы увидеть результат. <a href="/">К курсам</a></wa-card> :
         <wa-scroller><table class="wa-zebra-rows wa-hover-rows wa-tabular-nums"><thead><tr><th>Дата</th><th>Курс / задание</th><th>Результат</th></tr></thead><tbody>
           {reviewResults.map((review) => <tr><td>{review.createdAt ? reviewDateFormatter.format(new Date(review.createdAt)) : "—"}</td>
             <td><a href={`/review/${encodeURIComponent(review.contextId)}`}>{review.assignment?.courseTitle || "Курс недоступен"} · {review.assignment?.title || "Задание недоступно"}</a></td>
-            <td>{review.status === "DONE" ? `${review.score} / ${review.max}` : "Формируется"}</td></tr>)}
+            <td>{review.status !== "DONE" ? "Формируется" : review.grade !== null && review.grade !== undefined
+              ? `Оценка ${review.grade} · ${review.passed ? "зачтено" : "не зачтено"}`
+              : `${review.score} / ${review.max}`}</td></tr>)}
         </tbody></table></wa-scroller>}
     </section>
   </div>}

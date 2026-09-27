@@ -33,7 +33,7 @@ const styles = `
 @media (max-width: 48rem) { .dds-level-message { margin: var(--wa-space-s) var(--wa-space-s) 0; } }
 `;
 
-export default function DdsLevelApp({ contextId, incidents, classifier, routingFacts, userService }) {
+export default function DdsLevelApp({ contextId, courseId, incidents, classifier, routingFacts, userService }) {
   const [progress, setProgress] = useState(null);
   const [services, setServices] = useState([]);
   const [incidentDefinitions, setIncidentDefinitions] = useState(incidents);
@@ -126,7 +126,7 @@ export default function DdsLevelApp({ contextId, incidents, classifier, routingF
   return (
     <div class="level-app wa-stack wa-gap-0">
       <style>{styles}</style>
-      <LevelCommandBar call={READONLY_CALL} now={now} modeLabel={`Учебный режим · АРМ ДДС · ${services.find((service) => service.code === userService)?.name || userService || "Служба не указана"}`} idleLabel="Обработка карточек" idleIcon="tower-broadcast">
+      <LevelCommandBar call={READONLY_CALL} now={now} exitHref={`/courses/${courseId}`} modeLabel={`Учебный режим · АРМ ДДС · ${services.find((service) => service.code === userService)?.name || userService || "Служба не указана"}`} idleLabel="Обработка карточек" idleIcon="tower-broadcast">
         <LevelSearchInput value={query} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setQuery(event.currentTarget.value)} />
       </LevelCommandBar>
       {error && <wa-callout class="dds-level-message" variant="danger"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{error}</wa-callout>}

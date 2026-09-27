@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DdsReviewRubricTests {
     @Test
     void evaluatesStageOutcomesAndTerminalStatus() {
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(), criteria());
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(), criteria());
         var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
                 new ReviewSubmission.StageRuntime("one", "ASSIGN_BRIGADE", "SUCCEEDED", null, null),
                 new ReviewSubmission.StageRuntime("two", "COMPLETE_INCIDENT", "SUCCEEDED", null, null)));
@@ -27,7 +27,7 @@ class DdsReviewRubricTests {
 
     @Test
     void failedStageAndIncidentReduceScore() {
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(), criteria());
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(), criteria());
         var runtime = new ReviewSubmission.IncidentRuntime("incident", "FAILED", List.of(
                 new ReviewSubmission.StageRuntime("one", "ASSIGN_BRIGADE", "FAILED", null, null)));
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),

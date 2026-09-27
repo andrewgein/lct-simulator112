@@ -25,7 +25,13 @@ review:
     model-name: ${MLSERVER_MODEL_NAME:rubert-tiny-bilingual-nli}
     threshold: ${MLSERVER_ENTAILMENT_THRESHOLD:0.8}
   course-service:
-    base-url: ${COURSE_SERVICE_URL:http://localhost:8088}
+    grpc:
+      host: ${COURSE_GRPC_HOST:localhost}
+      port: ${COURSE_GRPC_PORT:9095}
+  recommendation:
+    base-url: ${LLM_BASE_URL:http://localhost:11434/v1}
+    model: ${LLM_MODEL:gpt-oss-120b}
+    api-key: ${LLM_API_KEY:}
   recordings:
     s3:
       endpoint: ${S3_ENDPOINT:http://localhost:9000}

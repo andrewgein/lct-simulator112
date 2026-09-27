@@ -29,4 +29,5 @@ public class EnrollmentRestController {
     public EnrollmentView get(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID courseId) {
         return mapper.toView(getEnrollment.getEnrollment(courseId, userId));
     }
+
 }

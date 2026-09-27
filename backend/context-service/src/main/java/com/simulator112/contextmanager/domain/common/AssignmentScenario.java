@@ -11,7 +11,15 @@ public record AssignmentScenario(
         IncidentTargetType targetType,
         Difficulty difficulty,
         ExecutionMode executionMode,
-        List<IncidentSnapshot> incidents) {
+        List<IncidentSnapshot> incidents,
+        Integer threshold3,
+        Integer threshold4,
+        Integer threshold5) {
+    public AssignmentScenario(UUID assignmentId, UUID userId, String title, IncidentTargetType targetType,
+                              Difficulty difficulty, ExecutionMode executionMode, List<IncidentSnapshot> incidents) {
+        this(assignmentId, userId, title, targetType, difficulty, executionMode, incidents, null, null, null);
+    }
+
     public AssignmentScenario {
         incidents = List.copyOf(incidents);
     }

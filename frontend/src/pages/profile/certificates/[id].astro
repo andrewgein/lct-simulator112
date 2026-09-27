@@ -1,0 +1,203 @@
+---
+import Page from "../../../layouts/Page.astro";
+import Header from "../../../layouts/Header.astro";
+import MainHeader from "../../../layouts/MainHeader.astro";
+import { getCertificate } from "../../../features/certificate/api/CertificateApi";
+
+export const prerender = false;
+const profile = Astro.locals.profile;
+if (!profile) return Astro.redirect("/profile/certificates");
+
+const response = await getCertificate(Astro.params.id, Astro.locals.accessToken);
+if (!response.ok) return Astro.redirect("/profile/certificates");
+const certificate = await response.json();
+
+const honors = certificate.type === "HONORS";
+const studentName = [profile.surname, profile.name, profile.patronymic].filter(Boolean).join(" ");
+const issuedDate = new Date(certificate.issuedAt);
+const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" });
+const verifyId = certificate.id.replace(/-/g, "").slice(0, 8).toUpperCase();
+const certId = `SIM112-${issuedDate.getFullYear()}-${verifyId}`;
+---
+<Page>
+  <Header slot="header" />
+  <MainHeader slot="main-header" title="Сертификат">
+    <div class="wa-cluster wa-gap-xs">
+      <wa-button href="/profile/certificates" appearance="outlined">Все сертификаты</wa-button>
+      <wa-button id="download-pdf" appearance="filled" variant="brand"><wa-icon slot="start" name="file-pdf"></wa-icon>Скачать PDF</wa-button>
+    </div>
+  </MainHeader>
+
+  <div class="certificate-preview">
+    <main class="certificate" id="certificate">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-main"><span class="num">112</span><span class="sim">симулятор</span></div>
+          <div class="brand-sub">simulator112</div>
+        </div>
+        <div class="side-chip">СЕРТИФИЦИРОВАННЫЙ РЕЗУЛЬТАТ</div>
+        <svg class="sidebar-illustration" viewBox="0 0 290 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+          <rect x="-10" y="190" width="65" height="140" fill="rgba(255,255,255,.12)"></rect>
+          <rect x="50" y="150" width="60" height="180" fill="rgba(255,255,255,.2)"></rect>
+          <rect x="105" y="205" width="55" height="125" fill="rgba(255,255,255,.14)"></rect>
+          <rect x="155" y="130" width="65" height="200" fill="rgba(255,255,255,.24)"></rect>
+          <rect x="215" y="175" width="75" height="155" fill="rgba(255,255,255,.12)"></rect>
+          <g transform="translate(150,75)">
+            <line x1="-32" y1="-16" x2="32" y2="-16" stroke="#ffffff" stroke-width="3" opacity=".85"></line>
+            <line x1="0" y1="-16" x2="0" y2="-3" stroke="#ffffff" stroke-width="2" opacity=".85"></line>
+            <ellipse cx="0" cy="0" rx="26" ry="12" fill="#ffffff" opacity=".92"></ellipse>
+            <rect x="22" y="-4" width="20" height="8" rx="4" fill="#ffffff" opacity=".92"></rect>
+            <circle cx="-8" cy="1" r="6" fill="#0a4f7d" opacity=".55"></circle>
+          </g>
+        </svg>
+      </aside>
+
+      <section class="content">
+        <div class="topline">
+          <div>
+            <div class="eyebrow">Simulator112</div>
+            <h1>Сертификат о прохождении</h1>
+          </div>
+          <div class="result">
+            <div class="result-label">Результат</div>
+            <div class="result-value">{certificate.percent}%</div>
+            {honors && <div class="badge">С отличием</div>}
+          </div>
+        </div>
+
+        <div class="intro">Настоящий сертификат подтверждает, что</div>
+        <div class="name">{studentName}</div>
+        <div class="name-rule"></div>
+
+        <div class="course-label">успешно прошёл(ла) обучение по курсу</div>
+        <div class="course">{certificate.courseTitle}</div>
+        <div class="description">Сертификат подтверждает прохождение сценариев симулятора, выполнение практических заданий и итоговой проверки знаний.</div>
+
+        <div class="footer">
+          <div class="meta">
+            <div><strong>ID сертификата:</strong> {certId}</div>
+          </div>
+          <div class="signature">
+            <svg class="stamp" viewBox="0 0 100 100" aria-hidden="true">
+              <circle cx="50" cy="50" r="45" fill="none" stroke="var(--brand-deep)" stroke-width="2.5" opacity=".55"></circle>
+              <circle cx="50" cy="50" r="37" fill="none" stroke="var(--brand-deep)" stroke-width="1.2" opacity=".4"></circle>
+              <path id="stampArc" d="M50,13 a37,37 0 1,1 -0.1,0" fill="none"></path>
+              <text font-size="7.5" font-weight="700" letter-spacing="2.5" fill="var(--brand-deep)" opacity=".7">
+                <textPath href="#stampArc" startOffset="1%">SIMULATOR112 • ПОДТВЕРЖДЕНО • </textPath>
+              </text>
+              <g transform="translate(50,53)">
+                <line x1="-13" y1="-6" x2="13" y2="-6" stroke="var(--brand-deep)" stroke-width="1.6" opacity=".75"></line>
+                <line x1="0" y1="-6" x2="0" y2="-1" stroke="var(--brand-deep)" stroke-width="1.2" opacity=".75"></line>
+                <ellipse cx="0" cy="0" rx="11" ry="5" fill="var(--brand-deep)" opacity=".8"></ellipse>
+                <rect x="9" y="-1.8" width="8" height="3.6" rx="1.8" fill="var(--brand-deep)" opacity=".8"></rect>
+              </g>
+            </svg>
+            <div class="sign-line">Команда Simulator112</div>
+          </div>
+          <div class="date">
+            Дата выдачи
+            <strong>{dateFormatter.format(issuedDate)}</strong>
+          </div>
+        </div>
+        <div class="corner"></div>
+      </section>
+    </main>
+  </div>
+</Page>
+<script>
+  document.querySelector('#download-pdf')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.loading = true;
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const node = document.querySelector('#certificate');
+      await html2pdf().set({
+        margin: 0,
+        filename: `Сертификат — ${node.querySelector('.course')?.textContent?.trim() || 'Simulator112'}.pdf`,
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      }).from(node).save();
+    } finally {
+      button.loading = false;
+    }
+  });
+</script>
+<style>
+  .certificate-preview { display: grid; place-items: center; padding: var(--wa-space-xl) 0; }
+  .certificate {
+    --brand: #2ca9e8;
+    --brand-deep: #0d79bd;
+    --ink: #102033;
+    --muted: #607487;
+    --paper: #ffffff;
+    position: relative;
+    width: min(1120px, 100%);
+    aspect-ratio: 1120 / 790;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(21, 76, 108, .18);
+    border: 1px solid rgba(30, 120, 180, .12);
+    display: grid;
+    grid-template-columns: 290px 1fr;
+  }
+  .sidebar {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(160deg, #0a4f7d 0%, #0d79bd 55%, #2ca9e8 100%);
+  }
+  .sidebar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.02) 0%, rgba(4,69,112,.06) 52%, rgba(5,56,90,.26) 100%);
+  }
+  .sidebar-illustration { position: absolute; left: 0; bottom: 0; width: 100%; height: 62%; z-index: 1; }
+  .brand { position: absolute; left: 34px; top: 34px; z-index: 2; color: white; }
+  .brand-main { display: flex; align-items: flex-end; gap: 12px; font-weight: 800; letter-spacing: -.04em; }
+  .brand-main .num { font-size: 58px; line-height: .9; }
+  .brand-main .sim { font-size: 20px; line-height: 1.05; text-transform: uppercase; letter-spacing: .02em; }
+  .brand-sub { margin-top: 10px; font-size: 12px; opacity: .86; letter-spacing: .18em; text-transform: uppercase; }
+  .side-chip {
+    position: absolute; left: 34px; bottom: 38px; z-index: 2; color: white;
+    border: 1px solid rgba(255,255,255,.48); background: rgba(10,80,125,.26);
+    backdrop-filter: blur(8px); padding: 10px 14px; border-radius: 999px; font-size: 12px; letter-spacing: .06em;
+  }
+
+  .content { position: relative; padding: 54px 58px 42px 62px; display: flex; flex-direction: column; }
+  .topline { display: flex; justify-content: space-between; gap: 24px; align-items: flex-start; }
+  .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .18em; color: var(--brand-deep); text-transform: uppercase; margin-bottom: 9px; }
+  h1 { font-size: 34px; line-height: 1.05; margin: 0; letter-spacing: -.035em; }
+  .result { min-width: 155px; text-align: right; }
+  .result-label { font-size: 13px; font-weight: 700; color: var(--muted); }
+  .result-value { font-size: 42px; font-weight: 800; line-height: 1; margin: 6px 0 8px; }
+  .badge { display: inline-block; background: #0c1d2c; color: #fff; padding: 8px 13px; border-radius: 9px; font-size: 13px; font-weight: 700; }
+
+  .intro { margin-top: 72px; font-size: 18px; color: var(--muted); }
+  .name { font-size: 46px; line-height: 1.05; margin-top: 16px; font-weight: 750; letter-spacing: -.04em; }
+  .name-rule { width: 86px; height: 4px; border-radius: 8px; background: linear-gradient(90deg, var(--brand-deep), #78d8ff); margin-top: 20px; }
+  .course-label { margin-top: 46px; font-size: 17px; color: var(--muted); }
+  .course { margin-top: 10px; font-size: 30px; font-weight: 700; line-height: 1.2; max-width: 670px; letter-spacing: -.025em; color: var(--brand-deep); }
+  .description { margin-top: 16px; max-width: 650px; font-size: 15px; line-height: 1.65; color: #587084; }
+
+  .footer { margin-top: auto; display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 24px; align-items: end; }
+  .meta { font-size: 12px; color: #6b7f90; line-height: 1.7; }
+  .meta strong { color: #314a5d; }
+  .signature { position: relative; text-align: center; padding-top: 90px; }
+  .stamp { position: absolute; left: 50%; bottom: 18px; width: 84px; height: 84px; transform: translateX(-50%) rotate(-9deg); mix-blend-mode: multiply; pointer-events: none; }
+  .sign-line { border-top: 1px solid #bcd0de; padding-top: 8px; font-size: 11px; color: #667d8e; }
+  .date { text-align: right; font-size: 12px; color: #61798a; line-height: 1.55; }
+  .date strong { display: block; color: #203c4e; font-size: 14px; }
+
+  .corner { position: absolute; right: -80px; bottom: -80px; width: 210px; height: 210px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(74,197,248,.35), rgba(74,197,248,0) 68%); }
+
+  @media (max-width: 800px) {
+    .certificate { width: 100%; grid-template-columns: 220px 1fr; }
+    .content { padding: 34px; }
+    .intro { margin-top: 42px; }
+    .name { font-size: 36px; }
+    .course { font-size: 25px; }
+  }
+</style>
