@@ -1,4 +1,4 @@
-package com.simulator112.auth.dto.event;
+package com.simulator112.auth.adapter.out.kafka.dto;
 
 import java.util.UUID;
 

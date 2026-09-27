@@ -1,8 +1,8 @@
-package com.simulator112.auth.dto.request;
+package com.simulator112.auth.adapter.in.web.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import com.simulator112.auth.model.enums.Role;
+import com.simulator112.auth.domain.model.Role;
 
 @Data
 public class ChangeRoleRequest {

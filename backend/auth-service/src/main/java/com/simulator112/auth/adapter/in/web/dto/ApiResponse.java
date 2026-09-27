@@ -1,4 +1,4 @@
-package com.simulator112.auth.dto;
+package com.simulator112.auth.adapter.in.web.dto;
 
 import java.time.LocalDateTime;
 

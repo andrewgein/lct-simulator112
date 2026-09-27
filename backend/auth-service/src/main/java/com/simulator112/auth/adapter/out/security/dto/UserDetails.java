@@ -1,4 +1,4 @@
-package com.simulator112.auth.dto;
+package com.simulator112.auth.adapter.out.security.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

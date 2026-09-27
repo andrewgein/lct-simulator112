@@ -1,4 +1,6 @@
-package com.simulator112.auth.configuration;
+package com.simulator112.auth.adapter.config;
+
+import com.simulator112.auth.adapter.out.security.JwtService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

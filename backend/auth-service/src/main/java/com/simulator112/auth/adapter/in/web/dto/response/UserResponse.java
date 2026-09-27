@@ -1,4 +1,4 @@
-package com.simulator112.auth.dto.response;
+package com.simulator112.auth.adapter.in.web.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

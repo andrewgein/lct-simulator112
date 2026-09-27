@@ -1,4 +1,4 @@
-package com.simulator112.auth.configuration;
+package com.simulator112.auth.adapter.config;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
