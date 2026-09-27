@@ -1,3 +1,0 @@
-ALTER TABLE reviews ADD COLUMN threshold3 INTEGER;
-ALTER TABLE reviews ADD COLUMN threshold4 INTEGER;
-ALTER TABLE reviews ADD COLUMN threshold5 INTEGER;
