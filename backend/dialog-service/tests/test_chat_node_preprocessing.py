@@ -43,9 +43,9 @@ class ChatNodePreprocessingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sentences, ["Встреча в двенадцать тридцать."])
         self.assertEqual(phrases, ["Встреча в двенадцать тридцать."])
 
-    async def test_unfinished_sentence_normalized_for_callback(self):
+    async def test_unfinished_sentence_still_reaches_tts(self):
         sentences, phrases = await self._run_chunks(["У нас ", "1", "2"])
-        self.assertEqual(sentences, [])
+        self.assertEqual(sentences, ["У нас двенадцать"])
         self.assertEqual(phrases, ["У нас двенадцать"])
 
     async def test_number_split_between_sentences(self):
