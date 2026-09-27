@@ -42,7 +42,7 @@ final class ContextPersistenceMapper {
         target.setSolutionCards(source.getSolutionContexts().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         if (source.getDialogContext() != null) {
             target.setDialog(new DialogTranscript(source.getDialogContext().getTranscript().stream()
-                    .map(value -> new Phrase(value.getSpeaker(), value.getText())).toList()));
+                    .map(value -> new Phrase(value.getSpeaker(), value.getText(), value.getCallId())).toList()));
         }
         return target;
     }
@@ -61,7 +61,7 @@ final class ContextPersistenceMapper {
             DialogContextEntity dialog = new DialogContextEntity();
             dialog.setContextId(source.getId());
             dialog.setTranscript(source.getDialog().phrases().stream()
-                    .map(value -> new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Phrase(value.speaker(), value.text()))
+                    .map(value -> new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Phrase(value.speaker(), value.text(), value.callId()))
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
             target.attachDialogContext(dialog);
         }

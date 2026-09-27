@@ -75,6 +75,7 @@ def handle_progress_request(context_id: str) -> dict:
             "callAvailable": True,
             "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
+            "interrupted": was_call_disconnected(progress),
         }
     if progress.status == DialogStatus.COMPLETED:
         return {
@@ -96,6 +97,7 @@ def handle_next_call(context_id: str) -> dict:
             "callAvailable": True,
             "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
+            "interrupted": was_call_disconnected(progress),
         }
 
     try:
@@ -174,6 +176,7 @@ async def process_call(ws: WebSocket):
         return
 
     logger.info("Call contextId: %s", context_id)
+    restart = ws.query_params.get("restart", "").lower() == "true"
     processing_context = None
     dialog_context_builder = DialogContextBuilder()
     completed = False
@@ -183,7 +186,13 @@ async def process_call(ws: WebSocket):
         await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No active call")
         return
     call_id = progress.active_call_id
-    call = dialog_use_case().resume_call(context_id)
+    history = None
+    if restart:
+        call = dialog_use_case().restart_call(context_id)
+    else:
+        call = dialog_use_case().resume_call(context_id)
+        if was_call_disconnected(progress):
+            history = dialog_use_case().transcript_for_resume(context_id, call_id)
     call_recorder = call_recorder_factory().create(context_id, call_id)
 
     loop = asyncio.get_running_loop()
@@ -210,6 +219,7 @@ async def process_call(ws: WebSocket):
         on_operator_phrase=dialog_context_builder.append_user_phrase,
         on_counterparty_phrase=dialog_context_builder.append_llm_phrase,
         on_audio=output_callback,
+        history=history,
     )
 
     try:

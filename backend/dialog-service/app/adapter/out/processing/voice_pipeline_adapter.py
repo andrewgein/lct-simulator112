@@ -9,7 +9,7 @@ from app.adapter.out.processing.sst_node import SSTNode
 from app.adapter.out.processing.tts_model import TTSModel
 from app.adapter.out.processing.tts_node import TTSNode
 from app.application.port.outbound import VoicePipeline, VoicePipelineFactory
-from app.domain.model import CallScenario
+from app.domain.model import CallScenario, DialogTranscript
 
 
 class ProcessingVoicePipeline(VoicePipeline):
@@ -19,6 +19,7 @@ class ProcessingVoicePipeline(VoicePipeline):
         on_operator_phrase: Callable[[str], None],
         on_counterparty_phrase: Callable[[str], None],
         on_audio: Callable[[bytes], None],
+        history: DialogTranscript | None = None,
     ):
         def output_callback(audio_chunk) -> None:
             audio = np.asarray(audio_chunk, dtype=np.float32) * 32767.0
@@ -27,7 +28,7 @@ class ProcessingVoicePipeline(VoicePipeline):
 
         processing_context = UserDialogProcessingContext()
         sst = SSTNode(on_new_phrase=on_operator_phrase)
-        chat = ChatNode(context=call, on_new_phrase=on_counterparty_phrase)
+        chat = ChatNode(context=call, on_new_phrase=on_counterparty_phrase, history=history)
         tts = TTSNode(call)
         output = OutputNode(output_callback)
 
@@ -56,9 +57,10 @@ class ProcessingVoicePipelineFactory(VoicePipelineFactory):
         on_operator_phrase: Callable[[str], None],
         on_counterparty_phrase: Callable[[str], None],
         on_audio: Callable[[bytes], None],
+        history: DialogTranscript | None = None,
     ) -> VoicePipeline:
         return ProcessingVoicePipeline(
-            call, on_operator_phrase, on_counterparty_phrase, on_audio)
+            call, on_operator_phrase, on_counterparty_phrase, on_audio, history)
 
     def warm_up(self) -> None:
         TTSModel().register_all_voices()

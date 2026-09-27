@@ -56,10 +56,30 @@ public class ContextManagerGrpcServer extends ContextManagerServiceGrpc.ContextM
     @Override
     public void appendDialogContext(AppendDialogContextRequest request, StreamObserver<Empty> responseObserver) {
         try {
-            dialogService.appendDialog(request.getUuid(),
+            dialogService.appendDialog(request.getUuid(), request.getCallId(),
                     com.simulator112.contextmanager.adapter.grpc.mapper.DialogContextMapper.toDomain(request.getDialogContext()));
             onSuccess(Empty.getDefaultInstance(), responseObserver);
         } catch(Exception e) {
+            onError(e, responseObserver);
+        }
+    }
+
+    @Override
+    public void getCallTranscript(GetCallTranscriptRequest request, StreamObserver<DialogContext> responseObserver) {
+        try {
+            onSuccess(com.simulator112.contextmanager.adapter.grpc.mapper.DialogContextMapper.toProto(
+                    dialogService.getCallTranscript(request.getContextId(), request.getCallId())), responseObserver);
+        } catch (Exception e) {
+            onError(e, responseObserver);
+        }
+    }
+
+    @Override
+    public void clearCallTranscript(ClearCallTranscriptRequest request, StreamObserver<Empty> responseObserver) {
+        try {
+            dialogService.clearCallTranscript(request.getContextId(), request.getCallId());
+            onSuccess(Empty.getDefaultInstance(), responseObserver);
+        } catch (Exception e) {
             onError(e, responseObserver);
         }
     }

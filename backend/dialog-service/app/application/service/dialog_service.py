@@ -31,10 +31,21 @@ class DialogService:
             self._context.start_call(context_id, session.call.id)
         return session.call
 
+    def restart_call(self, context_id: str) -> CallScenario:
+        session = self.session(context_id)
+        if session.call is None:
+            raise ValueError("В контексте нет активного звонка")
+        self._context.clear_call_transcript(context_id, session.call.id)
+        self._context.start_call(context_id, session.call.id)
+        return session.call
+
+    def transcript_for_resume(self, context_id: str, call_id: str) -> DialogTranscript:
+        return self._context.get_call_transcript(context_id, call_id)
+
     def complete(self, context_id: str, call_id: str, transcript: DialogTranscript) -> None:
-        self._context.append_transcript(context_id, transcript)
+        self._context.append_transcript(context_id, call_id, transcript)
         self._context.complete_call(context_id, call_id)
 
     def disconnect(self, context_id: str, call_id: str, transcript: DialogTranscript) -> None:
-        self._context.append_transcript(context_id, transcript)
+        self._context.append_transcript(context_id, call_id, transcript)
         self._context.disconnect_call(context_id, call_id)

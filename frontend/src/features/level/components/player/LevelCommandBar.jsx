@@ -1,6 +1,6 @@
 import CallControls from "./CallControls.jsx";
 
-export default function LevelCommandBar({ call, now, onAccept, onDrop, exitHref, modeLabel = "Учебный режим · АРМ оператора", idleLabel = "Ожидание вызова", idleIcon = "headset", children }) {
+export default function LevelCommandBar({ call, now, onAccept, onRestart, onDrop, exitHref, modeLabel = "Учебный режим · АРМ оператора", idleLabel = "Ожидание вызова", idleIcon = "headset", children }) {
   const hasCall = ["incoming", "active"].includes(call.phase);
   const exitLevel = () => {
     if (window.confirm("Выйти из уровня? Текущий прогресс диалога будет потерян.")) window.location.href = exitHref;
@@ -22,7 +22,7 @@ export default function LevelCommandBar({ call, now, onAccept, onDrop, exitHref,
           )}
         </div>
         {hasCall ? (
-          <CallControls call={call} onAccept={onAccept} onDrop={onDrop} />
+          <CallControls call={call} onAccept={onAccept} onRestart={onRestart} onDrop={onDrop} />
         ) : (
           <div class="level-connection wa-stack wa-gap-xs wa-align-items-center wa-justify-content-center">
             <wa-icon name={idleIcon} aria-hidden="true"></wa-icon>
