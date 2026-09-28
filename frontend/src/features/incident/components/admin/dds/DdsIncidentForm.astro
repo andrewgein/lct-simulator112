@@ -1,6 +1,5 @@
 ---
 import AdminIncidentAddressCard from "../AdminIncidentAddressCard.astro";
-import AdminIncidentCriteriaCard from "../AdminIncidentCriteriaCard.astro";
 import DdsIncidentConstructor from "./DdsIncidentConstructor.jsx";
 
 /** @typedef {import("../../../contract/Incident").DdsIncident} DdsIncident */
@@ -22,7 +21,6 @@ const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
   </section>
   <AdminIncidentAddressCard address={incident.address} {dadataApiKey} />
   <DdsIncidentConstructor {incident} client:load />
-  <AdminIncidentCriteriaCard criteria={incident.criteria} />
 </div>
 <script>
   const form = document.querySelector('#incident-form');
