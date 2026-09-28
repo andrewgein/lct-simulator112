@@ -175,8 +175,9 @@
   .generator-message { max-width: 90%; margin: 0; padding: var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: 0; overflow-wrap: anywhere; white-space: pre-wrap; background: var(--wa-color-surface-lowered); }
   .generator-message--user { align-self: flex-end; border-color: var(--wa-color-brand-border-loud); background: var(--wa-color-brand-fill-loud); color: var(--wa-color-brand-on-loud); }
   .generator-message--error { border-color: var(--wa-color-danger-border-quiet); background: var(--wa-color-danger-fill-quiet); color: var(--wa-color-danger-60); }
-  .generator-compose { display: flex; align-items: flex-end; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .generator-compose { display: flex; align-items: center; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
   .generator-compose wa-textarea { flex: 1; min-width: 0; }
   .generator-compose wa-button { flex: none; }
   #generator-prompt::part(textarea-wrapper), #generator-send::part(button) { border-radius: 0; }
+  #generator-send wa-icon { transform: scaleX(-1); }
 </style>
