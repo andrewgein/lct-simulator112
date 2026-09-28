@@ -58,7 +58,7 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, T
     }
 
     public record StageScenario(String id, Integer position, List<String> classifierCodes, int victimCount,
-                                String ddsStageType, List<CallScenario> calls, String expectedComment, String actualStatus) {
+                                String ddsStageType, List<CallScenario> calls, String expectedComment, IncidentStatus actualStatus) {
         public StageScenario(String id, Integer position, List<String> classifierCodes, int victimCount,
                              String ddsStageType, List<CallScenario> calls, String expectedComment) {
             this(id, position, classifierCodes, victimCount, ddsStageType, calls, expectedComment, null);
@@ -105,7 +105,7 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, T
         }
     }
 
-    public record ReactionEvent(String status, Instant changedAt, String comment) {
+    public record ReactionEvent(IncidentStatus status, Instant changedAt, String comment) {
     }
 
     public record StageRuntime(String stageId, String stageType, String status,

@@ -68,10 +68,10 @@ class ContextServiceTests {
         assertThat(proto.getAssignmentContext().getThreshold4()).isEqualTo(60);
         assertThat(proto.getAssignmentContext().getThreshold5()).isEqualTo(80);
         assertThat(proto.getAssignmentContext().getIncidents(0).getStages(0).getDds().getActualStatus())
-                .isEqualTo("ARRIVED");
+                .isEqualTo(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_ARRIVED);
         assertThat(proto.getLevelProgress().getIncidents(0).getReactionEventsList())
                 .extracting(com.simulator112.context.grpc.contract.ReactionEvent::getStatus)
-                .contains("RECEIVED_BY_SERVICE");
+                .contains(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_RECEIVED_BY_SERVICE);
         assertThat(proto.getLevelProgress().getIncidents(0).getDds().getStages(0).getCompletedCallIdsList())
                 .containsExactly(call.getSourceId().toString());
         assertThat(context.getIncidents())
@@ -116,7 +116,7 @@ class ContextServiceTests {
                         .setDds(DdsStageDetails.newBuilder()
                                 .setType(DdsStageType.DDS_STAGE_TYPE_ASSIGN_BRIGADE)
                                 .setTimeLimitSeconds(60)
-                                .setActualStatus("ARRIVED")))
+                                .setActualStatus(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_ARRIVED)))
                 .build();
     }
 }

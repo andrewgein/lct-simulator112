@@ -66,7 +66,10 @@ public final class IncidentContextMapper {
                     proto.getSystem112().getVictimCount()));
         } else if (proto.hasDds()) {
             value.setDds(new DdsStageDetails(DdsStageType.valueOf(proto.getDds().getType().name().replace("DDS_STAGE_TYPE_", "")),
-                    proto.getDds().getTimeLimitSeconds(), proto.getDds().getExpectedComment(), null, proto.getDds().getActualStatus()));
+                    proto.getDds().getTimeLimitSeconds(), proto.getDds().getExpectedComment(), null,
+                    proto.getDds().getActualStatus() == com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_UNSPECIFIED
+                            ? null : com.simulator112.contextmanager.domain.common.IncidentStatus.valueOf(
+                                    proto.getDds().getActualStatus().name().replace("INCIDENT_STATUS_", ""))));
         }
         value.setCalls(proto.getCallsList().stream().map(IncidentContextMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return value;
@@ -113,7 +116,10 @@ public final class IncidentContextMapper {
                 .setType(com.simulator112.incident.grpc.contract.DdsStageType.valueOf("DDS_STAGE_TYPE_" + value.getDds().getType().name()))
                 .setTimeLimitSeconds(value.getDds().getTimeLimitSeconds())
                 .setExpectedComment(orEmpty(value.getDds().getExpectedComment()))
-                .setActualStatus(orEmpty(value.getDds().getActualStatus())));
+                .setActualStatus(value.getDds().getActualStatus() == null
+                        ? com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_UNSPECIFIED
+                        : com.simulator112.incident.grpc.contract.IncidentStatus.valueOf(
+                                "INCIDENT_STATUS_" + value.getDds().getActualStatus().name())));
         else throw new IllegalStateException("Не указан тип этапа: " + value.getSourceId());
         return builder.build();
     }

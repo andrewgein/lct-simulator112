@@ -120,24 +120,26 @@ class DdsStageProgress(_message.Message):
     def __init__(self, stage_id: _Optional[str] = ..., stage_type: _Optional[str] = ..., status: _Optional[str] = ..., started_at: _Optional[str] = ..., deadline: _Optional[str] = ..., comment: _Optional[str] = ..., completed_call: _Optional[bool] = ..., completed_call_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class DdsProgress(_message.Message):
-    __slots__ = ("active_stage_id", "deadline", "stages")
+    __slots__ = ("active_stage_id", "deadline", "stages", "card_status")
     ACTIVE_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
     DEADLINE_FIELD_NUMBER: _ClassVar[int]
     STAGES_FIELD_NUMBER: _ClassVar[int]
+    CARD_STATUS_FIELD_NUMBER: _ClassVar[int]
     active_stage_id: str
     deadline: str
     stages: _containers.RepeatedCompositeFieldContainer[DdsStageProgress]
-    def __init__(self, active_stage_id: _Optional[str] = ..., deadline: _Optional[str] = ..., stages: _Optional[_Iterable[_Union[DdsStageProgress, _Mapping]]] = ...) -> None: ...
+    card_status: _incident_context_pb2.IncidentStatus
+    def __init__(self, active_stage_id: _Optional[str] = ..., deadline: _Optional[str] = ..., stages: _Optional[_Iterable[_Union[DdsStageProgress, _Mapping]]] = ..., card_status: _Optional[_Union[_incident_context_pb2.IncidentStatus, str]] = ...) -> None: ...
 
 class ReactionEvent(_message.Message):
-    __slots__ = ("status", "changed_at", "comment")
-    STATUS_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("changed_at", "comment", "status")
     CHANGED_AT_FIELD_NUMBER: _ClassVar[int]
     COMMENT_FIELD_NUMBER: _ClassVar[int]
-    status: str
+    STATUS_FIELD_NUMBER: _ClassVar[int]
     changed_at: str
     comment: str
-    def __init__(self, status: _Optional[str] = ..., changed_at: _Optional[str] = ..., comment: _Optional[str] = ...) -> None: ...
+    status: _incident_context_pb2.IncidentStatus
+    def __init__(self, changed_at: _Optional[str] = ..., comment: _Optional[str] = ..., status: _Optional[_Union[_incident_context_pb2.IncidentStatus, str]] = ...) -> None: ...
 
 class IncidentProgress(_message.Message):
     __slots__ = ("incident_id", "status", "reaction_events", "system_112", "dds")

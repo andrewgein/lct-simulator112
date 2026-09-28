@@ -42,8 +42,7 @@ public final class DdsReviewRubric implements ReviewRubric {
                         return List.of(new CriterionResult(incident.id(), incident.order(), category, 0, stageBudget,
                                 "Runtime-прогресс инцидента отсутствует")).stream();
                     }
-                    var milestones = incident.stages().stream().filter(stage -> stage.actualStatus() != null
-                            && !stage.actualStatus().isBlank()).toList();
+                    var milestones = incident.stages().stream().filter(stage -> stage.actualStatus() != null).toList();
                     var calls = incident.stages().stream().filter(stage -> !stage.calls().isEmpty()).toList();
                     List<WeightedCheck> checks = new ArrayList<>();
                     if (!milestones.isEmpty() || !calls.isEmpty()) {
@@ -63,7 +62,7 @@ public final class DdsReviewRubric implements ReviewRubric {
                                             && !event.changedAt().isBefore(changedAt)
                                             && !event.changedAt().isAfter(dueAt))
                                     .max(Comparator.comparing(ReviewSubmission.ReactionEvent::changedAt)).orElse(null);
-                            boolean correct = reported != null && milestone.actualStatus().equals(reported.status());
+                            boolean correct = reported != null && milestone.actualStatus() == reported.status();
                             checks.add(new WeightedCheck(correct, weight,
                                     "Статус " + milestone.actualStatus() + " возник " + changedAt
                                             + ", до " + dueAt + " диспетчер указал "

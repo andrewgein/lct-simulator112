@@ -105,13 +105,7 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
     }
 
     private void validateDdsStageCalls(DdsIncident incident) {
-        var allowedStatuses = java.util.Set.of("ACCEPTED", "NOT_ACCEPTED", "RESPONSE_STARTED", "ARRIVED",
-                "WORK_IN_PROGRESS", "WORK_COMPLETED", "WORK_REFUSED");
         for (var stage : incident.stages()) {
-            if (stage.actualStatus() != null && !stage.actualStatus().isBlank()
-                    && !allowedStatuses.contains(stage.actualStatus())) {
-                throw new IllegalArgumentException("Неизвестный фактический статус реагирования: " + stage.actualStatus());
-            }
             if (stage.expectedComment() != null && !stage.expectedComment().isBlank() && stage.calls().isEmpty()) {
                 throw new IllegalArgumentException("Для ожидаемого комментария необходим звонок");
             }

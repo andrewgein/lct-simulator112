@@ -32,6 +32,26 @@ class Gender(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     GENDER_MAN: _ClassVar[Gender]
     GENDER_WOMEN: _ClassVar[Gender]
 
+class IncidentStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    INCIDENT_STATUS_UNSPECIFIED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_ADDED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_RECEIVED_BY_SERVICE: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_ACCEPTED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_NOT_ACCEPTED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_RESPONSE_STARTED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_ARRIVED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_WORK_IN_PROGRESS: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_WORK_COMPLETED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_WORK_REFUSED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_REGISTERED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_PROCESSED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_VERIFIED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_NOT_NOTIFIED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_REFUSED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_NOT_COMPLETED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_COMPLETED: _ClassVar[IncidentStatus]
+
 class DdsStageType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     DDS_STAGE_TYPE_UNSPECIFIED: _ClassVar[DdsStageType]
@@ -66,6 +86,23 @@ DIFFICULTY_HARD: Difficulty
 GENDER_UNSPECIFIED: Gender
 GENDER_MAN: Gender
 GENDER_WOMEN: Gender
+INCIDENT_STATUS_UNSPECIFIED: IncidentStatus
+INCIDENT_STATUS_ADDED: IncidentStatus
+INCIDENT_STATUS_RECEIVED_BY_SERVICE: IncidentStatus
+INCIDENT_STATUS_ACCEPTED: IncidentStatus
+INCIDENT_STATUS_NOT_ACCEPTED: IncidentStatus
+INCIDENT_STATUS_RESPONSE_STARTED: IncidentStatus
+INCIDENT_STATUS_ARRIVED: IncidentStatus
+INCIDENT_STATUS_WORK_IN_PROGRESS: IncidentStatus
+INCIDENT_STATUS_WORK_COMPLETED: IncidentStatus
+INCIDENT_STATUS_WORK_REFUSED: IncidentStatus
+INCIDENT_STATUS_REGISTERED: IncidentStatus
+INCIDENT_STATUS_PROCESSED: IncidentStatus
+INCIDENT_STATUS_VERIFIED: IncidentStatus
+INCIDENT_STATUS_NOT_NOTIFIED: IncidentStatus
+INCIDENT_STATUS_REFUSED: IncidentStatus
+INCIDENT_STATUS_NOT_COMPLETED: IncidentStatus
+INCIDENT_STATUS_COMPLETED: IncidentStatus
 DDS_STAGE_TYPE_UNSPECIFIED: DdsStageType
 DDS_STAGE_TYPE_ASSIGN_BRIGADE: DdsStageType
 DDS_STAGE_TYPE_WAIT_FOR_BRIGADE_STATUS_CHANGE: DdsStageType
@@ -137,8 +174,8 @@ class DdsStageDetails(_message.Message):
     type: DdsStageType
     time_limit_seconds: int
     expected_comment: str
-    actual_status: str
-    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ..., expected_comment: _Optional[str] = ..., actual_status: _Optional[str] = ...) -> None: ...
+    actual_status: IncidentStatus
+    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ..., expected_comment: _Optional[str] = ..., actual_status: _Optional[_Union[IncidentStatus, str]] = ...) -> None: ...
 
 class CallScenario(_message.Message):
     __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state")

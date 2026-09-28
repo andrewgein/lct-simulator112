@@ -107,14 +107,14 @@ class ReviewApplicationServiceTests {
         var ddsService = new ReviewApplicationService(store, List.of(new DdsReviewRubric()),
                 dialogueAnalysisPort, events);
         var stage = new ReviewSubmission.StageScenario("stage", null, List.of(), 0,
-                "CALL_BRIGADE_FOR_STATUS", List.of(), "Бригада прибыла на место", "ARRIVED");
+                "CALL_BRIGADE_FOR_STATUS", List.of(), "Бригада прибыла на место", com.simulator112.review_service.domain.model.IncidentStatus.ARRIVED);
         var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(stage),
                 new ReviewSubmission.EvaluationCriteria(List.of()));
         var deadline = java.time.Instant.parse("2026-01-01T12:01:00Z");
         var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
                 new ReviewSubmission.StageRuntime("stage", "CALL_BRIGADE_FOR_STATUS", "SUCCEEDED",
                         deadline.minusSeconds(60), deadline, "Нет сведений")), List.of(
-                new ReviewSubmission.ReactionEvent("ARRIVED", deadline.plusSeconds(1), null)));
+                new ReviewSubmission.ReactionEvent(com.simulator112.review_service.domain.model.IncidentStatus.ARRIVED, deadline.plusSeconds(1), null)));
         var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                 ReviewSubmission.TargetType.DDS, List.of(incident), List.of(), List.of(runtime), List.of(), null, deadline.plusSeconds(60));
         when(dialogueAnalysisPort.analyze(any(), any())).thenReturn(List.of(

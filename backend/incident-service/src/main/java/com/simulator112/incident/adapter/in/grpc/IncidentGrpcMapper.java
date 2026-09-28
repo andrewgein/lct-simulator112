@@ -48,7 +48,9 @@ public class IncidentGrpcMapper {
                         .setType(toProto(stage.type()))
                         .setTimeLimitSeconds(stage.timeLimitSeconds())
                         .setExpectedComment(string(stage.expectedComment()))
-                        .setActualStatus(string(stage.actualStatus())))
+                        .setActualStatus(stage.actualStatus() == null
+                                ? com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_UNSPECIFIED
+                                : com.simulator112.incident.grpc.contract.IncidentStatus.valueOf("INCIDENT_STATUS_" + stage.actualStatus().name())))
                 .build();
     }
 

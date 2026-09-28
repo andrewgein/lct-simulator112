@@ -44,7 +44,8 @@ public final class LevelProgressGrpcMapper {
                 var snapshot = context.getIncidents().get(index);
                 snapshot.getServiceReactions().forEach(reaction -> reaction.getHistory().forEach(event ->
                         progress.addReactionEvents(com.simulator112.context.grpc.contract.ReactionEvent.newBuilder()
-                                .setStatus(event.status().name())
+                                .setStatus(com.simulator112.incident.grpc.contract.IncidentStatus.valueOf(
+                                        "INCIDENT_STATUS_" + event.status().name()))
                                 .setChangedAt(event.changedAt().toString())
                                 .setComment(event.comment() == null ? "" : event.comment()))));
                 for (int stageIndex = 0; stageIndex < snapshot.getStages().size(); stageIndex++) {

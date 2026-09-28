@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n0com/simulator112/incident/incident_context.proto\x12\x08incident\"\xb1\x03\n\x0fIncidentContext\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\"\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x11.incident.Address\x12(\n\ndifficulty\x18\x04 \x01(\x0e\x32\x14.incident.Difficulty\x12\x31\n\x0btarget_type\x18\x05 \x01(\x0e\x32\x1c.incident.IncidentTargetType\x12\'\n\x06stages\x18\x06 \x03(\x0b\x32\x17.incident.IncidentStage\x12$\n\x08\x63riteria\x18\x07 \x01(\x0b\x32\x12.incident.Criteria\x12\x43\n\x16prepared_card_template\x18\x08 \x01(\x0b\x32\x1e.incident.PreparedCardTemplateH\x00\x88\x01\x01\x12<\n\x12initial_assignment\x18\t \x01(\x0b\x32\x1b.incident.InitialAssignmentH\x01\x88\x01\x01\x42\x19\n\x17_prepared_card_templateB\x15\n\x13_initial_assignment\"\xd2\x01\n\rIncidentStage\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12%\n\x05\x63\x61lls\x18\x06 \x03(\x0b\x32\x16.incident.CallScenario\x12\x35\n\nsystem_112\x18\x07 \x01(\x0b\x32\x1f.incident.System112StageDetailsH\x00\x12(\n\x03\x64\x64s\x18\x08 \x01(\x0b\x32\x19.incident.DdsStageDetailsH\x00\x42\t\n\x07\x64\x65tails\"Y\n\x15System112StageDetails\x12\x18\n\x10\x63lassifier_codes\x18\x01 \x03(\t\x12\x14\n\x0cvictim_count\x18\x02 \x01(\x05\x12\x10\n\x08position\x18\x03 \x01(\x05\"\x84\x01\n\x0f\x44\x64sStageDetails\x12$\n\x04type\x18\x01 \x01(\x0e\x32\x16.incident.DdsStageType\x12\x1a\n\x12time_limit_seconds\x18\x02 \x01(\x05\x12\x18\n\x10\x65xpected_comment\x18\x03 \x01(\t\x12\x15\n\ractual_status\x18\x04 \x01(\t\"\xa6\x02\n\x0c\x43\x61llScenario\x12\n\n\x02id\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\x05\x12*\n\tdirection\x18\x03 \x01(\x0e\x32\x17.incident.CallDirection\x12\x30\n\x0c\x63ounterparty\x18\x04 \x01(\x0e\x32\x1a.incident.CounterpartyType\x12 \n\x06person\x18\x05 \x01(\x0b\x32\x10.incident.Person\x12 \n\x06gender\x18\x06 \x01(\x0e\x32\x10.incident.Gender\x12\x13\n\x0bknown_facts\x18\x07 \x03(\t\x12\x14\n\x0chidden_facts\x18\x08 \x03(\t\x12\x12\n\nai_context\x18\t \x01(\t\x12\x17\n\x0f\x65motional_state\x18\n \x01(\t\"\xef\x01\n\x14PreparedCardTemplate\x12\x18\n\x10\x63lassifier_codes\x18\x01 \x03(\t\x12#\n\tapplicant\x18\x02 \x01(\x0b\x32\x10.incident.Person\x12\x14\n\x0cvictim_count\x18\x03 \x01(\x05\x12K\n\x0f\x61\x64\x64itional_info\x18\x04 \x03(\x0b\x32\x32.incident.PreparedCardTemplate.AdditionalInfoEntry\x1a\x35\n\x13\x41\x64\x64itionalInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"b\n\x11InitialAssignment\x12\x17\n\x0f\x63lassifier_code\x18\x02 \x01(\t\x12\x14\n\x0cinstructions\x18\x03 \x01(\t\x12\x1e\n\x16\x65mergency_service_code\x18\x04 \x01(\t\"B\n\x08\x43riteria\x12\x36\n\x11\x64ialogue_criteria\x18\x04 \x03(\x0b\x32\x1b.incident.DialogueCriterion\"Q\n\x11\x44ialogueCriterion\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x12\n\nhypothesis\x18\x03 \x01(\t\x12\x0e\n\x06weight\x18\x04 \x01(\x05\"y\n\x07\x41\x64\x64ress\x12\x0c\n\x04\x63ity\x18\x01 \x01(\t\x12\x0e\n\x06street\x18\x02 \x01(\t\x12\r\n\x05house\x18\x03 \x01(\t\x12\x10\n\x08\x62uilding\x18\x04 \x01(\t\x12\x11\n\tapartment\x18\x05 \x01(\t\x12\x12\n\x05\x66loor\x18\x06 \x01(\x05H\x00\x88\x01\x01\x42\x08\n\x06_floor\"\xc6\x01\n\x06Person\x12\x12\n\nfirst_name\x18\x01 \x01(\t\x12\x11\n\tlast_name\x18\x02 \x01(\t\x12\x13\n\x0bmiddle_name\x18\x03 \x01(\t\x12\x10\n\x03\x61ge\x18\x04 \x01(\x05H\x00\x88\x01\x01\x12\r\n\x05phone\x18\x05 \x01(\t\x12\x15\n\rcontact_phone\x18\x06 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x07 \x01(\t\x12\x17\n\x0f\x61\x64\x64itional_info\x18\x08 \x01(\t\x12\x16\n\x0eon_scene_phone\x18\t \x01(\tB\x06\n\x04_age*k\n\rExecutionMode\x12\x1e\n\x1a\x45XECUTION_MODE_UNSPECIFIED\x10\x00\x12\x1d\n\x19\x45XECUTION_MODE_SEQUENTIAL\x10\x01\x12\x1b\n\x17\x45XECUTION_MODE_PARALLEL\x10\x02*}\n\x12IncidentTargetType\x12$\n INCIDENT_TARGET_TYPE_UNSPECIFIED\x10\x00\x12#\n\x1fINCIDENT_TARGET_TYPE_SYSTEM_112\x10\x01\x12\x1c\n\x18INCIDENT_TARGET_TYPE_DDS\x10\x02*i\n\nDifficulty\x12\x1a\n\x16\x44IFFICULTY_UNSPECIFIED\x10\x00\x12\x13\n\x0f\x44IFFICULTY_EASY\x10\x01\x12\x15\n\x11\x44IFFICULTY_NORMAL\x10\x02\x12\x13\n\x0f\x44IFFICULTY_HARD\x10\x03*B\n\x06Gender\x12\x16\n\x12GENDER_UNSPECIFIED\x10\x00\x12\x0e\n\nGENDER_MAN\x10\x01\x12\x10\n\x0cGENDER_WOMEN\x10\x02*\x85\x02\n\x0c\x44\x64sStageType\x12\x1e\n\x1a\x44\x44S_STAGE_TYPE_UNSPECIFIED\x10\x00\x12!\n\x1d\x44\x44S_STAGE_TYPE_ASSIGN_BRIGADE\x10\x01\x12\x31\n-DDS_STAGE_TYPE_WAIT_FOR_BRIGADE_STATUS_CHANGE\x10\x02\x12*\n&DDS_STAGE_TYPE_CALL_BRIGADE_FOR_STATUS\x10\x03\x12-\n)DDS_STAGE_TYPE_REQUEST_ADDITIONAL_SERVICE\x10\x04\x12$\n DDS_STAGE_TYPE_COMPLETE_INCIDENT\x10\x05*h\n\rCallDirection\x12\x1e\n\x1a\x43\x41LL_DIRECTION_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x43\x41LL_DIRECTION_INBOUND\x10\x01\x12\x1b\n\x17\x43\x41LL_DIRECTION_OUTBOUND\x10\x02*\x91\x01\n\x10\x43ounterpartyType\x12!\n\x1d\x43OUNTERPARTY_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n\x18\x43OUNTERPARTY_TYPE_CALLER\x10\x01\x12\x1d\n\x19\x43OUNTERPARTY_TYPE_BRIGADE\x10\x02\x12\x1d\n\x19\x43OUNTERPARTY_TYPE_SERVICE\x10\x03\x42+\n\'com.simulator112.incident.grpc.contractP\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n0com/simulator112/incident/incident_context.proto\x12\x08incident\"\xb1\x03\n\x0fIncidentContext\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\"\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x11.incident.Address\x12(\n\ndifficulty\x18\x04 \x01(\x0e\x32\x14.incident.Difficulty\x12\x31\n\x0btarget_type\x18\x05 \x01(\x0e\x32\x1c.incident.IncidentTargetType\x12\'\n\x06stages\x18\x06 \x03(\x0b\x32\x17.incident.IncidentStage\x12$\n\x08\x63riteria\x18\x07 \x01(\x0b\x32\x12.incident.Criteria\x12\x43\n\x16prepared_card_template\x18\x08 \x01(\x0b\x32\x1e.incident.PreparedCardTemplateH\x00\x88\x01\x01\x12<\n\x12initial_assignment\x18\t \x01(\x0b\x32\x1b.incident.InitialAssignmentH\x01\x88\x01\x01\x42\x19\n\x17_prepared_card_templateB\x15\n\x13_initial_assignment\"\xd2\x01\n\rIncidentStage\x12\n\n\x02id\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12%\n\x05\x63\x61lls\x18\x06 \x03(\x0b\x32\x16.incident.CallScenario\x12\x35\n\nsystem_112\x18\x07 \x01(\x0b\x32\x1f.incident.System112StageDetailsH\x00\x12(\n\x03\x64\x64s\x18\x08 \x01(\x0b\x32\x19.incident.DdsStageDetailsH\x00\x42\t\n\x07\x64\x65tails\"Y\n\x15System112StageDetails\x12\x18\n\x10\x63lassifier_codes\x18\x01 \x03(\t\x12\x14\n\x0cvictim_count\x18\x02 \x01(\x05\x12\x10\n\x08position\x18\x03 \x01(\x05\"\xa4\x01\n\x0f\x44\x64sStageDetails\x12$\n\x04type\x18\x01 \x01(\x0e\x32\x16.incident.DdsStageType\x12\x1a\n\x12time_limit_seconds\x18\x02 \x01(\x05\x12\x18\n\x10\x65xpected_comment\x18\x03 \x01(\t\x12/\n\ractual_status\x18\x05 \x01(\x0e\x32\x18.incident.IncidentStatusJ\x04\x08\x04\x10\x05\"\xa6\x02\n\x0c\x43\x61llScenario\x12\n\n\x02id\x18\x01 \x01(\t\x12\x10\n\x08position\x18\x02 \x01(\x05\x12*\n\tdirection\x18\x03 \x01(\x0e\x32\x17.incident.CallDirection\x12\x30\n\x0c\x63ounterparty\x18\x04 \x01(\x0e\x32\x1a.incident.CounterpartyType\x12 \n\x06person\x18\x05 \x01(\x0b\x32\x10.incident.Person\x12 \n\x06gender\x18\x06 \x01(\x0e\x32\x10.incident.Gender\x12\x13\n\x0bknown_facts\x18\x07 \x03(\t\x12\x14\n\x0chidden_facts\x18\x08 \x03(\t\x12\x12\n\nai_context\x18\t \x01(\t\x12\x17\n\x0f\x65motional_state\x18\n \x01(\t\"\xef\x01\n\x14PreparedCardTemplate\x12\x18\n\x10\x63lassifier_codes\x18\x01 \x03(\t\x12#\n\tapplicant\x18\x02 \x01(\x0b\x32\x10.incident.Person\x12\x14\n\x0cvictim_count\x18\x03 \x01(\x05\x12K\n\x0f\x61\x64\x64itional_info\x18\x04 \x03(\x0b\x32\x32.incident.PreparedCardTemplate.AdditionalInfoEntry\x1a\x35\n\x13\x41\x64\x64itionalInfoEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"b\n\x11InitialAssignment\x12\x17\n\x0f\x63lassifier_code\x18\x02 \x01(\t\x12\x14\n\x0cinstructions\x18\x03 \x01(\t\x12\x1e\n\x16\x65mergency_service_code\x18\x04 \x01(\t\"B\n\x08\x43riteria\x12\x36\n\x11\x64ialogue_criteria\x18\x04 \x03(\x0b\x32\x1b.incident.DialogueCriterion\"Q\n\x11\x44ialogueCriterion\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x12\n\nhypothesis\x18\x03 \x01(\t\x12\x0e\n\x06weight\x18\x04 \x01(\x05\"y\n\x07\x41\x64\x64ress\x12\x0c\n\x04\x63ity\x18\x01 \x01(\t\x12\x0e\n\x06street\x18\x02 \x01(\t\x12\r\n\x05house\x18\x03 \x01(\t\x12\x10\n\x08\x62uilding\x18\x04 \x01(\t\x12\x11\n\tapartment\x18\x05 \x01(\t\x12\x12\n\x05\x66loor\x18\x06 \x01(\x05H\x00\x88\x01\x01\x42\x08\n\x06_floor\"\xc6\x01\n\x06Person\x12\x12\n\nfirst_name\x18\x01 \x01(\t\x12\x11\n\tlast_name\x18\x02 \x01(\t\x12\x13\n\x0bmiddle_name\x18\x03 \x01(\t\x12\x10\n\x03\x61ge\x18\x04 \x01(\x05H\x00\x88\x01\x01\x12\r\n\x05phone\x18\x05 \x01(\t\x12\x15\n\rcontact_phone\x18\x06 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x07 \x01(\t\x12\x17\n\x0f\x61\x64\x64itional_info\x18\x08 \x01(\t\x12\x16\n\x0eon_scene_phone\x18\t \x01(\tB\x06\n\x04_age*k\n\rExecutionMode\x12\x1e\n\x1a\x45XECUTION_MODE_UNSPECIFIED\x10\x00\x12\x1d\n\x19\x45XECUTION_MODE_SEQUENTIAL\x10\x01\x12\x1b\n\x17\x45XECUTION_MODE_PARALLEL\x10\x02*}\n\x12IncidentTargetType\x12$\n INCIDENT_TARGET_TYPE_UNSPECIFIED\x10\x00\x12#\n\x1fINCIDENT_TARGET_TYPE_SYSTEM_112\x10\x01\x12\x1c\n\x18INCIDENT_TARGET_TYPE_DDS\x10\x02*i\n\nDifficulty\x12\x1a\n\x16\x44IFFICULTY_UNSPECIFIED\x10\x00\x12\x13\n\x0f\x44IFFICULTY_EASY\x10\x01\x12\x15\n\x11\x44IFFICULTY_NORMAL\x10\x02\x12\x13\n\x0f\x44IFFICULTY_HARD\x10\x03*B\n\x06Gender\x12\x16\n\x12GENDER_UNSPECIFIED\x10\x00\x12\x0e\n\nGENDER_MAN\x10\x01\x12\x10\n\x0cGENDER_WOMEN\x10\x02*\xc2\x04\n\x0eIncidentStatus\x12\x1f\n\x1bINCIDENT_STATUS_UNSPECIFIED\x10\x00\x12\x19\n\x15INCIDENT_STATUS_ADDED\x10\x01\x12\'\n#INCIDENT_STATUS_RECEIVED_BY_SERVICE\x10\x02\x12\x1c\n\x18INCIDENT_STATUS_ACCEPTED\x10\x03\x12 \n\x1cINCIDENT_STATUS_NOT_ACCEPTED\x10\x04\x12$\n INCIDENT_STATUS_RESPONSE_STARTED\x10\x05\x12\x1b\n\x17INCIDENT_STATUS_ARRIVED\x10\x06\x12$\n INCIDENT_STATUS_WORK_IN_PROGRESS\x10\x07\x12\"\n\x1eINCIDENT_STATUS_WORK_COMPLETED\x10\x08\x12 \n\x1cINCIDENT_STATUS_WORK_REFUSED\x10\t\x12\x1e\n\x1aINCIDENT_STATUS_REGISTERED\x10\n\x12\x1d\n\x19INCIDENT_STATUS_PROCESSED\x10\x0b\x12\x1c\n\x18INCIDENT_STATUS_VERIFIED\x10\x0c\x12 \n\x1cINCIDENT_STATUS_NOT_NOTIFIED\x10\r\x12\x1b\n\x17INCIDENT_STATUS_REFUSED\x10\x0e\x12!\n\x1dINCIDENT_STATUS_NOT_COMPLETED\x10\x0f\x12\x1d\n\x19INCIDENT_STATUS_COMPLETED\x10\x10*\x85\x02\n\x0c\x44\x64sStageType\x12\x1e\n\x1a\x44\x44S_STAGE_TYPE_UNSPECIFIED\x10\x00\x12!\n\x1d\x44\x44S_STAGE_TYPE_ASSIGN_BRIGADE\x10\x01\x12\x31\n-DDS_STAGE_TYPE_WAIT_FOR_BRIGADE_STATUS_CHANGE\x10\x02\x12*\n&DDS_STAGE_TYPE_CALL_BRIGADE_FOR_STATUS\x10\x03\x12-\n)DDS_STAGE_TYPE_REQUEST_ADDITIONAL_SERVICE\x10\x04\x12$\n DDS_STAGE_TYPE_COMPLETE_INCIDENT\x10\x05*h\n\rCallDirection\x12\x1e\n\x1a\x43\x41LL_DIRECTION_UNSPECIFIED\x10\x00\x12\x1a\n\x16\x43\x41LL_DIRECTION_INBOUND\x10\x01\x12\x1b\n\x17\x43\x41LL_DIRECTION_OUTBOUND\x10\x02*\x91\x01\n\x10\x43ounterpartyType\x12!\n\x1d\x43OUNTERPARTY_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n\x18\x43OUNTERPARTY_TYPE_CALLER\x10\x01\x12\x1d\n\x19\x43OUNTERPARTY_TYPE_BRIGADE\x10\x02\x12\x1d\n\x19\x43OUNTERPARTY_TYPE_SERVICE\x10\x03\x42+\n\'com.simulator112.incident.grpc.contractP\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,20 +34,22 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._serialized_options = b'\n\'com.simulator112.incident.grpc.contractP\001'
   _globals['_PREPAREDCARDTEMPLATE_ADDITIONALINFOENTRY']._loaded_options = None
   _globals['_PREPAREDCARDTEMPLATE_ADDITIONALINFOENTRY']._serialized_options = b'8\001'
-  _globals['_EXECUTIONMODE']._serialized_start=2051
-  _globals['_EXECUTIONMODE']._serialized_end=2158
-  _globals['_INCIDENTTARGETTYPE']._serialized_start=2160
-  _globals['_INCIDENTTARGETTYPE']._serialized_end=2285
-  _globals['_DIFFICULTY']._serialized_start=2287
-  _globals['_DIFFICULTY']._serialized_end=2392
-  _globals['_GENDER']._serialized_start=2394
-  _globals['_GENDER']._serialized_end=2460
-  _globals['_DDSSTAGETYPE']._serialized_start=2463
-  _globals['_DDSSTAGETYPE']._serialized_end=2724
-  _globals['_CALLDIRECTION']._serialized_start=2726
-  _globals['_CALLDIRECTION']._serialized_end=2830
-  _globals['_COUNTERPARTYTYPE']._serialized_start=2833
-  _globals['_COUNTERPARTYTYPE']._serialized_end=2978
+  _globals['_EXECUTIONMODE']._serialized_start=2083
+  _globals['_EXECUTIONMODE']._serialized_end=2190
+  _globals['_INCIDENTTARGETTYPE']._serialized_start=2192
+  _globals['_INCIDENTTARGETTYPE']._serialized_end=2317
+  _globals['_DIFFICULTY']._serialized_start=2319
+  _globals['_DIFFICULTY']._serialized_end=2424
+  _globals['_GENDER']._serialized_start=2426
+  _globals['_GENDER']._serialized_end=2492
+  _globals['_INCIDENTSTATUS']._serialized_start=2495
+  _globals['_INCIDENTSTATUS']._serialized_end=3073
+  _globals['_DDSSTAGETYPE']._serialized_start=3076
+  _globals['_DDSSTAGETYPE']._serialized_end=3337
+  _globals['_CALLDIRECTION']._serialized_start=3339
+  _globals['_CALLDIRECTION']._serialized_end=3443
+  _globals['_COUNTERPARTYTYPE']._serialized_start=3446
+  _globals['_COUNTERPARTYTYPE']._serialized_end=3591
   _globals['_INCIDENTCONTEXT']._serialized_start=63
   _globals['_INCIDENTCONTEXT']._serialized_end=496
   _globals['_INCIDENTSTAGE']._serialized_start=499
@@ -55,21 +57,21 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_SYSTEM112STAGEDETAILS']._serialized_start=711
   _globals['_SYSTEM112STAGEDETAILS']._serialized_end=800
   _globals['_DDSSTAGEDETAILS']._serialized_start=803
-  _globals['_DDSSTAGEDETAILS']._serialized_end=935
-  _globals['_CALLSCENARIO']._serialized_start=938
-  _globals['_CALLSCENARIO']._serialized_end=1232
-  _globals['_PREPAREDCARDTEMPLATE']._serialized_start=1235
-  _globals['_PREPAREDCARDTEMPLATE']._serialized_end=1474
-  _globals['_PREPAREDCARDTEMPLATE_ADDITIONALINFOENTRY']._serialized_start=1421
-  _globals['_PREPAREDCARDTEMPLATE_ADDITIONALINFOENTRY']._serialized_end=1474
-  _globals['_INITIALASSIGNMENT']._serialized_start=1476
-  _globals['_INITIALASSIGNMENT']._serialized_end=1574
-  _globals['_CRITERIA']._serialized_start=1576
-  _globals['_CRITERIA']._serialized_end=1642
-  _globals['_DIALOGUECRITERION']._serialized_start=1644
-  _globals['_DIALOGUECRITERION']._serialized_end=1725
-  _globals['_ADDRESS']._serialized_start=1727
-  _globals['_ADDRESS']._serialized_end=1848
-  _globals['_PERSON']._serialized_start=1851
-  _globals['_PERSON']._serialized_end=2049
+  _globals['_DDSSTAGEDETAILS']._serialized_end=967
+  _globals['_CALLSCENARIO']._serialized_start=970
+  _globals['_CALLSCENARIO']._serialized_end=1264
+  _globals['_PREPAREDCARDTEMPLATE']._serialized_start=1267
+  _globals['_PREPAREDCARDTEMPLATE']._serialized_end=1506
+  _globals['_PREPAREDCARDTEMPLATE_ADDITIONALINFOENTRY']._serialized_start=1453
+  _globals['_PREPAREDCARDTEMPLATE_ADDITIONALINFOENTRY']._serialized_end=1506
+  _globals['_INITIALASSIGNMENT']._serialized_start=1508
+  _globals['_INITIALASSIGNMENT']._serialized_end=1606
+  _globals['_CRITERIA']._serialized_start=1608
+  _globals['_CRITERIA']._serialized_end=1674
+  _globals['_DIALOGUECRITERION']._serialized_start=1676
+  _globals['_DIALOGUECRITERION']._serialized_end=1757
+  _globals['_ADDRESS']._serialized_start=1759
+  _globals['_ADDRESS']._serialized_end=1880
+  _globals['_PERSON']._serialized_start=1883
+  _globals['_PERSON']._serialized_end=2081
 # @@protoc_insertion_point(module_scope)

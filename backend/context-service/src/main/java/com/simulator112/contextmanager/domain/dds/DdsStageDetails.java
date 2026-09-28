@@ -1,5 +1,6 @@
 package com.simulator112.contextmanager.domain.dds;
 
+import com.simulator112.contextmanager.domain.common.IncidentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -12,7 +13,7 @@ public class DdsStageDetails {
     private Integer timeLimitSeconds;
     private String expectedComment;
     private String comment;
-    private String actualStatus;
+    private IncidentStatus actualStatus;
 
     public DdsStageDetails(DdsStageType type, Integer timeLimitSeconds, String expectedComment, String comment) {
         this(type, timeLimitSeconds, expectedComment, comment, null);

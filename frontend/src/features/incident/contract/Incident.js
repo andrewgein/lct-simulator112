@@ -5,6 +5,7 @@
 /** @typedef {"INBOUND" | "OUTBOUND"} CallDirection */
 /** @typedef {"CALLER" | "BRIGADE"} CounterpartyType */
 /** @typedef {"ASSIGN_BRIGADE" | "WAIT_FOR_BRIGADE_STATUS_CHANGE" | "CALL_BRIGADE_FOR_STATUS" | "REQUEST_ADDITIONAL_SERVICE" | "COMPLETE_INCIDENT"} DdsStageType */
+/** @typedef {"ADDED" | "RECEIVED_BY_SERVICE" | "ACCEPTED" | "NOT_ACCEPTED" | "RESPONSE_STARTED" | "ARRIVED" | "WORK_IN_PROGRESS" | "WORK_COMPLETED" | "WORK_REFUSED" | "REGISTERED" | "PROCESSED" | "VERIFIED" | "NOT_NOTIFIED" | "REFUSED" | "NOT_COMPLETED" | "COMPLETED"} IncidentStatus */
 
 /**
  * @typedef {Object} Address
@@ -73,7 +74,7 @@
  * @property {number} timeLimitSeconds
  * @property {CallScenario[]} calls
  * @property {string | null} expectedComment
- * @property {string | null} actualStatus
+ * @property {IncidentStatus | null} actualStatus
  */
 
 /**

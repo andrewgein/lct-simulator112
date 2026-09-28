@@ -3,6 +3,7 @@ package com.simulator112.contextmanager.adapter.out.persistence.entity.dds;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.common.StageContextEntity;
 
 import com.simulator112.contextmanager.domain.dds.DdsStageType;
+import com.simulator112.contextmanager.domain.common.IncidentStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -42,6 +43,7 @@ public class DdsStageContextEntity {
     @Column(columnDefinition = "text")
     private String comment;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "actual_status", length = 50)
-    private String actualStatus;
+    private IncidentStatus actualStatus;
 }

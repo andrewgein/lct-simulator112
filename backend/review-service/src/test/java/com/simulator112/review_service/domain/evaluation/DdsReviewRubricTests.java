@@ -1,6 +1,7 @@
 package com.simulator112.review_service.domain.evaluation;
 
 import com.simulator112.review_service.domain.model.ReviewSubmission;
+import com.simulator112.review_service.domain.model.IncidentStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -17,7 +18,7 @@ class DdsReviewRubricTests {
         var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
                 new ReviewSubmission.StageRuntime("one", "WAIT_FOR_BRIGADE_STATUS_CHANGE", "SUCCEEDED",
                         deadline.minusSeconds(60), deadline, null, true, List.of("call"))), List.of(
-                new ReviewSubmission.ReactionEvent("ARRIVED", deadline.plusSeconds(5), "Доложили")));
+                new ReviewSubmission.ReactionEvent(IncidentStatus.ARRIVED, deadline.plusSeconds(5), "Доложили")));
         var results = evaluate(runtime);
 
         assertThat(results.stream().mapToInt(value -> value.score()).sum()).isEqualTo(100);
@@ -29,7 +30,7 @@ class DdsReviewRubricTests {
         var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
                 new ReviewSubmission.StageRuntime("one", "WAIT_FOR_BRIGADE_STATUS_CHANGE", "SUCCEEDED",
                         deadline.minusSeconds(60), deadline, null, false, List.of())), List.of(
-                new ReviewSubmission.ReactionEvent("ARRIVED", deadline.plusSeconds(61), "Опоздал")));
+                new ReviewSubmission.ReactionEvent(IncidentStatus.ARRIVED, deadline.plusSeconds(61), "Опоздал")));
         var results = evaluate(runtime);
 
         assertThat(results.stream().mapToInt(value -> value.score()).sum()).isZero();
@@ -41,7 +42,7 @@ class DdsReviewRubricTests {
         var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
                 new ReviewSubmission.StageRuntime("one", "WAIT_FOR_BRIGADE_STATUS_CHANGE", "SUCCEEDED",
                         deadline.minusSeconds(60), deadline, null, true, List.of("call"))), List.of(
-                new ReviewSubmission.ReactionEvent("ARRIVED", deadline.minusSeconds(5), "Угадал")));
+                new ReviewSubmission.ReactionEvent(IncidentStatus.ARRIVED, deadline.minusSeconds(5), "Угадал")));
 
         assertThat(evaluate(runtime).stream().mapToInt(value -> value.score()).sum()).isEqualTo(50);
     }
@@ -69,7 +70,7 @@ class DdsReviewRubricTests {
     private List<com.simulator112.review_service.domain.model.CriterionResult> evaluate(ReviewSubmission.IncidentRuntime runtime) {
         var stage = new ReviewSubmission.StageScenario("one", null, List.of(), 0,
                 "WAIT_FOR_BRIGADE_STATUS_CHANGE", List.of(new ReviewSubmission.CallScenario("call", 0, null)),
-                null, "ARRIVED");
+                null, IncidentStatus.ARRIVED);
         var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(stage),
                 new ReviewSubmission.EvaluationCriteria(List.of()));
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),

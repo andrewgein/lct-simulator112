@@ -1,8 +1,9 @@
 /** @typedef {"CREATE" | "SAVE" | "LINK" | "UNLINK"} SolutionContextOperation */
 /** @typedef {"CREATED" | "FILLED" | "IN_REVIEW" | "DIALOG" | "DONE"} ContextStatus */
 /** @typedef {"PENDING" | "ACTIVE" | "COMPLETED" | "FAILED"} IncidentProgressStatus */
-/** @typedef {"PENDING" | "ACTIVE" | "SUCCEEDED" | "FAILED" | "TIMED_OUT" | "SKIPPED"} StageStatus */
+/** @typedef {import("../../incident/contract/Incident").IncidentStatus} IncidentStatus */
 /** @typedef {"ADDED" | "RECEIVED_BY_SERVICE" | "ACCEPTED" | "NOT_ACCEPTED" | "RESPONSE_STARTED" | "ARRIVED" | "WORK_IN_PROGRESS" | "WORK_COMPLETED" | "WORK_REFUSED"} ReactionStatus */
+/** @typedef {"PENDING" | "ACTIVE" | "SUCCEEDED" | "FAILED" | "TIMED_OUT" | "SKIPPED"} StageStatus */
 
 /**
  * @typedef {Object} PersonInfo
@@ -90,6 +91,7 @@
  * @property {string | null} activeStageId
  * @property {string | null} deadline
  * @property {DdsStageProgress[]} stages
+ * @property {IncidentStatus | null} [cardStatus]
  */
 
 /**
