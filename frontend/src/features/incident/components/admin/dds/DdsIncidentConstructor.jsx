@@ -52,6 +52,22 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   useEffect(() => {
     const form = document.querySelector("#incident-form");
     if (!form) return;
+    form.getDdsDraft = () => {
+      const current = stateRef.current;
+      if (!current.timeline || !current.services.length) throw new Error("Подождите, пока загрузятся этапы и службы");
+      return {
+        preparedCardTemplate: {
+          classifierCodes: current.prepared.classifierCodes,
+          applicant: personValue(current.prepared.applicant),
+          victimCount: Number(current.prepared.victimCount),
+          assignedServices: current.prepared.assignedServices,
+          additionalInfo: current.prepared.additionalInfo
+        },
+        initialAssignment: { emergencyService: current.assignment.emergencyService },
+        ...timelineValue(current.timeline),
+        availableServices: current.services
+      };
+    };
     form.getDdsStructure = () => {
       const current = stateRef.current;
       if (!current.prepared.classifierCodes.length || current.prepared.classifierCodes.some((code) => !code)) throw new Error("Выберите хотя бы один тип происшествия для подготовленной карточки");
@@ -75,7 +91,19 @@ export default function DdsIncidentConstructor({ incident = {} }) {
         ...timelineValue(current.timeline)
       };
     };
-    return () => { delete form.getDdsStructure; };
+    const applyGenerated = (event) => {
+      const patch = event.detail;
+      if (patch.preparedCardTemplate) {
+        routingVersion.current++;
+        setRoutingError("");
+        setPrepared((current) => normalizePrepared({ ...current, ...patch.preparedCardTemplate,
+          applicant: { ...current.applicant, ...patch.preparedCardTemplate.applicant },
+          additionalInfo: { ...current.additionalInfo, ...patch.preparedCardTemplate.additionalInfo } }));
+      }
+      if (patch.initialAssignment) setAssignment((current) => ({ ...current, ...patch.initialAssignment }));
+    };
+    form.addEventListener("apply-generated-dds", applyGenerated);
+    return () => { form.removeEventListener("apply-generated-dds", applyGenerated); delete form.getDdsDraft; delete form.getDdsStructure; };
   }, []);
 
   const codes = prepared.classifierCodes.length ? prepared.classifierCodes : [""];

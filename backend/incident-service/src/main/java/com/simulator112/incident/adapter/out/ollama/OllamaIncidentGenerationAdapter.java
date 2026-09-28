@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,7 +23,7 @@ public class OllamaIncidentGenerationAdapter implements IncidentLanguageModelPor
     private final String model;
 
     public OllamaIncidentGenerationAdapter(ObjectMapper mapper,
-            @Value("${incident.generator.url:http://100.105.43.63:11434/api/chat}") String url,
+            @Value("${incident.generator.url:http://100.85.141.32:11434/api/chat}") String url,
             @Value("${incident.generator.model:qwen3:4b-instruct-2507-q4_K_M}") String model) {
         this.mapper = mapper;
         this.client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -47,6 +48,8 @@ public class OllamaIncidentGenerationAdapter implements IncidentLanguageModelPor
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IncidentGenerationException("Генерация прервана", e);
+        } catch (ConnectException e) {
+            throw new IncidentGenerationException("Не удалось подключиться к Ollama: " + uri, e);
         } catch (IncidentGenerationException e) {
             throw e;
         } catch (Exception e) {

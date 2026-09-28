@@ -39,12 +39,14 @@
     log.append(item);
     log.scrollTop = log.scrollHeight;
   };
+  const isDds = !!form?.querySelector('#dds-service-select');
   const collectDraft = () => {
-    if (!form.getIncidentStages) throw new Error('Подождите, пока загрузится редактор этапов');
+    if (isDds ? !form.getDdsDraft : !form.getIncidentStages) throw new Error('Подождите, пока загрузится редактор этапов');
     const data = Object.fromEntries(new FormData(form));
     const detail = { criteria: [] };
-    form.dispatchEvent(new CustomEvent('collect-dialogue-criteria', { detail }));
+    if (!isDds) form.dispatchEvent(new CustomEvent('collect-dialogue-criteria', { detail }));
     return {
+      targetType: isDds ? 'DDS' : 'SYSTEM_112',
       title: data.title || '',
       difficulty: data.difficulty || 'NORMAL',
       address: {
@@ -52,7 +54,7 @@
         building: data['address.building'] || null, apartment: data['address.apartment'] || null,
         floor: data['address.floor'] === '' ? null : Number(data['address.floor'] || 0)
       },
-      stages: form.getIncidentStages(), dialogueCriteria: detail.criteria
+      ...(isDds ? form.getDdsDraft() : { stages: form.getIncidentStages(), dialogueCriteria: detail.criteria })
     };
   };
   const applyIncident = (incident) => {
@@ -70,8 +72,13 @@
       if (addressInput) addressInput.value = fullAddress;
       window.dispatchEvent(new CustomEvent('incident-address-change', { detail: fullAddress }));
     }
-    if (Object.hasOwn(incident, 'stages')) form.dispatchEvent(new CustomEvent('apply-generated-stages', { detail: incident.stages }));
-    if (Object.hasOwn(incident, 'dialogueCriteria')) form.dispatchEvent(new CustomEvent('apply-generated-criteria', { detail: incident.dialogueCriteria }));
+    if (isDds) {
+      form.dispatchEvent(new CustomEvent('apply-generated-dds', { detail: incident }));
+      if (Object.hasOwn(incident, 'stages')) form.dispatchEvent(new CustomEvent('apply-generated-dds-stages', { detail: incident.stages }));
+    } else {
+      if (Object.hasOwn(incident, 'stages')) form.dispatchEvent(new CustomEvent('apply-generated-stages', { detail: incident.stages }));
+      if (Object.hasOwn(incident, 'dialogueCriteria')) form.dispatchEvent(new CustomEvent('apply-generated-criteria', { detail: incident.dialogueCriteria }));
+    }
   };
 
   chat?.addEventListener('submit', async (event) => {

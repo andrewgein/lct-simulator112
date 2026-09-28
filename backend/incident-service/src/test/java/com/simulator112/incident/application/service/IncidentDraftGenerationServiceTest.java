@@ -37,6 +37,76 @@ class IncidentDraftGenerationServiceTest {
     }
 
     @Test
+    void acceptsCompleteDdsScenario() {
+        var result = generateDdsResponse("""
+                {"message":"Готово","incident":{"preparedCardTemplate":{"classifierCodes":["1050101"],"victimCount":1,"assignedServices":["MCHS","POLICE"]},
+                "initialAssignment":{"emergencyService":"MCHS"},"stages":[
+                {"title":"Получение карточки","type":"ASSIGN_BRIGADE","timeLimitSeconds":30,"calls":[]},
+                {"title":"Контроль","type":"CALL_BRIGADE_FOR_STATUS","timeLimitSeconds":60,"actualStatus":"ARRIVED",
+                 "expectedComment":"Бригада прибыла","calls":[{"direction":"INBOUND","counterparty":"SERVICE",
+                 "serviceCode":"POLICE","person":{"firstName":"Иван","lastName":"Петров","phone":"123"},
+                 "knownFacts":["Бригада на месте"]}]},
+                {"title":"Завершение","type":"COMPLETE_INCIDENT","timeLimitSeconds":30,"calls":[]}]}}
+                """);
+        assertThat(result.incident().path("preparedCardTemplate").path("assignedServices").size()).isEqualTo(2);
+        assertThat(result.incident().path("stages").size()).isEqualTo(3);
+        assertThat(result.incident().path("stages").get(1).path("calls").get(0).path("serviceCode").asText()).isEqualTo("POLICE");
+    }
+
+    @Test
+    void acceptsDdsPatchWithoutReplacingStages() {
+        var result = generateDdsResponse("""
+                {"message":"Сложность изменена","incident":{"difficulty":"HARD"}}
+                """);
+        assertThat(result.incident().size()).isEqualTo(1);
+    }
+
+    @Test
+    void acceptsChangeToAssignedServicesOnly() {
+        var result = generateDdsResponse("""
+                {"message":"Добавлена полиция","incident":{"preparedCardTemplate":{"assignedServices":["MCHS","POLICE"]}}}
+                """);
+        assertThat(result.incident().path("preparedCardTemplate").path("assignedServices").size()).isEqualTo(2);
+        assertThat(result.incident().size()).isEqualTo(1);
+    }
+
+    @Test
+    void rejectsUnknownOrDuplicateAssignedServices() {
+        for (var list : List.of("[\"UNKNOWN\"]", "[\"POLICE\",\"POLICE\"]")) {
+            assertThatThrownBy(() -> generateDdsResponse("{\"message\":\"Готово\",\"incident\":{\"preparedCardTemplate\":{\"assignedServices\":" + list + "}}}"))
+                    .isInstanceOf(IncidentGenerationException.class);
+        }
+    }
+
+    @Test
+    void rejectsWrongFirstStageDuration() {
+        assertThatThrownBy(() -> generateDdsResponse("""
+                {"message":"Готово","incident":{"stages":[
+                {"title":"Получение","type":"ASSIGN_BRIGADE","timeLimitSeconds":60,"calls":[]},
+                {"title":"Конец","type":"COMPLETE_INCIDENT","timeLimitSeconds":30,"calls":[]}]}}
+                """)).isInstanceOf(IncidentGenerationException.class);
+    }
+
+    @Test
+    void rejectsInventedStageIdentifier() {
+        assertThatThrownBy(() -> generateDdsResponse("""
+                {"message":"Готово","incident":{"stages":[
+                {"id":"made-up","title":"Получение","type":"ASSIGN_BRIGADE","timeLimitSeconds":30,"calls":[]},
+                {"title":"Конец","type":"COMPLETE_INCIDENT","timeLimitSeconds":30,"calls":[]}]}}
+                """)).isInstanceOf(IncidentGenerationException.class);
+    }
+
+    @Test
+    void rejectsDdsCallToAssignedService() {
+        assertThatThrownBy(() -> generateDdsResponse("""
+                {"message":"Готово","incident":{"stages":[
+                {"title":"Получение","type":"ASSIGN_BRIGADE","timeLimitSeconds":30,"calls":[
+                {"direction":"INBOUND","counterparty":"SERVICE","serviceCode":"MCHS"}]},
+                {"title":"Конец","type":"COMPLETE_INCIDENT","timeLimitSeconds":30,"calls":[]}]}}
+                """)).isInstanceOf(IncidentGenerationException.class);
+    }
+
+    @Test
     void rejectsCodeNotReturnedByClassifierSearch() {
         assertThatThrownBy(() -> generateWithModelResponse("""
                 {"message":"Готово","incident":{"stages":[{"classifierCodes":["invalid"],
@@ -91,6 +161,16 @@ class IncidentDraftGenerationServiceTest {
                 mapper.readTree("{\"title\":\"Пожар\",\"stages\":[{\"classifierCodes\":[\"1050101\"]}]}"));
         service.generate(request);
         assertThat(searched.get()).containsExactly("1050101");
+    }
+
+    private GenerateIncidentDraftUseCase.Result generateDdsResponse(String content) {
+        return service(content, null).generate(new GenerateIncidentDraftUseCase.Command(
+                List.of(new GenerateIncidentDraftUseCase.Message("user", "Сделай сценарий ДДС")),
+                mapper.readTree("""
+                        {"targetType":"DDS","title":"Пожар","preparedCardTemplate":{"classifierCodes":["1050101"]},
+                        "initialAssignment":{"emergencyService":"MCHS"},"availableServices":[
+                        {"code":"MCHS","name":"МЧС"},{"code":"POLICE","name":"Полиция"}],"stages":[]}
+                        """)));
     }
 
     private GenerateIncidentDraftUseCase.Result generateWithModelResponse(String content) {

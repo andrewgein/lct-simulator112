@@ -99,6 +99,28 @@ export default function DdsStageTimeline({ initialIncident, onChange, services =
   const [editingStageId, setEditingStageId] = useState(null);
   const [editingCallKey, setEditingCallKey] = useState(null);
   useEffect(() => onChange(stages), [stages]);
+  useEffect(() => {
+    const form = document.querySelector("#incident-form");
+    const applyGenerated = (event) => {
+      if (!Array.isArray(event.detail)) return;
+      setStages((previous) => event.detail.map((stage) => {
+        const existing = previous.find((item) => item.id === stage.id);
+        return {
+          ...stage,
+          id: stage.id || crypto.randomUUID(),
+          description: stage.description || "",
+          expectedComment: stage.expectedComment || "",
+          actualStatus: stage.actualStatus || "",
+          calls: (stage.calls || []).map((call) => normalizeDdsCall(call,
+            existing?.calls.find((item) => item.id && item.id === call.id)?.key || crypto.randomUUID()))
+        };
+      }));
+      setEditingStageId(null);
+      setEditingCallKey(null);
+    };
+    form?.addEventListener("apply-generated-dds-stages", applyGenerated);
+    return () => form?.removeEventListener("apply-generated-dds-stages", applyGenerated);
+  }, []);
   const change = (next) => setStages(next);
   const boundaryErrors = timelineBoundaryErrors(stages);
   return <section class="wa-stack wa-gap-m">
