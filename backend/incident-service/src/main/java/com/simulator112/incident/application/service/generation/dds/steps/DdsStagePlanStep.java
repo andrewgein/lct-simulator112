@@ -13,7 +13,7 @@ public final class DdsStagePlanStep extends JsonResponseStep<JsonNode> {
     super(
         "План этапов",
         messages(mapper, scenario, userRequirements),
-        "stagePlan с 1–13 промежуточными этапами",
+        "stagePlan с кратким планом промежуточных этапов",
         3,
         mapper);
   }
@@ -27,9 +27,11 @@ public final class DdsStagePlanStep extends JsonResponseStep<JsonNode> {
             """
             На основе описания составь ТОЛЬКО план промежуточных этапов ДДС. Ответ только JSON:
             {"stagePlan":[{"type":"CALL_BRIGADE_FOR_STATUS","goal":"Уточнить статус бригады"}]}.
-            1–13 этапов по порядку. Каждый goal — краткая непустая цель.
+            По умолчанию планируй 3–4 промежуточных этапа, включая звонок бригаде, если для сценария не требуется больше.
+            Вместе с первым и завершающим этапами, которые добавит сервер, получится 5–6 этапов.
+            Если пользователь явно запросил число промежуточных этапов, сохрани его. Каждый goal — краткая непустая цель.
             Допустимые type: WAIT_FOR_BRIGADE_STATUS_CHANGE, CALL_BRIGADE_FOR_STATUS,
-            REQUEST_ADDITIONAL_SERVICE. Без указаний о числе этапов — ОДИН звонок бригаде.
+            REQUEST_ADDITIONAL_SERVICE.
             Другие службы — только по запросу пользователя. Первый ASSIGN_BRIGADE и последний
             COMPLETE_INCIDENT добавит сервер. Не возвращай сам сценарий, карточку или этапы.
             """
