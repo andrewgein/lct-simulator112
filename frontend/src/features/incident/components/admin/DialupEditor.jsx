@@ -2,6 +2,7 @@ import { useRef } from "preact/hooks";
 import EditorDialog from "./EditorDialog.jsx";
 import { EditorCallCard } from "./EditorContainers.jsx";
 import PersonFields from "./PersonFields.jsx";
+import FactsField from "./FactsField.jsx";
 import { splitLines } from "./editorHelpers";
 
 export default function DialupEditor({ dialup, number, index, count, incidentAddress, open, error, onChange, onOpen, onClose, onRemove, onMove }) {
@@ -66,10 +67,8 @@ export default function DialupEditor({ dialup, number, index, count, incidentAdd
                   <wa-option value="CONFUSED">Растерянное</wa-option>
                 </wa-select>
               </div>
-              <wa-textarea value={dialup.knownFacts} label="Известные факты (один на строку)" rows="5" required onInput={setField("knownFacts")}>
-              </wa-textarea>
-              <wa-textarea value={dialup.hiddenFacts} label="Скрытые факты (один на строку)" rows="4" onInput={setField("hiddenFacts")}>
-              </wa-textarea>
+              <FactsField label="Известные факты" value={dialup.knownFacts} required onChange={(knownFacts) => onChange({ ...dialup, knownFacts })} />
+              <FactsField label="Скрытые факты" value={dialup.hiddenFacts} onChange={(hiddenFacts) => onChange({ ...dialup, hiddenFacts })} />
               <wa-textarea value={dialup.aiContext} label="Контекст для ИИ" rows="5" onInput={setField("aiContext")}>
               </wa-textarea>
             </div>
