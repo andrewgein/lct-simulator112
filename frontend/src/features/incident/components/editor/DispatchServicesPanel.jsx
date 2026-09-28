@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "preact/hooks";
+import { orderedServiceCodes } from "./serviceRouting.js";
 
 const styles = `
 .dispatch-services { display: flex; width: 0; min-width: 0; flex: 1 1 0; align-items: stretch; overflow-x: auto; overflow-y: hidden; background: #ff5b2d; color: #ffffff; }
@@ -6,6 +7,8 @@ const styles = `
 .dispatch-services-label, .dispatch-service { display: flex; flex: 0 0 auto; min-width: 8rem; min-height: 6rem; box-sizing: border-box; align-items: center; justify-content: center; padding: var(--wa-space-m); border-inline-end: var(--wa-border-width-s) solid rgba(255, 255, 255, .45); }
 .dispatch-services-label { min-width: 7rem; font-weight: var(--wa-font-weight-bold); }
 .dispatch-service { position: relative; flex-direction: column; gap: var(--wa-space-3xs); }
+.dispatch-service--required { background: #ff5b2d; }
+.dispatch-service--no-response { background: #71858f; }
 .dispatch-service--with-status { min-width: 14rem; padding-block-start: var(--wa-space-m); }
 .dispatch-service strong { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dispatch-service wa-icon { font-size: var(--wa-font-size-l); }
@@ -64,7 +67,7 @@ export function automaticServices(classifier, incidentTypes) {
   return [...new Set(classifier.flatMap((category) => category.entries).filter((entry) => selectedTypes.has(entry.code)).flatMap((entry) => entry.primaryServices || []).map((service) => service.code))];
 }
 
-export default function DispatchServicesPanel({ classifier, dispatchServices = [], services = [], readonly = false, status, statusHistory = [], statusEditor, calls = [], onCall, callEnabled = true, onChange }) {
+export default function DispatchServicesPanel({ classifier, dispatchServices = [], services = [], noResponseServices = [], readonly = false, status, statusHistory = [], statusEditor, calls = [], onCall, callEnabled = true, onChange }) {
   const dialogRef = useRef(null);
   const callDialogRef = useRef(null);
   const historyId = `dispatch-service-history-${useId().replace(/:/g, "")}`;
@@ -76,6 +79,8 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
   const catalog = [...new Map([...serviceCatalog(classifier), ...dispatchServices].map((service) => [service.code, service])).values()];
   const byCode = new Map(catalog.map((service) => [service.code, service]));
   const latestStatus = statusHistory.at(-1);
+  const noResponse = new Set(status || onCall ? [] : noResponseServices);
+  const orderedServices = status || onCall ? services : orderedServiceCodes(services, noResponseServices);
   const filtered = catalog.filter((service) => `${service.name} ${service.code}`.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru")));
 
   useEffect(() => {
@@ -123,10 +128,10 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
       <style>{styles}</style>
       <div class={`dispatch-services ${readonly ? "dispatch-services--readonly" : ""}`} aria-label="Назначенные службы">
         <div class="dispatch-services-label">Службы:</div>
-        {services.map((code, index) => {
+        {orderedServices.map((code, index) => {
           const service = byCode.get(code);
           return (
-            <div class={`dispatch-service ${status && index === 0 ? "dispatch-service--with-status" : ""}`} key={code}>
+            <div class={`dispatch-service ${noResponse.has(code) ? "dispatch-service--no-response" : !status && !onCall ? "dispatch-service--required" : ""} ${status && index === 0 ? "dispatch-service--with-status" : ""}`} key={code} title={noResponse.has(code) ? "Без реагирования" : undefined}>
               <strong title={service?.name || code}>{service?.name || code}</strong>
               {readonly && index === 0 && onCall && (
                 <wa-button class="dispatch-service-call" type="button" size="s" appearance="plain" variant="neutral" disabled={!callEnabled || !calls.length} aria-label={calls.length && callEnabled ? calls.some((item) => item.counterparty === "SERVICE") ? "Позвонить бригаде или другой службе" : `Позвонить: ${service?.name || code}` : "Звонок недоступен на этом этапе"} onClick={openCallDialog}>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import AdditionalInfoCard from "./AdditionalInfoCard.jsx";
 import ApplicantHeader from "./ApplicantHeader.jsx";
 import DispatchServicesPanel, { automaticServices } from "./DispatchServicesPanel.jsx";
+import { noResponseServiceCodes } from "./serviceRouting.js";
 import IncidentTypeSearch from "./IncidentTypeSearch.jsx";
 import LinkCardDialog from "./LinkCardDialog.jsx";
 import PersonCard from "./PersonCard.jsx";
@@ -154,12 +155,16 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const [linkTargetId, setLinkTargetId] = useState("");
   const [routingErrors, setRoutingErrors] = useState({});
   const [routingPending, setRoutingPending] = useState({});
+  const [routingDecisions, setRoutingDecisions] = useState({});
+  const routingGeneration = useRef(0);
   const editorRef = useRef(editor);
   const routingRequestVersion = useRef({});
   const routedServices = useRef({});
   editorRef.current = editor;
   const incidentTypes = editor.incidentTypes.filter(Boolean);
   const incidents = incidentTypes.map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
+  const routingSignature = JSON.stringify(incidents.map((incident) => [incident.code, incident.routingFactCodes.map((code) => [code, editor.additionalInfo[code]])]));
+  const noResponseServices = noResponseServiceCodes(routingDecisions);
   const editingCard = cards.find((card) => card.cardId === editor.editingCardId);
   const linkCards = cards.filter((card) => card.cardId !== editor.editingCardId);
   const selectedCard = linkCards.find((card) => card.cardId === editor.selectedCardId);
@@ -184,6 +189,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     setSavedEditMode(false);
     setRoutingErrors({});
     setRoutingPending({});
+    setRoutingDecisions({});
     routingRequestVersion.current = {};
     routedServices.current = {};
   }, [editor.editingCardId, editor.open]);
@@ -203,8 +209,6 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     const nextEditor = { ...editorRef.current, incidentTypes: nextIncidentTypes, services: [...new Set([...(editorRef.current.services || []), ...automaticServices(classifierState.classifier, nextIncidentTypes)])] };
     editorRef.current = nextEditor;
     onChange(nextEditor);
-    const incident = findIncident(classifierState.classifier, code);
-    if (incident && routingFactsComplete(incident, nextEditor.additionalInfo)) resolveIncidentRouting(incident, nextEditor);
   };
   const removeIncidentType = (removedIncident) => {
     const remainingTypes = incidentTypes.filter((code) => code !== removedIncident.code);
@@ -217,21 +221,25 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     routingRequestVersion.current[removedIncident.code] = (routingRequestVersion.current[removedIncident.code] || 0) + 1;
     setRoutingErrors((current) => ({ ...current, [removedIncident.code]: "" }));
     setRoutingPending((current) => ({ ...current, [removedIncident.code]: false }));
+    setRoutingDecisions((current) => Object.fromEntries(Object.entries(current).filter(([code]) => code !== removedIncident.code)));
     const remainingRouted = Object.values(nextRoutedServices).flat();
     const services = [...new Set([...editor.services.filter((code) => !previousRouted.has(code)), ...automaticServices(classifierState.classifier, remainingTypes), ...remainingRouted])];
     onChange({ ...editor, incidentTypes: remainingTypes, additionalInfo: Object.fromEntries(Object.entries(editor.additionalInfo).filter(([key]) => !removedFacts.has(key))), services });
   };
-  const resolveIncidentRouting = async (incident, nextEditor) => {
+  const resolveIncidentRouting = async (incident, nextEditor, generation) => {
     setRoutingErrors((current) => ({ ...current, [incident.code]: "" }));
     setRoutingPending((current) => ({ ...current, [incident.code]: true }));
     const version = (routingRequestVersion.current[incident.code] || 0) + 1;
     routingRequestVersion.current[incident.code] = version;
+    const isCurrent = () => routingGeneration.current === generation && routingRequestVersion.current[incident.code] === version;
     const facts = Object.fromEntries(incident.routingFactCodes.filter((code) => nextEditor.additionalInfo[code] !== undefined).map((code) => [code, nextEditor.additionalInfo[code]]));
     try {
       const response = await fetch(`/api/v1/classifier/${encodeURIComponent(incident.code)}/routing`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ facts }) });
       if (!response.ok) throw new Error("Не удалось рассчитать подключаемые службы");
       const result = await response.json();
-      if (routingRequestVersion.current[incident.code] !== version) return;
+      if (!isCurrent()) return;
+      setRoutingDecisions((current) => ({ ...current, [incident.code]: result.decisions }));
+      if (readOnly || nextEditor.cardSaved) return;
       const previousRouted = new Set(Object.values(routedServices.current).flat());
       routedServices.current = { ...routedServices.current, [incident.code]: result.decisions.map((decision) => decision.service.code) };
       const currentEditor = editorRef.current;
@@ -240,17 +248,26 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       editorRef.current = routedEditor;
       onChange(routedEditor);
     } catch (error) {
-      if (routingRequestVersion.current[incident.code] === version) setRoutingErrors((current) => ({ ...current, [incident.code]: error.message }));
+      if (isCurrent()) setRoutingErrors((current) => ({ ...current, [incident.code]: error.message }));
     } finally {
-      if (routingRequestVersion.current[incident.code] === version) setRoutingPending((current) => ({ ...current, [incident.code]: false }));
+      if (isCurrent()) setRoutingPending((current) => ({ ...current, [incident.code]: false }));
     }
   };
   const changeRoutingFact = (factCode, value) => {
     const nextEditor = { ...editorRef.current, additionalInfo: { ...editorRef.current.additionalInfo, [factCode]: value } };
     editorRef.current = nextEditor;
     onChange(nextEditor);
-    incidents.filter((item) => item.routingFactCodes.includes(factCode) && routingFactsComplete(item, nextEditor.additionalInfo)).forEach((item) => resolveIncidentRouting(item, nextEditor));
   };
+  useEffect(() => {
+    const generation = ++routingGeneration.current;
+    setRoutingDecisions({});
+    setRoutingPending({});
+    setRoutingErrors({});
+    if (editor.open) {
+      incidents.filter((incident) => routingFactsComplete(incident, editor.additionalInfo)).forEach((incident) => resolveIncidentRouting(incident, editor, generation));
+    }
+    return () => { routingGeneration.current++; };
+  }, [editor.open, editor.editingCardId, routingSignature, readOnly]);
   const openLinkDialog = () => {
     if (relationLocked || !linkCards.length) return;
     setLinkTargetId(linkCards.some((card) => card.cardId === editor.selectedCardId) ? editor.selectedCardId : "");
@@ -369,7 +386,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
       </div>
       <footer class="workspace-footer workspace-footer--readonly wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
-        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} readonly status={readonlyServiceStatus} statusHistory={readonlyServiceHistory} statusEditor={readonlyServiceEditor} calls={readonlyServiceCalls} onCall={onServiceCall} callEnabled={readonlyCallEnabled} onChange={() => {}} />
+        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} noResponseServices={noResponseServices} readonly status={readonlyServiceStatus} statusHistory={readonlyServiceHistory} statusEditor={readonlyServiceEditor} calls={readonlyServiceCalls} onCall={onServiceCall} callEnabled={readonlyCallEnabled} onChange={() => {}} />
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {!readOnly && <wa-button class="workspace-save" size="l" type="button" appearance="outlined" variant="neutral" onClick={() => setSavedEditMode(true)}><wa-icon slot="start" name="pencil"></wa-icon>Редактировать</wa-button>}
           {!readOnly && relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button>}
@@ -416,7 +433,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
       </div>
       <footer class={`workspace-footer ${editingCard ? "workspace-footer--readonly" : "workspace-footer--editable"} wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap`}>
-        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} readonly={!!editingCard} onChange={(services) => onChange({ ...editor, services })} />
+        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} noResponseServices={noResponseServices} readonly={!!editingCard} onChange={(services) => onChange({ ...editor, services })} />
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {isDev && <wa-button size="l" type="button" appearance="outlined" onClick={autofill}><wa-icon name="wand-magic-sparkles" label="Автозаполнение"></wa-icon></wa-button>}
           <wa-button class="workspace-save" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canSave} loading={editor.saving} onClick={save}>Сохранить</wa-button>
