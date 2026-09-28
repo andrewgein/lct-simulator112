@@ -110,8 +110,7 @@ public class IncidentGrpcMapper {
     private com.simulator112.incident.grpc.contract.InitialAssignment toProto(
             com.simulator112.incident.domain.dds.InitialAssignment value) {
         return com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
-                .setEmergencyServiceCode(string(value.emergencyService()))
-                .setInstructions(string(value.instructions())).build();
+                .setEmergencyServiceCode(string(value.emergencyService())).build();
     }
 
     private com.simulator112.incident.grpc.contract.Criteria criteria(

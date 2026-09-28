@@ -65,7 +65,6 @@ message PreparedCardTemplate {
 }
 
 message InitialAssignment {
-  string instructions = 3;
   string emergency_service_code = 4;
 }
 

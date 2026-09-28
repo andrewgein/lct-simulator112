@@ -46,7 +46,6 @@ public final class IncidentContextMapper {
         }
         if (proto.hasInitialAssignment()) {
             value.setInitialAssignmentService(proto.getInitialAssignment().getEmergencyServiceCode());
-            value.setInitialAssignmentInstructions(proto.getInitialAssignment().getInstructions());
         }
         value.setStages(proto.getStagesList().stream().map(IncidentContextMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         if (value.getTargetType() == IncidentTargetType.DDS) {
@@ -101,8 +100,7 @@ public final class IncidentContextMapper {
                         .setVictimCount(value.getCardVictimCount()).putAllAdditionalInfo(value.getPreparedCardAdditionalInfo()));
         if (value.getInitialAssignmentService() != null) builder.setInitialAssignment(
                 com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
-                        .setEmergencyServiceCode(value.getInitialAssignmentService())
-                        .setInstructions(orEmpty(value.getInitialAssignmentInstructions())));
+                        .setEmergencyServiceCode(value.getInitialAssignmentService()));
         return builder.build();
     }
 

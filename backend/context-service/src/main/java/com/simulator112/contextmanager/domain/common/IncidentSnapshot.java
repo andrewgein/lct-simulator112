@@ -27,7 +27,6 @@ public class IncidentSnapshot {
     private int cardVictimCount;
     private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();
     private String initialAssignmentService;
-    private String initialAssignmentInstructions;
     private List<ServiceReaction> serviceReactions = new ArrayList<>();
     private List<StageSnapshot> stages = new ArrayList<>();
 }

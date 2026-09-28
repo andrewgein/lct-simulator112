@@ -191,7 +191,7 @@ class IncidentApplicationServiceTest {
     private DdsIncident incident(List<DdsStage> stages, List<String> classifierCodes) {
         return new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, stages, new PreparedCardTemplate(classifierCodes, null, 0, Map.of()),
-                new InitialAssignment("MCHS", null));
+                new InitialAssignment("MCHS"));
     }
 
     private DdsStage acceptanceStage(UUID id) {

@@ -86,8 +86,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "MCHS",
-      "instructions": "Направить ближайший пожарный расчёт к жилому дому."
+      "emergencyService": "MCHS"
     }
   },
   {
@@ -177,8 +176,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "MOSGAZ",
-      "instructions": "Срочный выезд; не допускать источников огня и искры."
+      "emergencyService": "MOSGAZ"
     }
   },
   {
@@ -268,8 +266,7 @@
       "victimCount": 1
     },
     "initialAssignment": {
-      "emergencyService": "AMBULANCE",
-      "instructions": "Срочно направить бригаду скорой помощи."
+      "emergencyService": "AMBULANCE"
     }
   },
   {
@@ -359,8 +356,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "POLICE",
-      "instructions": "Направить наряд, соблюдать меры предосторожности."
+      "emergencyService": "POLICE"
     }
   },
   {
@@ -450,8 +446,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "POLICE",
-      "instructions": "Обеспечить удаление людей; не допускать манипуляций с предметом."
+      "emergencyService": "POLICE"
     }
   },
   {
@@ -541,8 +536,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "MCHS",
-      "instructions": "Направить расчёт и оценить опасные материалы."
+      "emergencyService": "MCHS"
     }
   },
   {
@@ -632,8 +626,7 @@
       "victimCount": 1
     },
     "initialAssignment": {
-      "emergencyService": "MOSGAZ",
-      "instructions": "Срочный выезд; при симптомах организовать СМП."
+      "emergencyService": "MOSGAZ"
     }
   },
   {
@@ -723,8 +716,7 @@
       "victimCount": 1
     },
     "initialAssignment": {
-      "emergencyService": "AMBULANCE",
-      "instructions": "Срочно направить СМП к месту ДТП."
+      "emergencyService": "AMBULANCE"
     }
   },
   {
@@ -814,8 +806,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "MCHS",
-      "instructions": "Оценить угрозу перехода огня на постройки."
+      "emergencyService": "MCHS"
     }
   },
   {
@@ -905,8 +896,7 @@
       "victimCount": 0
     },
     "initialAssignment": {
-      "emergencyService": "POLICE",
-      "instructions": "Направить ближайший наряд к подъезду."
+      "emergencyService": "POLICE"
     }
   }
 ]

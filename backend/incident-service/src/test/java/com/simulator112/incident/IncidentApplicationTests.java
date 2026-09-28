@@ -114,7 +114,7 @@ class IncidentApplicationTests {
         var incident = new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
                 new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of()),
-                new InitialAssignment("CUSTOM_DISPATCH", "Направить ближайшую бригаду"));
+                new InitialAssignment("CUSTOM_DISPATCH"));
 
         var saved = incidentRepository.save(incident);
         var loaded = (DdsIncident) incidentRepository.findById(saved.id()).orElseThrow();

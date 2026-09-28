@@ -51,9 +51,6 @@ public class IncidentJpaEntity {
     @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> preparedCardClassifierCodes = new ArrayList<>();
 
-    @Column(name = "initial_assignment_instructions", columnDefinition = "text")
-    private String initialAssignmentInstructions;
-
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "firstName", column = @Column(name = "card_applicant_first_name")),

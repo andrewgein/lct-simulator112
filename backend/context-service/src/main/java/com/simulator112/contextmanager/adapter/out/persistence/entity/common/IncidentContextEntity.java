@@ -113,9 +113,6 @@ public class IncidentContextEntity {
 
     private String initialAssignmentService;
 
-    @Column(columnDefinition = "text")
-    private String initialAssignmentInstructions;
-
     @CreationTimestamp
     private Instant createdAt;
 
