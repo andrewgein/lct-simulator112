@@ -10,8 +10,6 @@ const fullAddress = formatIncidentAddress({ ...address, floor: address.floor || 
 <section id="incident-address-section" class="wa-stack wa-gap-m">
   {nested ? <h3 class="wa-heading-l">Адрес</h3> : <h2 class="wa-heading-xl">Адрес</h2>}
   <AddressField id="incident-main-address" label="Полный адрес" value={fullAddress} {dadataApiKey} client:load />
-  <p id="incident-address-hint" class="address-details-hint" hidden>Выберите адрес из подсказок или очистите полный адрес, чтобы заполнить отдельные поля. Так строка адреса и данные сценария будут совпадать.
-  </p>
   <div class="wa-grid">
     <wa-input name="address.city" label="Город" value={address.city || ""} required>
     </wa-input>
@@ -32,26 +30,17 @@ const fullAddress = formatIncidentAddress({ ...address, floor: address.floor || 
 
   const section = document.querySelector("#incident-address-section");
   const mainAddress = section?.querySelector("#incident-main-address");
-  const hint = section?.querySelector("#incident-address-hint");
   const fields = Object.fromEntries(["city", "street", "house", "building", "apartment", "floor"].map((field) => [field, section?.querySelector(`[name="address.${field}"]`)]));
   let selectedAddress = null;
-  let detailsEditable = true;
   const readAddress = () => Object.fromEntries(Object.entries(fields).map(([name, field]) => [name, field?.value || ""]));
   const updateMainAddress = () => mainAddress?.dispatchEvent(new CustomEvent("address-set", { detail: { value: formatIncidentAddress(readAddress(), selectedAddress) } }));
   const publishAddress = (value) => window.dispatchEvent(new CustomEvent("incident-address-change", { detail: value }));
-  const setEditable = (editable) => {
-    detailsEditable = editable;
-    if (hint) hint.hidden = editable;
-    // Keep controls in FormData; the submit guard below rejects unparsed addresses.
-    Object.values(fields).forEach((field) => { if (field) field.readonly = !editable; });
-  };
 
   mainAddress?.addEventListener("address-input", (event) => {
     const { value, source } = event.detail;
     if (source === "input" || source === "map") {
       selectedAddress = null;
       Object.values(fields).forEach((field) => { if (field) field.value = ""; });
-      setEditable(!value.trim());
     }
     publishAddress(value);
   });
@@ -61,28 +50,14 @@ const fullAddress = formatIncidentAddress({ ...address, floor: address.floor || 
     for (const [name, value] of Object.entries(selectedAddress.incident)) {
       if (fields[name]) fields[name].value = value;
     }
-    setEditable(true);
   });
   Object.values(fields).forEach((field) => field?.addEventListener("input", () => {
-    if (!detailsEditable) return;
     if (fields.city?.value !== selectedAddress?.incident.city) selectedAddress = null;
     updateMainAddress();
   }));
   section?.addEventListener("incident-address-refresh", () => {
     selectedAddress = null;
-    setEditable(true);
     updateMainAddress();
   });
-  const form = section?.closest("form");
-  form?.addEventListener("submit", (event) => {
-    if (detailsEditable) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    hint?.scrollIntoView({ block: "center" });
-  }, true);
   publishAddress(mainAddress?.querySelector("input")?.value || "");
 </script>
-
-<style>
-  .address-details-hint { margin: 0; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
-</style>
