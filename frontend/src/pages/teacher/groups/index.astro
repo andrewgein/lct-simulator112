@@ -38,58 +38,60 @@ try {
   </MainHeader>
   {!error && !groups.length && <wa-callout>Учебных групп пока нет. Создайте группу, чтобы назначать курсы нескольким обучающимся.</wa-callout>}
   {!error && groups.length > 0 && (
-    <wa-accordion class="groups-accordion" appearance="outlined" heading-level="2" mode="multiple">
+    <div class="groups-accordion wa-stack wa-gap-s">
       {groups.map((group) => {
         const students = (group.studentIds || []).map((id) => studentsById.get(String(id))).filter(Boolean);
         return (
-          <wa-accordion-item>
-            <div slot="label" class="group-label wa-split wa-gap-m">
-              <span class="wa-heading-l">{group.title}</span>
-              <wa-badge variant="neutral" appearance="outlined">Участников: {students.length}</wa-badge>
-            </div>
-            <div class="group-content wa-stack wa-gap-l">
-              <div class="group-toolbar wa-cluster wa-gap-xs">
-                <wa-button href={`/teacher/groups/${group.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
-                <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
-                  <wa-icon name="pen" label="Редактировать">
-                  </wa-icon>
-                </wa-button>
-                <wa-button class="delete-group" type="button" appearance="outlined" variant="danger" data-id={group.id} data-title={group.title} aria-label={`Удалить группу ${group.title}`}>
-                  <wa-icon name="trash" label="Удалить">
-                  </wa-icon>
-                </wa-button>
+          <wa-accordion appearance="outlined" heading-level="2">
+            <wa-accordion-item>
+              <div slot="label" class="group-label wa-split wa-gap-m">
+                <span class="wa-heading-l">{group.title}</span>
+                <wa-badge variant="neutral" appearance="outlined">Участников: {students.length}</wa-badge>
               </div>
-              <div class="group-columns">
-                <div class="group-column wa-stack wa-gap-s">
-                  <h3 class="group-section-title wa-heading-l">Состав группы</h3>
-                  {students.length ? (
-                    <ul class="student-list">
-                      {students.map((student) => {
-                        const hasProfile = Boolean(student.profile);
-                        const fullName = hasProfile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
-                        return (
-                          <li class="student-row" data-pending={!hasProfile}>
-                            <strong class="student-name">{fullName}</strong>
-                            <span class="student-email">{student.email}</span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <wa-callout variant="neutral">В группе пока нет обучающихся.</wa-callout>
-                  )}
+              <div class="group-content wa-stack wa-gap-l">
+                <div class="group-toolbar wa-cluster wa-gap-xs">
+                  <wa-button href={`/teacher/groups/${group.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
+                  <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
+                    <wa-icon name="pen" label="Редактировать">
+                    </wa-icon>
+                  </wa-button>
+                  <wa-button class="delete-group" type="button" appearance="outlined" variant="danger" data-id={group.id} data-title={group.title} aria-label={`Удалить группу ${group.title}`}>
+                    <wa-icon name="trash" label="Удалить">
+                    </wa-icon>
+                  </wa-button>
                 </div>
-                <wa-divider class="group-columns-divider group-columns-divider--vertical" orientation="vertical"></wa-divider>
-                <wa-divider class="group-columns-divider group-columns-divider--horizontal"></wa-divider>
-                <div class="group-column">
-                  <GroupCourseList group={group} assignedCourses={assignedCoursesByGroupId.get(String(group.id)) || []} />
+                <div class="group-columns">
+                  <div class="group-column wa-stack wa-gap-s">
+                    <h3 class="group-section-title wa-heading-l">Состав группы</h3>
+                    {students.length ? (
+                      <ul class="student-list">
+                        {students.map((student) => {
+                          const hasProfile = Boolean(student.profile);
+                          const fullName = hasProfile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
+                          return (
+                            <li class="student-row" data-pending={!hasProfile}>
+                              <strong class="student-name">{fullName}</strong>
+                              <span class="student-email">{student.email}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <wa-callout variant="neutral">В группе пока нет обучающихся.</wa-callout>
+                    )}
+                  </div>
+                  <wa-divider class="group-columns-divider group-columns-divider--vertical" orientation="vertical"></wa-divider>
+                  <wa-divider class="group-columns-divider group-columns-divider--horizontal"></wa-divider>
+                  <div class="group-column">
+                    <GroupCourseList group={group} assignedCourses={assignedCoursesByGroupId.get(String(group.id)) || []} />
+                  </div>
                 </div>
               </div>
-            </div>
-          </wa-accordion-item>
+            </wa-accordion-item>
+          </wa-accordion>
         );
       })}
-    </wa-accordion>
+    </div>
   )}
 </Page>
 
@@ -109,7 +111,7 @@ try {
 </script>
 
 <style>
-  .groups-accordion { display: flex; width: 100%; flex-direction: column; gap: var(--wa-space-s); }
+  .groups-accordion { width: 100%; }
   .groups-accordion wa-accordion-item::part(accordion-item),
   .groups-accordion wa-accordion-item::part(button),
   .groups-accordion wa-accordion-item::part(content) { background-color: var(--wa-color-surface-raised); }
