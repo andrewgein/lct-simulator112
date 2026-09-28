@@ -224,6 +224,24 @@ class System112ReviewRubricTests {
                 .doesNotContain("СекретноеИмя", "Назовите секретный код");
     }
 
+    @Test
+    void checksExpectedRoutingAnswersForTheStage() {
+        var call = new ReviewSubmission.CallScenario("call", 0, null);
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
+                new ReviewSubmission.StageScenario("stage", 0, List.of("fire"),
+                        Map.of("ACCESS_STATUS", "AVAILABLE"), 0, null, List.of(call))), criteria());
+        var card = new ReviewSubmission.CardRevision(UUID.randomUUID().toString(), "card", 1, "call", "",
+                null, 0, Map.of("ACCESS_STATUS", "NO_ACCESS"), true, List.of("fire"), List.of(), null);
+        var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(card), List.of(), List.of(), null, null);
+
+        var fields = new System112ReviewRubric().evaluate(submission).stream()
+                .filter(result -> result.criterionName().equals("Поля")).toList();
+
+        assertThat(fields).anySatisfy(result -> assertThat(result.feedback()).contains("Признак ACCESS_STATUS указан неверно"));
+        assertThat(fields.stream().mapToInt(result -> result.score()).sum()).isLessThan(70);
+    }
+
     private int fieldScore(List<String> expectedTypes, List<String> cardTypes) {
         var call = new ReviewSubmission.CallScenario("call", 0, null);
         var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(

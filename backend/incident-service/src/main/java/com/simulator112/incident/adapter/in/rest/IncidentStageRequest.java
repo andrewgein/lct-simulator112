@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public record IncidentStageRequest(
@@ -15,6 +16,7 @@ public record IncidentStageRequest(
         @NotBlank String title,
         Integer position,
         List<String> classifierCodes,
+        Map<String, String> expectedRoutingFacts,
         Integer victimCount,
         String description,
         DdsStageType type,

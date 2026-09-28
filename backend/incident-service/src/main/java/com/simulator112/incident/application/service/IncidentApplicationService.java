@@ -61,7 +61,12 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             throw new IllegalArgumentException("Происшествие должно содержать хотя бы один этап");
         }
         if (incident instanceof System112Incident system112) {
-            system112.stages().forEach(stage -> requireClassifierCodes(stage.classifierCodes()));
+            system112.stages().forEach(stage -> {
+                requireClassifierCodes(stage.classifierCodes());
+                if (stage.expectedRoutingFacts().entrySet().stream().anyMatch(entry -> entry.getKey().isBlank() || entry.getValue().isBlank())) {
+                    throw new IllegalArgumentException("Ожидаемые ответы должны содержать код признака и значение");
+                }
+            });
             if (system112.stages().stream()
                     .flatMap(stage -> stage.calls().stream())
                     .noneMatch(call -> call.counterparty()

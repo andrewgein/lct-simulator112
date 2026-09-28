@@ -7,9 +7,11 @@ import { EditorAddCard, EditorCallRow, EditorStageContainer } from "./EditorCont
 import VictimFields from "../VictimFields.jsx";
 import { findIncident, moveItem, normalizeDialup } from "./editorHelpers";
 
-export default function StageEditor({ stage, index, count, firstDialupNumber, classifier, incidentAddress, openStage, openDialup, dialupError, onChange, onOpenStage, onCloseStage, onOpenDialup, onCloseDialup, onRemove, onMove }) {
+export default function StageEditor({ stage, index, count, firstDialupNumber, classifier, routingFacts, incidentAddress, openStage, openDialup, dialupError, onChange, onOpenStage, onCloseStage, onOpenDialup, onCloseDialup, onRemove, onMove }) {
   const incidentType = findIncident(classifier, stage.typeId);
   const incidentTypes = stage.classifierCodes.filter(Boolean).map((code) => findIncident(classifier, code)?.finalName || code);
+  const activeFactCodes = [...new Set(stage.classifierCodes.flatMap((code) => findIncident(classifier, code)?.routingFactCodes || []))];
+  const expectedFacts = activeFactCodes.map((code) => routingFacts.find((fact) => fact.code === code)).filter(Boolean);
   const snapshot = useRef(openStage ? structuredClone(stage) : null);
   const changeStageField = (field) => (event) => onChange({ ...stage, [field]: event.currentTarget.value });
   const openEditor = () => {
@@ -30,6 +32,10 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
     const dialup = normalizeDialup();
     onChange({ ...stage, dialups: [...stage.dialups, dialup] });
     onOpenDialup(dialup.key);
+  };
+  const changeClassifierCodes = (classifierCodes) => {
+    const allowedCodes = new Set(classifierCodes.flatMap((code) => findIncident(classifier, code)?.routingFactCodes || []));
+    onChange({ ...stage, classifierCodes, typeId: classifierCodes[0], expectedRoutingFacts: Object.fromEntries(Object.entries(stage.expectedRoutingFacts || {}).filter(([code]) => allowedCodes.has(code))) });
   };
   return (
     <>
@@ -75,13 +81,20 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
             <h3 class="wa-heading-l">Информация о происшествии</h3>
             {stage.classifierCodes.map((code, codeIndex) => (
               <div class="wa-cluster" key={codeIndex}>
-                <IncidentTypeSelect classifierState={{ classifier, loading: false, error: "" }} id={`stage-${stage.key}-incident-type-${codeIndex}`} name={null} value={code} required onChange={(value) => { const classifierCodes = stage.classifierCodes.map((item, index) => index === codeIndex ? value : item); onChange({ ...stage, classifierCodes, typeId: classifierCodes[0] }); }} />
+                <IncidentTypeSelect classifierState={{ classifier, loading: false, error: "" }} id={`stage-${stage.key}-incident-type-${codeIndex}`} name={null} value={code} required onChange={(value) => changeClassifierCodes(stage.classifierCodes.map((item, index) => index === codeIndex ? value : item))} />
                 {stage.classifierCodes.length > 1 && (
-                  <wa-button type="button" appearance="plain" variant="danger" onClick={() => { const classifierCodes = stage.classifierCodes.filter((_, index) => index !== codeIndex); onChange({ ...stage, classifierCodes, typeId: classifierCodes[0] }); }}>Удалить тип</wa-button>
+                  <wa-button type="button" appearance="plain" variant="danger" onClick={() => changeClassifierCodes(stage.classifierCodes.filter((_, index) => index !== codeIndex))}>Удалить тип</wa-button>
                 )}
               </div>
             ))}
             <wa-button type="button" appearance="plain" onClick={() => onChange({ ...stage, classifierCodes: [...stage.classifierCodes, ""] })}>Добавить тип происшествия</wa-button>
+            {!!expectedFacts.length && <div class="wa-stack wa-gap-s">
+              <h3 class="wa-heading-m">Ожидаемые ответы по происшествию</h3>
+              {expectedFacts.map((fact) => <wa-select key={fact.code} label={fact.label} value={stage.expectedRoutingFacts[fact.code] || ""} onChange={(event) => { const expectedRoutingFacts = { ...stage.expectedRoutingFacts }; const value = event.currentTarget.value; if (value) expectedRoutingFacts[fact.code] = value; else delete expectedRoutingFacts[fact.code]; onChange({ ...stage, expectedRoutingFacts }); }}>
+                <wa-option value="">Не задано</wa-option>
+                {fact.options.map((option) => <wa-option key={option.value} value={option.value}>{option.label}</wa-option>)}
+              </wa-select>)}
+            </div>}
             <wa-textarea value={stage.description} label="Описание ситуации" rows="5" onInput={changeStageField("description")}>
             </wa-textarea>
             <div class="wa-stack wa-gap-m">

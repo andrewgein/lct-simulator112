@@ -126,7 +126,7 @@ final class ContextPersistenceMapper {
         target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription());
         if (source.getSystem112() != null) {
             target.setSystem112(new System112StageDetails(source.getSystem112().getClassifierCodes(),
-                    source.getSystem112().getVictimCount()));
+                    source.getSystem112().getVictimCount(), source.getSystem112().getExpectedRoutingFacts()));
         }
         if (source.getDds() != null) {
             var details = source.getDds();
@@ -150,6 +150,7 @@ final class ContextPersistenceMapper {
             details.setStageContextId(source.getPersistenceId());
             details.setClassifierCodes(new ArrayList<>(source.getSystem112().classifierCodes()));
             details.setVictimCount(source.getSystem112().victimCount());
+            details.setExpectedRoutingFacts(new java.util.LinkedHashMap<>(source.getSystem112().expectedRoutingFacts()));
             target.setSystem112(details);
         }
         if (source.getDds() != null) {

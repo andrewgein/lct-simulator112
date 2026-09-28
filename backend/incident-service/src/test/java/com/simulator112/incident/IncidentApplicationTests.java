@@ -12,6 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +45,7 @@ class IncidentApplicationTests {
                 new Person("Иван", "Иванов", null, 35, "+70000000000", null, null, null, null),
                 Gender.MAN, List.of("Виден дым"), List.of("Есть пострадавший"), "caller", "WORRIED");
         var stage = new System112Stage(null, "Первичный вызов", 0,
-                List.of("101", "102"), 1, "Описание", List.of(call));
+                List.of("101", "102"), Map.of("ACCESS_STATUS", "AVAILABLE"), 1, "Описание", List.of(call));
         var incident = new System112Incident(null, "Пожар",
                 new Address("Москва", "Тверская", "1", null, null, 1), Difficulty.EASY,
                 List.of(stage), new System112Criteria(List.of(
@@ -58,6 +59,7 @@ class IncidentApplicationTests {
         assertThat(loaded.stages()).hasSize(1);
         assertThat(loaded.stages()).hasOnlyElementsOfType(System112Stage.class);
         assertThat(((System112Stage) loaded.stages().getFirst()).classifierCodes()).containsExactly("101", "102");
+        assertThat(((System112Stage) loaded.stages().getFirst()).expectedRoutingFacts()).containsEntry("ACCESS_STATUS", "AVAILABLE");
         assertThat(loaded.stages().getFirst().calls()).hasSize(1);
         assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.INBOUND);
         assertThat(((System112Incident) loaded).criteria().dialogueCriteria()).singleElement()

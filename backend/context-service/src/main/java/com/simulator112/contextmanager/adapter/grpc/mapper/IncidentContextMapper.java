@@ -62,7 +62,7 @@ public final class IncidentContextMapper {
         if (proto.hasSystem112()) {
             value.setPosition(proto.getSystem112().getPosition());
             value.setSystem112(new System112StageDetails(proto.getSystem112().getClassifierCodesList(),
-                    proto.getSystem112().getVictimCount()));
+                    proto.getSystem112().getVictimCount(), proto.getSystem112().getExpectedRoutingFactsMap()));
         } else if (proto.hasDds()) {
             value.setDds(new DdsStageDetails(DdsStageType.valueOf(proto.getDds().getType().name().replace("DDS_STAGE_TYPE_", "")),
                     proto.getDds().getTimeLimitSeconds(), proto.getDds().getExpectedComment(), null,
@@ -111,7 +111,8 @@ public final class IncidentContextMapper {
                 .setDescription(orEmpty(value.getDescription())).addAllCalls(value.getCalls().stream().map(IncidentContextMapper::toProto).toList());
         if (value.getSystem112() != null) builder.setSystem112(
                 com.simulator112.incident.grpc.contract.System112StageDetails.newBuilder().setPosition(value.getPosition())
-                        .addAllClassifierCodes(value.getSystem112().classifierCodes()).setVictimCount(value.getSystem112().victimCount()));
+                        .addAllClassifierCodes(value.getSystem112().classifierCodes()).setVictimCount(value.getSystem112().victimCount())
+                        .putAllExpectedRoutingFacts(value.getSystem112().expectedRoutingFacts()));
         else if (value.getDds() != null) builder.setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
                 .setType(com.simulator112.incident.grpc.contract.DdsStageType.valueOf("DDS_STAGE_TYPE_" + value.getDds().getType().name()))
                 .setTimeLimitSeconds(value.getDds().getTimeLimitSeconds())

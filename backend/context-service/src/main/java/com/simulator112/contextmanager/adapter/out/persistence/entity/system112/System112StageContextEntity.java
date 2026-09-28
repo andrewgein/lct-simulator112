@@ -9,12 +9,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,4 +43,10 @@ public class System112StageContextEntity {
 
     @Column(name = "victim_count", nullable = false)
     private int victimCount;
+
+    @ElementCollection
+    @CollectionTable(name = "stage_context_expected_routing_facts", joinColumns = @JoinColumn(name = "stage_context_id"))
+    @MapKeyColumn(name = "fact_code")
+    @Column(name = "expected_value", nullable = false)
+    private Map<String, String> expectedRoutingFacts = new LinkedHashMap<>();
 }
