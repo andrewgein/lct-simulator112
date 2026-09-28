@@ -41,12 +41,10 @@ export function formatAddressDetails(details, types = {}) {
 
 export function formatIncidentAddress(address, selected = null) {
   return formatAddressDetails({
-    ...selected?.details,
     city: selected && selected.incident.city === address.city ? selected.details.city : address.city,
     street: selected && selected.incident.street === address.street ? selected.details.street : address.street,
     house: address.house,
     block: address.building, apartment: address.apartment, floor: Number(address.floor) > 0 ? address.floor : "",
-    // The constructor does not expose these fields; do not add hidden apartment details.
-    entrance: "", postalCode: ""
+    country: "", region: "", district: "", area: "", entrance: "", postalCode: ""
   }, selected?.types);
 }
