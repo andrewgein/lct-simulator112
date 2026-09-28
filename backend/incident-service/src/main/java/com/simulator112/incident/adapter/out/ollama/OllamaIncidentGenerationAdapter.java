@@ -35,7 +35,7 @@ public class OllamaIncidentGenerationAdapter implements IncidentLanguageModelPor
     public String generate(List<Message> messages) {
         try {
             var body = mapper.writeValueAsString(Map.of("model", model, "stream", false, "format", "json", "keep_alive", "10m",
-                    "messages", messages, "options", Map.of("temperature", 0.3, "num_ctx", 8192, "num_predict", 4096)));
+                    "messages", messages, "options", Map.of("temperature", 0.3, "num_ctx", 16384, "num_predict", 8192)));
             var request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(120))
                     .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
             var response = client.send(request, HttpResponse.BodyHandlers.ofString());

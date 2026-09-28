@@ -37,8 +37,8 @@ class OllamaIncidentGenerationAdapterTest {
             var sent = mapper.readTree(requestBody.get());
             assertThat(sent.path("model").asText()).isEqualTo("test-model");
             assertThat(sent.path("format").asText()).isEqualTo("json");
-            assertThat(sent.path("options").path("num_ctx").asInt()).isEqualTo(8192);
-            assertThat(sent.path("options").path("num_predict").asInt()).isEqualTo(4096);
+            assertThat(sent.path("options").path("num_ctx").asInt()).isEqualTo(16384);
+            assertThat(sent.path("options").path("num_predict").asInt()).isEqualTo(8192);
             assertThat(sent.path("keep_alive").asText()).isEqualTo("10m");
             assertThat(sent.path("messages").get(0).path("role").asText()).isEqualTo("user");
         } finally {

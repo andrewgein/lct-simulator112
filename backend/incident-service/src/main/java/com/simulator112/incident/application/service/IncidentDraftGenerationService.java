@@ -100,16 +100,26 @@ public class IncidentDraftGenerationService implements GenerateIncidentDraftUseC
             for (var message : command.messages()) {
                 messages.add(new IncidentLanguageModelPort.Message(message.role(), message.content()));
             }
-            var content = model.generate(messages);
-            if (mapper.readTree(content).path("incident").has("stages") && candidates.isEmpty()) {
-                throw new ClassifierUnavailableException(classifierFailure);
+            try {
+                return generateAndValidate(messages, classifierNames, classifierFailure);
+            } catch (IncidentGenerationException e) {
+                if (e.getClass() != IncidentGenerationException.class) throw e;
+                return generateAndValidate(messages, classifierNames, classifierFailure);
             }
-            return validator.validate(content, classifierNames.keySet());
         } catch (IncidentGenerationException e) {
             throw e;
         } catch (Exception e) {
             throw new IncidentGenerationException("Не удалось подготовить запрос генерации", e);
         }
+    }
+
+    private Result generateAndValidate(List<IncidentLanguageModelPort.Message> messages,
+            LinkedHashMap<String, String> classifierNames, Exception classifierFailure) {
+        var content = model.generate(messages);
+        if (mapper.readTree(content).path("incident").has("stages") && classifierNames.isEmpty()) {
+            throw new ClassifierUnavailableException(classifierFailure);
+        }
+        return validator.validate(content, classifierNames.keySet());
     }
 
     private void validateRequest(Command command) {
