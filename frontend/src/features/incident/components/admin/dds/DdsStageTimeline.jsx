@@ -30,7 +30,17 @@ export function timelineValue(stages) {
   };
 }
 
+export function timelineBoundaryErrors(stages) {
+  if (!stages.length) return ["Добавьте этапы реагирования"];
+  const errors = [];
+  if (stages[0].type !== "ASSIGN_BRIGADE") errors.push("Первый этап должен быть «Получение карточки»");
+  if (stages.at(-1).type !== "COMPLETE_INCIDENT") errors.push("Последний этап должен быть «Завершение реагирования»");
+  return errors;
+}
+
 export function validateTimeline(stages) {
+  const [boundaryError] = timelineBoundaryErrors(stages);
+  if (boundaryError) throw new Error(boundaryError);
   stages.forEach((stage, index) => {
     if (!stage.title.trim()) throw new Error(`Укажите название этапа ${index + 1}`);
     if (!Number.isInteger(Number(stage.timeLimitSeconds)) || Number(stage.timeLimitSeconds) <= 0) throw new Error(`Укажите положительную длительность этапа «${stage.title}»`);
@@ -52,7 +62,7 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
         <div class="wa-grid">
           <wa-input value={draft.title} label="Название этапа" required onInput={(event) => update("title", event.currentTarget.value)}>
           </wa-input>
-          <wa-select value={draft.type} label="Событие сценария" disabled={!index} onChange={(event) => update("type", event.currentTarget.value)}>
+          <wa-select value={draft.type} label="Событие сценария" onChange={(event) => update("type", event.currentTarget.value)}>
             {STAGE_TYPES.filter((item) => !index || item.value !== "ASSIGN_BRIGADE").map((item) =>
               <wa-option key={item.value} value={item.value}>
                 {item.label}
@@ -82,6 +92,7 @@ export default function DdsStageTimeline({ initialIncident, onChange }) {
   const [editingCallKey, setEditingCallKey] = useState(null);
   useEffect(() => onChange(stages), [stages]);
   const change = (next) => setStages(next);
+  const boundaryErrors = timelineBoundaryErrors(stages);
   return <section class="wa-stack wa-gap-m">
     <div>
       <h2 class="wa-heading-xl">
@@ -91,6 +102,9 @@ export default function DdsStageTimeline({ initialIncident, onChange }) {
         Этапы идут друг за другом по времени, независимо от действий диспетчера.
       </p>
     </div>
+    {!!boundaryErrors.length && <wa-callout variant="danger" role="alert">
+      {boundaryErrors.map((message) => <div key={message}>{message}</div>)}
+    </wa-callout>}
     <ol class="dds-timeline wa-stack wa-gap-l">
       {stages.map((stage, index) =>
         <li key={stage.id}>
