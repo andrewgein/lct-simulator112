@@ -101,7 +101,7 @@ spring:
 
             #Notification service - пользовательские уведомления
             - id: notification-service
-              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8090}
               predicates:
                 - Path=/api/v1/notifications/**
               filters:
