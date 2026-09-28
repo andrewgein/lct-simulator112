@@ -6,7 +6,6 @@ from enum import Enum
 from openai import OpenAI
 import logging
 import asyncio
-from num2words import num2words
 
 from app.domain.model import CallScenario, CounterpartyType, DialogTranscript, Speaker
 from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, build_call_scenario
@@ -15,20 +14,11 @@ from .processing_node import UserDialogProcessingNode
 
 logger = logging.getLogger()
 
-DELIMITERS_SEARCH_PATTERN = r'([.!?]+)'
+DELIMITERS_SEARCH_PATTERN = r'([!?]+|(?<!\d)\.+|\.(?!\d))'
 
 
 def _preprocess_text(text: str) -> str:
-    def replace_time(match) -> str:
-        hours = num2words(int(match.group(1)), lang="ru")
-        minutes = num2words(int(match.group(2)), lang="ru")
-        return f"{hours} {minutes}"
-    def replace_numbers(match) -> str:
-        number = num2words(int(match.group(0)), lang="ru")
-        return number
-
-    text = regex.sub(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", replace_time, text)
-    text = regex.sub(r"\d+", replace_numbers, text)
+    # Keep digits and context until TTSTextPreprocessor, immediately before stress.
     text = regex.sub(r'[\u2010-\u2015\u2212]', '-', text)
 
     return text
@@ -158,15 +148,19 @@ class ChatNode(UserDialogProcessingNode):
         ext = self.pending_text + text
         self.pending_text = ""
 
-        parts = regex.split(DELIMITERS_SEARCH_PATTERN, ext)
-
-        for i in range(0, len(parts) - 1, 2):
-            full_sentence = parts[i] + parts[i+1]
+        start = 0
+        for delimiter in regex.finditer(DELIMITERS_SEARCH_PATTERN, ext):
+            # A trailing dot after a digit may belong to a decimal in the next chunk.
+            if (delimiter.group() == "." and delimiter.end() == len(ext)
+                    and delimiter.start() > 0 and ext[delimiter.start() - 1].isdigit()):
+                break
+            full_sentence = ext[start:delimiter.end()]
+            start = delimiter.end()
 
             if full_sentence.strip():
                 self.response_buffer.append(full_sentence)
                 self._flush_buffer()
 
-        leftover = parts[-1]
+        leftover = ext[start:]
         if leftover:
             self.pending_text = leftover
