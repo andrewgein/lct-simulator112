@@ -39,10 +39,10 @@ try {
   {!error && !groups.length && <wa-callout>Учебных групп пока нет. Создайте группу, чтобы назначать курсы нескольким обучающимся.</wa-callout>}
   {!error && groups.length > 0 && (
     <wa-accordion class="groups-accordion" appearance="outlined" heading-level="2" mode="single-collapsible">
-      {groups.map((group, index) => {
+      {groups.map((group) => {
         const students = (group.studentIds || []).map((id) => studentsById.get(String(id))).filter(Boolean);
         return (
-          <wa-accordion-item expanded={index === 0}>
+          <wa-accordion-item>
             <div slot="label" class="group-label wa-split wa-gap-m">
               <span class="wa-heading-l">{group.title}</span>
               <wa-badge variant="neutral" appearance="outlined">Участников: {students.length}</wa-badge>
@@ -120,7 +120,7 @@ try {
   .group-columns-divider { --spacing: 0; }
   .group-columns-divider--horizontal { display: none; }
   .group-section-title, .student-list { margin: 0; }
-  .group-section-title { padding-inline-start: var(--wa-space-m); color: var(--wa-color-text-normal); }
+  .group-section-title { padding-inline-start: var(--wa-space-m); }
   .student-list { padding: 0; list-style: none; }
   .student-row {
     display: flex;

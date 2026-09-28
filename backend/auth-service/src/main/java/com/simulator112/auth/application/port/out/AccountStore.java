@@ -11,4 +11,6 @@ public interface AccountStore {
     boolean anyVerified();
     List<Account> findAll();
     Account save(Account account);
+    List<Account> lockAdministrators();
+    void deleteById(UUID userId);
 }
