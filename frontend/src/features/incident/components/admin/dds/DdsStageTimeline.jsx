@@ -11,10 +11,16 @@ const STAGE_TYPES = [
   { value: "COMPLETE_INCIDENT", label: "Завершение реагирования" }
 ];
 const REACTION_STATUSES = [
-  ["", "Без изменения"], ["ACCEPTED", "Принята"], ["NOT_ACCEPTED", "Не принята"],
+  ["", "Без изменения"],
+  ["ADDED", "Добавлена"], ["RECEIVED_BY_SERVICE", "Получена службой"],
+  ["ACCEPTED", "Принята"], ["NOT_ACCEPTED", "Не принята"],
   ["RESPONSE_STARTED", "Начало реагирования"], ["ARRIVED", "Прибытие"],
   ["WORK_IN_PROGRESS", "Проведение работ"], ["WORK_COMPLETED", "Работы завершены"],
-  ["WORK_REFUSED", "Отказ от выполнения работ"]
+  ["WORK_REFUSED", "Отказ от выполнения работ"],
+  ["REGISTERED", "Зарегистрирована"], ["PROCESSED", "Отработана"],
+  ["VERIFIED", "Проверена"], ["NOT_NOTIFIED", "Не оповещено"],
+  ["REFUSED", "Отказ"], ["NOT_COMPLETED", "Не завершено"],
+  ["COMPLETED", "Завершена"]
 ];
 const newStage = () => ({ id: crypto.randomUUID(), title: "", description: "", type: "WAIT_FOR_BRIGADE_STATUS_CHANGE", timeLimitSeconds: 60, actualStatus: "", calls: [], expectedComment: "" });
 const initialStage = () => ({ ...newStage(), title: "Получение карточки", type: "ASSIGN_BRIGADE", timeLimitSeconds: 30 });
