@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import EditorDialog from "../EditorDialog.jsx";
 import PersonFields from "../PersonFields.jsx";
+import FactsField from "../FactsField.jsx";
 import { emptyPerson, personValue, splitLines } from "../editorHelpers.js";
 
 export function normalizeDdsCall(call = {}, key = crypto.randomUUID()) {
@@ -78,8 +79,8 @@ export default function DdsCallEditor({ call, index, open, onClose, onSave, serv
               <wa-option value="CONFUSED">Растерянное</wa-option>
             </wa-select>
           </div>
-          <wa-textarea value={draft.knownFacts} label="Известные факты (один на строку)" rows="5" onInput={update("knownFacts")}></wa-textarea>
-          <wa-textarea value={draft.hiddenFacts} label="Скрытые факты (один на строку)" rows="4" onInput={update("hiddenFacts")}></wa-textarea>
+          <FactsField label="Известные факты" value={draft.knownFacts} onChange={(knownFacts) => setDraft((current) => ({ ...current, knownFacts }))} />
+          <FactsField label="Скрытые факты" value={draft.hiddenFacts} onChange={(hiddenFacts) => setDraft((current) => ({ ...current, hiddenFacts }))} />
           <wa-textarea value={draft.aiContext} label="Контекст для ИИ" rows="5" onInput={update("aiContext")}></wa-textarea>
         </div>
       </div>
