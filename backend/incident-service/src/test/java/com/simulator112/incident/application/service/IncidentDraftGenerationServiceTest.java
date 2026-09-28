@@ -45,6 +45,36 @@ class IncidentDraftGenerationServiceTest {
     }
 
     @Test
+    void updatesMissingDdsApplicantWhenRequestedAsQuestion() {
+        var classifier = org.mockito.Mockito.mock(ClassifierCatalogPort.class);
+        org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
+        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+            var prompt = messages.getFirst().content();
+            if (prompt.contains("Определи намерение")) {
+                assertThat(prompt).contains("по ожидаемому результату", "есть ли нужные поля");
+                return "{\"intent\":\"INCIDENT\"}";
+            }
+            if (prompt.contains("Выбери ТОЛЬКО поля")) return "{\"paths\":[\"/preparedCardTemplate/applicant\"]}";
+            return """
+                    {"incident":{"preparedCardTemplate":{"applicant":{
+                    "firstName":"Анна","lastName":"Иванова","phone":"+79990000000"}}}}
+                    """;
+        }, new GeneratedIncidentPatchValidator(mapper), mapper);
+        var result = generator.generate(new GenerateIncidentDraftUseCase.Command(
+                List.of(new GenerateIncidentDraftUseCase.Message("user", "Можешь обновить поля заявителя?")),
+                mapper.readTree("""
+                        {"targetType":"DDS","title":"Пожар","preparedCardTemplate":{
+                        "classifierCodes":["1050101"],"victimCount":0,"applicant":null},
+                        "initialAssignment":{"emergencyService":"MCHS"},"stages":[]}
+                        """)));
+
+        assertThat(result.incident().path("preparedCardTemplate").path("applicant").path("firstName").asText())
+                .isEqualTo("Анна");
+    }
+
+    @Test
     void questionFormCanStillRequestIncidentEdit() {
         var classifier = org.mockito.Mockito.mock(ClassifierCatalogPort.class);
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
@@ -53,7 +83,7 @@ class IncidentDraftGenerationServiceTest {
         var generator = new IncidentDraftGenerationService(classifier, messages -> {
             var prompt = messages.getFirst().content();
             if (prompt.contains("Определи намерение")) {
-                assertThat(prompt).contains("Приоритет", "если деталей пока мало");
+                assertThat(prompt).contains("Приветствие или вопросительная форма не меняют намерение");
                 return "{\"intent\":\"INCIDENT\"}";
             }
             if (prompt.contains("Выбери ТОЛЬКО поля")) return "{\"paths\":[\"/difficulty\"]}";
