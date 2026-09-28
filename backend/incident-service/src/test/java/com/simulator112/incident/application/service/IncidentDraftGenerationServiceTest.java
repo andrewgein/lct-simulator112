@@ -233,9 +233,7 @@ class IncidentDraftGenerationServiceTest {
                         {"targetType":"DDS","title":"","difficulty":"NORMAL","address":{"city":"","floor":0},
                         "preparedCardTemplate":{"classifierCodes":[""],"victimCount":0},
                         "initialAssignment":{"emergencyService":"MCHS"},
-                        "availableServices":[{"code":"MCHS","name":"МЧС"}],
-                        "stages":[{"id":"initial","title":"Получение карточки","type":"ASSIGN_BRIGADE",
-                        "timeLimitSeconds":30,"calls":[]}]}
+                        "availableServices":[{"code":"MCHS","name":"МЧС"}],"stages":[]}
                         """)));
         assertThat(calls.get()).isEqualTo(8); // scenario, plan, metadata, card, two stages (second retried twice)
         assertThat(result.incident().path("title").asText()).isEqualTo("Пожар в квартире");
@@ -244,7 +242,7 @@ class IncidentDraftGenerationServiceTest {
         assertThat(result.incident().path("preparedCardTemplate").path("assignedServices").get(0).asText()).isEqualTo("MCHS");
         var stages = result.incident().path("stages");
         assertThat(stages.size()).isEqualTo(4);
-        assertThat(stages.get(0).path("id").asText()).isEqualTo("initial");
+        assertThat(stages.get(0).path("type").asText()).isEqualTo("ASSIGN_BRIGADE");
         assertThat(stages.get(1).path("calls").get(0).path("knownFacts").get(0).asText()).isEqualTo("Бригада выехала");
         assertThat(stages.get(2).path("type").asText()).isEqualTo("WAIT_FOR_BRIGADE_STATUS_CHANGE");
         assertThat(stages.get(3).path("type").asText()).isEqualTo("COMPLETE_INCIDENT");

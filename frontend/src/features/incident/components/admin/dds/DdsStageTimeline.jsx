@@ -95,7 +95,7 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
 }
 
 export default function DdsStageTimeline({ initialIncident, onChange, services = [] }) {
-  const [stages, setStages] = useState(() => initialIncident.stages?.length ? initialIncident.stages.map((stage) => ({ ...stage, description: stage.description || "", expectedComment: stage.expectedComment || "", calls: (stage.calls || []).map((call) => normalizeDdsCall(call)) })) : [initialStage()]);
+  const [stages, setStages] = useState(() => (initialIncident.stages || []).map((stage) => ({ ...stage, description: stage.description || "", expectedComment: stage.expectedComment || "", calls: (stage.calls || []).map((call) => normalizeDdsCall(call)) })));
   const [editingStageId, setEditingStageId] = useState(null);
   const [editingCallKey, setEditingCallKey] = useState(null);
   useEffect(() => onChange(stages), [stages]);
@@ -132,7 +132,7 @@ export default function DdsStageTimeline({ initialIncident, onChange, services =
         Этапы идут друг за другом по времени, независимо от действий диспетчера.
       </p>
     </div>
-    {!!boundaryErrors.length && <wa-callout variant="danger" role="alert">
+    {!!stages.length && !!boundaryErrors.length && <wa-callout variant="danger" role="alert">
       {boundaryErrors.map((message) => <div key={message}>{message}</div>)}
     </wa-callout>}
     <ol class="dds-timeline wa-stack wa-gap-l">
@@ -175,7 +175,7 @@ export default function DdsStageTimeline({ initialIncident, onChange, services =
         </li>)}
     </ol>
     <EditorAddCard className="editor-add-stage-card">
-      <wa-button type="button" appearance="plain" variant="brand" onClick={() => { const stage = newStage(); change([...stages, stage]); setEditingStageId(stage.id); }}>
+      <wa-button type="button" appearance="plain" variant="brand" onClick={() => { const stage = stages.length ? newStage() : initialStage(); change([...stages, stage]); setEditingStageId(stage.id); }}>
         <wa-icon name="plus" slot="start"></wa-icon>
         Добавить этап
       </wa-button>
