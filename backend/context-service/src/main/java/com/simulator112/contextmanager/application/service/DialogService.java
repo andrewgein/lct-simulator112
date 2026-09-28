@@ -17,8 +17,6 @@ import com.simulator112.contextmanager.domain.common.DialogProgressStatus;
 import com.simulator112.contextmanager.domain.common.Phrase;
 import com.simulator112.contextmanager.domain.common.CallStatus;
 import com.simulator112.contextmanager.domain.common.ContextStatus;
-import com.simulator112.contextmanager.domain.dds.DdsStageSignal;
-import com.simulator112.contextmanager.domain.dds.DdsStageType;
 import com.simulator112.contextmanager.domain.common.ExecutionMode;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;
@@ -28,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DialogService implements CallUseCase {
     private final ContextStore contextStore;
-    private final LevelProgressService levelProgressService;
 
     @Transactional
     public void appendDialog(String id, String callId, DialogTranscript dialog) {
@@ -77,13 +74,17 @@ public class DialogService implements CallUseCase {
     public DialogProgress startCall(String id, String callId) {
         TrainingContext context = find(id);
         UUID requestedCallId = parseUuid(callId);
-        CallSnapshot call = requireCall(context, requestedCallId);
-        if (incidentForCall(context, requestedCallId).getStatus() != IncidentProgressStatus.ACTIVE) {
+        boolean resumingDds = context.getTargetType() == IncidentTargetType.DDS
+                && requestedCallId.equals(context.getActiveCallId())
+                && context.getDialogStatus() == DialogProgressStatus.DISCONNECTED;
+        CallSnapshot call = resumingDds ? findCall(context, requestedCallId) : requireCall(context, requestedCallId);
+        if (!resumingDds && incidentForCall(context, requestedCallId).getStatus() != IncidentProgressStatus.ACTIVE) {
             throw new IllegalStateException("Инцидент звонка не активен");
         }
 
         DialogProgressStatus status = context.getDialogStatus();
-        if ((status == DialogProgressStatus.IN_CALL || status == DialogProgressStatus.DISCONNECTED)
+        if ((status == DialogProgressStatus.IN_CALL
+                || (status == DialogProgressStatus.DISCONNECTED && context.getTargetType() != IncidentTargetType.DDS))
                 && context.getActiveCallId() != null
                 && !context.getActiveCallId().equals(requestedCallId)) {
             throw new IllegalStateException("Другой звонок уже активен: " + context.getActiveCallId());
@@ -101,12 +102,7 @@ public class DialogService implements CallUseCase {
         call.setStatus(CallStatus.COMPLETED);
         context.setDialogStatus(DialogProgressStatus.COMPLETED);
         contextStore.save(context);
-        if (context.getTargetType() == IncidentTargetType.DDS
-                && stageForCall(context, call.getSourceId()).getDdsStageType() == DdsStageType.CALL_BRIGADE_FOR_STATUS) {
-            levelProgressService.applyDdsSignal(context.getId(),
-                    incidentForCall(context, call.getSourceId()).getSourceId(),
-                    DdsStageSignal.STATUS_CALL_COMPLETED);
-        } else if (context.getTargetType() == IncidentTargetType.SYSTEM_112) {
+        if (context.getTargetType() == IncidentTargetType.SYSTEM_112) {
             completeSystem112IncidentIfNeeded(context, call);
         }
         return toDialogProgress(context);
@@ -126,12 +122,12 @@ public class DialogService implements CallUseCase {
     public CallSnapshot getCall(String id, String callId) {
         TrainingContext context = find(id);
         UUID requestedCallId = parseUuid(callId);
-        return availableCalls(context).stream()
-                .filter(call -> call.getSourceId().equals(requestedCallId))
-                .findFirst()
-                
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Звонок " + callId + " не относится к контексту " + id));
+        if (requestedCallId.equals(context.getActiveCallId())
+                && (context.getDialogStatus() == DialogProgressStatus.IN_CALL
+                    || context.getDialogStatus() == DialogProgressStatus.DISCONNECTED)) {
+            return findCall(context, requestedCallId);
+        }
+        return requireCall(context, requestedCallId);
     }
 
     @Transactional(readOnly = true)
@@ -234,13 +230,6 @@ public class DialogService implements CallUseCase {
             context.setStatus(ContextStatus.FILLED);
         }
         contextStore.save(context);
-    }
-
-    private com.simulator112.contextmanager.domain.common.StageSnapshot stageForCall(
-            TrainingContext context, UUID callId) {
-        return context.getIncidents().stream().flatMap(incident -> incident.getStages().stream())
-                .filter(stage -> stage.getCalls().stream().anyMatch(call -> call.getSourceId().equals(callId)))
-                .findFirst().orElseThrow(() -> new IllegalArgumentException("Этап звонка не найден: " + callId));
     }
 
     private com.simulator112.contextmanager.domain.common.IncidentSnapshot incidentForCall(

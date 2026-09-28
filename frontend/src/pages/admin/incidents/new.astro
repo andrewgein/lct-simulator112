@@ -19,7 +19,7 @@ const type = Astro.url.searchParams.get("type") === "DDS" ? "DDS" : "SYSTEM_112"
     </div>
   </MainHeader>
   <IncidentForm mode="create" {type} allowTypeSelection />
-  {type === "SYSTEM_112" && <div slot="aside"><IncidentGenerator /></div>}
-  {type === "SYSTEM_112" && <div slot="floating" class="generator-thinking" aria-hidden="true"><wa-icon class="generator-thinking-star generator-thinking-star--one" name="star"></wa-icon><wa-icon class="generator-thinking-star generator-thinking-star--two" name="star"></wa-icon><wa-icon class="generator-thinking-star generator-thinking-star--three" name="star"></wa-icon></div>}
-  {type === "SYSTEM_112" && <button slot="floating" id="open-incident-generator" class="generator-tab" type="button" aria-label="Открыть ИИ-чат" aria-controls="incident-generator" aria-expanded="false"><wa-icon class="generator-tab-icon" name="wand-magic-sparkles" aria-hidden="true"></wa-icon><span class="generator-tab-label">ИИ</span><span class="generator-tab-caption">помощник</span></button>}
+  <div slot="aside"><IncidentGenerator /></div>
+  <div slot="floating" class="generator-thinking" aria-hidden="true"><wa-icon class="generator-thinking-star generator-thinking-star--one" name="star"></wa-icon><wa-icon class="generator-thinking-star generator-thinking-star--two" name="star"></wa-icon><wa-icon class="generator-thinking-star generator-thinking-star--three" name="star"></wa-icon></div>
+  <button slot="floating" id="open-incident-generator" class="generator-tab" type="button" aria-label="Открыть ИИ-чат" aria-controls="incident-generator" aria-expanded="false"><wa-icon class="generator-tab-icon" name="wand-magic-sparkles" aria-hidden="true"></wa-icon><span class="generator-tab-label">ИИ</span><span class="generator-tab-caption">помощник</span></button>
 </Page>

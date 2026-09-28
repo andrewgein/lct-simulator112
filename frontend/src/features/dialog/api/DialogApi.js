@@ -37,6 +37,18 @@ export function requestNextCall() {
     }
 }
 
+export function dismissCall() {
+    if (controlSocket?.readyState === WebSocket.OPEN) {
+        controlSocket.send(JSON.stringify({ type: "dismiss_call" }));
+    }
+}
+
+export function requestCall(callId) {
+    if (controlSocket?.readyState !== WebSocket.OPEN) return false;
+    controlSocket.send(JSON.stringify({ type: "request_call", callId }));
+    return true;
+}
+
 export function requestDialogStatus() {
     if (controlSocket?.readyState === WebSocket.OPEN) {
         controlSocket.send(JSON.stringify({ type: "request_status" }));

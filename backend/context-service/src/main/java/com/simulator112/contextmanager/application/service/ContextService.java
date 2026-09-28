@@ -30,6 +30,7 @@ import com.simulator112.contextmanager.domain.common.ReactionStatus;
 import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
 import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.common.StageStatus;
+import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -137,11 +138,10 @@ public class ContextService implements ContextUseCase, CleanupAbandonedContextsU
 
     private void activateDdsIncident(IncidentSnapshot incident) {
         incident.setStatus(IncidentProgressStatus.ACTIVE);
-        incident.setActiveStageId(incident.getInitialStageId());
         var stage = incident.getStages().stream()
-                .filter(value -> value.getSourceId().equals(incident.getInitialStageId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Начальный этап DDS не найден"));
+                .min(Comparator.comparingInt(StageSnapshot::getPosition))
+                .orElseThrow(() -> new IllegalStateException("Этапы DDS не найдены"));
+        incident.setActiveStageId(stage.getSourceId());
         var now = java.time.Instant.now();
         ServiceReaction reaction = new ServiceReaction(incident.getInitialAssignmentService());
         reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, now, null));
@@ -149,7 +149,7 @@ public class ContextService implements ContextUseCase, CleanupAbandonedContextsU
         incident.getServiceReactions().add(reaction);
         stage.setStatus(StageStatus.ACTIVE);
         stage.setStartedAt(now);
-        stage.setDeadlineAt(now.plusSeconds(stage.getTimeLimitSeconds()));
+        stage.setDeadlineAt(now.plusSeconds(stage.getDds().getTimeLimitSeconds()));
     }
 
     private void assignSequentialQueue(List<IncidentSnapshot> incidents) {
@@ -216,7 +216,8 @@ public class ContextService implements ContextUseCase, CleanupAbandonedContextsU
             return false;
         }
         if (context.getTargetType() == IncidentTargetType.DDS) {
-            return context.getIncidents().stream().allMatch(incident ->
+            return context.getDialogStatus() != DialogProgressStatus.IN_CALL
+                    && context.getIncidents().stream().allMatch(incident ->
                     incident.getStatus() == IncidentProgressStatus.COMPLETED
                             || incident.getStatus() == IncidentProgressStatus.FAILED);
         }

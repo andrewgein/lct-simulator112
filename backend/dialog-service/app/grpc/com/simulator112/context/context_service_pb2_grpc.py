@@ -7,7 +7,7 @@ from app.grpc.com.simulator112.context import context_service_pb2 as com_dot_sim
 from app.grpc.com.simulator112.incident import incident_context_pb2 as com_dot_simulator112_dot_incident_dot_incident__context__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
-GRPC_GENERATED_VERSION = '1.84.0'
+GRPC_GENERATED_VERSION = '1.83.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -101,11 +101,6 @@ class ContextManagerServiceStub:
                 request_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.GetLevelProgressRequest.SerializeToString,
                 response_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.LevelProgress.FromString,
                 _registered_method=True)
-        self.ApplyDdsStageSignal = channel.unary_unary(
-                '/context.ContextManagerService/ApplyDdsStageSignal',
-                request_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.ApplyDdsStageSignalRequest.SerializeToString,
-                response_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.LevelProgress.FromString,
-                _registered_method=True)
 
 
 class ContextManagerServiceServicer:
@@ -189,12 +184,6 @@ class ContextManagerServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ApplyDdsStageSignal(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_ContextManagerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -261,11 +250,6 @@ def add_ContextManagerServiceServicer_to_server(servicer, server):
             'GetLevelProgress': grpc.unary_unary_rpc_method_handler(
                     servicer.GetLevelProgress,
                     request_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.GetLevelProgressRequest.FromString,
-                    response_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.LevelProgress.SerializeToString,
-            ),
-            'ApplyDdsStageSignal': grpc.unary_unary_rpc_method_handler(
-                    servicer.ApplyDdsStageSignal,
-                    request_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.ApplyDdsStageSignalRequest.FromString,
                     response_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.LevelProgress.SerializeToString,
             ),
     }
@@ -619,33 +603,6 @@ class ContextManagerService:
             target,
             '/context.ContextManagerService/GetLevelProgress',
             com_dot_simulator112_dot_context_dot_context__service__pb2.GetLevelProgressRequest.SerializeToString,
-            com_dot_simulator112_dot_context_dot_context__service__pb2.LevelProgress.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ApplyDdsStageSignal(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/context.ContextManagerService/ApplyDdsStageSignal',
-            com_dot_simulator112_dot_context_dot_context__service__pb2.ApplyDdsStageSignalRequest.SerializeToString,
             com_dot_simulator112_dot_context_dot_context__service__pb2.LevelProgress.FromString,
             options,
             channel_credentials,

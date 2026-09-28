@@ -17,15 +17,6 @@ class DialogProgressStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     DISCONNECTED: _ClassVar[DialogProgressStatus]
     COMPLETED: _ClassVar[DialogProgressStatus]
 
-class DdsStageSignal(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
-    __slots__ = ()
-    DDS_STAGE_SIGNAL_UNSPECIFIED: _ClassVar[DdsStageSignal]
-    DDS_STAGE_SIGNAL_BRIGADE_ASSIGNED: _ClassVar[DdsStageSignal]
-    DDS_STAGE_SIGNAL_BRIGADE_STATUS_CHANGED: _ClassVar[DdsStageSignal]
-    DDS_STAGE_SIGNAL_STATUS_CALL_COMPLETED: _ClassVar[DdsStageSignal]
-    DDS_STAGE_SIGNAL_ADDITIONAL_SERVICE_REQUESTED: _ClassVar[DdsStageSignal]
-    DDS_STAGE_SIGNAL_INCIDENT_COMPLETED: _ClassVar[DdsStageSignal]
-
 class ContextProgressStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     CONTEXT_PROGRESS_STATUS_UNSPECIFIED: _ClassVar[ContextProgressStatus]
@@ -52,12 +43,6 @@ IDLE: DialogProgressStatus
 IN_CALL: DialogProgressStatus
 DISCONNECTED: DialogProgressStatus
 COMPLETED: DialogProgressStatus
-DDS_STAGE_SIGNAL_UNSPECIFIED: DdsStageSignal
-DDS_STAGE_SIGNAL_BRIGADE_ASSIGNED: DdsStageSignal
-DDS_STAGE_SIGNAL_BRIGADE_STATUS_CHANGED: DdsStageSignal
-DDS_STAGE_SIGNAL_STATUS_CALL_COMPLETED: DdsStageSignal
-DDS_STAGE_SIGNAL_ADDITIONAL_SERVICE_REQUESTED: DdsStageSignal
-DDS_STAGE_SIGNAL_INCIDENT_COMPLETED: DdsStageSignal
 CONTEXT_PROGRESS_STATUS_UNSPECIFIED: ContextProgressStatus
 CONTEXT_PROGRESS_STATUS_CREATED: ContextProgressStatus
 CONTEXT_PROGRESS_STATUS_FILLED: ContextProgressStatus
@@ -115,40 +100,60 @@ class System112Progress(_message.Message):
     def __init__(self, active_call_id: _Optional[str] = ..., completed_calls: _Optional[int] = ..., total_calls: _Optional[int] = ...) -> None: ...
 
 class DdsStageProgress(_message.Message):
-    __slots__ = ("stage_id", "stage_type", "status", "started_at", "deadline")
+    __slots__ = ("stage_id", "stage_type", "status", "started_at", "deadline", "comment", "completed_call", "completed_call_ids")
     STAGE_ID_FIELD_NUMBER: _ClassVar[int]
     STAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
     STARTED_AT_FIELD_NUMBER: _ClassVar[int]
     DEADLINE_FIELD_NUMBER: _ClassVar[int]
+    COMMENT_FIELD_NUMBER: _ClassVar[int]
+    COMPLETED_CALL_FIELD_NUMBER: _ClassVar[int]
+    COMPLETED_CALL_IDS_FIELD_NUMBER: _ClassVar[int]
     stage_id: str
     stage_type: str
     status: str
     started_at: str
     deadline: str
-    def __init__(self, stage_id: _Optional[str] = ..., stage_type: _Optional[str] = ..., status: _Optional[str] = ..., started_at: _Optional[str] = ..., deadline: _Optional[str] = ...) -> None: ...
+    comment: str
+    completed_call: bool
+    completed_call_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, stage_id: _Optional[str] = ..., stage_type: _Optional[str] = ..., status: _Optional[str] = ..., started_at: _Optional[str] = ..., deadline: _Optional[str] = ..., comment: _Optional[str] = ..., completed_call: _Optional[bool] = ..., completed_call_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class DdsProgress(_message.Message):
-    __slots__ = ("active_stage_id", "deadline", "stages")
+    __slots__ = ("active_stage_id", "deadline", "stages", "card_status")
     ACTIVE_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
     DEADLINE_FIELD_NUMBER: _ClassVar[int]
     STAGES_FIELD_NUMBER: _ClassVar[int]
+    CARD_STATUS_FIELD_NUMBER: _ClassVar[int]
     active_stage_id: str
     deadline: str
     stages: _containers.RepeatedCompositeFieldContainer[DdsStageProgress]
-    def __init__(self, active_stage_id: _Optional[str] = ..., deadline: _Optional[str] = ..., stages: _Optional[_Iterable[_Union[DdsStageProgress, _Mapping]]] = ...) -> None: ...
+    card_status: _incident_context_pb2.IncidentStatus
+    def __init__(self, active_stage_id: _Optional[str] = ..., deadline: _Optional[str] = ..., stages: _Optional[_Iterable[_Union[DdsStageProgress, _Mapping]]] = ..., card_status: _Optional[_Union[_incident_context_pb2.IncidentStatus, str]] = ...) -> None: ...
+
+class ReactionEvent(_message.Message):
+    __slots__ = ("changed_at", "comment", "status")
+    CHANGED_AT_FIELD_NUMBER: _ClassVar[int]
+    COMMENT_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    changed_at: str
+    comment: str
+    status: _incident_context_pb2.IncidentStatus
+    def __init__(self, changed_at: _Optional[str] = ..., comment: _Optional[str] = ..., status: _Optional[_Union[_incident_context_pb2.IncidentStatus, str]] = ...) -> None: ...
 
 class IncidentProgress(_message.Message):
-    __slots__ = ("incident_id", "status", "system_112", "dds")
+    __slots__ = ("incident_id", "status", "reaction_events", "system_112", "dds")
     INCIDENT_ID_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
+    REACTION_EVENTS_FIELD_NUMBER: _ClassVar[int]
     SYSTEM_112_FIELD_NUMBER: _ClassVar[int]
     DDS_FIELD_NUMBER: _ClassVar[int]
     incident_id: str
     status: IncidentProgressStatus
+    reaction_events: _containers.RepeatedCompositeFieldContainer[ReactionEvent]
     system_112: System112Progress
     dds: DdsProgress
-    def __init__(self, incident_id: _Optional[str] = ..., status: _Optional[_Union[IncidentProgressStatus, str]] = ..., system_112: _Optional[_Union[System112Progress, _Mapping]] = ..., dds: _Optional[_Union[DdsProgress, _Mapping]] = ...) -> None: ...
+    def __init__(self, incident_id: _Optional[str] = ..., status: _Optional[_Union[IncidentProgressStatus, str]] = ..., reaction_events: _Optional[_Iterable[_Union[ReactionEvent, _Mapping]]] = ..., system_112: _Optional[_Union[System112Progress, _Mapping]] = ..., dds: _Optional[_Union[DdsProgress, _Mapping]] = ...) -> None: ...
 
 class LevelProgress(_message.Message):
     __slots__ = ("context_id", "target_type", "execution_mode", "status", "incidents")
@@ -360,13 +365,3 @@ class GetLevelProgressRequest(_message.Message):
     CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
     context_id: str
     def __init__(self, context_id: _Optional[str] = ...) -> None: ...
-
-class ApplyDdsStageSignalRequest(_message.Message):
-    __slots__ = ("context_id", "incident_id", "signal")
-    CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
-    INCIDENT_ID_FIELD_NUMBER: _ClassVar[int]
-    SIGNAL_FIELD_NUMBER: _ClassVar[int]
-    context_id: str
-    incident_id: str
-    signal: DdsStageSignal
-    def __init__(self, context_id: _Optional[str] = ..., incident_id: _Optional[str] = ..., signal: _Optional[_Union[DdsStageSignal, str]] = ...) -> None: ...

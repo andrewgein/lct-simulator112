@@ -34,15 +34,6 @@ message DialogProgress {
   DialogProgressStatus status = 3;
 }
 
-enum DdsStageSignal {
-  DDS_STAGE_SIGNAL_UNSPECIFIED = 0;
-  DDS_STAGE_SIGNAL_BRIGADE_ASSIGNED = 1;
-  DDS_STAGE_SIGNAL_BRIGADE_STATUS_CHANGED = 2;
-  DDS_STAGE_SIGNAL_STATUS_CALL_COMPLETED = 3;
-  DDS_STAGE_SIGNAL_ADDITIONAL_SERVICE_REQUESTED = 4;
-  DDS_STAGE_SIGNAL_INCIDENT_COMPLETED = 5;
-}
-
 enum ContextProgressStatus {
   CONTEXT_PROGRESS_STATUS_UNSPECIFIED = 0;
   CONTEXT_PROGRESS_STATUS_CREATED = 1;
@@ -72,17 +63,28 @@ message DdsStageProgress {
   string status = 3;
   string started_at = 4;
   string deadline = 5;
+  string comment = 6;
+  bool completed_call = 7;
+  repeated string completed_call_ids = 8;
 }
 
 message DdsProgress {
   string active_stage_id = 1;
   string deadline = 2;
   repeated DdsStageProgress stages = 3;
+  incident.IncidentStatus card_status = 4;
+}
+
+message ReactionEvent {
+  string changed_at = 2;
+  string comment = 3;
+  incident.IncidentStatus status = 4;
 }
 
 message IncidentProgress {
   string incident_id = 1;
   IncidentProgressStatus status = 2;
+  repeated ReactionEvent reaction_events = 5;
   oneof details {
     System112Progress system_112 = 3;
     DdsProgress dds = 4;
@@ -118,7 +120,6 @@ message SolutionContext {
   repeated string incident_types = 4;
   string call_id = 5;
   string main_card_id = 6;
-  reserved 7, 12;
   string revision_id = 8;
   string card_id = 9;
   string previous_revision_id = 10;
@@ -129,7 +130,6 @@ message SolutionContext {
 }
 
 message AssignmentContext {
-  reserved 1;
   string assignment_id = 2;
   string user_id = 3;
   string title = 4;
@@ -169,7 +169,6 @@ service ContextManagerService {
   rpc GetCallTranscript(GetCallTranscriptRequest) returns (DialogContext);
   rpc ClearCallTranscript(ClearCallTranscriptRequest) returns (google.protobuf.Empty);
   rpc GetLevelProgress(GetLevelProgressRequest) returns (LevelProgress);
-  rpc ApplyDdsStageSignal(ApplyDdsStageSignalRequest) returns (LevelProgress);
 }
 
 message GetIncidentContextRequest {
@@ -232,10 +231,4 @@ message ClearCallTranscriptRequest {
 
 message GetLevelProgressRequest {
   string context_id = 1;
-}
-
-message ApplyDdsStageSignalRequest {
-  string context_id = 1;
-  string incident_id = 2;
-  DdsStageSignal signal = 3;
 }

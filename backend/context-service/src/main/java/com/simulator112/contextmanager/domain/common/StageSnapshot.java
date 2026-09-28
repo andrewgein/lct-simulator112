@@ -1,6 +1,7 @@
 package com.simulator112.contextmanager.domain.common;
 
-import com.simulator112.contextmanager.domain.dds.DdsStageType;
+import com.simulator112.contextmanager.domain.dds.DdsStageDetails;
+import com.simulator112.contextmanager.domain.system112.System112StageDetails;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,13 +16,11 @@ public class StageSnapshot {
     private UUID sourceId;
     private Integer position;
     private String title;
-    private List<String> classifierCodes = new ArrayList<>();
-    private DdsStageType ddsStageType;
-    private Integer timeLimitSeconds;
+    private System112StageDetails system112;
+    private DdsStageDetails dds;
     private StageStatus status;
     private Instant startedAt;
     private Instant deadlineAt;
     private String description;
-    private int victimCount;
     private List<CallSnapshot> calls = new ArrayList<>();
 }

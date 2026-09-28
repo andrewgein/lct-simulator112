@@ -6,8 +6,13 @@ export default function AddressField({ id, value = "", label = "Адрес", req
   const [focused, setFocused] = useState(false);
   const rootRef = useRef(null);
   const mapWindow = useRef(null);
+  const requestVersion = useRef(0);
 
-  useEffect(() => setInputValue(value), [value]);
+  useEffect(() => {
+    requestVersion.current++;
+    setSuggestions([]);
+    setInputValue(value || "");
+  }, [value]);
 
   useEffect(() => {
     if (!focused || !dadataApiKey || inputValue.trim().length < 3) {
@@ -15,6 +20,7 @@ export default function AddressField({ id, value = "", label = "Адрес", req
       return;
     }
     const controller = new AbortController();
+    const version = requestVersion.current;
     const timer = setTimeout(async () => {
       try {
         const response = await fetch("https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address", {
@@ -24,7 +30,7 @@ export default function AddressField({ id, value = "", label = "Адрес", req
           body: JSON.stringify({ query: inputValue, count: 8 })
         });
         const data = response.ok ? await response.json() : { suggestions: [] };
-        setSuggestions(data.suggestions || []);
+        if (!controller.signal.aborted && version === requestVersion.current) setSuggestions(data.suggestions || []);
       } catch (error) {
         if (error.name !== "AbortError") console.error("DaData suggest failed:", error);
       }
@@ -37,22 +43,38 @@ export default function AddressField({ id, value = "", label = "Адрес", req
 
   useEffect(() => {
     const handleMessage = (event) => {
-      if (event.data?.type === "LOCATION_PICKED" && event.data.targetInputId === id) updateValue(event.data.address);
+      if (event.origin === window.location.origin && event.source === mapWindow.current && event.data?.type === "LOCATION_PICKED" && event.data.targetInputId === id) {
+        setFocused(false);
+        updateValue(event.data.address, "map");
+      }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [id, onChange]);
 
+  useEffect(() => {
+    const root = rootRef.current;
+    const setAddress = (event) => {
+      setFocused(false);
+      updateValue(event.detail?.value || "", "programmatic");
+    };
+    root.addEventListener("address-set", setAddress);
+    emit("address-ready", { value: root.querySelector("input")?.value || "" });
+    return () => root.removeEventListener("address-set", setAddress);
+  }, [onChange]);
+
   const emit = (name, detail) => rootRef.current?.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
-  const updateValue = (nextValue) => {
+  const updateValue = (nextValue, source = "input") => {
+    requestVersion.current++;
+    setSuggestions([]);
     setInputValue(nextValue);
-    onChange?.(nextValue);
-    emit("address-input", { value: nextValue });
+    onChange?.(nextValue, { source });
+    emit("address-input", { value: nextValue, source });
   };
   const chooseSuggestion = (suggestion) => {
     setFocused(false);
     setSuggestions([]);
-    updateValue(suggestion.value);
+    updateValue(suggestion.value, "suggestion");
     onSelect?.(suggestion);
     emit("address-selected", { suggestion });
   };

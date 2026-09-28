@@ -1,0 +1,1 @@
+ALTER TABLE incident_contexts DROP COLUMN initial_assignment_classifier_code;

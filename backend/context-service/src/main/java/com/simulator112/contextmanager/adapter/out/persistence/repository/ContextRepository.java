@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.Context;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.Context;
 import com.simulator112.contextmanager.domain.common.ContextStatus;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;

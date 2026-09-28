@@ -179,6 +179,8 @@ services:
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # В контейнере сохраняем прежний gRPC-порт; локально review-service использует 9096.
+      GRPC_SERVER_PORT: 9092
       COURSE_GRPC_HOST: ${COMPOSE_PROJECT_NAME}-course
       COURSE_GRPC_PORT: 9095
       S3_ENDPOINT: http://${COMPOSE_PROJECT_NAME}-minio:9000

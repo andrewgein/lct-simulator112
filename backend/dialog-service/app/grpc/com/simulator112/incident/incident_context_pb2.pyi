@@ -32,6 +32,26 @@ class Gender(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     GENDER_MAN: _ClassVar[Gender]
     GENDER_WOMEN: _ClassVar[Gender]
 
+class IncidentStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    INCIDENT_STATUS_UNSPECIFIED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_ADDED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_RECEIVED_BY_SERVICE: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_ACCEPTED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_NOT_ACCEPTED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_RESPONSE_STARTED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_ARRIVED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_WORK_IN_PROGRESS: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_WORK_COMPLETED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_WORK_REFUSED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_REGISTERED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_PROCESSED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_VERIFIED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_NOT_NOTIFIED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_REFUSED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_NOT_COMPLETED: _ClassVar[IncidentStatus]
+    INCIDENT_STATUS_COMPLETED: _ClassVar[IncidentStatus]
+
 class DdsStageType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     DDS_STAGE_TYPE_UNSPECIFIED: _ClassVar[DdsStageType]
@@ -52,6 +72,7 @@ class CounterpartyType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     COUNTERPARTY_TYPE_UNSPECIFIED: _ClassVar[CounterpartyType]
     COUNTERPARTY_TYPE_CALLER: _ClassVar[CounterpartyType]
     COUNTERPARTY_TYPE_BRIGADE: _ClassVar[CounterpartyType]
+    COUNTERPARTY_TYPE_SERVICE: _ClassVar[CounterpartyType]
 EXECUTION_MODE_UNSPECIFIED: ExecutionMode
 EXECUTION_MODE_SEQUENTIAL: ExecutionMode
 EXECUTION_MODE_PARALLEL: ExecutionMode
@@ -65,6 +86,23 @@ DIFFICULTY_HARD: Difficulty
 GENDER_UNSPECIFIED: Gender
 GENDER_MAN: Gender
 GENDER_WOMEN: Gender
+INCIDENT_STATUS_UNSPECIFIED: IncidentStatus
+INCIDENT_STATUS_ADDED: IncidentStatus
+INCIDENT_STATUS_RECEIVED_BY_SERVICE: IncidentStatus
+INCIDENT_STATUS_ACCEPTED: IncidentStatus
+INCIDENT_STATUS_NOT_ACCEPTED: IncidentStatus
+INCIDENT_STATUS_RESPONSE_STARTED: IncidentStatus
+INCIDENT_STATUS_ARRIVED: IncidentStatus
+INCIDENT_STATUS_WORK_IN_PROGRESS: IncidentStatus
+INCIDENT_STATUS_WORK_COMPLETED: IncidentStatus
+INCIDENT_STATUS_WORK_REFUSED: IncidentStatus
+INCIDENT_STATUS_REGISTERED: IncidentStatus
+INCIDENT_STATUS_PROCESSED: IncidentStatus
+INCIDENT_STATUS_VERIFIED: IncidentStatus
+INCIDENT_STATUS_NOT_NOTIFIED: IncidentStatus
+INCIDENT_STATUS_REFUSED: IncidentStatus
+INCIDENT_STATUS_NOT_COMPLETED: IncidentStatus
+INCIDENT_STATUS_COMPLETED: IncidentStatus
 DDS_STAGE_TYPE_UNSPECIFIED: DdsStageType
 DDS_STAGE_TYPE_ASSIGN_BRIGADE: DdsStageType
 DDS_STAGE_TYPE_WAIT_FOR_BRIGADE_STATUS_CHANGE: DdsStageType
@@ -77,9 +115,10 @@ CALL_DIRECTION_OUTBOUND: CallDirection
 COUNTERPARTY_TYPE_UNSPECIFIED: CounterpartyType
 COUNTERPARTY_TYPE_CALLER: CounterpartyType
 COUNTERPARTY_TYPE_BRIGADE: CounterpartyType
+COUNTERPARTY_TYPE_SERVICE: CounterpartyType
 
 class IncidentContext(_message.Message):
-    __slots__ = ("id", "title", "address", "difficulty", "target_type", "stages", "criteria", "prepared_card_template", "initial_assignment", "dds_initial_stage_id", "dds_stage_transitions")
+    __slots__ = ("id", "title", "address", "difficulty", "target_type", "stages", "criteria", "prepared_card_template", "initial_assignment")
     ID_FIELD_NUMBER: _ClassVar[int]
     TITLE_FIELD_NUMBER: _ClassVar[int]
     ADDRESS_FIELD_NUMBER: _ClassVar[int]
@@ -89,8 +128,6 @@ class IncidentContext(_message.Message):
     CRITERIA_FIELD_NUMBER: _ClassVar[int]
     PREPARED_CARD_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     INITIAL_ASSIGNMENT_FIELD_NUMBER: _ClassVar[int]
-    DDS_INITIAL_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    DDS_STAGE_TRANSITIONS_FIELD_NUMBER: _ClassVar[int]
     id: str
     title: str
     address: Address
@@ -100,9 +137,7 @@ class IncidentContext(_message.Message):
     criteria: Criteria
     prepared_card_template: PreparedCardTemplate
     initial_assignment: InitialAssignment
-    dds_initial_stage_id: str
-    dds_stage_transitions: _containers.RepeatedCompositeFieldContainer[DdsStageTransition]
-    def __init__(self, id: _Optional[str] = ..., title: _Optional[str] = ..., address: _Optional[_Union[Address, _Mapping]] = ..., difficulty: _Optional[_Union[Difficulty, str]] = ..., target_type: _Optional[_Union[IncidentTargetType, str]] = ..., stages: _Optional[_Iterable[_Union[IncidentStage, _Mapping]]] = ..., criteria: _Optional[_Union[Criteria, _Mapping]] = ..., prepared_card_template: _Optional[_Union[PreparedCardTemplate, _Mapping]] = ..., initial_assignment: _Optional[_Union[InitialAssignment, _Mapping]] = ..., dds_initial_stage_id: _Optional[str] = ..., dds_stage_transitions: _Optional[_Iterable[_Union[DdsStageTransition, _Mapping]]] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., title: _Optional[str] = ..., address: _Optional[_Union[Address, _Mapping]] = ..., difficulty: _Optional[_Union[Difficulty, str]] = ..., target_type: _Optional[_Union[IncidentTargetType, str]] = ..., stages: _Optional[_Iterable[_Union[IncidentStage, _Mapping]]] = ..., criteria: _Optional[_Union[Criteria, _Mapping]] = ..., prepared_card_template: _Optional[_Union[PreparedCardTemplate, _Mapping]] = ..., initial_assignment: _Optional[_Union[InitialAssignment, _Mapping]] = ...) -> None: ...
 
 class IncidentStage(_message.Message):
     __slots__ = ("id", "title", "description", "calls", "system_112", "dds")
@@ -131,15 +166,19 @@ class System112StageDetails(_message.Message):
     def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., victim_count: _Optional[int] = ..., position: _Optional[int] = ...) -> None: ...
 
 class DdsStageDetails(_message.Message):
-    __slots__ = ("type", "time_limit_seconds")
+    __slots__ = ("type", "time_limit_seconds", "expected_comment", "actual_status")
     TYPE_FIELD_NUMBER: _ClassVar[int]
     TIME_LIMIT_SECONDS_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_COMMENT_FIELD_NUMBER: _ClassVar[int]
+    ACTUAL_STATUS_FIELD_NUMBER: _ClassVar[int]
     type: DdsStageType
     time_limit_seconds: int
-    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ...) -> None: ...
+    expected_comment: str
+    actual_status: IncidentStatus
+    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ..., expected_comment: _Optional[str] = ..., actual_status: _Optional[_Union[IncidentStatus, str]] = ...) -> None: ...
 
 class CallScenario(_message.Message):
-    __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state")
+    __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state", "service_code")
     ID_FIELD_NUMBER: _ClassVar[int]
     POSITION_FIELD_NUMBER: _ClassVar[int]
     DIRECTION_FIELD_NUMBER: _ClassVar[int]
@@ -150,6 +189,7 @@ class CallScenario(_message.Message):
     HIDDEN_FACTS_FIELD_NUMBER: _ClassVar[int]
     AI_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     EMOTIONAL_STATE_FIELD_NUMBER: _ClassVar[int]
+    SERVICE_CODE_FIELD_NUMBER: _ClassVar[int]
     id: str
     position: int
     direction: CallDirection
@@ -160,7 +200,8 @@ class CallScenario(_message.Message):
     hidden_facts: _containers.RepeatedScalarFieldContainer[str]
     ai_context: str
     emotional_state: str
-    def __init__(self, id: _Optional[str] = ..., position: _Optional[int] = ..., direction: _Optional[_Union[CallDirection, str]] = ..., counterparty: _Optional[_Union[CounterpartyType, str]] = ..., person: _Optional[_Union[Person, _Mapping]] = ..., gender: _Optional[_Union[Gender, str]] = ..., known_facts: _Optional[_Iterable[str]] = ..., hidden_facts: _Optional[_Iterable[str]] = ..., ai_context: _Optional[str] = ..., emotional_state: _Optional[str] = ...) -> None: ...
+    service_code: str
+    def __init__(self, id: _Optional[str] = ..., position: _Optional[int] = ..., direction: _Optional[_Union[CallDirection, str]] = ..., counterparty: _Optional[_Union[CounterpartyType, str]] = ..., person: _Optional[_Union[Person, _Mapping]] = ..., gender: _Optional[_Union[Gender, str]] = ..., known_facts: _Optional[_Iterable[str]] = ..., hidden_facts: _Optional[_Iterable[str]] = ..., ai_context: _Optional[str] = ..., emotional_state: _Optional[str] = ..., service_code: _Optional[str] = ...) -> None: ...
 
 class PreparedCardTemplate(_message.Message):
     __slots__ = ("classifier_codes", "applicant", "victim_count", "additional_info")
@@ -182,24 +223,10 @@ class PreparedCardTemplate(_message.Message):
     def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., applicant: _Optional[_Union[Person, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class InitialAssignment(_message.Message):
-    __slots__ = ("classifier_code", "instructions", "emergency_service_code")
-    CLASSIFIER_CODE_FIELD_NUMBER: _ClassVar[int]
-    INSTRUCTIONS_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("emergency_service_code",)
     EMERGENCY_SERVICE_CODE_FIELD_NUMBER: _ClassVar[int]
-    classifier_code: str
-    instructions: str
     emergency_service_code: str
-    def __init__(self, classifier_code: _Optional[str] = ..., instructions: _Optional[str] = ..., emergency_service_code: _Optional[str] = ...) -> None: ...
-
-class DdsStageTransition(_message.Message):
-    __slots__ = ("stage_id", "success_stage_id", "failure_stage_id")
-    STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    SUCCESS_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    FAILURE_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    stage_id: str
-    success_stage_id: str
-    failure_stage_id: str
-    def __init__(self, stage_id: _Optional[str] = ..., success_stage_id: _Optional[str] = ..., failure_stage_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, emergency_service_code: _Optional[str] = ...) -> None: ...
 
 class Criteria(_message.Message):
     __slots__ = ("dialogue_criteria",)

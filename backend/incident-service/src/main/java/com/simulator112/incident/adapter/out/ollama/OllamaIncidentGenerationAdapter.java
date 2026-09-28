@@ -3,14 +3,18 @@ package com.simulator112.incident.adapter.out.ollama;
 import com.simulator112.incident.application.port.out.IncidentLanguageModelPort;
 import com.simulator112.incident.application.service.IncidentGenerationException;
 import com.simulator112.incident.application.service.IncidentGenerationLimitException;
+import com.simulator112.incident.application.service.OllamaUnavailableException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpConnectTimeoutException;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +27,7 @@ public class OllamaIncidentGenerationAdapter implements IncidentLanguageModelPor
     private final String model;
 
     public OllamaIncidentGenerationAdapter(ObjectMapper mapper,
-            @Value("${incident.generator.url:http://100.105.43.63:11434/api/chat}") String url,
+            @Value("${incident.generator.url:http://100.85.141.32:11434/api/chat}") String url,
             @Value("${incident.generator.model:qwen3:4b-instruct-2507-q4_K_M}") String model) {
         this.mapper = mapper;
         this.client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -52,8 +56,14 @@ public class OllamaIncidentGenerationAdapter implements IncidentLanguageModelPor
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IncidentGenerationException("Генерация прервана", e);
+        } catch (HttpConnectTimeoutException e) {
+            throw new OllamaUnavailableException("Нет соединения с Ollama. Проверьте доступность сервера модели", e);
+        } catch (HttpTimeoutException e) {
+            throw new OllamaUnavailableException("Ollama не ответила вовремя", e);
         } catch (IncidentGenerationException e) {
             throw e;
+        } catch (IOException e) {
+            throw new OllamaUnavailableException("Ошибка связи с Ollama. Проверьте доступность сервера модели", e);
         } catch (Exception e) {
             throw new IncidentGenerationException("Не удалось получить ответ модели", e);
         }

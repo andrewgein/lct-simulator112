@@ -13,7 +13,7 @@ from app.application.port.outbound import (
 )
 from app.adapter.out.processing.latency_tracker import tracker
 from app.application.service.transcript_builder import DialogContextBuilder
-from app.domain.model import DialogProgress, DialogStatus
+from app.domain.model import DialogProgress, DialogStatus, DialogTranscript
 
 SERVICE_LOAD_PUSH_INTERVAL_SECONDS = 5
 
@@ -112,6 +112,16 @@ def handle_next_call(context_id: str) -> dict:
     }
 
 
+def handle_selected_call(context_id: str, call_id: str) -> dict:
+    call = dialog_use_case().select_call(context_id, call_id)
+    return {
+        "type": "call_ready",
+        "callAvailable": True,
+        "callId": call.id,
+        "phoneNumber": call.person.phone,
+    }
+
+
 def handle_error(message: str) -> dict:
     return {"type": "error", "message": message}
 
@@ -145,6 +155,21 @@ async def dialog_session(ws: WebSocket):
                     response = handle_progress_request(context_id)
                 case "request_next_call":
                     response = handle_next_call(context_id)
+                case "dismiss_call":
+                    progress = dialog_use_case().session(context_id).progress
+                    if progress.active_call_id and progress.status == DialogStatus.IN_CALL:
+                        dialog_use_case().disconnect(context_id, progress.active_call_id, DialogTranscript(phrases=()))
+                    response = {"type": "call_finished", "callId": progress.active_call_id}
+                case "request_call":
+                    call_id = request.get("callId")
+                    if not isinstance(call_id, str) or not call_id:
+                        response = handle_error("Укажите звонок")
+                    else:
+                        try:
+                            response = handle_selected_call(context_id, call_id)
+                        except Exception as exc:
+                            logger.exception("Could not start selected call %s", call_id)
+                            response = handle_error(str(exc))
                 case _:
                     response = handle_error("Unknown session command")
             async with send_lock:

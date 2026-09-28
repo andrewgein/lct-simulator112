@@ -3,8 +3,9 @@
 /** @typedef {"SEQUENTIAL" | "PARALLEL"} ExecutionMode */
 /** @typedef {"MAN" | "WOMEN"} Gender */
 /** @typedef {"INBOUND" | "OUTBOUND"} CallDirection */
-/** @typedef {"CALLER" | "BRIGADE"} CounterpartyType */
+/** @typedef {"CALLER" | "BRIGADE" | "SERVICE"} CounterpartyType */
 /** @typedef {"ASSIGN_BRIGADE" | "WAIT_FOR_BRIGADE_STATUS_CHANGE" | "CALL_BRIGADE_FOR_STATUS" | "REQUEST_ADDITIONAL_SERVICE" | "COMPLETE_INCIDENT"} DdsStageType */
+/** @typedef {"ADDED" | "RECEIVED_BY_SERVICE" | "ACCEPTED" | "NOT_ACCEPTED" | "RESPONSE_STARTED" | "ARRIVED" | "WORK_IN_PROGRESS" | "WORK_COMPLETED" | "WORK_REFUSED" | "REGISTERED" | "PROCESSED" | "VERIFIED" | "NOT_NOTIFIED" | "REFUSED" | "NOT_COMPLETED" | "COMPLETED"} IncidentStatus */
 
 /**
  * @typedef {Object} Address
@@ -45,6 +46,7 @@
  * @property {number} position
  * @property {CallDirection} direction
  * @property {CounterpartyType} counterparty
+ * @property {string | null} [serviceCode]
  * @property {Person} person
  * @property {Gender} gender
  * @property {string[]} knownFacts
@@ -72,6 +74,8 @@
  * @property {DdsStageType} type
  * @property {number} timeLimitSeconds
  * @property {CallScenario[]} calls
+ * @property {string | null} expectedComment
+ * @property {IncidentStatus | null} actualStatus
  */
 
 /**
@@ -80,20 +84,12 @@
  * @property {Person | null} applicant
  * @property {number} victimCount
  * @property {Object.<string, string>} additionalInfo
+ * @property {string[]} assignedServices
  */
 
 /**
  * @typedef {Object} InitialAssignment
  * @property {string} emergencyService
- * @property {string} classifierCode
- * @property {string | null} instructions
- */
-
-/**
- * @typedef {Object} DdsStageTransition
- * @property {string} stageId
- * @property {string | null} successStageId
- * @property {string | null} failureStageId
  */
 
 /**
@@ -107,7 +103,7 @@
  */
 
 /** @typedef {IncidentBase & { targetType: "SYSTEM_112", stages: System112Stage[] }} System112Incident */
-/** @typedef {IncidentBase & { targetType: "DDS", stages: DdsStage[], preparedCardTemplate: PreparedCardTemplate | null, initialAssignment: InitialAssignment | null, initialStageId: string, transitions: DdsStageTransition[] }} DdsIncident */
+/** @typedef {IncidentBase & { targetType: "DDS", stages: DdsStage[], preparedCardTemplate: PreparedCardTemplate | null, initialAssignment: InitialAssignment | null }} DdsIncident */
 /** @typedef {System112Incident | DdsIncident} Incident */
 
 /**
@@ -120,8 +116,6 @@
  * @property {DialogueCriterion[]} dialogueCriteria
  * @property {PreparedCardTemplate | null} preparedCardTemplate
  * @property {InitialAssignment | null} initialAssignment
- * @property {string | null} initialStageId
- * @property {DdsStageTransition[]} transitions
  */
 
 /**

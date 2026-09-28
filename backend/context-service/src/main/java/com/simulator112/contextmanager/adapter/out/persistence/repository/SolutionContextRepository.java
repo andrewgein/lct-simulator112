@@ -1,6 +1,6 @@
 package com.simulator112.contextmanager.adapter.out.persistence.repository;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.SolutionContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.system112.SolutionContextEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

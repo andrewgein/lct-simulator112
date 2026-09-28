@@ -1,13 +1,5 @@
 import { emptyPerson, normalizePerson } from "../../../incident/components/editor/editorHelpers.js";
 
-export const STAGE_ACTIONS = {
-  ASSIGN_BRIGADE: { label: "Принята", signal: "BRIGADE_ASSIGNED" },
-  WAIT_FOR_BRIGADE_STATUS_CHANGE: { label: "Начало реагирования", signal: "BRIGADE_STATUS_CHANGED" },
-  CALL_BRIGADE_FOR_STATUS: { label: "Статус бригады получен", signal: "STATUS_CALL_COMPLETED" },
-  REQUEST_ADDITIONAL_SERVICE: { label: "Дополнительная служба оповещена", signal: "ADDITIONAL_SERVICE_REQUESTED" },
-  COMPLETE_INCIDENT: { label: "Работы завершены", signal: "INCIDENT_COMPLETED" }
-};
-
 export const REACTION_STATUS_LABELS = {
   ADDED: "Добавлена",
   RECEIVED_BY_SERVICE: "Получена службой",
@@ -36,15 +28,6 @@ export const INCIDENT_STATUSES = {
   FAILED: "Не выполнено"
 };
 
-export const STAGE_STATUSES = {
-  ACTIVE: "В работе",
-  SUCCEEDED: "Выполнено",
-  FAILED: "Не выполнено",
-  TIMED_OUT: "Время истекло",
-  SKIPPED: "Пропущено",
-  PENDING: "Ожидает"
-};
-
 export const READONLY_CALL = { phase: "idle", activeCallId: null, phone: "" };
 export const addressText = (address = {}) => [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(", ") || "Адрес не указан";
 export const dateTime = (value) => value ? new Date(value).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "—";
@@ -56,15 +39,13 @@ export function reactionForService(progress, serviceCode) {
 
 export function serviceStatusHistory(incident, progress, serviceCode) {
   const history = reactionForService(progress, serviceCode)?.history || [];
-  if (history.length) return history.map((item) => ({ label: REACTION_STATUS_LABELS[item.status] || item.status, time: timeOnly(item.changedAt), dateTime: item.changedAt, comment: item.comment }));
-  const stages = (progress?.dds?.stages || []).filter((stage) => stage.status !== "PENDING").sort((left, right) => new Date(left.startedAt || 0) - new Date(right.startedAt || 0));
-  return stages.map((stage) => ({ label: stage.type === "ASSIGN_BRIGADE" ? "Получена службой" : STAGE_ACTIONS[stage.type]?.label || stage.type, time: timeOnly(stage.startedAt), dateTime: stage.startedAt }));
+  return history.map((item) => ({ label: REACTION_STATUS_LABELS[item.status] || item.status, time: timeOnly(item.changedAt), dateTime: item.changedAt, comment: item.comment }));
 }
 
 export function incidentCard(incident) {
   const template = incident.preparedCardTemplate || {};
   const applicant = { ...normalizePerson(template.applicant || emptyPerson()), address: addressText(incident.address) };
-  applicant.additionalInfo ||= incident.initialAssignment?.instructions || incident.title;
+  applicant.additionalInfo ||= incident.title;
   return {
     cardId: String(incident.id),
     mainCardId: null,
@@ -72,7 +53,7 @@ export function incidentCard(incident) {
     victimCount: template.victimCount ?? 0,
     incidentTypes: template.classifierCodes || [],
     additionalInfo: template.additionalInfo || {},
-    services: incident.initialAssignment?.emergencyService ? [incident.initialAssignment.emergencyService] : [],
+    services: template.assignedServices ?? (incident.initialAssignment?.emergencyService ? [incident.initialAssignment.emergencyService] : []),
     incident
   };
 }
@@ -101,7 +82,5 @@ export function activeStageFor(incident, progress) {
 export function notificationStatus(incident, progress, serviceCode = incident?.initialAssignment?.emergencyService) {
   const reactionStatus = reactionForService(progress, serviceCode)?.currentStatus;
   if (reactionStatus) return REACTION_STATUS_LABELS[reactionStatus] || reactionStatus;
-  const initial = progress?.dds?.stages?.find((stage) => String(stage.stageId) === String(incident?.initialStageId));
-  if (initial?.type !== "ASSIGN_BRIGADE") return INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
-  return { PENDING: "Ожидает направления", ACTIVE: "Ожидает подтверждения", SUCCEEDED: "Принята", FAILED: "Не принята", TIMED_OUT: "Не оповещено" }[initial.status] || INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
+  return INCIDENT_STATUSES[progress?.status] || "Ожидает обработки";
 }

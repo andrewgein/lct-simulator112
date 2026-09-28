@@ -1,9 +1,19 @@
 import { generatePerson, personValue } from "./editorHelpers";
 
-export default function PersonFields({ title, person, gender, incidentAddress = "", onChange }) {
+export default function PersonFields({ title, person, gender, incidentAddress = "", showContactFields = true, onChange }) {
   const change = (field) => (event) => onChange({ ...person, [field]: event.currentTarget.value });
-  const generate = () => onChange({ ...person, ...generatePerson(gender) });
-  const hasPersonData = Boolean(personValue(person));
+  const generate = () => {
+    const generated = generatePerson(gender);
+    if (!showContactFields) {
+      const { lastName, firstName, middleName, age } = generated;
+      onChange({ ...person, lastName, firstName, middleName, age });
+      return;
+    }
+    onChange({ ...person, ...generated });
+  };
+  const hasPersonData = showContactFields
+    ? Boolean(personValue(person))
+    : Boolean(person.lastName || person.firstName || person.middleName || person.age || person.additionalInfo);
   const toggleIncidentAddress = (event) => {
     const useIncidentAddress = event.currentTarget.checked;
     onChange({ ...person, useIncidentAddress, address: useIncidentAddress ? incidentAddress : person.address });
@@ -26,15 +36,19 @@ export default function PersonFields({ title, person, gender, incidentAddress = 
       </wa-input>
       <wa-number-input value={person.age} label="Возраст" min="1" onInput={change("age")}>
       </wa-number-input>
-      <wa-input value={person.phone} label="АОН" required={hasPersonData} onInput={change("phone")}>
-      </wa-input>
-      <wa-input value={person.contactPhone} label="Предоставленный телефон" onInput={change("contactPhone")}>
-      </wa-input>
-      <wa-input value={person.onScenePhone} label="Телефон на место" onInput={change("onScenePhone")}>
-      </wa-input>
-      <wa-input value={person.address} label="Адрес" disabled={person.useIncidentAddress} onInput={change("address")}>
-      </wa-input>
-      <wa-checkbox checked={person.useIncidentAddress} disabled={!incidentAddress} onChange={toggleIncidentAddress}>Совпадает с адресом происшествия</wa-checkbox>
+      {showContactFields && <>
+        <wa-input value={person.phone} label="АОН" required={hasPersonData} onInput={change("phone")}>
+        </wa-input>
+        <wa-input value={person.contactPhone} label="Предоставленный телефон" onInput={change("contactPhone")}>
+        </wa-input>
+        <wa-input value={person.onScenePhone} label="Телефон на место" onInput={change("onScenePhone")}>
+        </wa-input>
+        <wa-input value={person.address} label="Адрес" disabled={person.useIncidentAddress} onInput={change("address")}>
+        </wa-input>
+        <wa-checkbox checked={person.useIncidentAddress} disabled={!incidentAddress} onChange={toggleIncidentAddress}>
+          Совпадает с адресом происшествия
+        </wa-checkbox>
+      </>}
       <wa-textarea value={person.additionalInfo} label="Дополнительная информация" onInput={change("additionalInfo")}>
       </wa-textarea>
     </div>

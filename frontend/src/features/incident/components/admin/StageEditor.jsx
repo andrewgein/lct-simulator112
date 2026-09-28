@@ -3,13 +3,14 @@ import IncidentTypeSelect from "../../../classifier/components/IncidentTypeSelec
 import AdditionalFields from "./AdditionalFields.jsx";
 import DialupEditor from "./DialupEditor.jsx";
 import EditorDialog from "./EditorDialog.jsx";
+import { EditorAddCard, EditorCallRow, EditorStageContainer } from "./EditorContainers.jsx";
 import VictimFields from "../VictimFields.jsx";
 import { findIncident, moveItem, normalizeDialup } from "./editorHelpers";
 
 export default function StageEditor({ stage, index, count, firstDialupNumber, classifier, incidentAddress, openStage, openDialup, dialupError, onChange, onOpenStage, onCloseStage, onOpenDialup, onCloseDialup, onRemove, onMove }) {
   const incidentType = findIncident(classifier, stage.typeId);
   const incidentTypes = stage.classifierCodes.filter(Boolean).map((code) => findIncident(classifier, code)?.finalName || code);
-  const snapshot = useRef(null);
+  const snapshot = useRef(openStage ? structuredClone(stage) : null);
   const changeStageField = (field) => (event) => onChange({ ...stage, [field]: event.currentTarget.value });
   const openEditor = () => {
     snapshot.current = structuredClone(stage);
@@ -25,14 +26,14 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
     onCloseStage();
   };
   const changeDialup = (dialupIndex, dialup) => onChange({ ...stage, dialups: stage.dialups.map((item, index) => index === dialupIndex ? dialup : item) });
-  const addDialup = () => onChange({ ...stage, dialups: [...stage.dialups, normalizeDialup()] });
+  const addDialup = () => {
+    const dialup = normalizeDialup();
+    onChange({ ...stage, dialups: [...stage.dialups, dialup] });
+    onOpenDialup(dialup.key);
+  };
   return (
-    <section class="stage wa-stack wa-gap-m">
-      <wa-button class="move-up stage-arrow stage-arrow-up" type="button" size="small" appearance="plain" aria-label="Переместить этап выше" disabled={index === 0} onClick={() => onMove(-1)}>
-        <wa-icon name="chevron-up" label="Переместить выше">
-        </wa-icon>
-      </wa-button>
-      <div class="stage-content wa-stack wa-gap-m">
+    <>
+      <EditorStageContainer className="stage" topControl={<wa-button class="move-up" type="button" size="small" appearance="plain" aria-label="Переместить этап выше" disabled={index === 0} onClick={() => onMove(-1)}><wa-icon name="chevron-up" label="Переместить выше"></wa-icon></wa-button>} bottomControl={<wa-button class="move-down" type="button" size="small" appearance="plain" aria-label="Переместить этап ниже" disabled={index === count - 1} onClick={() => onMove(1)}><wa-icon name="chevron-down" label="Переместить ниже"></wa-icon></wa-button>}>
         <div class="stage-top wa-cluster wa-justify-content-space-between wa-align-items-center">
           <strong class="stage-number wa-heading-l">Этап {index + 1}</strong>
           <wa-input value={stage.title} aria-label="Название этапа" placeholder="Название этапа" class="stage-title" onInput={changeStageField("title")}>
@@ -50,19 +51,15 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
           <span class="stage-types-label">Тип происшествия:</span>
           <span>{incidentTypes.length ? incidentTypes.join(", ") : "не выбран"}</span>
         </div>
-        <div class="dialups wa-cluster wa-gap-m">
+        <EditorCallRow>
           {stage.dialups.map((dialup, dialupIndex) => (
             <DialupEditor key={dialup.key} dialup={dialup} number={firstDialupNumber + dialupIndex} index={dialupIndex} count={stage.dialups.length} incidentAddress={incidentAddress} open={openDialup === dialup.key} error={dialupError.key === dialup.key ? dialupError.message : ""} onChange={(value) => changeDialup(dialupIndex, value)} onOpen={() => onOpenDialup(dialup.key)} onClose={onCloseDialup} onRemove={() => onChange({ ...stage, dialups: stage.dialups.filter((item) => item.key !== dialup.key) })} onMove={(direction) => onChange({ ...stage, dialups: moveItem(stage.dialups, dialupIndex, direction) })} />
           ))}
-          <wa-card class="add-dialup-card">
+          <EditorAddCard className="editor-add-call-card">
             <wa-button class="add-dialup" type="button" appearance="plain" variant="brand" onClick={addDialup}>+ Добавить звонок</wa-button>
-          </wa-card>
-        </div>
-      </div>
-      <wa-button class="move-down stage-arrow stage-arrow-down" type="button" size="small" appearance="plain" aria-label="Переместить этап ниже" disabled={index === count - 1} onClick={() => onMove(1)}>
-        <wa-icon name="chevron-down" label="Переместить ниже">
-        </wa-icon>
-      </wa-button>
+          </EditorAddCard>
+        </EditorCallRow>
+      </EditorStageContainer>
       <EditorDialog className="stage-dialog" label="Состояние этапа" open={openStage} onCancel={cancelEditor} onSave={saveEditor}>
         <div class="wa-stack wa-gap-m">
           <div class="wa-cluster wa-align-items-stretch wa-gap-l">
@@ -95,6 +92,6 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
         </div>
         </div>
       </EditorDialog>
-    </section>
+    </>
   );
 }

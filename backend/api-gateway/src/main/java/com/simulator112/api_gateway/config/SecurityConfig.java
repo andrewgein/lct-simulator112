@@ -14,7 +14,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
-  
+
   @Value("#{'${cors.allowed-origins:*}'.split(',')}")
   private List<String> allowedOrigins;
 

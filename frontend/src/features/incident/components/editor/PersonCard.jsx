@@ -1,7 +1,6 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import AddressField from "../../../../layouts/AddressField.jsx";
-
-const emptyAddress = () => ({ country: "", region: "", city: "", district: "", area: "", street: "", house: "", block: "", apartment: "", entrance: "", floor: "", postalCode: "" });
+import { addressFromSuggestion, emptyAddressDetails, formatAddressDetails } from "../../../../layouts/addressUtils.js";
 
 const styles = `
 .applicant-address-panel, .applicant-description-panel { border: var(--wa-border-width-s) solid #b8c1c5; background: #f4f6f6; }
@@ -10,6 +9,8 @@ const styles = `
 .applicant-address-panel .address-field input, .applicant-address-detail { box-sizing: border-box; width: 100%; padding: var(--wa-space-xs) 0; border: 0; border-block-end: var(--wa-border-width-s) solid #b8c1c5; outline: 0; background: transparent; color: #26343b; font: inherit; }
 .applicant-address-panel .address-field input:focus, .applicant-address-detail:focus { border-block-end: 2px solid #008dca; }
 .applicant-address-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--wa-space-m); margin-block-start: var(--wa-space-l); }
+.address-details-hint { margin: var(--wa-space-s) 0 0; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+.applicant-address-detail:disabled { opacity: .6; }
 .applicant-address-field { display: flex; min-width: 0; flex-direction: column; gap: var(--wa-space-3xs); color: #65757d; }
 .applicant-address-field--wide { grid-column: span 2; }
 .applicant-address-actions { display: flex; justify-content: flex-end; margin-block-start: var(--wa-space-xl); }
@@ -22,23 +23,31 @@ const styles = `
 @media (max-width: 70rem) { .applicant-address-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 `;
 
-function formatAddress(details) {
-  return [details.city, details.street, details.house && `д. ${details.house}`, details.block && `корп. ${details.block}`, details.apartment && `кв. ${details.apartment}`].filter(Boolean).join(", ");
-}
-
 export default function PersonCard({ kind, person, addressRequired = false, dadataApiKey, onChange }) {
-  const [addressDetails, setAddressDetails] = useState(emptyAddress);
+  const [addressState, setAddressState] = useState(null);
+  const address = person.address || "";
+  const currentAddress = addressState?.value === address ? addressState : null;
+  const addressDetails = currentAddress?.details || emptyAddressDetails();
+  const detailsEditable = !!currentAddress || !address.trim();
+  useEffect(() => {
+    if (addressState && addressState.value !== address) setAddressState(null);
+  }, [address, addressState]);
+  const changeFullAddress = (value, { source } = {}) => {
+    if (source !== "suggestion") setAddressState(null);
+    onChange({ ...person, address: value });
+  };
   const selectAddress = (suggestion) => {
-    const data = suggestion.data || {};
-    setAddressDetails({ country: data.country || "", region: data.region_with_type || data.region || "", city: data.city || data.settlement || "", district: data.city_district || "", area: data.area_with_type || "", street: data.street_with_type || data.street || "", house: data.house || "", block: data.block || "", apartment: data.flat || "", entrance: data.entrance || "", floor: data.floor || "", postalCode: data.postal_code || "" });
+    setAddressState({ value: suggestion.value, ...addressFromSuggestion(suggestion) });
   };
   const changeAddressDetail = (name, value) => {
+    if (!detailsEditable) return;
     const nextDetails = { ...addressDetails, [name]: value };
-    setAddressDetails(nextDetails);
-    onChange({ ...person, address: formatAddress(nextDetails) });
+    const nextAddress = formatAddressDetails(nextDetails, currentAddress?.types);
+    setAddressState({ value: nextAddress, details: nextDetails, types: currentAddress?.types });
+    onChange({ ...person, address: nextAddress });
   };
   const clearAddress = () => {
-    setAddressDetails(emptyAddress());
+    setAddressState(null);
     onChange({ ...person, address: "" });
   };
   const fields = [
@@ -50,9 +59,19 @@ export default function PersonCard({ kind, person, addressRequired = false, dada
     <div class="wa-stack wa-gap-m">
       <style>{styles}</style>
       <section class="applicant-address-panel">
-        <AddressField id={`${kind}-address`} value={person.address} required={addressRequired} dadataApiKey={dadataApiKey} withMap onChange={(address) => onChange({ ...person, address })} onSelect={selectAddress} />
+        <AddressField id={`${kind}-address`} value={address} required={addressRequired} dadataApiKey={dadataApiKey} withMap onChange={changeFullAddress} onSelect={selectAddress} />
+        {!detailsEditable && (
+          <p class="address-details-hint">Для редактирования отдельных полей выберите адрес из подсказок или очистите адрес и заполните поля вручную.
+          </p>
+        )}
         <div class="applicant-address-grid">
-          {fields.map(([name, label, wide]) => <label class={`applicant-address-field ${wide ? "applicant-address-field--wide" : ""}`} key={name}><span>{label}:</span><input class="applicant-address-detail" value={addressDetails[name]} onInput={(event) => changeAddressDetail(name, event.currentTarget.value)} /></label>)}
+          {fields.map(([name, label, wide]) => (
+            <label class={`applicant-address-field ${wide ? "applicant-address-field--wide" : ""}`} key={name}>
+              <span>{label}:
+              </span>
+              <input class="applicant-address-detail" value={addressDetails[name]} disabled={!detailsEditable} onInput={(event) => changeAddressDetail(name, event.currentTarget.value)} />
+            </label>
+          ))}
         </div>
         <div class="applicant-address-actions">
           <button class="applicant-clear-address" type="button" onClick={clearAddress}>Очистить адрес</button>

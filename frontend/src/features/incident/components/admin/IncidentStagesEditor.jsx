@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { classifierInfo, loadClassifier } from "../../storage/classifierStorage";
 import StageEditor from "./StageEditor.jsx";
+import { EditorAddCard } from "./EditorContainers.jsx";
 import { findIncident, moveItem, normalizeStage, personIsIncomplete, personValue, request, serializeStage, splitLines } from "./editorHelpers";
 
 /**
@@ -155,9 +156,9 @@ export default function IncidentStagesEditor({ initialStages = [] }) {
           );
         })}
       </div>
-      <wa-card class="add-stage-card">
-        <wa-button id="add-stage" type="button" appearance="plain" variant="brand" onClick={() => setStages((items) => [...items, normalizeStage()])}>+ Добавить этап</wa-button>
-      </wa-card>
+      <EditorAddCard className="editor-add-stage-card">
+        <wa-button id="add-stage" type="button" appearance="plain" variant="brand" onClick={() => { const stage = normalizeStage(); setStages((items) => [...items, stage]); setOpenStage(stage.key); }}>+ Добавить этап</wa-button>
+      </EditorAddCard>
     </section>
   );
 }

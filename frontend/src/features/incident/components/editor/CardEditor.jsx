@@ -10,6 +10,7 @@ import VictimStatusBar from "./VictimStatusBar.jsx";
 import { cardAddress, emptyPerson, findIncident, findLinkSuggestions } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
 import IncidentWorkspace from "../../../level/components/common/IncidentWorkspace.jsx";
+import CallControls from "../../../level/components/player/CallControls.jsx";
 import ServiceLoadIndicator, { useServiceLoad } from "../../../level/components/common/ServiceLoadIndicator.jsx";
 
 const styles = `
@@ -142,7 +143,7 @@ function classifierDetails(incident, values, routingFacts) {
   return [...features, ...selectedFacts];
 }
 
-export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, routingFacts = [], dispatchServices, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor }) {
+export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, routingFacts = [], dispatchServices, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor, readonlyServiceCalls, readonlyCallEnabled, onServiceCall, onAcceptCall, onDropCall }) {
   const loadedClassifierState = useClassifier();
   const classifierState = classifier ? { classifier, routingFacts, loading: false, error: null } : loadedClassifierState;
   const [serviceCatalog, setServiceCatalog] = useState(dispatchServices || []);
@@ -331,10 +332,10 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
     <IncidentWorkspace label={`Просмотр карточки ${editingCard.cardId}`}>
       <style>{styles}</style>
       <header class="workspace-callbar">
-        <div class="workspace-connection">
+        {readOnly && ["incoming", "active"].includes(call.phase) ? <CallControls call={call} onAccept={onAcceptCall} onDrop={onDropCall} /> : <div class="workspace-connection">
           <wa-icon name="phone" aria-hidden="true"></wa-icon>
           <div class="workspace-connection-copy"><strong>{readonlyTitle}</strong><span class="workspace-call-label">{readonlyHint}</span></div>
-        </div>
+        </div>}
         <PhoneField label="АОН" value={editor.applicant.phone} readonly />
         <PhoneField label="Предоставленный" value={editor.applicant.contactPhone} readonly />
         <PhoneField label="Телефон на месте" value={editor.applicant.onScenePhone} readonly />
@@ -368,7 +369,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         </section>
       </div>
       <footer class="workspace-footer workspace-footer--readonly wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
-        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} readonly status={readonlyServiceStatus} statusHistory={readonlyServiceHistory} statusEditor={readonlyServiceEditor} onChange={() => {}} />
+        <DispatchServicesPanel classifier={classifierState.classifier} dispatchServices={serviceCatalog} services={editor.services} readonly status={readonlyServiceStatus} statusHistory={readonlyServiceHistory} statusEditor={readonlyServiceEditor} calls={readonlyServiceCalls} onCall={onServiceCall} callEnabled={readonlyCallEnabled} onChange={() => {}} />
         <div class="workspace-actions wa-cluster wa-gap-3xs wa-align-items-stretch wa-flex-nowrap">
           {!readOnly && <wa-button class="workspace-save" size="l" type="button" appearance="outlined" variant="neutral" onClick={() => setSavedEditMode(true)}><wa-icon slot="start" name="pencil"></wa-icon>Редактировать</wa-button>}
           {!readOnly && relatedCard && <wa-button class="workspace-link" type="button" size="l" appearance="outlined" variant="neutral" disabled={!canUnlink} loading={editor.saving} aria-label="Отвязать карточку" onClick={unlink}><wa-icon name="link-slash"></wa-icon></wa-button>}
@@ -395,7 +396,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         <section class="workspace-column" aria-label="Заявитель и пострадавшие">
           <ApplicantHeader person={editor.applicant} onChange={setApplicant} />
           <div class="workspace-column-inner wa-stack wa-gap-m">
-            <PersonCard kind="applicant" person={editor.applicant} addressRequired dadataApiKey={dadataApiKey} onChange={setApplicant} />
+            <PersonCard key={`${contextId}:${editor.editingCardId || call.activeCallId || "new"}`} kind="applicant" person={editor.applicant} addressRequired dadataApiKey={dadataApiKey} onChange={setApplicant} />
           </div>
         </section>
         <section class="workspace-column" aria-label="Классификация происшествия">
