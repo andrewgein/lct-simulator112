@@ -2,6 +2,7 @@ package com.simulator112.auth.adapter.out.persistence;
 
 import com.simulator112.auth.application.port.out.AccountStore;
 import com.simulator112.auth.domain.model.Account;
+import com.simulator112.auth.domain.model.Role;
 import com.simulator112.auth.adapter.out.persistence.entity.User;
 import com.simulator112.auth.adapter.out.persistence.repository.UserRepository;
 import java.util.List;
@@ -14,6 +15,14 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class AccountPersistenceAdapter implements AccountStore {
     private final UserRepository repository;
+
+    public List<Account> lockAdministrators() {
+        return repository.findByRoleForUpdate(Role.ADMIN).stream().map(AccountPersistenceAdapter::toDomain).toList();
+    }
+
+    public void deleteById(UUID userId) {
+        repository.deleteById(userId);
+    }
 
     public Optional<Account> findByEmail(String email) {
         return repository.findByEmail(email).map(AccountPersistenceAdapter::toDomain);

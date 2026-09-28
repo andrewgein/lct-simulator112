@@ -73,7 +73,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
                 const isDds = trainingTrack === "DDS";
                 const canEditTrainingTrack = Boolean(profile) && user.role === "STUDENT";
                 return (
-                  <tr data-user-row data-user-id={user.id} data-has-profile={Boolean(profile)} data-search={`${user.email} ${fullName}`.toLowerCase()}>
+                  <tr data-user-row data-user-id={user.id} data-user-email={user.email} data-has-profile={Boolean(profile)} data-search={`${user.email} ${fullName}`.toLowerCase()}>
                     <th scope="row">
                       <div class="wa-stack wa-gap-2xs">
                         <span>{fullName}</span>
@@ -110,7 +110,12 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
                       )}
                     </td>
                     <td>
-                      <wa-button class="save-user" variant="brand" size="small">Сохранить</wa-button>
+                      <div class="user-actions wa-cluster wa-gap-xs">
+                        <wa-button class="save-user" type="button" variant="brand" size="small">Сохранить
+                        </wa-button>
+                        <wa-button class="delete-user" type="button" variant="danger" appearance="outlined" size="small" aria-label={`Удалить пользователя ${user.email}`}>Удалить
+                        </wa-button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -130,12 +135,12 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
   const search = document.querySelector<HTMLInputElement>("#user-search");
   const noUsersFound = document.querySelector<HTMLElement>("#no-users-found");
 
-  const getErrorMessage = async (response: Response) => {
+  const getErrorMessage = async (response: Response, fallback = "Не удалось сохранить изменения") => {
     try {
       const error = await response.json();
-      return error.message || error.detail || "Не удалось сохранить изменения";
+      return error.message || error.detail || fallback;
     } catch {
-      return "Не удалось сохранить изменения";
+      return fallback;
     }
   };
 
@@ -145,6 +150,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
     const ddsServiceField = row.querySelector<HTMLElement>(".dds-service-field");
     const ddsService = row.querySelector<HTMLInputElement>(".dds-service");
     const saveButton = row.querySelector<HTMLInputElement>(".save-user");
+    const deleteButton = row.querySelector<HTMLInputElement>(".delete-user");
     const hasProfile = row.dataset.hasProfile === "true";
 
     const syncFields = () => {
@@ -172,6 +178,8 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
       }
 
       saveButton.toggleAttribute("loading", true);
+      saveButton.toggleAttribute("disabled", true);
+      deleteButton?.toggleAttribute("disabled", true);
       try {
         const roleResponse = await fetch(`/api/v1/admin/users/${encodeURIComponent(userId)}/role`, {
           method: "POST",
@@ -196,6 +204,26 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
       } catch (error) {
         alert(error instanceof Error ? error.message : "Не удалось сохранить изменения");
         saveButton.toggleAttribute("loading", false);
+        saveButton.toggleAttribute("disabled", false);
+        deleteButton?.toggleAttribute("disabled", false);
+      }
+    });
+
+    deleteButton?.addEventListener("click", async () => {
+      const userId = row.dataset.userId;
+      if (!userId || !confirm(`Удалить учётную запись «${row.dataset.userEmail}»? Пользователь потеряет доступ. История прохождений и ревью будет сохранена.`)) return;
+      deleteButton.toggleAttribute("loading", true);
+      deleteButton.toggleAttribute("disabled", true);
+      saveButton?.toggleAttribute("disabled", true);
+      try {
+        const response = await fetch(`/api/v1/admin/users/${encodeURIComponent(userId)}`, { method: "DELETE" });
+        if (!response.ok) throw new Error(await getErrorMessage(response, "Не удалось удалить пользователя"));
+        window.location.reload();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : "Не удалось удалить пользователя");
+        deleteButton.toggleAttribute("loading", false);
+        deleteButton.toggleAttribute("disabled", false);
+        saveButton?.toggleAttribute("disabled", false);
       }
     });
   });
@@ -211,3 +239,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium" });
     noUsersFound?.toggleAttribute("hidden", visibleCount > 0);
   });
 </script>
+
+<style>
+  .user-actions { flex-wrap: nowrap; justify-content: flex-end; }
+</style>

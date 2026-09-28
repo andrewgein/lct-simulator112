@@ -9,6 +9,17 @@ spring:
         webflux:
           routes:
 
+            - id: auth-service-admin-delete-user
+              uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/v1/admin/users/*
+                - Method=DELETE
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
             #Auth service — управление пользователями администраторами
             - id: auth-service-admin-users
               uri: ${AUTH_SERVICE_URL:http://localhost:8081}

@@ -1,6 +1,7 @@
 package com.simulator112.auth.adapter.config;
 
 import com.simulator112.auth.adapter.out.security.JwtService;
+import com.simulator112.auth.application.port.in.ValidateSessionUseCase;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,6 +26,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
   private final JwtService jwtService;
+  private final ValidateSessionUseCase accounts;
 
   @Override
   protected void doFilterInternal(
@@ -41,12 +43,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String token = header.substring(7);
       String role = jwtService.extractRole(token);
       UUID userId = jwtService.extractUserId(token);
+      if (!accounts.isSessionValid(userId, role)) {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return;
+      }
       var auth =
           new UsernamePasswordAuthenticationToken(
               userId, null, List.of(new SimpleGrantedAuthority(role)));
       SecurityContextHolder.getContext().setAuthentication(auth);
-    } catch (Exception e) {
+    } catch (io.jsonwebtoken.JwtException | IllegalArgumentException e) {
       log.warn("Invalid JWT token: {}", e.getMessage());
+    } catch (Exception e) {
+      log.error("Cannot validate user session", e);
+      response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+      return;
     }
     chain.doFilter(request, response);
   }
