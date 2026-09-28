@@ -26,7 +26,8 @@ class IncidentDraftGenerationServiceTest {
                 assertThat(messages.getFirst().content()).contains("Определи намерение").doesNotContain("Пожар в квартире");
                 return "{\"intent\":\"ANSWER\"}";
             }
-            assertThat(messages.getFirst().content()).contains("Краткая справка", "Пожар в квартире");
+            assertThat(messages.getFirst().content()).contains("Краткая справка", "Пожар в квартире", "Система-112 и ДДС — разные режимы обучения")
+                    .doesNotContain("симулятора 112");
             assertThat(messages.get(1).content()).isEqualTo("Это учебный сценарий");
             return "{\"message\":\"В сценарии ДДС задаются этапы реагирования.\"}";
         }, new GeneratedIncidentPatchValidator(mapper), mapper);
