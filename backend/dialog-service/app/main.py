@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -22,7 +23,8 @@ configure(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing TTS model")
-    application_components.voice_pipeline.warm_up()
+    await asyncio.to_thread(application_components.voice_pipeline.warm_up)
+    logger.info("TTS model ready")
     yield
 
 
@@ -30,12 +32,7 @@ app = FastAPI(lifespan=lifespan)
 
 
 class ConnectionLoggingMiddleware:
-    """Logs the source (host:port) of every incoming HTTP/WS connection.
-
-    In prod, dialog-service runs on a home PC reachable only through a
-    Tailscale tunnel from the app VM - this is the log line that confirms
-    calls are actually arriving over that tunnel.
-    """
+    """Logs the source (host:port) of every incoming HTTP/WS connection"""
 
     def __init__(self, app: ASGIApp):
         self.app = app
@@ -62,10 +59,7 @@ async def health():
 
 @app.get("/internal/settings")
 async def internal_settings():
-    """Read-only view of the voice pipeline's current config, for the admin panel's settings
-    page (admin-service calls this directly over the docker network, never through the public
-    gateway). Deliberately excludes LLM_API_KEY - everything else here is operational config,
-    not a secret, and changing it is a matter of editing prod/.env and redeploying."""
+    """Read-only view of the voice pipeline's current config."""
     return {
         "llmModel": getenv("LLM_MODEL", "gpt-oss-120b"),
         "llmBaseUrl": getenv("LLM_BASE_URL", "https://api.aitunnel.ru/v1/"),

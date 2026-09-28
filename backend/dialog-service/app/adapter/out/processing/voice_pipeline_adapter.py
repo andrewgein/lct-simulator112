@@ -63,4 +63,6 @@ class ProcessingVoicePipelineFactory(VoicePipelineFactory):
             call, on_operator_phrase, on_counterparty_phrase, on_audio, history)
 
     def warm_up(self) -> None:
-        TTSModel().register_all_voices()
+        model = TTSModel()
+        model.load_text_preprocessor().process("В доме 5 человек")
+        model.register_all_voices()
