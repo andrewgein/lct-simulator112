@@ -1,18 +1,3 @@
-# Parameterized prod app stack (single environment - sim112-stable only). Application images
-# are built by GitHub Actions and selected with IMAGE_REGISTRY and IMAGE_TAG. For example:
-#   IMAGE_REGISTRY=ghcr.io/owner IMAGE_TAG=main-<sha> docker compose -p sim112-stable \
-#     --env-file prod/.env -f prod/docker-compose.yml up -d
-#
-# dialog-service IS here (runs in Docker - it needs no GPU itself anymore; TTS is a separate
-# HTTP call to qwentts.cpp). Only qwentts.cpp stays on the home PC (needs the GPU directly),
-# reached from dialog-service over Tailscale (TTS_SERVER_TAILSCALE_HOST). Monitoring
-# (Prometheus/Grafana) and the public-facing nginx are separate stacks in prod/monitoring/ and
-# prod/edge/ - see prod/DEPLOY.md.
-#
-# Requires the external networks created once on the VM:
-#   docker network create prod-edge
-#   docker network create prod-monitoring
-
 services:
 
   postgres:
@@ -59,7 +44,6 @@ services:
       retries: 5
 
   minio:
-    # Docker Hub's minio/minio repo was pulled by MinIO; images are now published on quay.io only.
     image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: ${COMPOSE_PROJECT_NAME}-minio
     command: server /data
@@ -164,11 +148,6 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/context
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD}
-      # Container-name target, not bare service name: context-service/api-gateway/etc. all also
-      # join the shared prod-monitoring network (so Prometheus can scrape them), and Compose
-      # registers the service name as a DNS alias on every network a container joins -
-      # including external ones. If a second stack is ever run on this VM again, bare service
-      # names would collide on prod-monitoring; container names stay unique per stack.
       INCIDENT_SERVICE_GRPC_TARGET: static://${COMPOSE_PROJECT_NAME}-incident:9091
       COURSE_SERVICE_GRPC_TARGET: static://${COMPOSE_PROJECT_NAME}-course:9095
       REVIEW_SERVICE_GRPC_TARGET: static://${COMPOSE_PROJECT_NAME}-review:9092
@@ -292,9 +271,6 @@ services:
       retries: 10
       start_period: 30s
 
-  # Dials context-service directly over the docker network (CONTEXT_MANAGER_GRPC_URL below).
-  # It needs no GPU itself (Vosk STT is CPU, TTS is an HTTP call to qwentts.cpp on the home PC)
-  # - only the TTS server stays outside Docker.
   dialog-service:
     image: ${DIALOG_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/dialog-service:${IMAGE_TAG:?IMAGE_TAG is required}}
     container_name: ${COMPOSE_PROJECT_NAME}-dialog
@@ -325,9 +301,6 @@ services:
       retries: 10
       start_period: 20s
 
-  # Exporters live in the app stack (not prod/monitoring/) because they need to reach postgres/
-  # kafka on this stack's *internal* default network - only the app services and Prometheus
-  # (via the shared external prod-monitoring network) need to see them.
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:v0.15.0
     container_name: ${COMPOSE_PROJECT_NAME}-postgres-exporter
@@ -390,9 +363,6 @@ services:
     image: ${API_GATEWAY_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/api-gateway:${IMAGE_TAG:?IMAGE_TAG is required}}
     container_name: ${COMPOSE_PROJECT_NAME}-gateway
     environment:
-      # Container-name targets, not bare service names - see the comment on context-service's
-      # env above: bare service names would collide across stacks on the shared
-      # prod-monitoring network if a second stack ever runs on this VM.
       AUTH_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-auth:8081
       INCIDENT_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-incident:8086
       COURSE_SERVICE_URL: http://${COMPOSE_PROJECT_NAME}-course:8088
@@ -406,6 +376,8 @@ services:
       REDIS_HOST: redis
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       JWT_PUBLIC_KEY_PATH: file:/run/secrets/public.pem
+      RATE_LIMIT_REPLENISH: ${RATE_LIMIT_REPLENISH:-200}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-400}
     volumes:
       - ../secrets/public.pem:/run/secrets/public.pem:ro
     networks: [default, edge, monitoring]
