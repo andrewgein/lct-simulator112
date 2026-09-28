@@ -134,7 +134,7 @@
         if (event === 'error') throw new Error(data);
       });
       if (!result) throw new Error('Генерация завершилась без результата');
-      applyIncident(result.incident);
+      if (result.incident != null) applyIncident(result.incident);
       const reply = result.message || 'Черновик обновлён.';
       messages.push({ role: 'assistant', content: reply });
       appendMessage('assistant', reply);

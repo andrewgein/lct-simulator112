@@ -38,6 +38,13 @@ public abstract class AbstractIncidentGenerationService implements GenerateIncid
 
     @Override
     public final Result generate(Command command) {
+        validateRequest(command);
+        var chain = new GenerationStep.Chain(model, command.onStatus());
+        var decision = chain.then(new IncidentIntentStep(mapper, command.draft(), command.messages()));
+        if (decision.answer()) {
+            var answer = chain.then(new IncidentAnswerStep(mapper, command.draft(), command.messages()));
+            return new Result(answer, mapper.createObjectNode());
+        }
         var context = prepare(command);
         try {
             if (isNewDraft(command.draft())) {

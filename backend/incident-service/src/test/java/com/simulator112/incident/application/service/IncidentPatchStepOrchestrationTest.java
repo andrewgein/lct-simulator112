@@ -22,7 +22,10 @@ class IncidentPatchStepOrchestrationTest {
         when(catalog.search(anyString(), anyInt(), anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
         when(catalog.resolveAssignedServices(anyList())).thenReturn(List.of("MCHS"));
-        return new IncidentDraftGenerationService(catalog, model, new GeneratedIncidentPatchValidator(mapper), mapper);
+        return new IncidentDraftGenerationService(catalog, messages ->
+                messages.getFirst().content().contains("Определи намерение")
+                        ? "{\"intent\":\"INCIDENT\"}" : model.generate(messages),
+                new GeneratedIncidentPatchValidator(mapper), mapper);
     }
 
     private GenerateIncidentDraftUseCase.Command command(String text, String draft) {

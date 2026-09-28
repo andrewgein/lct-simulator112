@@ -18,6 +18,54 @@ class IncidentDraftGenerationServiceTest {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Test
+    void answersSimulatorRequestWithoutChangingIncidentOrLoadingClassifier() {
+        var classifier = org.mockito.Mockito.mock(ClassifierCatalogPort.class);
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+            if (calls.incrementAndGet() == 1) {
+                assertThat(messages.getFirst().content()).contains("Определи намерение").doesNotContain("Пожар в квартире");
+                return "{\"intent\":\"ANSWER\"}";
+            }
+            assertThat(messages.getFirst().content()).contains("Краткая справка", "Пожар в квартире");
+            assertThat(messages.get(1).content()).isEqualTo("Это учебный сценарий");
+            return "{\"message\":\"В сценарии ДДС задаются этапы реагирования.\"}";
+        }, new GeneratedIncidentPatchValidator(mapper), mapper);
+        var result = generator.generate(new GenerateIncidentDraftUseCase.Command(
+                List.of(new GenerateIncidentDraftUseCase.Message("user", "Это учебный сценарий"),
+                        new GenerateIncidentDraftUseCase.Message("assistant", "Понял"),
+                        new GenerateIncidentDraftUseCase.Message("user", "Расскажи про этапы ДДС")),
+                mapper.readTree("{\"targetType\":\"DDS\",\"title\":\"Пожар в квартире\",\"stages\":[]}")));
+
+        assertThat(result.message()).isEqualTo("В сценарии ДДС задаются этапы реагирования.");
+        assertThat(result.incident().isObject()).isTrue();
+        assertThat(result.incident().isEmpty()).isTrue();
+        assertThat(calls.get()).isEqualTo(2);
+        org.mockito.Mockito.verifyNoInteractions(classifier);
+    }
+
+    @Test
+    void questionFormCanStillRequestIncidentEdit() {
+        var classifier = org.mockito.Mockito.mock(ClassifierCatalogPort.class);
+        org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
+        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+            var prompt = messages.getFirst().content();
+            if (prompt.contains("Определи намерение")) {
+                assertThat(prompt).contains("Приоритет", "если деталей пока мало");
+                return "{\"intent\":\"INCIDENT\"}";
+            }
+            if (prompt.contains("Выбери ТОЛЬКО поля")) return "{\"paths\":[\"/difficulty\"]}";
+            return "{\"message\":\"Сложность изменена\",\"incident\":{\"difficulty\":\"HARD\"}}";
+        }, new GeneratedIncidentPatchValidator(mapper), mapper);
+        var result = generator.generate(new GenerateIncidentDraftUseCase.Command(
+                List.of(new GenerateIncidentDraftUseCase.Message("user", "Можешь изменить сложность?")),
+                mapper.readTree("{\"targetType\":\"SYSTEM_112\",\"title\":\"Пожар\",\"difficulty\":\"NORMAL\",\"stages\":[]}")));
+
+        assertThat(result.incident().path("difficulty").asText()).isEqualTo("HARD");
+    }
+
+    @Test
     void acceptsDifficultyOnlyWithoutReplacingExistingScenario() {
         var result = generateWithModelResponse("""
                 {"message":"Сложность изменена","incident":{"difficulty":"HARD"}}
@@ -48,7 +96,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             var prompt = messages.getFirst().content();
             if (prompt.contains("СУТЬ нового учебного сценария Системы-112")) {
                 scenarioCalls.incrementAndGet();
@@ -108,7 +156,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             calls.incrementAndGet();
             if (messages.getFirst().content().contains("Выбери ТОЛЬКО поля"))
                 return "{\"paths\":[\"/difficulty\"]}";
@@ -150,7 +198,7 @@ class IncidentDraftGenerationServiceTest {
                 return List.of(new Candidate("1050101", "Пожары", "Пожар"));
             }
         };
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             if (calls.incrementAndGet() == 1) return "{\"paths\":[]}";
             if (calls.get() == 2) {
                 assertThat(messages.getLast().content()).contains("предыдущий ответ не прошёл проверку");
@@ -172,7 +220,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             calls.incrementAndGet();
             return "{\"message\":\"Готово\",\"incident\":{\"stages\":[]}}";
         }, new GeneratedIncidentPatchValidator(mapper), mapper);
@@ -194,7 +242,7 @@ class IncidentDraftGenerationServiceTest {
                 return List.of(new Candidate("1050101", "Пожары", "Пожар"));
             }
         };
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             var prompt = messages.getFirst().content();
             calls.incrementAndGet();
             if (prompt.contains("Опиши суть НОВОГО")) return """
@@ -260,7 +308,7 @@ class IncidentDraftGenerationServiceTest {
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
         org.mockito.Mockito.when(classifier.resolveAssignedServices(org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of("MCHS"));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             var prompt = messages.getFirst().content();
             if (prompt.contains("Опиши суть НОВОГО")) {
                 scenarioCalls.incrementAndGet();
@@ -313,7 +361,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             calls.incrementAndGet();
             return "{\"scenario\":\"\"}";
         }, new GeneratedIncidentPatchValidator(mapper), mapper);
@@ -333,7 +381,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             if (messages.getFirst().content().contains("Опиши суть НОВОГО")) {
                 scenarioCalls.incrementAndGet();
                 return "{\"scenario\":\"Пожар в квартире\"}";
@@ -358,7 +406,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             calls.incrementAndGet();
             var prompt = messages.getFirst().content();
             if (prompt.contains("Опиши суть НОВОГО")) return "{\"scenario\":\"Пожар в квартире, бригада выехала\"}";
@@ -387,7 +435,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages ->
+        var generator = legacyGenerator(classifier, messages ->
                 messages.getFirst().content().contains("Опиши суть НОВОГО") ? """
                         {"scenario":"Пожар в квартире, бригада выехала"}
                         """ : messages.getFirst().content().contains("план промежуточных этапов") ? """
@@ -415,7 +463,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             calls.incrementAndGet();
             assertThat(messages.getFirst().content()).doesNotContain("Опиши суть НОВОГО");
             if (messages.getFirst().content().contains("Выбери ТОЛЬКО поля"))
@@ -439,7 +487,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
-        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+        var generator = legacyGenerator(classifier, messages -> {
             calls.incrementAndGet();
             var prompt = messages.getFirst().content();
             if (prompt.contains("Опиши суть НОВОГО")) return "{\"scenario\":\"Пожар в квартире, бригада выехала\"}";
@@ -757,7 +805,7 @@ class IncidentDraftGenerationServiceTest {
         org.mockito.Mockito.when(classifier.search(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyList()))
                 .thenThrow(new IllegalStateException("Unavailable"));
-        var service = new IncidentDraftGenerationService(classifier, messages ->
+        var service = legacyGenerator(classifier, messages ->
                 messages.getFirst().content().contains("Выбери ТОЛЬКО поля")
                         ? "{\"paths\":[\"/difficulty\"]}"
                         : "{\"message\":\"Готово\",\"incident\":{\"title\":\"Пожар\",\"difficulty\":\"HARD\"}}",
@@ -770,7 +818,7 @@ class IncidentDraftGenerationServiceTest {
     @Test
     void reportsClassifierFailureWhenChangingStages() {
         var classifier = org.mockito.Mockito.mock(ClassifierCatalogPort.class);
-        var service = new IncidentDraftGenerationService(classifier,
+        var service = legacyGenerator(classifier,
                 messages -> "{\"paths\":[\"/stages\"]}",
                 new GeneratedIncidentPatchValidator(mapper), mapper);
         assertThatThrownBy(() -> service.generate(new GenerateIncidentDraftUseCase.Command(
@@ -810,6 +858,13 @@ class IncidentDraftGenerationServiceTest {
                 return "{\"paths\":[\"/difficulty\"]}";
             return "{\"message\":\"Готово\",\"incident\":{\"title\":\"Пожар\",\"difficulty\":\"HARD\"}}";
         };
-        return new IncidentDraftGenerationService(classifier, model, new GeneratedIncidentPatchValidator(mapper), mapper);
+        return legacyGenerator(classifier, model, new GeneratedIncidentPatchValidator(mapper), mapper);
+    }
+
+    private IncidentDraftGenerationService legacyGenerator(ClassifierCatalogPort classifier,
+            IncidentLanguageModelPort model, GeneratedIncidentPatchValidator validator, ObjectMapper mapper) {
+        return new IncidentDraftGenerationService(classifier, messages ->
+                messages.getFirst().content().contains("Определи намерение")
+                        ? "{\"intent\":\"INCIDENT\"}" : model.generate(messages), validator, mapper);
     }
 }
