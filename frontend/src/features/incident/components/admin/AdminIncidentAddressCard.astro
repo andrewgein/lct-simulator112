@@ -1,14 +1,17 @@
 ---
 import AddressField from "../../../../layouts/AddressField.jsx";
+import { formatIncidentAddress } from "../../../../layouts/addressUtils.js";
 
 /** @typedef {import("../../contract/Incident").IncidentAddress} IncidentAddress */
 /** @type {{ address?: Partial<IncidentAddress>, dadataApiKey?: string, nested?: boolean }} */
 const { address = {}, dadataApiKey = "", nested = false } = Astro.props;
-const fullAddress = [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(", ");
+const fullAddress = formatIncidentAddress({ ...address, floor: address.floor || "" });
 ---
 <section id="incident-address-section" class="wa-stack wa-gap-m">
   {nested ? <h3 class="wa-heading-l">Адрес</h3> : <h2 class="wa-heading-xl">Адрес</h2>}
   <AddressField id="incident-main-address" label="Полный адрес" value={fullAddress} {dadataApiKey} client:load />
+  <p id="incident-address-hint" class="address-details-hint" hidden>Выберите адрес из подсказок или очистите полный адрес, чтобы заполнить отдельные поля. Так строка адреса и данные сценария будут совпадать.
+  </p>
   <div class="wa-grid">
     <wa-input name="address.city" label="Город" value={address.city || ""} required>
     </wa-input>
@@ -25,25 +28,61 @@ const fullAddress = [address.city, address.street, address.house && `д. ${addre
   </div>
 </section>
 <script>
+  import { addressFromSuggestion, formatIncidentAddress } from "../../../../layouts/addressUtils.js";
+
   const section = document.querySelector("#incident-address-section");
   const mainAddress = section?.querySelector("#incident-main-address");
-  const fields = Object.fromEntries(["city", "street", "house", "building", "apartment"].map((field) => [field, section?.querySelector(`[name="address.${field}"]`)]));
-  const formatAddress = () => [fields.city.value, fields.street.value, fields.house.value && `д. ${fields.house.value}`, fields.building.value && `корп. ${fields.building.value}`, fields.apartment.value && `кв. ${fields.apartment.value}`].filter(Boolean).join(", ");
+  const hint = section?.querySelector("#incident-address-hint");
+  const fields = Object.fromEntries(["city", "street", "house", "building", "apartment", "floor"].map((field) => [field, section?.querySelector(`[name="address.${field}"]`)]));
+  let selectedAddress = null;
+  let detailsEditable = true;
+  const readAddress = () => Object.fromEntries(Object.entries(fields).map(([name, field]) => [name, field?.value || ""]));
+  const updateMainAddress = () => mainAddress?.dispatchEvent(new CustomEvent("address-set", { detail: { value: formatIncidentAddress(readAddress(), selectedAddress) } }));
   const publishAddress = (value) => window.dispatchEvent(new CustomEvent("incident-address-change", { detail: value }));
+  const setEditable = (editable) => {
+    detailsEditable = editable;
+    if (hint) hint.hidden = editable;
+    // Keep controls in FormData; the submit guard below rejects unparsed addresses.
+    Object.values(fields).forEach((field) => { if (field) field.readonly = !editable; });
+  };
 
-  mainAddress?.addEventListener("address-input", (event) => publishAddress(event.detail.value));
+  mainAddress?.addEventListener("address-input", (event) => {
+    const { value, source } = event.detail;
+    if (source === "input" || source === "map") {
+      selectedAddress = null;
+      Object.values(fields).forEach((field) => { if (field) field.value = ""; });
+      setEditable(!value.trim());
+    }
+    publishAddress(value);
+  });
+  mainAddress?.addEventListener("address-ready", (event) => publishAddress(event.detail.value));
   mainAddress?.addEventListener("address-selected", (event) => {
-    const data = event.detail.suggestion.data || {};
-    fields.city.value = data.city || data.settlement || "";
-    fields.street.value = data.street || "";
-    fields.house.value = data.house || "";
-    fields.building.value = data.block || "";
-    fields.apartment.value = data.flat || "";
+    selectedAddress = addressFromSuggestion(event.detail.suggestion);
+    for (const [name, value] of Object.entries(selectedAddress.incident)) {
+      if (fields[name]) fields[name].value = value;
+    }
+    setEditable(true);
   });
   Object.values(fields).forEach((field) => field?.addEventListener("input", () => {
-    const input = mainAddress.querySelector("input");
-    input.value = formatAddress();
-    input.dispatchEvent(new Event("input", { bubbles: true }));
+    if (!detailsEditable) return;
+    if (fields.city?.value !== selectedAddress?.incident.city) selectedAddress = null;
+    updateMainAddress();
   }));
+  section?.addEventListener("incident-address-refresh", () => {
+    selectedAddress = null;
+    setEditable(true);
+    updateMainAddress();
+  });
+  const form = section?.closest("form");
+  form?.addEventListener("submit", (event) => {
+    if (detailsEditable) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    hint?.scrollIntoView({ block: "center" });
+  }, true);
   publishAddress(mainAddress?.querySelector("input")?.value || "");
 </script>
+
+<style>
+  .address-details-hint { margin: 0; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
+</style>

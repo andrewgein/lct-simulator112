@@ -67,13 +67,7 @@
       if (field) field.value = value == null ? '' : String(value);
     }
     if (incident.address) {
-      const address = collectDraft().address;
-      const fullAddress = [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(', ');
-      const addressInput = form.querySelector('#incident-main-address input');
-      if (addressInput) {
-        addressInput.value = fullAddress;
-        addressInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
+      form.querySelector('#incident-address-section')?.dispatchEvent(new CustomEvent('incident-address-refresh'));
     }
     if (isDds) {
       form.dispatchEvent(new CustomEvent('apply-generated-dds', { detail: incident }));

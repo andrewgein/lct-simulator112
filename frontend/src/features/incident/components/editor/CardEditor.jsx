@@ -396,7 +396,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
         <section class="workspace-column" aria-label="Заявитель и пострадавшие">
           <ApplicantHeader person={editor.applicant} onChange={setApplicant} />
           <div class="workspace-column-inner wa-stack wa-gap-m">
-            <PersonCard kind="applicant" person={editor.applicant} addressRequired dadataApiKey={dadataApiKey} onChange={setApplicant} />
+            <PersonCard key={`${contextId}:${editor.editingCardId || call.activeCallId || "new"}`} kind="applicant" person={editor.applicant} addressRequired dadataApiKey={dadataApiKey} onChange={setApplicant} />
           </div>
         </section>
         <section class="workspace-column" aria-label="Классификация происшествия">
