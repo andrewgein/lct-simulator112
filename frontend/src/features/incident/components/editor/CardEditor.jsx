@@ -10,7 +10,7 @@ import VictimStatusBar from "./VictimStatusBar.jsx";
 import { cardAddress, emptyPerson, findIncident, findLinkSuggestions } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
 import IncidentWorkspace from "../../../level/components/common/IncidentWorkspace.jsx";
-import ServiceLoadIndicator from "../../../level/components/common/ServiceLoadIndicator.jsx";
+import ServiceLoadIndicator, { useServiceLoad } from "../../../level/components/common/ServiceLoadIndicator.jsx";
 
 const styles = `
 .incident-workspace { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 48rem; background: #c8d1d5; color: var(--wa-color-text-normal); }
@@ -147,6 +147,7 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   const classifierState = classifier ? { classifier, routingFacts, loading: false, error: null } : loadedClassifierState;
   const [serviceCatalog, setServiceCatalog] = useState(dispatchServices || []);
   const [seconds, setSeconds] = useState(0);
+  const serviceLoad = useServiceLoad();
   const [savedEditMode, setSavedEditMode] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkTargetId, setLinkTargetId] = useState("");
@@ -382,8 +383,8 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
       <header class="workspace-callbar">
         <div class="workspace-connection">
           <wa-icon name={call.phase === "active" ? "phone-volume" : "phone"} aria-hidden="true"></wa-icon>
-          {call.phase === "active" && <ServiceLoadIndicator />}
-          <div class="workspace-connection-copy"><strong>{call.phase === "active" ? "На линии" : "Карточка происшествия"}</strong><span class="workspace-call-label">{call.phase === "active" ? "активное соединение" : "редактирование"}</span></div>
+          {call.phase === "active" && <ServiceLoadIndicator load={serviceLoad} />}
+          <div class="workspace-connection-copy"><strong>{call.phase === "active" ? (serviceLoad ? "На линии" : "Ожидание собеседника") : "Карточка происшествия"}</strong><span class="workspace-call-label">{call.phase === "active" ? "активное соединение" : "редактирование"}</span></div>
         </div>
         <PhoneField label="АОН" value={aoh} readonly />
         <PhoneField label="Предоставленный" value={editor.applicant.contactPhone} aoh={aoh} onChange={(contactPhone) => setApplicant({ ...editor.applicant, contactPhone })} />

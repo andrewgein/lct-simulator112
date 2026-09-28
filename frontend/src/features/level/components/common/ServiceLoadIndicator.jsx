@@ -15,7 +15,7 @@ function worseLevel(a, b) {
   return order[b] > order[a] ? b : a;
 }
 
-export default function ServiceLoadIndicator() {
+export function useServiceLoad() {
   const [load, setLoad] = useState(null);
 
   useEffect(() => {
@@ -24,7 +24,11 @@ export default function ServiceLoadIndicator() {
     return () => window.removeEventListener("dialog:service_load", handler);
   }, []);
 
-  if (!load?.llm || !load?.tts) return null;
+  return load?.llm && load?.tts ? load : null;
+}
+
+export default function ServiceLoadIndicator({ load }) {
+  if (!load) return null;
 
   const level = worseLevel(load.llm.level, load.tts.level);
   const tooltip = `${LEVEL_LABELS[level]} · LLM: ${load.llm.avgMs} мс · TTS: ${load.tts.avgMs} мс`;
