@@ -4,6 +4,7 @@ import com.simulator112.classifier.grpc.contract.ClassifierServiceGrpc;
 import com.simulator112.classifier.grpc.contract.GetClassifierEntryRequest;
 import com.simulator112.classifier.grpc.contract.HasDispatchServiceRequest;
 import com.simulator112.classifier.grpc.contract.SearchClassifierEntriesRequest;
+import com.simulator112.classifier.grpc.contract.ResolveRoutingRequest;
 import com.simulator112.incident.application.port.out.ClassifierCatalogPort;
 import com.simulator112.incident.domain.common.exception.ClassifierEntryNotFoundException;
 import io.grpc.ManagedChannel;
@@ -17,6 +18,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -42,6 +45,20 @@ public class ClassifierGrpcAdapter implements ClassifierCatalogPort {
         boolean exists = stub.withDeadlineAfter(2, TimeUnit.SECONDS).hasDispatchService(
                 HasDispatchServiceRequest.newBuilder().setServiceCode(serviceCode).build()).getExists();
         if (!exists) throw new IllegalArgumentException("Служба не найдена в классификаторе: " + serviceCode);
+    }
+
+    @Override
+    public List<String> resolveAssignedServices(List<String> classifierCodes) {
+        var services = new LinkedHashSet<String>();
+        for (var code : classifierCodes) {
+            var entry = stub.withDeadlineAfter(2, TimeUnit.SECONDS).getClassifierEntry(
+                    GetClassifierEntryRequest.newBuilder().setClassifierCode(code).build());
+            entry.getPrimaryServicesList().forEach(service -> services.add(service.getCode()));
+            var routing = stub.withDeadlineAfter(2, TimeUnit.SECONDS).resolveRouting(
+                    ResolveRoutingRequest.newBuilder().setClassifierCode(code).build());
+            routing.getDecisionsList().forEach(decision -> services.add(decision.getService().getCode()));
+        }
+        return new ArrayList<>(services);
     }
 
     @Override

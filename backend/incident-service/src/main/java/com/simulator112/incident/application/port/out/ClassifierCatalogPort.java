@@ -7,6 +7,8 @@ public interface ClassifierCatalogPort {
 
     void requireService(String serviceCode);
 
+    List<String> resolveAssignedServices(List<String> classifierCodes);
+
     List<Candidate> search(String query, int limit, List<String> includedCodes);
 
     record Candidate(String code, String categoryName, String finalName) {}

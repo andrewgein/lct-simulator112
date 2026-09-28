@@ -4,6 +4,7 @@ import com.simulator112.incident.application.port.in.GenerateIncidentDraftUseCas
 import com.simulator112.incident.application.service.IncidentGenerationException;
 import com.simulator112.incident.application.service.ClassifierUnavailableException;
 import com.simulator112.incident.application.service.IncidentGenerationLimitException;
+import com.simulator112.incident.application.service.OllamaUnavailableException;
 import org.springframework.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -26,6 +27,14 @@ class IncidentGenerationControllerTest {
         var response = new IncidentExceptionHandler().generationFailed(new ClassifierUnavailableException(null));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
         assertThat(response.getBody().message()).isEqualTo("Не удалось получить коды классификатора. Попробуйте позже");
+    }
+
+    @Test
+    void reportsOllamaConnectionFailureSeparately() {
+        var response = new IncidentExceptionHandler().generationFailed(new OllamaUnavailableException(
+                "Нет соединения с Ollama. Проверьте доступность сервера модели", new java.net.ConnectException()));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+        assertThat(response.getBody().message()).contains("Нет соединения с Ollama");
     }
 
     @Test
