@@ -27,8 +27,12 @@ public final class PatchSelectionStep extends JsonResponseStep<List<String>> {
         var messages = new ArrayList<IncidentLanguageModelPort.Message>();
         messages.add(new IncidentLanguageModelPort.Message("system", """
                 Выбери ТОЛЬКО поля, которые пользователь попросил изменить в существующем сценарии.
-                Ответ только JSON: {"paths":["/difficulty","/address/city"]}.
-                paths — от 1 до 20 JSON-путей к существующим полям; НЕ создавай текст сценария.
+                Ответ только JSON: {"paths":["/address"]}.
+                paths — от 1 до 20 JSON-путей к полям; НЕ создавай текст сценария.
+                Если просят заполнить целую группу полей, выбирай путь к группе, а не одно
+                из её полей: для адреса целиком /address, для одного города /address/city;
+                для заявителя целиком /preparedCardTemplate/applicant, а не его отдельное поле.
+                Не выбирай уже заполненное поле вместо пустых полей запрошенной группы.
                 Укажи только явно затронутые поля, не добавляй соседние поля.
                 Допустимые пути перечислены шагами ниже. Не выбирай id, position,
                 initialAssignment и assignedServices. Индексы массивов начинаются с 0.

@@ -98,6 +98,23 @@ class IncidentGenerationControllerTest {
     }
 
     @Test
+    void streamsLinkageFailureWithoutExposingServerInternals() throws Exception {
+        var mapper = new ObjectMapper();
+        GenerateIncidentDraftUseCase useCase = command -> {
+            command.onStatus().accept("Генерирую карточку");
+            throw new NoClassDefFoundError("com/simulator112/classifier/grpc/contract/ClassifierServiceOuterClass");
+        };
+        var mvc = MockMvcBuilders.standaloneSetup(new IncidentGenerationController(useCase, mapper)).build();
+        var request = mvc.perform(post("/api/v1/incidents/generate/stream")
+                .contentType("application/json").content("{\"messages\":[{\"role\":\"user\",\"content\":\"Пожар\"}],\"draft\":{}}"))
+                .andReturn();
+        var response = mvc.perform(asyncDispatch(request)).andReturn().getResponse();
+        assertThat(response.getContentAsString(StandardCharsets.UTF_8))
+                .contains("event:status", "event:error\ndata:\"Внутренняя ошибка сервера при генерации сценария\"\n\n")
+                .doesNotContain("ClassifierServiceOuterClass");
+    }
+
+    @Test
     void delegatesToUseCaseAndPreservesHttpResponseShape() {
         var mapper = new ObjectMapper();
         var draft = mapper.readTree("{\"title\":\"Пожар\"}");

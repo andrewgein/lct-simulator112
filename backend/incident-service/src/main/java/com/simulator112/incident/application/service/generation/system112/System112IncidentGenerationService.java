@@ -119,14 +119,4 @@ public final class System112IncidentGenerationService extends AbstractIncidentGe
         return validateResponse(result, codes, services, command);
     }
 
-    @Override
-    protected boolean isNewDraft(JsonNode draft) {
-        if (!"SYSTEM_112".equals(draft.path("targetType").asText())
-                || !draft.path("title").asText("").isBlank()
-                || !draft.path("stages").isEmpty() || !draft.path("dialogueCriteria").isEmpty()) return false;
-        for (var field : draft.path("address")) if (field.isTextual() && !field.asText().isBlank()
-                || field.isNumber() && field.asInt() != 0) return false;
-        return true;
-    }
-
 }

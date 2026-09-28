@@ -22,7 +22,10 @@ class IncidentPatchStepOrchestrationTest {
         when(catalog.search(anyString(), anyInt(), anyList()))
                 .thenReturn(List.of(new ClassifierCatalogPort.Candidate("1050101", "Пожары", "Пожар")));
         when(catalog.resolveAssignedServices(anyList())).thenReturn(List.of("MCHS"));
-        return new IncidentDraftGenerationService(catalog, model, new GeneratedIncidentPatchValidator(mapper), mapper);
+        return new IncidentDraftGenerationService(catalog, messages ->
+                messages.getFirst().content().contains("Определи намерение")
+                        ? "{\"intent\":\"UPDATE\"}" : model.generate(messages),
+                new GeneratedIncidentPatchValidator(mapper), mapper);
     }
 
     private GenerateIncidentDraftUseCase.Command command(String text, String draft) {
@@ -51,6 +54,47 @@ class IncidentPatchStepOrchestrationTest {
         assertThat(result.incident().path("address").path("city").asText()).isEqualTo("Москва");
         assertThat(result.incident().path("address").has("street")).isFalse();
         assertThat(result.incident().has("title")).isFalse();
+    }
+
+    @Test
+    void retriesAddressPatchThatOnlyRepeatsExistingCity() {
+        var attempts = new java.util.concurrent.atomic.AtomicInteger();
+        var generator = service(messages -> {
+            if (messages.getFirst().content().contains("Выбери ТОЛЬКО поля"))
+                return "{\"paths\":[\"/address\"]}";
+            if (attempts.incrementAndGet() == 1)
+                return "{\"incident\":{\"address\":{\"city\":\"Москва\"}}}";
+            return "{\"incident\":{\"address\":{\"city\":\"Москва\",\"street\":\"Ленина\",\"house\":\"12\"}}}";
+        });
+        var result = generator.generate(command("Можешь заполнить адрес?", """
+                {"targetType":"SYSTEM_112","title":"","difficulty":"NORMAL",
+                "address":{"city":"Москва","street":"","house":""},"stages":[],"dialogueCriteria":[]}
+                """));
+        assertThat(attempts.get()).isEqualTo(2);
+        assertThat(result.incident().path("address").path("street").asText()).isEqualTo("Ленина");
+        assertThat(result.incident().path("address").path("house").asText()).isEqualTo("12");
+        assertThat(result.incident().has("title")).isFalse();
+    }
+
+    @Test
+    void convertsStructuredApplicantAddressToFormText() {
+        var generator = service(messages -> {
+            if (messages.getFirst().content().contains("Выбери ТОЛЬКО поля"))
+                return "{\"paths\":[\"/preparedCardTemplate/applicant\"]}";
+            return """
+                    {"incident":{"preparedCardTemplate":{"applicant":{"firstName":"Анна",
+                    "lastName":"Смирнова","phone":"+79990000001",
+                    "address":{"city":"Москва","street":"Ленина","house":12,"apartment":5}}}}}
+                    """;
+        });
+        var result = generator.generate(command("Можешь заполнить заявителя?", """
+                {"targetType":"DDS","title":"","preparedCardTemplate":{"classifierCodes":[""],"applicant":null},
+                "initialAssignment":{"emergencyService":""},"stages":[]}
+                """));
+        var applicant = result.incident().path("preparedCardTemplate").path("applicant");
+        assertThat(applicant.path("firstName").asText()).isEqualTo("Анна");
+        assertThat(applicant.path("address").asText()).isEqualTo("Москва, Ленина, д. 12, кв. 5");
+        assertThat(result.incident().has("stages")).isFalse();
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.simulator112.incident.adapter.in.rest;
 
 import com.simulator112.incident.application.port.in.GenerateIncidentDraftUseCase;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -21,6 +23,7 @@ import java.util.List;
 @RequestMapping("/api/v1/incidents/generate")
 @RequiredArgsConstructor
 public class IncidentGenerationController {
+    private static final Logger log = LoggerFactory.getLogger(IncidentGenerationController.class);
     private final GenerateIncidentDraftUseCase generateDraft;
     private final ObjectMapper mapper;
 
@@ -49,6 +52,14 @@ public class IncidentGenerationController {
                 var result = generateDraft.generate(command(request, status -> send(emitter, "status", status)));
                 send(emitter, "result", new GenerateResponse(result.message(), result.incident()));
                 emitter.complete();
+            } catch (LinkageError e) {
+                log.error("Incident generation failed due to a missing or incompatible dependency", e);
+                try {
+                    send(emitter, "error", "Внутренняя ошибка сервера при генерации сценария");
+                    emitter.complete();
+                } catch (RuntimeException disconnected) {
+                    emitter.completeWithError(disconnected);
+                }
             } catch (Exception e) {
                 var message = e instanceof com.simulator112.incident.application.service.ClassifierUnavailableException
                         || e instanceof com.simulator112.incident.application.service.IncidentGenerationLimitException
