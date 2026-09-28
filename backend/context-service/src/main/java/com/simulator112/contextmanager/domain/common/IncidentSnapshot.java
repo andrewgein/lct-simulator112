@@ -1,5 +1,6 @@
 package com.simulator112.contextmanager.domain.common;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +29,8 @@ public class IncidentSnapshot {
     private int cardVictimCount;
     private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();
     private String initialAssignmentService;
+    private Instant createdAt;
+    private Instant updatedAt;
     private List<ServiceReaction> serviceReactions = new ArrayList<>();
     private List<StageSnapshot> stages = new ArrayList<>();
 }

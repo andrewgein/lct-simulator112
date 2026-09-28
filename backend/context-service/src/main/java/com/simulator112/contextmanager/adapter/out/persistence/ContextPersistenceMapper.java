@@ -44,7 +44,8 @@ final class ContextPersistenceMapper {
         target.setSolutionCards(source.getSolutionContexts().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         if (source.getDialogContext() != null) {
             target.setDialog(new DialogTranscript(source.getDialogContext().getTranscript().stream()
-                    .map(value -> new Phrase(value.getSpeaker(), value.getText(), value.getCallId())).toList()));
+                    .map(value -> new Phrase(value.getSpeaker(), value.getText(), value.getCallId())).toList(),
+                    source.getDialogContext().getCreatedAt(), source.getDialogContext().getUpdatedAt()));
         }
         return target;
     }
@@ -57,6 +58,7 @@ final class ContextPersistenceMapper {
         target.setTargetType(source.getTargetType()); target.setDifficulty(source.getDifficulty());
         target.setExecutionMode(source.getExecutionMode()); target.setUserId(source.getUserId());
         target.setStatus(source.getStatus()); target.setActiveCallId(source.getActiveCallId()); target.setDialogStatus(source.getDialogStatus());
+        target.setCreatedAt(source.getCreatedAt()); target.setUpdatedAt(source.getUpdatedAt());
         source.getIncidents().stream().map(ContextPersistenceMapper::toEntity).forEach(target::attachIncidentContext);
         source.getSolutionCards().stream().map(ContextPersistenceMapper::toEntity).forEach(target::attachSolutionContext);
         if (source.getDialog() != null) {
@@ -65,6 +67,8 @@ final class ContextPersistenceMapper {
             dialog.setTranscript(source.getDialog().phrases().stream()
                     .map(value -> new com.simulator112.contextmanager.adapter.out.persistence.entity.common.Phrase(value.speaker(), value.text(), value.callId()))
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+            dialog.setCreatedAt(source.getDialog().createdAt());
+            dialog.setUpdatedAt(source.getDialog().updatedAt());
             target.attachDialogContext(dialog);
         }
         return target;
@@ -81,6 +85,7 @@ final class ContextPersistenceMapper {
         target.setCardApplicant(toDomain(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
+        target.setCreatedAt(source.getCreatedAt()); target.setUpdatedAt(source.getUpdatedAt());
         target.setServiceReactions(source.getServiceReactions().stream().map(ContextPersistenceMapper::toDomain)
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         target.setStages(source.getStages().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
@@ -97,6 +102,7 @@ final class ContextPersistenceMapper {
         target.setCardApplicant(toEntity(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
+        target.setCreatedAt(source.getCreatedAt()); target.setUpdatedAt(source.getUpdatedAt());
         source.getServiceReactions().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addServiceReaction);
         source.getStages().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addStage);
         return target;
@@ -205,6 +211,7 @@ final class ContextPersistenceMapper {
         target.setApplicant(toEntity(source.getApplicant())); target.setVictimCount(source.getVictimCount());
         target.setAdditionalInfo(new HashMap<>(source.getAdditionalInfo())); target.setAdditionalInfoProvided(source.isAdditionalInfoProvided());
         target.setIncidentTypes(new ArrayList<>(source.getIncidentTypes())); target.setServices(new ArrayList<>(source.getServices()));
+        target.setCreatedAt(source.getCreatedAt());
         return target;
     }
 
