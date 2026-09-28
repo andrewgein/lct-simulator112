@@ -13,14 +13,12 @@ const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
   <wa-callout id="dds-form-error" variant="danger" hidden></wa-callout>
   <section class="wa-stack wa-gap-m">
     <h2 class="wa-heading-xl">Основное</h2>
-    <div class="wa-grid">
-      <wa-input name="title" label="Название" value={incident.title || ""} required></wa-input>
-      <wa-select name="difficulty" label="Сложность" value={incident.difficulty || "NORMAL"} required>
-        <wa-option value="EASY">Лёгкая</wa-option>
-        <wa-option value="NORMAL">Средняя</wa-option>
-        <wa-option value="HARD">Сложная</wa-option>
-      </wa-select>
-    </div>
+    <wa-input name="title" label="Название" value={incident.title || ""} required></wa-input>
+    <wa-select name="difficulty" label="Сложность" value={incident.difficulty || "NORMAL"} required>
+      <wa-option value="EASY">Лёгкая</wa-option>
+      <wa-option value="NORMAL">Средняя</wa-option>
+      <wa-option value="HARD">Сложная</wa-option>
+    </wa-select>
   </section>
   <AdminIncidentAddressCard address={incident.address} {dadataApiKey} />
   <DdsIncidentConstructor {incident} client:load />
@@ -84,11 +82,9 @@ const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
   #incident-form .dds-people { --min-column-size: 24rem; }
   #incident-form, #incident-form section { min-width: 0; }
   #incident-form .dds-timeline { margin: 0; padding: 0; list-style: none; }
-  #incident-form .dds-timeline li { min-width: 0; }
-  #incident-form .dds-timeline wa-card { display: block; }
-  #incident-form .dds-timeline wa-card::part(body) { padding: var(--wa-space-m); }
+  #incident-form .dds-stage-heading { min-width: 0; }
   #incident-form .dds-stage-meta { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
-  #incident-form .dds-call { --spacing: var(--wa-space-m); }
+  #incident-form .dds-stage-meta > span + span::before { content: "·"; margin-inline-end: var(--wa-space-s); }
   @media (max-width: 48rem) {
     #incident-form .dds-people { --min-column-size: 18rem; }
   }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import EditorDialog from "../EditorDialog.jsx";
+import { EditorAddCard, EditorCallCard, EditorCallRow, EditorStageContainer } from "../EditorContainers.jsx";
 import DdsCallEditor, { ddsCallValue, normalizeDdsCall } from "./DdsCallEditor.jsx";
 
 const STAGE_TYPES = [
@@ -38,16 +39,15 @@ export function validateTimeline(stages) {
   });
 }
 
-function StageEditor({ stage, index, onSave }) {
-  const [open, setOpen] = useState(false);
+function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
   const [draft, setDraft] = useState(stage);
-  const edit = () => { setDraft(structuredClone(stage)); setOpen(true); };
+  useEffect(() => { if (open) setDraft(structuredClone(stage)); }, [open]);
   const update = (field, value) => setDraft((current) => ({ ...current, [field]: value }));
   return <>
-    <wa-button type="button" size="small" appearance="outlined" onClick={edit}>
-      Редактировать
+    <wa-button type="button" size="small" appearance="outlined" aria-label={`Изменить этап ${index + 1}`} onClick={onOpen}>
+      <wa-icon name="pencil" label="Изменить"></wa-icon>
     </wa-button>
-    <EditorDialog className="dds-stage-dialog" label={`Этап ${index + 1}`} open={open} onCancel={() => setOpen(false)} onSave={() => { onSave(draft); setOpen(false); }}>
+    <EditorDialog className="dds-stage-dialog" label={`Этап ${index + 1}`} open={open} onCancel={onClose} onSave={() => { onSave(draft); onClose(); }}>
       <div class="wa-stack wa-gap-l">
         <div class="wa-grid">
           <wa-input value={draft.title} label="Название этапа" required onInput={(event) => update("title", event.currentTarget.value)}>
@@ -69,22 +69,8 @@ function StageEditor({ stage, index, onSave }) {
         </div>
         <wa-textarea value={draft.description} label="Описание события" rows="3" onInput={(event) => update("description", event.currentTarget.value)}>
         </wa-textarea>
-        <section class="wa-stack wa-gap-m">
-          <div class="wa-split wa-align-items-center">
-            <h3 class="wa-heading-l">
-              Звонки этапа
-            </h3>
-            <wa-button type="button" appearance="outlined" variant="brand" onClick={() => update("calls", [...draft.calls, normalizeDdsCall()])}>
-              <wa-icon name="plus" slot="start">
-              </wa-icon>
-              Добавить звонок
-            </wa-button>
-          </div>
-          {draft.calls.map((call, callIndex) =>
-            <DdsCallEditor key={call.key} call={call} index={callIndex} onChange={(value) => update("calls", draft.calls.map((item) => item.key === call.key ? value : item))} onRemove={() => update("calls", draft.calls.filter((item) => item.key !== call.key))} />)}
-          <wa-textarea value={draft.expectedComment || ""} label="Ожидаемый смысл комментария (для ревью)" rows="2" onInput={(event) => update("expectedComment", event.currentTarget.value)}>
-          </wa-textarea>
-        </section>
+        <wa-textarea value={draft.expectedComment || ""} label="Ожидаемый смысл комментария (для ревью)" rows="2" onInput={(event) => update("expectedComment", event.currentTarget.value)}>
+        </wa-textarea>
       </div>
     </EditorDialog>
   </>;
@@ -92,6 +78,8 @@ function StageEditor({ stage, index, onSave }) {
 
 export default function DdsStageTimeline({ initialIncident, onChange }) {
   const [stages, setStages] = useState(() => initialIncident.stages?.length ? initialIncident.stages.map((stage) => ({ ...stage, description: stage.description || "", expectedComment: stage.expectedComment || "", calls: (stage.calls || []).map((call) => normalizeDdsCall(call)) })) : [initialStage()]);
+  const [editingStageId, setEditingStageId] = useState(null);
+  const [editingCallKey, setEditingCallKey] = useState(null);
   useEffect(() => onChange(stages), [stages]);
   const change = (next) => setStages(next);
   return <section class="wa-stack wa-gap-m">
@@ -103,42 +91,50 @@ export default function DdsStageTimeline({ initialIncident, onChange }) {
         Этапы идут друг за другом по времени, независимо от действий диспетчера.
       </p>
     </div>
-    <ol class="dds-timeline wa-stack wa-gap-s">
+    <ol class="dds-timeline wa-stack wa-gap-l">
       {stages.map((stage, index) =>
         <li key={stage.id}>
-          <wa-card appearance="filled-outlined">
-            <div class="wa-split wa-align-items-center">
-              <div class="wa-stack wa-gap-2xs">
-                <strong>
-                  {index + 1}. {stage.title || "Новый этап"}
-                </strong>
-                <span class="dds-stage-meta">
-                  {STAGE_TYPES.find((item) => item.value === stage.type)?.label} · {stage.timeLimitSeconds} сек. · {REACTION_STATUSES.find(([value]) => value === (stage.actualStatus || ""))?.[1]} · звонков: {stage.calls.length}
-                </span>
-              </div>
-              <div class="wa-cluster wa-gap-2xs">
-                <StageEditor stage={stage} index={index} onSave={(value) => change(stages.map((item) => item.id === stage.id ? value : item))} />
-                {index > 1 && <wa-button type="button" size="small" appearance="plain" aria-label="Вверх" disabled={index === 1} onClick={() => { const next = [...stages]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; change(next); }}>
-                  <wa-icon name="arrow-up">
-                  </wa-icon>
-                </wa-button>}
-                {index > 0 && index < stages.length - 1 && <wa-button type="button" size="small" appearance="plain" aria-label="Вниз" onClick={() => { const next = [...stages]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; change(next); }}>
-                  <wa-icon name="arrow-down">
-                  </wa-icon>
-                </wa-button>}
-                {index > 0 && <wa-button type="button" size="small" appearance="plain" variant="danger" aria-label="Удалить этап" onClick={() => change(stages.filter((item) => item.id !== stage.id))}>
-                  <wa-icon name="trash">
-                  </wa-icon>
-                </wa-button>}
-              </div>
+          <EditorStageContainer className="dds-timeline-stage" topControl={<wa-button type="button" size="small" appearance="plain" aria-label="Переместить этап выше" disabled={index <= 1} onClick={() => { const next = [...stages]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; change(next); }}><wa-icon name="chevron-up" label="Переместить выше"></wa-icon></wa-button>} bottomControl={<wa-button type="button" size="small" appearance="plain" aria-label="Переместить этап ниже" disabled={index === 0 || index === stages.length - 1} onClick={() => { const next = [...stages]; [next[index], next[index + 1]] = [next[index + 1], next[index]]; change(next); }}><wa-icon name="chevron-down" label="Переместить ниже"></wa-icon></wa-button>}>
+          <div class="stage-top dds-stage-heading wa-cluster wa-justify-content-space-between wa-align-items-center wa-gap-s">
+            <strong class="stage-number wa-heading-l">Этап {index + 1}</strong>
+            <wa-input class="stage-title" value={stage.title} aria-label={`Название этапа ${index + 1}`} placeholder="Название этапа" onInput={(event) => change(stages.map((item) => item.id === stage.id ? { ...item, title: event.currentTarget.value } : item))}></wa-input>
+            <div class="wa-cluster wa-gap-xs">
+              <StageEditor stage={stage} index={index} open={editingStageId === stage.id} onOpen={() => setEditingStageId(stage.id)} onClose={() => setEditingStageId(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? value : item))} />
+              {index > 0 && <wa-button type="button" size="small" appearance="outlined" variant="danger" aria-label="Удалить этап" onClick={() => change(stages.filter((item) => item.id !== stage.id))}>
+                <wa-icon name="trash" label="Удалить"></wa-icon>
+              </wa-button>}
             </div>
-          </wa-card>
+          </div>
+          <div class="dds-stage-meta wa-cluster wa-gap-s">
+            <span>{STAGE_TYPES.find((item) => item.value === stage.type)?.label}</span>
+            <span>{stage.timeLimitSeconds} сек.</span>
+            <span>{REACTION_STATUSES.find(([value]) => value === (stage.actualStatus || ""))?.[1]}</span>
+          </div>
+          <EditorCallRow>
+            {stage.calls.map((call, callIndex) => <EditorCallCard key={call.key} leftControl={<wa-button type="button" size="small" appearance="plain" aria-label={`Переместить звонок ${callIndex + 1} влево`} disabled={callIndex === 0} onClick={() => { const calls = [...stage.calls]; [calls[callIndex - 1], calls[callIndex]] = [calls[callIndex], calls[callIndex - 1]]; change(stages.map((item) => item.id === stage.id ? { ...item, calls } : item)); }}><wa-icon name="chevron-left" label="Переместить влево"></wa-icon></wa-button>} rightControl={<wa-button type="button" size="small" appearance="plain" aria-label={`Переместить звонок ${callIndex + 1} вправо`} disabled={callIndex === stage.calls.length - 1} onClick={() => { const calls = [...stage.calls]; [calls[callIndex], calls[callIndex + 1]] = [calls[callIndex + 1], calls[callIndex]]; change(stages.map((item) => item.id === stage.id ? { ...item, calls } : item)); }}><wa-icon name="chevron-right" label="Переместить вправо"></wa-icon></wa-button>}>
+              <div class="wa-cluster wa-justify-content-space-between wa-align-items-center">
+                <strong>Звонок {callIndex + 1}</strong>
+                <div class="wa-cluster wa-gap-xs">
+                  <wa-button type="button" size="small" appearance="outlined" aria-label={`Изменить звонок ${callIndex + 1}`} onClick={() => setEditingCallKey(call.key)}><wa-icon name="pencil" label="Изменить"></wa-icon></wa-button>
+                  <wa-button type="button" size="small" appearance="outlined" variant="danger" aria-label={`Удалить звонок ${callIndex + 1}`} onClick={() => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.filter((value) => value.key !== call.key) } : item))}><wa-icon name="trash" label="Удалить"></wa-icon></wa-button>
+                </div>
+              </div>
+              <span class="dds-stage-meta">{call.direction === "INBOUND" ? "Входящий" : "Исходящий"} · {call.counterparty === "SERVICE" ? "Другая служба" : "Бригада"}</span>
+              {(call.person?.lastName || call.person?.firstName) && <span class="dds-stage-meta">{[call.person.lastName, call.person.firstName].filter(Boolean).join(" ")}</span>}
+            </EditorCallCard>)}
+            <EditorAddCard className="editor-add-call-card">
+              <wa-button type="button" appearance="plain" variant="brand" onClick={() => { const call = normalizeDdsCall(); change(stages.map((item) => item.id === stage.id ? { ...item, calls: [...item.calls, call] } : item)); setEditingCallKey(call.key); }}>+ Добавить звонок</wa-button>
+            </EditorAddCard>
+          </EditorCallRow>
+          </EditorStageContainer>
+          {stage.calls.map((call, callIndex) => <DdsCallEditor key={call.key} call={call} index={callIndex} open={editingCallKey === call.key} onClose={() => setEditingCallKey(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.map((current) => current.key === call.key ? value : current) } : item))} />)}
         </li>)}
     </ol>
-    <wa-button type="button" appearance="outlined" variant="brand" onClick={() => change([...stages, newStage()])}>
-      <wa-icon name="plus" slot="start">
-      </wa-icon>
-      Добавить этап
-    </wa-button>
+    <EditorAddCard className="editor-add-stage-card">
+      <wa-button type="button" appearance="plain" variant="brand" onClick={() => { const stage = newStage(); change([...stages, stage]); setEditingStageId(stage.id); }}>
+        <wa-icon name="plus" slot="start"></wa-icon>
+        Добавить этап
+      </wa-button>
+    </EditorAddCard>
   </section>;
 }

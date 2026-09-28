@@ -16,6 +16,27 @@ const { incident = {}, type = incident.targetType === "DDS" ? "DDS" : "SYSTEM_11
   )}
   {type === "DDS" ? <DdsIncidentForm incident={incident} {mode} /> : <AdminIncidentForm incident={incident} {mode} />}
 </form>
+<style is:global>
+  #incident-form .editor-stage { position: relative; min-width: 0; padding: var(--wa-space-m); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: var(--wa-border-radius-l); }
+  #incident-form .editor-stage-content { padding-block: var(--wa-space-l); }
+  #incident-form .editor-stage .stage-top { flex-wrap: nowrap; }
+  #incident-form .editor-stage .stage-title { flex: 1 1 20rem; min-width: 0; }
+  #incident-form .editor-stage-control { position: absolute; z-index: 1; inset-inline-start: 50%; transform: translateX(-50%); }
+  #incident-form .editor-stage-control-top { inset-block-start: var(--wa-space-2xs); }
+  #incident-form .editor-stage-control-bottom { inset-block-end: var(--wa-space-2xs); }
+  #incident-form .editor-call-row { align-items: stretch; }
+  #incident-form .editor-call-row > .editor-call-item, #incident-form .editor-call-row > .editor-call-card, #incident-form .editor-call-row > .editor-add-call-card { flex: 1 1 15rem; width: 100%; max-width: 22rem; height: 12rem; box-sizing: border-box; }
+  #incident-form .editor-call-card { position: relative; display: block; width: 100%; box-sizing: border-box; }
+  #incident-form .editor-call-item > .editor-call-card { width: 100%; height: 100%; }
+  #incident-form .editor-call-content { padding-inline: var(--wa-space-l); }
+  #incident-form .editor-call-control { position: absolute; z-index: 1; inset-block-start: 50%; transform: translateY(-50%); }
+  #incident-form .editor-call-control-left { inset-inline-start: var(--wa-space-2xs); }
+  #incident-form .editor-call-control-right { inset-inline-end: var(--wa-space-2xs); }
+  #incident-form .editor-add-card { display: grid; border: var(--wa-border-width-s) dashed var(--wa-color-surface-border); text-align: center; place-items: center; }
+  #incident-form .editor-add-card::part(body) { width: 100%; height: 100%; padding: 0; }
+  #incident-form .editor-add-card wa-button, #incident-form .editor-add-card wa-button::part(button) { width: 100%; height: 100%; }
+  #incident-form .editor-add-stage-card { height: 5rem; }
+</style>
 <script>
   const incidentType = document.querySelector<HTMLInputElement>('#incident-type');
   incidentType?.addEventListener('change', () => {
