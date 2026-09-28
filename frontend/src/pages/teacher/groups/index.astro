@@ -63,13 +63,20 @@ try {
                 </div>
               </div>
               {students.length ? (
-                <ul class="student-list wa-stack wa-gap-2xs">
+                <ul class="student-list">
                   {students.map((student) => {
-                    const fullName = student.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
+                    const hasProfile = Boolean(student.profile);
+                    const fullName = hasProfile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
+                    const initials = hasProfile
+                      ? [student.profile.surname, student.profile.name].filter(Boolean).map((part) => part[0]).join("").toUpperCase()
+                      : "?";
                     return (
-                      <li class="student-row wa-split wa-gap-m">
-                        <strong>{fullName}</strong>
-                        <span>{student.email}</span>
+                      <li class="student-row" data-pending={!hasProfile}>
+                        <span class="student-avatar">{initials}</span>
+                        <div class="student-info">
+                          <strong class="student-name">{fullName}</strong>
+                          <span class="student-email">{student.email}</span>
+                        </div>
                       </li>
                     );
                   })}
@@ -109,12 +116,39 @@ try {
   .group-label { width: 100%; align-items: center; font-weight: var(--wa-font-weight-semibold); }
   .group-content { padding-block: var(--wa-space-xs); }
   .group-section-title, .student-list { margin: 0; }
-  .student-list { padding: 0; list-style: none; }
-  .student-row { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
-  .student-row:first-child { border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
-  .student-row span { color: var(--wa-color-text-quiet); }
+  .student-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: var(--wa-space-xs); padding: 0; list-style: none; }
+  .student-row {
+    display: flex;
+    align-items: center;
+    gap: var(--wa-space-s);
+    padding: var(--wa-space-s) var(--wa-space-m);
+    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    border-radius: var(--wa-border-radius-m);
+    background: var(--wa-color-surface-default);
+    transition: border-color var(--wa-transition-fast), background-color var(--wa-transition-fast);
+  }
+  .student-row:hover { border-color: var(--wa-color-brand-border-quiet); background: var(--wa-color-brand-fill-quiet); }
+  .student-avatar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--wa-border-radius-circle);
+    background: var(--wa-color-brand-fill-loud);
+    color: var(--wa-color-brand-on-loud);
+    font-size: var(--wa-font-size-s);
+    font-weight: var(--wa-font-weight-bold);
+  }
+  .student-row[data-pending="true"] .student-avatar { background: var(--wa-color-warning-fill-loud); color: var(--wa-color-warning-on-loud); }
+  .student-info { display: flex; min-width: 0; flex-direction: column; gap: var(--wa-space-3xs); }
+  .student-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .student-row[data-pending="true"] .student-name { color: var(--wa-color-warning-60); font-style: italic; font-weight: var(--wa-font-weight-normal); }
+  .student-email { overflow: hidden; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 48rem) {
-    .group-content > .wa-split, .student-row { align-items: flex-start; flex-direction: column; }
+    .group-content > .wa-split { align-items: flex-start; flex-direction: column; }
+    .student-list { grid-template-columns: 1fr; }
     .group-label wa-badge { display: none; }
   }
 </style>
