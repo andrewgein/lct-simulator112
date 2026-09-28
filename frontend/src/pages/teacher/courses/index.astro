@@ -6,7 +6,8 @@ import { getCourses } from "../../../features/course/api/CourseApi";
 
 export const prerender = false;
 if (!["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/");
-let courses = [];
+type Course = { id: string | number; title: string; description?: string | null };
+let courses: Course[] = [];
 let error = null;
 try {
   const response = await getCourses(Astro.locals.accessToken);
@@ -24,26 +25,60 @@ try {
   </MainHeader>
   {!error && !courses.length && <wa-callout>Курсов пока нет. Создайте программу из вводных материалов и практических заданий.</wa-callout>}
   {!error && courses.length > 0 && (
-    <div class="course-list wa-stack wa-gap-m">
-      {courses.map((course) => (
-        <wa-card class="course-card" orientation="horizontal" appearance="filled-outlined">
-          <div class="course-summary wa-stack wa-gap-xs">
-            <h2 class="wa-heading-l">{course.title}</h2>
-            <p>{course.description || "Описание не добавлено"}</p>
-          </div>
-          <div slot="actions" class="course-actions wa-cluster wa-gap-xs">
-            <wa-button href={`/teacher/courses/${course.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
-            <wa-button href={`/teacher/courses/${course.id}`} appearance="outlined" aria-label={`Редактировать курс ${course.title}`}><wa-icon name="pen" label="Редактировать"></wa-icon></wa-button>
-            <wa-button class="delete-course" type="button" appearance="outlined" variant="danger" data-id={course.id} data-title={course.title} aria-label={`Удалить курс ${course.title}`}><wa-icon name="trash"></wa-icon></wa-button>
-          </div>
-        </wa-card>
-      ))}
-    </div>
+    <section class="course-list-section" aria-label="Список курсов">
+      <div class="course-table-wrap">
+        <table class="course-table">
+          <thead>
+            <tr>
+              <th scope="col">Курс
+              </th>
+              <th scope="col">Описание
+              </th>
+              <th scope="col" class="course-actions-heading">
+                <span class="wa-visually-hidden">Действия
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {courses.map((course) => (
+              <tr>
+                <td class="course-title">
+                  <a href={`/teacher/courses/${course.id}`}>
+                    <strong>{course.title}
+                    </strong>
+                  </a>
+                </td>
+                <td class="course-description">{course.description || "Описание не добавлено"}
+                </td>
+                <td class="course-actions">
+                  <div class="course-action-buttons">
+                    <wa-button href={`/teacher/courses/${course.id}/statistics`} variant="brand" appearance="outlined">
+                      <wa-icon slot="start" name="chart-line">
+                      </wa-icon>
+                      Статистика
+                    </wa-button>
+                    <wa-button href={`/teacher/courses/${course.id}`} appearance="outlined" aria-label={`Редактировать курс ${course.title}`}>
+                      <wa-icon name="pen" label="Редактировать">
+                      </wa-icon>
+                    </wa-button>
+                    <wa-button class="delete-course" type="button" appearance="outlined" variant="danger" data-id={course.id} data-title={course.title} aria-label={`Удалить курс ${course.title}`}>
+                      <wa-icon name="trash" label="Удалить">
+                      </wa-icon>
+                    </wa-button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )}
 </Page>
 
 <script>
-  document.querySelectorAll('.delete-course').forEach((button) => {
+  document.querySelectorAll<HTMLElement & { loading: boolean }>('.delete-course').forEach((button) => {
     button.addEventListener('click', async () => {
       if (!confirm(`Удалить курс «${button.dataset.title}» без возможности восстановления?`)) return;
       button.loading = true;
@@ -58,8 +93,18 @@ try {
 </script>
 
 <style>
-  .course-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  @media (max-width: 48rem) { .course-card { display: block; } }
-  .course-summary h2, .course-summary p { margin: 0; }
-  .course-summary p { color: var(--wa-color-text-quiet); }
+  .course-list-section { width: 100%; }
+  .course-table-wrap { width: 100%; overflow-x: auto; border-block: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .course-table { width: 100%; border-collapse: collapse; background: var(--wa-color-surface-raised); text-align: left; }
+  .course-table th, .course-table td { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .course-table tbody tr:last-child td { border-block-end: 0; }
+  .course-table th { color: var(--wa-color-text-quiet); font-weight: var(--wa-font-weight-semibold); }
+  .course-table .course-actions-heading, .course-table .course-actions { width: 1%; text-align: right; white-space: nowrap; }
+  .course-table tbody tr:hover { background: var(--wa-color-brand-fill-quiet); }
+  .course-table a { color: var(--wa-color-text-link); text-decoration: none; }
+  .course-table a:hover { text-decoration: underline; }
+  .course-title, .course-description { overflow-wrap: anywhere; }
+  .course-title { min-width: 12rem; }
+  .course-description { color: var(--wa-color-text-quiet); min-width: 16rem; }
+  .course-action-buttons { display: flex; justify-content: flex-end; gap: var(--wa-space-xs); }
 </style>
