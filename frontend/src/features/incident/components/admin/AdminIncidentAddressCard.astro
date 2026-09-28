@@ -2,12 +2,12 @@
 import AddressField from "../../../../layouts/AddressField.jsx";
 
 /** @typedef {import("../../contract/Incident").IncidentAddress} IncidentAddress */
-/** @type {{ address?: Partial<IncidentAddress>, dadataApiKey?: string }} */
-const { address = {}, dadataApiKey = "" } = Astro.props;
+/** @type {{ address?: Partial<IncidentAddress>, dadataApiKey?: string, nested?: boolean }} */
+const { address = {}, dadataApiKey = "", nested = false } = Astro.props;
 const fullAddress = [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(", ");
 ---
 <section id="incident-address-section" class="wa-stack wa-gap-m">
-  <h2 class="wa-heading-xl">Адрес</h2>
+  {nested ? <h3 class="wa-heading-l">Адрес</h3> : <h2 class="wa-heading-xl">Адрес</h2>}
   <AddressField id="incident-main-address" label="Полный адрес" value={fullAddress} {dadataApiKey} client:load />
   <div class="wa-grid">
     <wa-input name="address.city" label="Город" value={address.city || ""} required>

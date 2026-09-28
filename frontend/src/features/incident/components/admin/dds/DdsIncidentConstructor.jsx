@@ -83,13 +83,10 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           </wa-select>
         </div>, serviceSelectHost)}
       <section class="wa-stack wa-gap-m">
-        <div>
-          <h2 class="wa-heading-xl">Подготовленная карточка</h2>
-          <p class="dds-section-hint">Данные, которые поступают в ДДС до начала обработки происшествия.</p>
-        </div>
+        <h3 class="wa-heading-l">Тип происшествия</h3>
         <div class="wa-stack wa-gap-s">
           {codes.map((code, index) => <div class="dds-classifier-row wa-flank:end wa-gap-xs" key={index}>
-            <IncidentTypeSelect classifierState={classifierState} id={`dds-card-type-${index}`} name={null} value={code} excludedValues={codes.filter((_, codeIndex) => codeIndex !== index)} required onChange={(value) => changeCode(index, value)} />
+            <IncidentTypeSelect classifierState={classifierState} id={`dds-card-type-${index}`} name={null} value={code} excludedValues={codes.filter((_, codeIndex) => codeIndex !== index)} required label="Тип" onChange={(value) => changeCode(index, value)} />
             {index > 0 && <wa-button type="button" appearance="outlined" variant="danger" aria-label="Удалить тип происшествия" onClick={() => setPrepared((current) => ({ ...current, classifierCodes: codes.filter((_, codeIndex) => codeIndex !== index), additionalInfo: {} }))}><wa-icon name="trash" label="Удалить тип происшествия"></wa-icon></wa-button>}
           </div>)}
           {codes.every(Boolean) && codes.length < entriesCount && <wa-button class="dds-add-type" type="button" appearance="plain" variant="brand" onClick={() => setPrepared((current) => ({ ...current, classifierCodes: [...codes, ""] }))}><wa-icon name="plus" slot="start"></wa-icon>Добавить тип происшествия</wa-button>}

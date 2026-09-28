@@ -19,8 +19,14 @@ const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
       <wa-option value="HARD">Сложная</wa-option>
     </wa-select>
   </section>
-  <AdminIncidentAddressCard address={incident.address} {dadataApiKey} />
-  <DdsIncidentConstructor {incident} client:load />
+  <div class="wa-stack wa-gap-m">
+    <div>
+      <h2 class="wa-heading-xl">Подготовленная карточка</h2>
+      <p class="dds-section-hint">Данные, которые поступают в ДДС до начала обработки происшествия.</p>
+    </div>
+    <AdminIncidentAddressCard address={incident.address} {dadataApiKey} nested />
+    <DdsIncidentConstructor {incident} client:load />
+  </div>
 </div>
 <script>
   const form = document.querySelector('#incident-form');
