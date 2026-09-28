@@ -30,7 +30,7 @@ spring:
 review:
   grpc:
     host: ${REVIEW_GRPC_HOST:localhost}
-    port: ${REVIEW_GRPC_PORT:9094}
+    port: ${REVIEW_GRPC_PORT:9096}
 
 storage:
   s3:
