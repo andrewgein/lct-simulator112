@@ -118,10 +118,12 @@ public class IncidentDraftGenerationService implements GenerateIncidentDraftUseC
         List<ClassifierCatalogPort.Candidate> candidates = List.of();
         Exception classifierFailure = null;
         try {
-            candidates = classifierCatalog.search(searchQuery, 40, includedCodes);
+            candidates = classifierCatalog.search(searchQuery, dds ? 80 : 40, includedCodes);
         } catch (Exception e) {
+            if (dds) throw new IncidentGenerationException("Не удалось получить коды классификатора", e);
             classifierFailure = e;
         }
+        if (dds && candidates.isEmpty()) throw new IncidentGenerationException("No classifier candidates");
         var classifierNames = new LinkedHashMap<String, String>();
         for (var candidate : candidates) {
             classifierNames.put(candidate.code(), candidate.categoryName() + ": " + candidate.finalName());
@@ -141,11 +143,12 @@ public class IncidentDraftGenerationService implements GenerateIncidentDraftUseC
             for (var message : command.messages()) {
                 messages.add(new IncidentLanguageModelPort.Message(message.role(), message.content()));
             }
+            if (dds) return generateAndValidate(messages, classifierNames, classifierFailure, services, true, command);
             try {
-                return generateAndValidate(messages, classifierNames, classifierFailure, services, dds, command);
+                return generateAndValidate(messages, classifierNames, classifierFailure, services, false, command);
             } catch (IncidentGenerationException e) {
                 if (e.getClass() != IncidentGenerationException.class) throw e;
-                return generateAndValidate(messages, classifierNames, classifierFailure, services, dds, command);
+                return generateAndValidate(messages, classifierNames, classifierFailure, services, false, command);
             }
         } catch (IncidentGenerationException e) {
             throw e;

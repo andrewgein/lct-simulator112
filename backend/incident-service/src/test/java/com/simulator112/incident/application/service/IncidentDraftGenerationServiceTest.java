@@ -54,6 +54,28 @@ class IncidentDraftGenerationServiceTest {
     }
 
     @Test
+    void ddsDoesNotRetryInvalidModelResponse() {
+        var calls = new java.util.concurrent.atomic.AtomicInteger();
+        var classifier = new ClassifierCatalogPort() {
+            @Override public void requireEntry(String code) {}
+            @Override public void requireService(String code) {}
+            @Override public List<Candidate> search(String query, int limit, List<String> codes) {
+                assertThat(limit).isEqualTo(80);
+                return List.of(new Candidate("1050101", "Пожары", "Пожар"));
+            }
+        };
+        var generator = new IncidentDraftGenerationService(classifier, messages -> {
+            calls.incrementAndGet();
+            return "{\"message\":\"Готово\",\"incident\":{\"stages\":[]}}";
+        }, new GeneratedIncidentPatchValidator(mapper), mapper);
+        assertThatThrownBy(() -> generator.generate(new GenerateIncidentDraftUseCase.Command(
+                List.of(new GenerateIncidentDraftUseCase.Message("user", "Сделай сценарий ДДС")),
+                mapper.readTree("{\"targetType\":\"DDS\"}"))))
+                .isInstanceOf(IncidentGenerationException.class);
+        assertThat(calls.get()).isEqualTo(1);
+    }
+
+    @Test
     void acceptsDdsPatchWithoutReplacingStages() {
         var result = generateDdsResponse("""
                 {"message":"Сложность изменена","incident":{"difficulty":"HARD"}}
@@ -230,7 +252,7 @@ class IncidentDraftGenerationServiceTest {
             @Override public List<Candidate> search(String query, int limit, List<String> codes) {
                 if (searched != null) searched.set(codes);
                 assertThat(query).isNotBlank();
-                assertThat(limit).isEqualTo(40);
+                assertThat(limit).isEqualTo(query.contains("ДДС") ? 80 : 40);
                 return List.of(new Candidate("1050101", "Пожары", "Пожар"));
             }
         };

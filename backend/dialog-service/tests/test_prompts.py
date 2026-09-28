@@ -24,6 +24,7 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("называй фамилию, имя и отчество (если указано)", prompt)
         self.assertNotIn("Полное имя для ответа оператору", prompt)
         self.assertNotIn("- Служба:", prompt)
+        self.assertIn("Ты знаешь их к началу звонка", prompt)
 
     def test_builds_other_service_scenario(self):
         call = _call(counterparty=CounterpartyType.SERVICE,
@@ -37,6 +38,9 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("Направление: входящий", prompt)
         self.assertIn("Служба: AMBULANCE", prompt)
         self.assertIn("Ты дежурный скорой помощи", prompt)
+        self.assertIn("СПЕЦИАЛЬНАЯ ЛОГИКА ПОВЕДЕНИЯ", prompt)
+        self.assertIn("Она определяет роль", prompt)
+        self.assertNotIn("ПРАВИЛА ПОВЕДЕНИЯ СОБЕСЕДНИКА", prompt)
 
     def test_builds_dds_brigade_scenario(self):
         call = _call(counterparty=CounterpartyType.BRIGADE,
@@ -48,6 +52,7 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("Собеседник: представитель бригады", prompt)
         self.assertIn("Направление: исходящий", prompt)
         self.assertIn("Бригада прибыла на место", prompt)
+        self.assertIn("Сообщай только факты, относящиеся к последней реплике оператора", prompt)
 
 
 def _call(**changes) -> CallScenario:
