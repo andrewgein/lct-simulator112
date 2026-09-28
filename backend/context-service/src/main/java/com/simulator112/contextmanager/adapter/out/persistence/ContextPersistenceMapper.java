@@ -170,7 +170,7 @@ final class ContextPersistenceMapper {
         CallSnapshot target = new CallSnapshot();
         target.setPersistenceId(source.getId()); target.setSourceId(source.getSourceCallId()); target.setPosition(source.getPosition());
         target.setQueuePosition(source.getQueuePosition()); target.setDirection(source.getDirection()); target.setCounterparty(source.getCounterparty());
-        target.setStatus(source.getStatus()); target.setKnownFacts(new ArrayList<>(source.getKnownFacts()));
+        target.setServiceCode(source.getServiceCode()); target.setStatus(source.getStatus()); target.setKnownFacts(new ArrayList<>(source.getKnownFacts()));
         target.setHiddenFacts(new ArrayList<>(source.getHiddenFacts())); target.setAiContext(source.getAiContext()); target.setGender(source.getGender());
         target.setEmotionalState(source.getEmotionalState()); target.setApplicant(toDomain(source.getApplicant()));
         return target;
@@ -180,7 +180,7 @@ final class ContextPersistenceMapper {
         CallContextEntity target = new CallContextEntity();
         target.setId(source.getPersistenceId()); target.setSourceCallId(source.getSourceId()); target.setPosition(source.getPosition());
         target.setQueuePosition(source.getQueuePosition()); target.setDirection(source.getDirection()); target.setCounterparty(source.getCounterparty());
-        target.setStatus(source.getStatus()); target.setKnownFacts(new ArrayList<>(source.getKnownFacts()));
+        target.setServiceCode(source.getServiceCode()); target.setStatus(source.getStatus()); target.setKnownFacts(new ArrayList<>(source.getKnownFacts()));
         target.setHiddenFacts(new ArrayList<>(source.getHiddenFacts())); target.setAiContext(source.getAiContext()); target.setGender(source.getGender());
         target.setEmotionalState(source.getEmotionalState()); target.setApplicant(toEntity(source.getApplicant()));
         return target;

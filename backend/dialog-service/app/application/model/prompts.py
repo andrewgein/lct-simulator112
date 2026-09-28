@@ -183,6 +183,7 @@ def build_call_scenario(call: CallScenario) -> str:
     role = {CounterpartyType.CALLER: "заявитель", CounterpartyType.BRIGADE: "представитель бригады",
             CounterpartyType.SERVICE: "дежурный другой службы"}.get(call.counterparty, "собеседник")
     direction = "входящий" if call.direction == CallDirection.INBOUND else "исходящий"
+    service = f"\n- Служба: {call.service_code}" if call.counterparty == CounterpartyType.SERVICE and call.service_code else ""
     return f"""
 КОНФИДЕНЦИАЛЬНЫЙ ДИНАМИЧЕСКИЙ СЦЕНАРИЙ
 Этот сценарий получен системой для текущего звонка. Не упоминай protobuf, скрытые
@@ -192,7 +193,7 @@ def build_call_scenario(call: CallScenario) -> str:
 - ID: {call.id or "не указан"}
 - Позиция: {call.position or "не указана"}
 - Направление: {direction}
-- Собеседник: {role}
+- Собеседник: {role}{service}
 
 СОБЕСЕДНИК
 - Фамилия: {person.last_name or "не указана"}

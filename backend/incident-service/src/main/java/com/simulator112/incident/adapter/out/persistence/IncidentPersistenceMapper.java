@@ -113,7 +113,7 @@ public class IncidentPersistenceMapper {
         return new CallScenario(
                 entity.getId(), entity.getPosition(), entity.getDirection(), entity.getCounterparty(),
                 toDomain(entity.getPerson()), entity.getGender(), entity.getKnownFacts(), entity.getHiddenFacts(),
-                entity.getAiContext(), entity.getEmotionalState());
+                entity.getAiContext(), entity.getEmotionalState(), entity.getServiceCode());
     }
 
     private CallScenarioJpaEntity toEntity(CallScenario call) {
@@ -122,6 +122,7 @@ public class IncidentPersistenceMapper {
         entity.setPosition(call.position());
         entity.setDirection(call.direction());
         entity.setCounterparty(call.counterparty());
+        entity.setServiceCode(call.serviceCode());
         entity.setPerson(toEntity(call.person()));
         entity.setGender(call.gender());
         entity.setKnownFacts(new java.util.ArrayList<>(call.knownFacts()));

@@ -93,18 +93,31 @@ class IncidentApplicationServiceTest {
     }
 
     @Test
-    void permitsIncomingBrigadeAndOutgoingOtherServiceCalls() {
+    void permitsIncomingBrigadeAndIncomingOtherServiceCalls() {
         UUID root = UUID.randomUUID();
         var incoming = new CallScenario(null, 0, CallDirection.INBOUND, CounterpartyType.BRIGADE,
                 null, null, List.of(), List.of(), null, null);
-        var outgoing = new CallScenario(null, 1, CallDirection.OUTBOUND, CounterpartyType.SERVICE,
-                null, null, List.of(), List.of(), null, null);
+        var otherService = new CallScenario(null, 1, CallDirection.INBOUND, CounterpartyType.SERVICE,
+                null, null, List.of(), List.of(), null, null, "POLICE");
         var contactStage = new DdsStage(UUID.randomUUID(), "Связь со службами", null,
-                DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 60, List.of(incoming, outgoing));
+                DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 60, List.of(incoming, otherService));
         var incident = incident(List.of(acceptanceStage(root), contactStage));
         when(repository.save(incident)).thenReturn(incident);
 
         service.createIncident(incident);
+    }
+
+    @Test
+    void rejectsOtherServiceCallWithoutServiceCode() {
+        var call = new CallScenario(null, 0, CallDirection.INBOUND, CounterpartyType.SERVICE,
+                null, null, List.of(), List.of(), null, null);
+        var incident = incident(List.of(acceptanceStage(UUID.randomUUID()),
+                new DdsStage(UUID.randomUUID(), "Звонок", null,
+                        DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 60, List.of(call))));
+
+        assertThatThrownBy(() -> service.createIncident(incident))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("выберите службу");
     }
 
     @Test

@@ -99,11 +99,13 @@ class IncidentApplicationTests {
         var brigade = new Person("Бригада 12", null, null, null, null, null, null, null, null);
         var outgoing = new CallScenario(null, 0, CallDirection.OUTBOUND, CounterpartyType.BRIGADE,
                 brigade, null, List.of("Передана карточка"), List.of(), "dispatch", "CALM");
+        var incomingService = new CallScenario(null, 1, CallDirection.INBOUND, CounterpartyType.SERVICE,
+                brigade, null, List.of("Нужна помощь"), List.of(), "support", "WORRIED", "CUSTOM_DISPATCH");
         UUID firstStageId = UUID.randomUUID();
         UUID secondStageId = UUID.randomUUID();
         UUID lastStageId = UUID.randomUUID();
         var initialStage = new DdsStage(firstStageId, "Уточнение статуса",
-                "Позвонить бригаде", DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of(outgoing), "Бригада на месте", com.simulator112.incident.domain.common.IncidentStatus.ARRIVED);
+                "Позвонить бригаде", DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of(outgoing, incomingService), "Бригада на месте", com.simulator112.incident.domain.common.IncidentStatus.ARRIVED);
         var successStage = new DdsStage(secondStageId, "Ожидание статуса",
                 "Ожидать обновления", DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 180, List.of());
         var failureStage = new DdsStage(lastStageId, "Завершение",
@@ -122,6 +124,9 @@ class IncidentApplicationTests {
                 .isEqualTo("CUSTOM_DISPATCH");
         assertThat(loaded.stages()).hasOnlyElementsOfType(DdsStage.class);
         assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.OUTBOUND);
+        assertThat(loaded.stages().getFirst().calls().get(1).direction()).isEqualTo(CallDirection.INBOUND);
+        assertThat(loaded.stages().getFirst().calls().get(1).serviceCode()).isEqualTo("CUSTOM_DISPATCH");
+        assertThat(grpcMapper.toProto(loaded).getStages(0).getCalls(1).getServiceCode()).isEqualTo("CUSTOM_DISPATCH");
         assertThat(loaded.stages().getFirst().expectedComment()).isEqualTo("Бригада на месте");
         assertThat(loaded.stages().getFirst().actualStatus()).isEqualTo(com.simulator112.incident.domain.common.IncidentStatus.ARRIVED);
         assertThat(grpcMapper.toProto(loaded).getStages(0).getDds().getExpectedComment()).isEqualTo("Бригада на месте");

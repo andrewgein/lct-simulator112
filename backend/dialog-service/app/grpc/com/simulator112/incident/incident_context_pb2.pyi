@@ -178,7 +178,7 @@ class DdsStageDetails(_message.Message):
     def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ..., expected_comment: _Optional[str] = ..., actual_status: _Optional[_Union[IncidentStatus, str]] = ...) -> None: ...
 
 class CallScenario(_message.Message):
-    __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state")
+    __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state", "service_code")
     ID_FIELD_NUMBER: _ClassVar[int]
     POSITION_FIELD_NUMBER: _ClassVar[int]
     DIRECTION_FIELD_NUMBER: _ClassVar[int]
@@ -189,6 +189,7 @@ class CallScenario(_message.Message):
     HIDDEN_FACTS_FIELD_NUMBER: _ClassVar[int]
     AI_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     EMOTIONAL_STATE_FIELD_NUMBER: _ClassVar[int]
+    SERVICE_CODE_FIELD_NUMBER: _ClassVar[int]
     id: str
     position: int
     direction: CallDirection
@@ -199,7 +200,8 @@ class CallScenario(_message.Message):
     hidden_facts: _containers.RepeatedScalarFieldContainer[str]
     ai_context: str
     emotional_state: str
-    def __init__(self, id: _Optional[str] = ..., position: _Optional[int] = ..., direction: _Optional[_Union[CallDirection, str]] = ..., counterparty: _Optional[_Union[CounterpartyType, str]] = ..., person: _Optional[_Union[Person, _Mapping]] = ..., gender: _Optional[_Union[Gender, str]] = ..., known_facts: _Optional[_Iterable[str]] = ..., hidden_facts: _Optional[_Iterable[str]] = ..., ai_context: _Optional[str] = ..., emotional_state: _Optional[str] = ...) -> None: ...
+    service_code: str
+    def __init__(self, id: _Optional[str] = ..., position: _Optional[int] = ..., direction: _Optional[_Union[CallDirection, str]] = ..., counterparty: _Optional[_Union[CounterpartyType, str]] = ..., person: _Optional[_Union[Person, _Mapping]] = ..., gender: _Optional[_Union[Gender, str]] = ..., known_facts: _Optional[_Iterable[str]] = ..., hidden_facts: _Optional[_Iterable[str]] = ..., ai_context: _Optional[str] = ..., emotional_state: _Optional[str] = ..., service_code: _Optional[str] = ...) -> None: ...
 
 class PreparedCardTemplate(_message.Message):
     __slots__ = ("classifier_codes", "applicant", "victim_count", "additional_info")

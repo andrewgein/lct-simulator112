@@ -54,6 +54,29 @@ class IncidentContextMapperTests {
     }
 
     @Test
+    void preservesIncomingOtherServiceCall() {
+        var call = CallScenario.newBuilder()
+                .setId(UUID.randomUUID().toString())
+                .setDirection(CallDirection.CALL_DIRECTION_INBOUND)
+                .setCounterparty(CounterpartyType.COUNTERPARTY_TYPE_SERVICE)
+                .setServiceCode("MCHS")
+                .build();
+        var result = IncidentContextMapper.toProto(IncidentContextMapper.toDomain(
+                IncidentContext.newBuilder()
+                        .setId(UUID.randomUUID().toString())
+                        .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.INCIDENT_TARGET_TYPE_DDS)
+                        .setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_EASY)
+                        .addStages(IncidentStage.newBuilder().setId(UUID.randomUUID().toString())
+                                .setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
+                                        .setType(com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_CALL_BRIGADE_FOR_STATUS)
+                                        .setTimeLimitSeconds(60))
+                                .addCalls(call))
+                        .build(), 0)).getStages(0).getCalls(0);
+        assertThat(result.getServiceCode()).isEqualTo("MCHS");
+        assertThat(result.getDirection()).isEqualTo(CallDirection.CALL_DIRECTION_INBOUND);
+    }
+
+    @Test
     void preservesCallParticipantWithoutUsingIncidentAddress() {
         Person caller = Person.newBuilder()
                 .setFirstName("Анна")

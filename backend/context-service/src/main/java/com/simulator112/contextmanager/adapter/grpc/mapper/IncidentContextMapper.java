@@ -80,6 +80,7 @@ public final class IncidentContextMapper {
         value.setSourceId(UUID.fromString(proto.getId())); value.setPosition(proto.getPosition());
         value.setDirection(CallDirection.valueOf(proto.getDirection().name().replace("CALL_DIRECTION_", "")));
         value.setCounterparty(CounterpartyType.valueOf(proto.getCounterparty().name().replace("COUNTERPARTY_TYPE_", "")));
+        value.setServiceCode(proto.getServiceCode().isBlank() ? null : proto.getServiceCode());
         value.setStatus(CallStatus.PENDING); value.setApplicant(toDomain(proto.getPerson()));
         if (proto.getGender() != com.simulator112.incident.grpc.contract.Gender.GENDER_UNSPECIFIED) {
             value.setGender(Gender.valueOf(proto.getGender().name().replace("GENDER_", "")));
@@ -129,7 +130,8 @@ public final class IncidentContextMapper {
                 .setDirection(com.simulator112.incident.grpc.contract.CallDirection.valueOf("CALL_DIRECTION_" + value.getDirection().name()))
                 .setCounterparty(com.simulator112.incident.grpc.contract.CounterpartyType.valueOf("COUNTERPARTY_TYPE_" + value.getCounterparty().name()))
                 .setPerson(toProto(value.getApplicant())).addAllKnownFacts(value.getKnownFacts()).addAllHiddenFacts(value.getHiddenFacts())
-                .setAiContext(orEmpty(value.getAiContext())).setEmotionalState(orEmpty(value.getEmotionalState()));
+                .setAiContext(orEmpty(value.getAiContext())).setEmotionalState(orEmpty(value.getEmotionalState()))
+                .setServiceCode(orEmpty(value.getServiceCode()));
         if (value.getGender() != null) builder.setGender(com.simulator112.incident.grpc.contract.Gender.valueOf("GENDER_" + value.getGender().name()));
         return builder.build();
     }

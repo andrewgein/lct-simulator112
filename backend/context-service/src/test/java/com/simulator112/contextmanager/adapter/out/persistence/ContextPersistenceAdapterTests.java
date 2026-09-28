@@ -116,6 +116,14 @@ class ContextPersistenceAdapterTests {
         stage.setStatus(StageStatus.ACTIVE);
         stage.setDds(new DdsStageDetails(DdsStageType.CALL_BRIGADE_FOR_STATUS, 90,
                 "Бригада прибыла", "Бригада на месте"));
+        var serviceCall = new com.simulator112.contextmanager.domain.common.CallSnapshot();
+        serviceCall.setSourceId(UUID.randomUUID());
+        serviceCall.setPosition(0);
+        serviceCall.setDirection(com.simulator112.contextmanager.domain.common.CallDirection.INBOUND);
+        serviceCall.setCounterparty(com.simulator112.contextmanager.domain.common.CounterpartyType.SERVICE);
+        serviceCall.setServiceCode("MCHS");
+        serviceCall.setStatus(com.simulator112.contextmanager.domain.common.CallStatus.PENDING);
+        stage.getCalls().add(serviceCall);
         incident.getStages().add(stage);
         context.getIncidents().add(incident);
 
@@ -126,6 +134,7 @@ class ContextPersistenceAdapterTests {
         assertThat(actual.getDds().getTimeLimitSeconds()).isEqualTo(90);
         assertThat(actual.getDds().getExpectedComment()).isEqualTo("Бригада прибыла");
         assertThat(actual.getDds().getComment()).isEqualTo("Бригада на месте");
+        assertThat(actual.getCalls().getFirst().getServiceCode()).isEqualTo("MCHS");
         assertThat(actual.getSystem112()).isNull();
 
         actual.getDds().setComment("Требуется подкрепление");

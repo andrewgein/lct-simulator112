@@ -96,6 +96,7 @@ public class IncidentGrpcMapper {
                 .addAllHiddenFacts(call.hiddenFacts())
                 .setAiContext(string(call.aiContext()))
                 .setEmotionalState(string(call.emotionalState()))
+                .setServiceCode(string(call.serviceCode()))
                 .build();
     }
 

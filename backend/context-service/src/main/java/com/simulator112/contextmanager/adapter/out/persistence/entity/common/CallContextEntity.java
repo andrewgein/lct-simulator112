@@ -58,6 +58,9 @@ public class CallContextEntity {
     @Column(nullable = false)
     private CounterpartyType counterparty;
 
+    @Column(name = "service_code", length = 100)
+    private String serviceCode;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CallStatus status;

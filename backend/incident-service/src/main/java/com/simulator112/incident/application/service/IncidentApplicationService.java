@@ -109,11 +109,20 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             if (stage.expectedComment() != null && !stage.expectedComment().isBlank() && stage.calls().isEmpty()) {
                 throw new IllegalArgumentException("Для ожидаемого комментария необходим звонок");
             }
-            if (stage.calls().stream().anyMatch(call -> call.direction() == null
-                    || (call.counterparty() != com.simulator112.incident.domain.common.CounterpartyType.BRIGADE
-                    && (call.counterparty() != com.simulator112.incident.domain.common.CounterpartyType.SERVICE
-                    || call.direction() != com.simulator112.incident.domain.common.CallDirection.OUTBOUND)))) {
-                throw new IllegalArgumentException("На этапе ДДС можно звонить бригаде или другой службе");
+            for (var call : stage.calls()) {
+                if (call.direction() == null || (call.counterparty() != com.simulator112.incident.domain.common.CounterpartyType.BRIGADE
+                        && call.counterparty() != com.simulator112.incident.domain.common.CounterpartyType.SERVICE)) {
+                    throw new IllegalArgumentException("На этапе ДДС можно звонить бригаде или другой службе");
+                }
+                if (call.counterparty() == com.simulator112.incident.domain.common.CounterpartyType.SERVICE) {
+                    if (call.serviceCode() == null || call.serviceCode().isBlank()) {
+                        throw new IllegalArgumentException("Для звонка другой службе выберите службу");
+                    }
+                    if (call.serviceCode().equals(incident.initialAssignment().emergencyService())) {
+                        throw new IllegalArgumentException("Для звонка выберите другую службу, а не службу ДДС");
+                    }
+                    classifierCatalog.requireService(call.serviceCode());
+                }
             }
         }
     }

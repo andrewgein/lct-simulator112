@@ -45,6 +45,7 @@ def call_from_proto(value: incident_pb.CallScenario) -> CallScenario:
         hidden_facts=tuple(value.hidden_facts),
         ai_context=value.ai_context,
         emotional_state=value.emotional_state,
+        service_code=value.service_code,
     )
 
 

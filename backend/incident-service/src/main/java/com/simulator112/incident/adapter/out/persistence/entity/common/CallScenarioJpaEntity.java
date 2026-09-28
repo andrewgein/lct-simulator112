@@ -40,6 +40,9 @@ public class CallScenarioJpaEntity {
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
+    @Column(name = "service_code", length = 100)
+    private String serviceCode;
+
     @Column(name = "ai_context", columnDefinition = "text")
     private String aiContext;
 

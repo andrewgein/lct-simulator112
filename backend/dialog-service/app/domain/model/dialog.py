@@ -57,6 +57,7 @@ class CallScenario:
     hidden_facts: tuple[str, ...]
     ai_context: str
     emotional_state: str
+    service_code: str = ""
 
 
 @dataclass(frozen=True)
