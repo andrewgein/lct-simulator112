@@ -89,7 +89,6 @@
 /**
  * @typedef {Object} InitialAssignment
  * @property {string} emergencyService
- * @property {string} classifierCode
  */
 
 /**

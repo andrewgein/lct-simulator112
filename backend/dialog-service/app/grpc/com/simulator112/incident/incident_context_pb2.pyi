@@ -223,14 +223,12 @@ class PreparedCardTemplate(_message.Message):
     def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., applicant: _Optional[_Union[Person, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class InitialAssignment(_message.Message):
-    __slots__ = ("classifier_code", "instructions", "emergency_service_code")
-    CLASSIFIER_CODE_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("instructions", "emergency_service_code")
     INSTRUCTIONS_FIELD_NUMBER: _ClassVar[int]
     EMERGENCY_SERVICE_CODE_FIELD_NUMBER: _ClassVar[int]
-    classifier_code: str
     instructions: str
     emergency_service_code: str
-    def __init__(self, classifier_code: _Optional[str] = ..., instructions: _Optional[str] = ..., emergency_service_code: _Optional[str] = ...) -> None: ...
+    def __init__(self, instructions: _Optional[str] = ..., emergency_service_code: _Optional[str] = ...) -> None: ...
 
 class Criteria(_message.Message):
     __slots__ = ("dialogue_criteria",)

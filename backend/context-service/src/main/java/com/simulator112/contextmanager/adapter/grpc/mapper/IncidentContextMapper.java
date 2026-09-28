@@ -46,7 +46,6 @@ public final class IncidentContextMapper {
         }
         if (proto.hasInitialAssignment()) {
             value.setInitialAssignmentService(proto.getInitialAssignment().getEmergencyServiceCode());
-            value.setInitialAssignmentClassifierCode(proto.getInitialAssignment().getClassifierCode());
             value.setInitialAssignmentInstructions(proto.getInitialAssignment().getInstructions());
         }
         value.setStages(proto.getStagesList().stream().map(IncidentContextMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
@@ -103,7 +102,7 @@ public final class IncidentContextMapper {
         if (value.getInitialAssignmentService() != null) builder.setInitialAssignment(
                 com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
                         .setEmergencyServiceCode(value.getInitialAssignmentService())
-                        .setClassifierCode(orEmpty(value.getInitialAssignmentClassifierCode())).setInstructions(orEmpty(value.getInitialAssignmentInstructions())));
+                        .setInstructions(orEmpty(value.getInitialAssignmentInstructions())));
         return builder.build();
     }
 

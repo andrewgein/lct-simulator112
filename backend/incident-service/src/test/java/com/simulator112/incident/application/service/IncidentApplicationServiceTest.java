@@ -163,28 +163,25 @@ class IncidentApplicationServiceTest {
     }
 
     @Test
-    void validatesPreparedAndInitialAssignmentClassifierCodes() {
+    void validatesPreparedCardClassifierCodes() {
         UUID root = UUID.randomUUID();
         DdsIncident incident = incident(List.of(acceptanceStage(root)));
         when(repository.save(incident)).thenReturn(incident);
 
         service.createIncident(incident);
 
-        verify(classifier, org.mockito.Mockito.times(2)).requireEntry("101");
+        verify(classifier).requireEntry("101");
         verify(classifier).requireService("MCHS");
     }
 
     @Test
-    void rejectsEmptyInitialAssignmentClassifierCode() {
-        UUID root = UUID.randomUUID();
-        DdsIncident source = incident(List.of(stage(root)));
-        DdsIncident incident = new DdsIncident(
-                source.id(), source.title(), source.address(), source.difficulty(), source.stages(),
-                source.preparedCardTemplate(), new InitialAssignment("MCHS", " ", null));
+    void acceptsInitialAssignmentWithoutClassifierCode() {
+        DdsIncident incident = incident(List.of(acceptanceStage(UUID.randomUUID())));
+        when(repository.save(incident)).thenReturn(incident);
 
-        assertThatThrownBy(() -> service.createIncident(incident))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Тип происшествия не может быть пустым");
+        service.createIncident(incident);
+
+        verify(classifier).requireEntry("101");
     }
 
     private DdsIncident incident(List<DdsStage> stages) {
@@ -194,7 +191,7 @@ class IncidentApplicationServiceTest {
     private DdsIncident incident(List<DdsStage> stages, List<String> classifierCodes) {
         return new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, stages, new PreparedCardTemplate(classifierCodes, null, 0, Map.of()),
-                new InitialAssignment("MCHS", "101", null));
+                new InitialAssignment("MCHS", null));
     }
 
     private DdsStage acceptanceStage(UUID id) {

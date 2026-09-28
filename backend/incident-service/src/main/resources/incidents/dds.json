@@ -87,7 +87,6 @@
     },
     "initialAssignment": {
       "emergencyService": "MCHS",
-      "classifierCode": "1050101",
       "instructions": "Направить ближайший пожарный расчёт к жилому дому."
     }
   },
@@ -179,7 +178,6 @@
     },
     "initialAssignment": {
       "emergencyService": "MOSGAZ",
-      "classifierCode": "13020500",
       "instructions": "Срочный выезд; не допускать источников огня и искры."
     }
   },
@@ -271,7 +269,6 @@
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "22020000",
       "instructions": "Срочно направить бригаду скорой помощи."
     }
   },
@@ -363,7 +360,6 @@
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "15060201",
       "instructions": "Направить наряд, соблюдать меры предосторожности."
     }
   },
@@ -455,7 +451,6 @@
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "15130600",
       "instructions": "Обеспечить удаление людей; не допускать манипуляций с предметом."
     }
   },
@@ -547,7 +542,6 @@
     },
     "initialAssignment": {
       "emergencyService": "MCHS",
-      "classifierCode": "1990043",
       "instructions": "Направить расчёт и оценить опасные материалы."
     }
   },
@@ -639,7 +633,6 @@
     },
     "initialAssignment": {
       "emergencyService": "MOSGAZ",
-      "classifierCode": "22340200",
       "instructions": "Срочный выезд; при симптомах организовать СМП."
     }
   },
@@ -731,7 +724,6 @@
     },
     "initialAssignment": {
       "emergencyService": "AMBULANCE",
-      "classifierCode": "2020000",
       "instructions": "Срочно направить СМП к месту ДТП."
     }
   },
@@ -823,7 +815,6 @@
     },
     "initialAssignment": {
       "emergencyService": "MCHS",
-      "classifierCode": "1010201",
       "instructions": "Оценить угрозу перехода огня на постройки."
     }
   },
@@ -915,7 +906,6 @@
     },
     "initialAssignment": {
       "emergencyService": "POLICE",
-      "classifierCode": "17011100",
       "instructions": "Направить ближайший наряд к подъезду."
     }
   }

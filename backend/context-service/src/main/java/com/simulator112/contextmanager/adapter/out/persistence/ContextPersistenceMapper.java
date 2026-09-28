@@ -80,7 +80,6 @@ final class ContextPersistenceMapper {
         target.setCardApplicant(toDomain(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
-        target.setInitialAssignmentClassifierCode(source.getInitialAssignmentClassifierCode());
         target.setInitialAssignmentInstructions(source.getInitialAssignmentInstructions());
         target.setServiceReactions(source.getServiceReactions().stream().map(ContextPersistenceMapper::toDomain)
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
@@ -97,7 +96,6 @@ final class ContextPersistenceMapper {
         target.setCardApplicant(toEntity(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
-        target.setInitialAssignmentClassifierCode(source.getInitialAssignmentClassifierCode());
         target.setInitialAssignmentInstructions(source.getInitialAssignmentInstructions());
         source.getServiceReactions().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addServiceReaction);
         source.getStages().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addStage);

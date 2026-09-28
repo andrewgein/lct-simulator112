@@ -111,7 +111,7 @@ public class IncidentGrpcMapper {
             com.simulator112.incident.domain.dds.InitialAssignment value) {
         return com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
                 .setEmergencyServiceCode(string(value.emergencyService()))
-                .setClassifierCode(string(value.classifierCode())).setInstructions(string(value.instructions())).build();
+                .setInstructions(string(value.instructions())).build();
     }
 
     private com.simulator112.incident.grpc.contract.Criteria criteria(

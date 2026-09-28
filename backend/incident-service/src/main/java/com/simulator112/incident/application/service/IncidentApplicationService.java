@@ -78,7 +78,6 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             }
             classifierCatalog.requireService(dds.initialAssignment().emergencyService());
             requireClassifierCodes(dds.preparedCardTemplate().classifierCodes());
-            requireClassifierCode(dds.initialAssignment().classifierCode());
             validateDdsStageCalls(dds);
             validateDdsTimeline(dds);
         }

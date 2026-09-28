@@ -51,9 +51,6 @@ public class IncidentJpaEntity {
     @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> preparedCardClassifierCodes = new ArrayList<>();
 
-    @Column(name = "initial_assignment_classifier_code")
-    private String initialAssignmentClassifierCode;
-
     @Column(name = "initial_assignment_instructions", columnDefinition = "text")
     private String initialAssignmentInstructions;
 

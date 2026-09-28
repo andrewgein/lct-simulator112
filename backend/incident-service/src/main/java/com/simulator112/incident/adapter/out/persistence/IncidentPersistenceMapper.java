@@ -23,8 +23,7 @@ public class IncidentPersistenceMapper {
                     new PreparedCardTemplate(entity.getPreparedCardClassifierCodes(),
                             toDomain(entity.getCardApplicant()), entity.getCardVictimCount(),
                             entity.getPreparedCardAdditionalInfo()),
-                    new InitialAssignment(entity.getEmergencyService(), entity.getInitialAssignmentClassifierCode(),
-                            entity.getInitialAssignmentInstructions()));
+                    new InitialAssignment(entity.getEmergencyService(), entity.getInitialAssignmentInstructions()));
         }
         List<System112Stage> stages = entity.getStages().stream().map(this::toSystem112Stage).toList();
         return new System112Incident(
@@ -56,7 +55,6 @@ public class IncidentPersistenceMapper {
             entity.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(card.additionalInfo()));
             InitialAssignment assignment = dds.initialAssignment();
             entity.setEmergencyService(assignment.emergencyService());
-            entity.setInitialAssignmentClassifierCode(assignment.classifierCode());
             entity.setInitialAssignmentInstructions(assignment.instructions());
         }
         return entity;

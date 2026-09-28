@@ -19,7 +19,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   const [services, setServices] = useState([]);
   const [servicesError, setServicesError] = useState("");
   const [prepared, setPrepared] = useState(() => normalizePrepared(incident.preparedCardTemplate));
-  const [assignment, setAssignment] = useState(() => ({ emergencyService: incident.initialAssignment?.emergencyService || "", classifierCode: incident.initialAssignment?.classifierCode || "" }));
+  const [assignment, setAssignment] = useState(() => ({ emergencyService: incident.initialAssignment?.emergencyService || "" }));
   const [timeline, setTimeline] = useState(null);
   const [incidentAddress, setIncidentAddress] = useState("");
   const stateRef = useRef({ prepared, assignment, timeline, classifier: classifierState.classifier });
@@ -44,7 +44,6 @@ export default function DdsIncidentConstructor({ incident = {} }) {
       const current = stateRef.current;
       if (!current.prepared.classifierCodes.length || current.prepared.classifierCodes.some((code) => !code)) throw new Error("Выберите хотя бы один тип происшествия для подготовленной карточки");
       if (!current.assignment.emergencyService) throw new Error("Выберите службу первичного назначения");
-      if (!current.assignment.classifierCode) throw new Error("Выберите тип происшествия первичного назначения");
       if (!current.timeline) throw new Error("Этапы ещё не готовы");
       validateTimeline(current.timeline, current.assignment.emergencyService);
       const requiredField = current.prepared.classifierCodes.flatMap((code) => findIncident(current.classifier, code)?.fields || []).find((field) => field.required && !current.prepared.additionalInfo[field.id]);
@@ -57,8 +56,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           additionalInfo: Object.fromEntries(Object.entries(current.prepared.additionalInfo).filter(([, value]) => value !== ""))
         },
         initialAssignment: {
-          emergencyService: current.assignment.emergencyService,
-          classifierCode: current.assignment.classifierCode
+          emergencyService: current.assignment.emergencyService
         },
         ...timelineValue(current.timeline)
       };
@@ -96,17 +94,14 @@ export default function DdsIncidentConstructor({ incident = {} }) {
       <section class="wa-stack wa-gap-m">
         <div>
           <h2 class="wa-heading-xl">Первичное назначение</h2>
-          <p class="dds-section-hint">Служба и классификация, с которыми карточка поступит диспетчеру.</p>
+          <p class="dds-section-hint">Служба ДДС, диспетчеру которой поступит карточка.</p>
         </div>
         {servicesError && <wa-callout variant="danger">
           {servicesError}
         </wa-callout>}
-        <div class="wa-grid">
-          <wa-select value={assignment.emergencyService} label="Служба ДДС" required onChange={(event) => setAssignment((current) => ({ ...current, emergencyService: event.currentTarget.value }))}>
-            {services.map((service) => <wa-option key={service.code} value={service.code}>{service.name}</wa-option>)}
-          </wa-select>
-          <IncidentTypeSelect classifierState={classifierState} id="dds-assignment-type" name={null} value={assignment.classifierCode} required onChange={(classifierCode) => setAssignment((current) => ({ ...current, classifierCode }))} />
-        </div>
+        <wa-select value={assignment.emergencyService} label="Служба ДДС" required onChange={(event) => setAssignment({ emergencyService: event.currentTarget.value })}>
+          {services.map((service) => <wa-option key={service.code} value={service.code}>{service.name}</wa-option>)}
+        </wa-select>
       </section>
       <DdsStageTimeline initialIncident={incident} onChange={setTimeline} services={services.filter((service) => service.code !== assignment.emergencyService)} />
     </div>

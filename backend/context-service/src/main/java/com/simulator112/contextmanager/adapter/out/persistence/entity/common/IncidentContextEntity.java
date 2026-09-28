@@ -112,7 +112,6 @@ public class IncidentContextEntity {
     private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();
 
     private String initialAssignmentService;
-    private String initialAssignmentClassifierCode;
 
     @Column(columnDefinition = "text")
     private String initialAssignmentInstructions;
