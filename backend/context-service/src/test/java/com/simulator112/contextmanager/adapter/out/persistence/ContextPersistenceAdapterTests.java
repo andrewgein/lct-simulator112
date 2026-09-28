@@ -9,13 +9,16 @@ import com.simulator112.contextmanager.domain.common.CallStatus;
 import com.simulator112.contextmanager.domain.common.ContextStatus;
 import com.simulator112.contextmanager.domain.common.CounterpartyType;
 import com.simulator112.contextmanager.domain.common.DialogProgressStatus;
+import com.simulator112.contextmanager.domain.common.DialogTranscript;
 import com.simulator112.contextmanager.domain.common.ExecutionMode;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;
+import com.simulator112.contextmanager.domain.common.Phrase;
 import com.simulator112.contextmanager.domain.common.ReactionStatus;
 import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
 import com.simulator112.contextmanager.domain.common.ServiceReaction;
+import com.simulator112.contextmanager.domain.common.SpeakerType;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.StageStatus;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
@@ -23,6 +26,7 @@ import com.simulator112.contextmanager.domain.dds.DdsStageDetails;
 import com.simulator112.contextmanager.domain.dds.DdsStageType;
 import com.simulator112.contextmanager.domain.system112.System112StageDetails;
 import com.simulator112.shared.dto.Difficulty;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -35,6 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 class ContextPersistenceAdapterTests {
     @Autowired
     private ContextStore store;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void roundTripsDomainAggregateWithoutLeakingJpaEntities() {
@@ -50,6 +57,7 @@ class ContextPersistenceAdapterTests {
         context.setExecutionMode(ExecutionMode.SEQUENTIAL);
         context.setStatus(ContextStatus.CREATED);
         context.setDialogStatus(DialogProgressStatus.IDLE);
+        context.setDialog(new DialogTranscript(java.util.List.of(new Phrase(SpeakerType.USER, "Здравствуйте", null))));
 
         IncidentSnapshot incident = new IncidentSnapshot();
         incident.setSourceId(UUID.randomUUID());
@@ -76,6 +84,8 @@ class ContextPersistenceAdapterTests {
         context.getIncidents().add(incident);
 
         TrainingContext saved = store.save(context);
+        entityManager.flush();
+        entityManager.clear();
         TrainingContext restored = store.findById(saved.getId()).orElseThrow();
 
         assertThat(restored.getThreshold3()).isEqualTo(40);
@@ -91,10 +101,21 @@ class ContextPersistenceAdapterTests {
                 .isEqualTo("MCHS");
         assertThat(restored.getIncidents().getFirst().getServiceReactions().getFirst().currentStatus())
                 .isEqualTo(ReactionStatus.ADDED);
+        assertThat(restored.getCreatedAt()).isNotNull();
+        assertThat(restored.getIncidents().getFirst().getCreatedAt()).isNotNull();
+        assertThat(restored.getDialog().createdAt()).isNotNull();
 
+        Instant contextCreatedAt = restored.getCreatedAt();
+        Instant incidentCreatedAt = restored.getIncidents().getFirst().getCreatedAt();
+        Instant dialogCreatedAt = restored.getDialog().createdAt();
         store.save(restored);
-        assertThat(store.findById(saved.getId()).orElseThrow().getIncidents().getFirst().getServiceReactions())
-                .hasSize(1);
+        entityManager.flush();
+        entityManager.clear();
+        TrainingContext savedAgain = store.findById(saved.getId()).orElseThrow();
+        assertThat(savedAgain.getIncidents().getFirst().getServiceReactions()).hasSize(1);
+        assertThat(savedAgain.getCreatedAt()).isEqualTo(contextCreatedAt);
+        assertThat(savedAgain.getIncidents().getFirst().getCreatedAt()).isEqualTo(incidentCreatedAt);
+        assertThat(savedAgain.getDialog().createdAt()).isEqualTo(dialogCreatedAt);
     }
 
     @Test

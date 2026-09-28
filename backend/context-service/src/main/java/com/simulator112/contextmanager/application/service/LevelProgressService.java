@@ -92,6 +92,12 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
             throw new IllegalArgumentException("Для отказа необходимо указать комментарий");
         }
         reaction.getHistory().add(new ReactionStatusEvent(status, now, normalizedComment));
+        if (status == ReactionStatus.ACCEPTED && incident.getStatus() == IncidentProgressStatus.ACTIVE) {
+            StageSnapshot stage = activeStage(incident);
+            if (stage.getDds().getType() == DdsStageType.ASSIGN_BRIGADE) {
+                advance(context, incident, stage, now);
+            }
+        }
         return toProgress(contextStore.save(context));
     }
 
@@ -162,6 +168,11 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
                     while (incident.getStatus() == IncidentProgressStatus.ACTIVE) {
                         StageSnapshot stage = activeStage(incident);
                         if (stage.getDeadlineAt() == null || stage.getDeadlineAt().isAfter(now)) break;
+                        if (stage.getDds().getType() == DdsStageType.ASSIGN_BRIGADE
+                                && incident.getServiceReactions().stream().noneMatch(reaction ->
+                                        reaction.getHistory().stream().anyMatch(event -> event.status() == ReactionStatus.ACCEPTED))) {
+                            break;
+                        }
                         advance(context, incident, stage, stage.getDeadlineAt());
                     }
                 });

@@ -39,7 +39,9 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("Служба: AMBULANCE", prompt)
         self.assertIn("Ты дежурный скорой помощи", prompt)
         self.assertIn("СПЕЦИАЛЬНАЯ ЛОГИКА ПОВЕДЕНИЯ", prompt)
-        self.assertIn("Она определяет роль", prompt)
+        self.assertIn("Она уточняет условия раскрытия фактов", prompt)
+        self.assertIn("Это звонок от тебя в ДДС", prompt)
+        self.assertIn("Никогда не угадывай и не произноси имя оператора", prompt)
         self.assertNotIn("ПРАВИЛА ПОВЕДЕНИЯ СОБЕСЕДНИКА", prompt)
 
     def test_builds_dds_brigade_scenario(self):
@@ -52,7 +54,9 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("Собеседник: представитель бригады", prompt)
         self.assertIn("Направление: исходящий", prompt)
         self.assertIn("Бригада прибыла на место", prompt)
-        self.assertIn("Сообщай только факты, относящиеся к последней реплике оператора", prompt)
+        self.assertIn("Это звонок оператора ДДС тебе", prompt)
+        self.assertIn("Это справочник, а не текст доклада", prompt)
+        self.assertIn("Если реплика непонятна", prompt)
 
 
 def _call(**changes) -> CallScenario:

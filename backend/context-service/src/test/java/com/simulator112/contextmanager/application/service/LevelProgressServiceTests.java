@@ -43,6 +43,7 @@ class LevelProgressServiceTests {
                 List.of(stage(rootId, DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE),
                         stage(nextId, DdsStageType.COMPLETE_INCIDENT, StageStatus.PENDING)));
         context.getIncidents().add(incident);
+        accept(incident);
         when(repository.findById(contextId)).thenReturn(Optional.of(context));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -52,6 +53,34 @@ class LevelProgressServiceTests {
         assertThat(progress.incidents().getFirst().dds().activeStageId()).isEqualTo(nextId);
         assertThat(incident.getStages().getFirst().getStatus()).isEqualTo(StageStatus.SUCCEEDED);
         assertThat(incident.getStages().get(1).getStatus()).isEqualTo(StageStatus.ACTIVE);
+    }
+
+    @Test
+    void acceptingAfterFirstDeadlineStartsNextStageWithFreshTimer() {
+        UUID contextId = UUID.randomUUID();
+        UUID firstId = UUID.randomUUID();
+        UUID nextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot first = stage(firstId, DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE);
+        first.setDeadlineAt(Instant.now().minusSeconds(10));
+        IncidentSnapshot incident = incident(UUID.randomUUID(), firstId, List.of(first,
+                stage(nextId, DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.PENDING)));
+        incident.setInitialAssignmentService("MCHS");
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.getProgress(contextId);
+        assertThat(incident.getActiveStageId()).isEqualTo(firstId);
+
+        var progress = service.applyReactionStatus(contextId, incident.getSourceId(), "MCHS",
+                ReactionStatus.ACCEPTED, null);
+
+        assertThat(progress.incidents().getFirst().dds().activeStageId()).isEqualTo(nextId);
+        StageSnapshot next = incident.getStages().get(1);
+        assertThat(progress.incidents().getFirst().dds().deadline()).isEqualTo(next.getDeadlineAt());
+        assertThat(next.getDeadlineAt()).isEqualTo(next.getStartedAt().plusSeconds(60));
+        assertThat(next.getStartedAt()).isAfter(first.getDeadlineAt());
     }
 
     @Test
@@ -83,7 +112,9 @@ class LevelProgressServiceTests {
         StageSnapshot first = stage(firstId, DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE);
         first.setDeadlineAt(Instant.now().minusSeconds(90));
         StageSnapshot second = stage(secondId, DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.PENDING);
-        context.getIncidents().add(incident(UUID.randomUUID(), firstId, List.of(first, second)));
+        IncidentSnapshot incident = incident(UUID.randomUUID(), firstId, List.of(first, second));
+        context.getIncidents().add(incident);
+        accept(incident);
         when(repository.findById(contextId)).thenReturn(Optional.of(context));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -103,7 +134,9 @@ class LevelProgressServiceTests {
         UUID activeId = UUID.randomUUID();
         StageSnapshot activeStage = stage(activeId, DdsStageType.COMPLETE_INCIDENT, StageStatus.ACTIVE);
         activeStage.setDeadlineAt(Instant.now().minusSeconds(1));
-        context.getIncidents().add(incident(UUID.randomUUID(), activeId, List.of(activeStage)));
+        IncidentSnapshot active = incident(UUID.randomUUID(), activeId, List.of(activeStage));
+        context.getIncidents().add(active);
+        accept(active);
         StageSnapshot later = stage(UUID.randomUUID(), DdsStageType.COMPLETE_INCIDENT, StageStatus.PENDING);
         StageSnapshot first = stage(UUID.randomUUID(), DdsStageType.ASSIGN_BRIGADE, StageStatus.PENDING);
         IncidentSnapshot pending = incident(UUID.randomUUID(), first.getSourceId(), List.of(first, later));
@@ -147,7 +180,7 @@ class LevelProgressServiceTests {
     }
 
     @Test
-    void storesReactionStatusHistoryWithoutAdvancingStage() {
+    void acceptanceImmediatelyStartsNextStage() {
         UUID contextId = UUID.randomUUID();
         UUID incidentId = UUID.randomUUID();
         UUID assignmentId = UUID.randomUUID();
@@ -171,7 +204,11 @@ class LevelProgressServiceTests {
         assertThat(progress.incidents().getFirst().serviceReactions().getFirst().currentStatus())
                 .isEqualTo(ReactionStatus.ACCEPTED);
         assertThat(progress.incidents().getFirst().serviceReactions().getFirst().history()).hasSize(3);
-        assertThat(incident.getActiveStageId()).isEqualTo(assignmentId);
+        assertThat(incident.getActiveStageId()).isEqualTo(responseId);
+        assertThat(incident.getStages().getFirst().getStatus()).isEqualTo(StageStatus.SUCCEEDED);
+        assertThat(incident.getStages().get(1).getStatus()).isEqualTo(StageStatus.ACTIVE);
+        assertThat(incident.getStages().get(1).getDeadlineAt())
+                .isEqualTo(incident.getStages().get(1).getStartedAt().plusSeconds(60));
     }
 
     @Test
@@ -219,6 +256,31 @@ class LevelProgressServiceTests {
                 contextId, incidentId, "MCHS", ReactionStatus.NOT_ACCEPTED, " "))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("комментарий");
+    }
+
+    @Test
+    void workRefusalCanBeRecordedWithReason() {
+        UUID contextId = UUID.randomUUID();
+        UUID incidentId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        IncidentSnapshot incident = incident(incidentId, stageId,
+                List.of(stage(stageId, DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.ACTIVE)));
+        incident.setInitialAssignmentService("MCHS");
+        ServiceReaction reaction = new ServiceReaction("MCHS");
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ACCEPTED, Instant.now(), null));
+        incident.getServiceReactions().add(reaction);
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var progress = service.applyReactionStatus(contextId, incidentId, "MCHS",
+                ReactionStatus.WORK_REFUSED, "Нет доступа к месту работ");
+
+        assertThat(progress.incidents().getFirst().serviceReactions().getFirst().currentStatus())
+                .isEqualTo(ReactionStatus.WORK_REFUSED);
+        assertThat(reaction.getHistory().getLast().comment()).isEqualTo("Нет доступа к месту работ");
+        assertThat(incident.getActiveStageId()).isEqualTo(stageId);
     }
 
     @Test
@@ -407,6 +469,12 @@ class LevelProgressServiceTests {
                 .isEqualTo(active.getSourceId());
         assertThat(progress.incidents().getFirst().system112().completedCalls()).isEqualTo(1);
         assertThat(progress.incidents().getFirst().system112().totalCalls()).isEqualTo(2);
+    }
+
+    private void accept(IncidentSnapshot incident) {
+        ServiceReaction reaction = new ServiceReaction("MCHS");
+        reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ACCEPTED, Instant.now(), null));
+        incident.getServiceReactions().add(reaction);
     }
 
     private TrainingContext context(UUID id) {

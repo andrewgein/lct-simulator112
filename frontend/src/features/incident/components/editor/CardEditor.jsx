@@ -144,7 +144,7 @@ function classifierDetails(incident, values, routingFacts) {
   return [...features, ...selectedFacts];
 }
 
-export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, classifier, routingFacts = [], dispatchServices, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor, readonlyServiceCalls, readonlyCallEnabled, onServiceCall, onAcceptCall, onDropCall }) {
+export default function CardEditor({ contextId, cards, call, editor, isDev, dadataApiKey, onChange, onClose, readOnly = false, hideReadonlyExtras = false, classifier, routingFacts = [], dispatchServices, readonlyTitle = "Карточка сохранена", readonlyHint = "режим просмотра", readonlyStatus = "Карточка сохранена", readonlyTimer = "Просмотр", readonlyDetails, readonlyServiceStatus, readonlyServiceHistory, readonlyServiceEditor, readonlyServiceCalls, readonlyCallEnabled, onServiceCall, onAcceptCall, onDropCall }) {
   const loadedClassifierState = useClassifier();
   const classifierState = classifier ? { classifier, routingFacts, loading: false, error: null } : loadedClassifierState;
   const [serviceCatalog, setServiceCatalog] = useState(dispatchServices || []);
@@ -375,14 +375,14 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
               {!!details.length && <ul class="saved-details-list wa-stack wa-gap-xs">{details.map((detail, index) => <li class="wa-cluster wa-gap-s" key={`${index}-${detail.name}`}><span>{detail.name}:</span><strong>{detail.value}</strong></li>)}</ul>}
               {!details.length && <p>Уточняющие признаки не указаны.</p>}
             </div>
-            <div class="saved-card-panel">
+            {!hideReadonlyExtras && <div class="saved-card-panel">
               <span class="saved-label">Инструкции</span>
               {item.instructions?.length ? <ul>{item.instructions.map((instruction) => <li key={instruction}>{instruction}</li>)}</ul> : <p>Инструкции не указаны.</p>}
-            </div>
+            </div>}
           </div>; })}
           {!incidents.length && <div class="saved-card-panel">Тип происшествия не выбран.</div>}
-          {readonlyDetails}
-          <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Статус</span><p><strong>{readonlyStatus}</strong></p></div>
+          {!hideReadonlyExtras && readonlyDetails}
+          {!hideReadonlyExtras && <div class="saved-card-panel saved-card-spacer"><span class="saved-label">Статус</span><p><strong>{readonlyStatus}</strong></p></div>}
         </section>
       </div>
       <footer class="workspace-footer workspace-footer--readonly wa-cluster wa-gap-0 wa-align-items-stretch wa-justify-content-end wa-flex-nowrap">
