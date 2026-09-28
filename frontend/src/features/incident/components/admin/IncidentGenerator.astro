@@ -77,6 +77,13 @@
     if (Object.hasOwn(incident, 'dialogueCriteria')) form.dispatchEvent(new CustomEvent('apply-generated-criteria', { detail: incident.dialogueCriteria }));
   };
 
+  prompt?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      chat.requestSubmit();
+    }
+  });
+
   chat?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const text = prompt.value.trim();
