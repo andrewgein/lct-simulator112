@@ -31,12 +31,27 @@ def _resample(samples: np.ndarray, source_rate: int, target_rate: int) -> np.nda
     return np.clip(resampled, -32768, 32767).astype(np.int16)
 
 
+def _concat_wav(first: bytes, second: bytes) -> bytes:
+    with wave.open(io.BytesIO(first), "rb") as head, wave.open(io.BytesIO(second), "rb") as tail:
+        if head.getparams()[:3] != tail.getparams()[:3]:
+            return second
+        params = head.getparams()
+        frames = head.readframes(head.getnframes()) + tail.readframes(tail.getnframes())
+    output = io.BytesIO()
+    with wave.open(output, "wb") as merged:
+        merged.setparams(params)
+        merged.writeframes(frames)
+    return output.getvalue()
+
+
 class WavCallRecorder:
     def __init__(
         self,
         destination: str,
         save: Callable[[bytes], None],
-        operator_sample_rate: int = 44100,
+        # Must match the AudioContext sample rate the frontend captures at
+        # (frontend/src/features/dialog/api/DialogApi.js).
+        operator_sample_rate: int = 16000,
         counterparty_sample_rate: int = 24000,
         output_sample_rate: int = 24000,
     ):
@@ -133,25 +148,38 @@ class S3CallRecorderFactory:
         self._bucket_ready = False
         self._bucket_lock = threading.Lock()
 
-    def create(self, context_id: str, call_id: str) -> WavCallRecorder:
+    def create(self, context_id: str, call_id: str, restart: bool = False) -> WavCallRecorder:
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S_%fZ")
         safe_context_id = _safe_file_part(context_id)
         safe_call_id = _safe_file_part(call_id)
-        object_key = f"recordings/{safe_context_id}/{safe_call_id}/{timestamp}.wav"
+        prefix = f"recordings/{safe_context_id}/{safe_call_id}/"
+        object_key = f"{prefix}{timestamp}.wav"
         destination = f"s3://{self._bucket}/{object_key}"
         return WavCallRecorder(
             destination,
-            lambda content: self._upload(object_key, content),
+            lambda content: self._upload(prefix, object_key, content, restart),
         )
 
-    def _upload(self, object_key: str, content: bytes) -> None:
+    def _upload(self, prefix: str, object_key: str, content: bytes, restart: bool) -> None:
         self._ensure_bucket()
+        existing = self._existing_keys(prefix)
+        if restart:
+            for key in existing:
+                self._client.delete_object(Bucket=self._bucket, Key=key)
+        elif existing:
+            object_key = existing[0]
+            previous = self._client.get_object(Bucket=self._bucket, Key=object_key)["Body"].read()
+            content = _concat_wav(previous, content)
         self._client.put_object(
             Bucket=self._bucket,
             Key=object_key,
             Body=content,
             ContentType="audio/wav",
         )
+
+    def _existing_keys(self, prefix: str) -> list[str]:
+        response = self._client.list_objects_v2(Bucket=self._bucket, Prefix=prefix)
+        return sorted(item["Key"] for item in response.get("Contents", []))
 
     def _ensure_bucket(self) -> None:
         if self._bucket_ready:

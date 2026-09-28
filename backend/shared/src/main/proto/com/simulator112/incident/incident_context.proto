@@ -16,13 +16,9 @@ message IncidentContext {
   Criteria criteria = 7;
   optional PreparedCardTemplate prepared_card_template = 8;
   optional InitialAssignment initial_assignment = 9;
-  string dds_initial_stage_id = 10;
-  repeated DdsStageTransition dds_stage_transitions = 11;
 }
 
 message IncidentStage {
-  reserved 3;
-
   string id = 1;
   string title = 2;
   string description = 5;
@@ -44,6 +40,8 @@ message System112StageDetails {
 message DdsStageDetails {
   DdsStageType type = 1;
   int32 time_limit_seconds = 2;
+  string expected_comment = 3;
+  IncidentStatus actual_status = 5;
 }
 
 message CallScenario {
@@ -57,6 +55,7 @@ message CallScenario {
   repeated string hidden_facts = 8;
   string ai_context = 9;
   string emotional_state = 10;
+  string service_code = 11;
 }
 
 message PreparedCardTemplate {
@@ -64,18 +63,11 @@ message PreparedCardTemplate {
   Person applicant = 2;
   int32 victim_count = 3;
   map<string, string> additional_info = 4;
+  repeated string assigned_services = 5;
 }
 
 message InitialAssignment {
-  string classifier_code = 2;
-  string instructions = 3;
   string emergency_service_code = 4;
-}
-
-message DdsStageTransition {
-  string stage_id = 1;
-  string success_stage_id = 2;
-  string failure_stage_id = 3;
 }
 
 message Criteria {
@@ -135,6 +127,26 @@ enum Gender {
   GENDER_WOMEN = 2;
 }
 
+enum IncidentStatus {
+  INCIDENT_STATUS_UNSPECIFIED = 0;
+  INCIDENT_STATUS_ADDED = 1;
+  INCIDENT_STATUS_RECEIVED_BY_SERVICE = 2;
+  INCIDENT_STATUS_ACCEPTED = 3;
+  INCIDENT_STATUS_NOT_ACCEPTED = 4;
+  INCIDENT_STATUS_RESPONSE_STARTED = 5;
+  INCIDENT_STATUS_ARRIVED = 6;
+  INCIDENT_STATUS_WORK_IN_PROGRESS = 7;
+  INCIDENT_STATUS_WORK_COMPLETED = 8;
+  INCIDENT_STATUS_WORK_REFUSED = 9;
+  INCIDENT_STATUS_REGISTERED = 10;
+  INCIDENT_STATUS_PROCESSED = 11;
+  INCIDENT_STATUS_VERIFIED = 12;
+  INCIDENT_STATUS_NOT_NOTIFIED = 13;
+  INCIDENT_STATUS_REFUSED = 14;
+  INCIDENT_STATUS_NOT_COMPLETED = 15;
+  INCIDENT_STATUS_COMPLETED = 16;
+}
+
 enum DdsStageType {
   DDS_STAGE_TYPE_UNSPECIFIED = 0;
   DDS_STAGE_TYPE_ASSIGN_BRIGADE = 1;
@@ -154,4 +166,5 @@ enum CounterpartyType {
   COUNTERPARTY_TYPE_UNSPECIFIED = 0;
   COUNTERPARTY_TYPE_CALLER = 1;
   COUNTERPARTY_TYPE_BRIGADE = 2;
+  COUNTERPARTY_TYPE_SERVICE = 3;
 }

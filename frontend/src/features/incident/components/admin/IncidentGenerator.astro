@@ -5,6 +5,7 @@
   </div>
   <div class="generator-body">
     <div id="generator-messages" role="log" aria-live="polite" aria-label="История чата"><p class="generator-message generator-message--assistant">Опишите происшествие или попросите изменить детали сценария.</p></div>
+    <p id="generator-status" role="status" aria-live="polite" hidden></p>
     <form id="generator-chat" class="generator-compose">
       <wa-textarea id="generator-prompt" aria-label="Ваш запрос" placeholder="Напишите запрос" rows="2" resize="none" maxlength="4000"></wa-textarea>
       <wa-button id="generator-send" type="submit" variant="brand" size="l" aria-label="Отправить запрос"><wa-icon name="paper-plane" aria-hidden="true"></wa-icon></wa-button>
@@ -20,6 +21,30 @@
   const send = document.querySelector('#generator-send');
   const log = document.querySelector('#generator-messages');
   const messages = [];
+  const status = document.querySelector('#generator-status');
+  const showStatus = (text) => { status.textContent = text; status.hidden = !text; };
+  const readEvents = async (response, onEvent) => {
+    if (!response.body) throw new Error('Поток генерации недоступен');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const dispatch = (block) => {
+      const event = block.match(/^event: ?(.+)$/m)?.[1];
+      const data = block.match(/^data: ?(.+)$/m)?.[1];
+      if (event && data) onEvent(event, JSON.parse(data));
+    };
+    while (true) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), { stream: !done }).replace(/\r\n/g, '\n');
+      let end;
+      while ((end = buffer.indexOf('\n\n')) !== -1) {
+        dispatch(buffer.slice(0, end));
+        buffer = buffer.slice(end + 2);
+      }
+      if (done) break;
+    }
+    if (buffer.trim()) dispatch(buffer);
+  };
 
   const toggle = document.querySelector('#open-incident-generator');
   const setOpen = (open) => {
@@ -39,12 +64,14 @@
     log.append(item);
     log.scrollTop = log.scrollHeight;
   };
+  const isDds = !!form?.querySelector('#dds-service-select');
   const collectDraft = () => {
-    if (!form.getIncidentStages) throw new Error('Подождите, пока загрузится редактор этапов');
+    if (isDds ? !form.getDdsDraft : !form.getIncidentStages) throw new Error('Подождите, пока загрузится редактор этапов');
     const data = Object.fromEntries(new FormData(form));
     const detail = { criteria: [] };
-    form.dispatchEvent(new CustomEvent('collect-dialogue-criteria', { detail }));
+    if (!isDds) form.dispatchEvent(new CustomEvent('collect-dialogue-criteria', { detail }));
     return {
+      targetType: isDds ? 'DDS' : 'SYSTEM_112',
       title: data.title || '',
       difficulty: data.difficulty || 'NORMAL',
       address: {
@@ -52,12 +79,12 @@
         building: data['address.building'] || null, apartment: data['address.apartment'] || null,
         floor: data['address.floor'] === '' ? null : Number(data['address.floor'] || 0)
       },
-      stages: form.getIncidentStages(), dialogueCriteria: detail.criteria
+      ...(isDds ? form.getDdsDraft() : { stages: form.getIncidentStages(), dialogueCriteria: detail.criteria })
     };
   };
   const applyIncident = (incident) => {
     if (!incident || typeof incident !== 'object' || Array.isArray(incident)) throw new Error('Модель вернула некорректное изменение сценария');
-    const applyStages = Object.hasOwn(incident, 'stages') ? form.prepareGeneratedStages(incident.stages) : null;
+    const applyStages = !isDds && Object.hasOwn(incident, 'stages') ? form.prepareGeneratedStages(incident.stages) : null;
     const fields = { ...Object.fromEntries(['title', 'difficulty'].filter((name) => Object.hasOwn(incident, name)).map((name) => [name, incident[name]])),
       ...Object.fromEntries(Object.entries(incident.address || {}).map(([part, value]) => [`address.${part}`, value])) };
     for (const [name, value] of Object.entries(fields)) {
@@ -65,35 +92,48 @@
       if (field) field.value = value == null ? '' : String(value);
     }
     if (incident.address) {
-      const address = collectDraft().address;
-      const fullAddress = [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(', ');
-      const addressInput = form.querySelector('#incident-main-address input');
-      if (addressInput) {
-        addressInput.value = fullAddress;
-        addressInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
+      form.querySelector('#incident-address-section')?.dispatchEvent(new CustomEvent('incident-address-refresh'));
     }
-    applyStages?.();
-    if (Object.hasOwn(incident, 'dialogueCriteria')) form.dispatchEvent(new CustomEvent('apply-generated-criteria', { detail: incident.dialogueCriteria }));
+    if (isDds) {
+      form.dispatchEvent(new CustomEvent('apply-generated-dds', { detail: incident }));
+      if (Object.hasOwn(incident, 'stages')) form.dispatchEvent(new CustomEvent('apply-generated-dds-stages', { detail: incident.stages }));
+    } else {
+      applyStages?.();
+      if (Object.hasOwn(incident, 'dialogueCriteria')) form.dispatchEvent(new CustomEvent('apply-generated-criteria', { detail: incident.dialogueCriteria }));
+    }
   };
+
+  prompt?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      chat.requestSubmit();
+    }
+  });
 
   chat?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const text = prompt.value.trim();
     if (!text || send.loading) return;
     send.loading = true;
+    showStatus('Подготавливаю генерацию…');
     page.classList.add('generator-busy');
     generator.setAttribute('aria-busy', 'true');
     appendMessage('user', text);
     messages.push({ role: 'user', content: text });
     prompt.value = '';
     try {
-      const response = await fetch('/api/v1/incidents/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: messages.slice(-5), draft: collectDraft() }) });
+      const response = await fetch('/api/v1/incidents/generate/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: messages.slice(-5), draft: collectDraft() }) });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.message || body.detail || 'Не удалось сгенерировать сценарий');
       }
-      const result = await response.json();
+      let result;
+      await readEvents(response, (event, data) => {
+        if (event === 'status') showStatus(data);
+        if (event === 'result') result = data;
+        if (event === 'error') throw new Error(data);
+      });
+      if (!result) throw new Error('Генерация завершилась без результата');
       applyIncident(result.incident);
       const reply = result.message || 'Черновик обновлён.';
       messages.push({ role: 'assistant', content: reply });
@@ -101,6 +141,7 @@
     } catch (caught) {
       appendMessage('error', caught instanceof Error ? caught.message : 'Ошибка генерации');
     } finally {
+      showStatus('');
       send.loading = false;
       page.classList.remove('generator-busy');
       generator.removeAttribute('aria-busy');
@@ -168,8 +209,10 @@
   .generator-message { max-width: 90%; margin: 0; padding: var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: 0; overflow-wrap: anywhere; white-space: pre-wrap; background: var(--wa-color-surface-lowered); }
   .generator-message--user { align-self: flex-end; border-color: var(--wa-color-brand-border-loud); background: var(--wa-color-brand-fill-loud); color: var(--wa-color-brand-on-loud); }
   .generator-message--error { border-color: var(--wa-color-danger-border-quiet); background: var(--wa-color-danger-fill-quiet); color: var(--wa-color-danger-60); }
-  .generator-compose { display: flex; align-items: flex-end; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  #generator-status:not([hidden]) { margin: 0; padding: var(--wa-space-s); color: var(--wa-color-brand-text); background: var(--wa-color-brand-fill-quiet); overflow-wrap: anywhere; }
+  .generator-compose { display: flex; align-items: center; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
   .generator-compose wa-textarea { flex: 1; min-width: 0; }
   .generator-compose wa-button { flex: none; }
   #generator-prompt::part(textarea-wrapper), #generator-send::part(button) { border-radius: 0; }
+  #generator-send wa-icon { transform: scaleX(-1) rotate(-90deg); }
 </style>

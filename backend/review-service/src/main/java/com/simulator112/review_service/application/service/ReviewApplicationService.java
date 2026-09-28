@@ -6,10 +6,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import com.simulator112.review_service.application.port.in.ConfirmReviewUseCase;
 import com.simulator112.review_service.application.port.in.GetReviewUseCase;
 import com.simulator112.review_service.application.port.in.SubmitReviewUseCase;
+import com.simulator112.review_service.application.port.in.UpdateCriterionScoresUseCase;
 import com.simulator112.review_service.application.port.out.DialogueAnalysisPort;
 import com.simulator112.review_service.application.port.out.ReviewStore;
 import com.simulator112.review_service.domain.evaluation.ReviewRubric;
+import com.simulator112.review_service.domain.evaluation.System112ReviewRubric;
 import com.simulator112.review_service.domain.model.CriterionResult;
+import com.simulator112.review_service.domain.model.DispatcherCardSummary;
+import com.simulator112.review_service.domain.model.IncidentSummary;
 import com.simulator112.review_service.domain.model.Review;
 import com.simulator112.review_service.domain.model.ReviewStatus;
 import com.simulator112.review_service.domain.model.ReviewSubmission;
@@ -20,15 +24,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewUseCase, ConfirmReviewUseCase {
+public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewUseCase, ConfirmReviewUseCase,
+        UpdateCriterionScoresUseCase {
     private static final long DEFAULT_TIME_LIMIT_SECONDS = 30;
 
     private final ReviewStore store;
@@ -45,12 +52,14 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
         long timeLimit = DEFAULT_TIME_LIMIT_SECONDS * Math.max(1, submission.incidents().size());
         var results = new ArrayList<>(rubric.evaluate(submission));
         results.addAll(evaluateDialogue(submission));
+        results.addAll(evaluateDdsComments(submission));
         int score = results.stream().mapToInt(value -> value.score()).sum();
         int maxScore = results.stream().mapToInt(value -> value.maxScore()).sum();
         Review review = new Review(submission.contextId(), submission.userId(), submission.assignmentId(),
                 ReviewStatus.DONE, results, score, score, maxScore, duration, timeLimit,
                 Math.max(0, duration - timeLimit), null, null, null, null, null,
-                submission.threshold3(), submission.threshold4(), submission.threshold5());
+                submission.threshold3(), submission.threshold4(), submission.threshold5(),
+                incidentSummaries(submission), cardSummaries(submission));
         Review saved = store.save(review);
         events.publishEvent(new ReviewResultChanged(saved.userId(), saved.assignmentId()));
         return saved;
@@ -66,6 +75,37 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
         Review saved = store.save(review.confirm(expertId, finalScore, comment, Instant.now()));
         events.publishEvent(new ReviewResultChanged(saved.userId(), saved.assignmentId()));
         return saved;
+    }
+
+    @Override
+    @Transactional
+    public Review updateScores(UUID contextId, UUID expertId, Map<UUID, Integer> corrections) {
+        Review review = getByContextId(contextId);
+        Review saved = store.save(review.updateCriteriaScores(expertId, corrections, Instant.now()));
+        events.publishEvent(new ReviewResultChanged(saved.userId(), saved.assignmentId()));
+        return saved;
+    }
+
+    private List<IncidentSummary> incidentSummaries(ReviewSubmission submission) {
+        return submission.incidents().stream().map(incident -> new IncidentSummary(incident.id(), incident.order(),
+                incident.title(), incident.stages().stream().mapToInt(ReviewSubmission.StageScenario::victimCount).sum(),
+                incident.stages().stream().flatMap(stage -> stage.classifierCodes().stream())
+                        .collect(Collectors.toCollection(LinkedHashSet::new)).stream().toList())).toList();
+    }
+
+    private List<DispatcherCardSummary> cardSummaries(ReviewSubmission submission) {
+        if (submission.cardRevisions().isEmpty()) return List.of();
+        Map<String, String> incidentIdByCallId = submission.incidents().stream()
+                .flatMap(incident -> incident.stages().stream()
+                        .flatMap(stage -> stage.calls().stream())
+                        .map(call -> Map.entry(call.id(), incident.id())))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
+        return System112ReviewRubric.assemble(submission.cardRevisions()).values().stream()
+                .map(card -> new DispatcherCardSummary(card.cardId(), card.callId(),
+                        card.mainCardId() == null || card.mainCardId().isBlank() ? null : card.mainCardId(),
+                        incidentIdByCallId.get(card.callId()), card.applicant(),
+                        card.victimCount(), card.incidentTypes(), card.services(), card.additionalInfo()))
+                .toList();
     }
 
     @Override
@@ -103,6 +143,39 @@ public class ReviewApplicationService implements SubmitReviewUseCase, GetReviewU
                     return new CriterionResult(incident.id(), incident.order(), criterion.name(),
                             analysis.matched() ? criterion.weight() : 0, criterion.weight(), feedback);
                 })).toList();
+    }
+
+    private List<CriterionResult> evaluateDdsComments(ReviewSubmission submission) {
+        if (submission.targetType() != ReviewSubmission.TargetType.DDS) return List.of();
+        var results = new ArrayList<CriterionResult>();
+        for (var incident : submission.incidents()) {
+            var stages = incident.stages().stream().filter(stage -> stage.expectedComment() != null
+                    && !stage.expectedComment().isBlank()).toList();
+            if (stages.isEmpty()) continue;
+            var runtime = submission.runtime().stream().filter(value -> value.incidentId().equals(incident.id()))
+                    .findFirst().orElse(null);
+            for (int index = 0; index < stages.size(); index++) {
+                var stage = stages.get(index);
+                int points = 20 / stages.size() + (index < 20 % stages.size() ? 1 : 0);
+                var result = runtime == null ? null : runtime.stages().stream()
+                        .filter(value -> value.stageId().equals(stage.id())).findFirst().orElse(null);
+                String comment = result == null ? null : result.comment();
+                boolean matched = false;
+                String feedback = "Комментарий по звонку отсутствует.";
+                if (comment != null && !comment.isBlank()) {
+                    var criterion = new ReviewSubmission.DialogueCriterion(stage.id(), "Комментарий по звонку",
+                            stage.expectedComment(), 1);
+                    var analysis = dialogueAnalysisPort.analyze(
+                            List.of(new ReviewSubmission.TranscriptPhrase("USER", comment)), List.of(criterion)).getFirst();
+                    matched = analysis.matched();
+                    feedback = (matched ? "Комментарий соответствует ожидаемым сведениям."
+                            : "Комментарий не соответствует ожидаемым сведениям.") + " Комментарий: " + comment;
+                }
+                results.add(new CriterionResult(incident.id(), incident.order(), "Комментарий по звонку",
+                        matched ? points : 0, points, feedback));
+            }
+        }
+        return results;
     }
 
     private long durationSeconds(ReviewSubmission submission) {

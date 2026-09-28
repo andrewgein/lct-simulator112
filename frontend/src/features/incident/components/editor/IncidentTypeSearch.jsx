@@ -7,7 +7,7 @@ const styles = `
 .incident-classifier { position: relative; z-index: 5; padding: var(--wa-space-m); border-block-end: .5rem solid #c8d1d5; background: #f4f6f6; }
 .incident-classifier-label, .incident-classifier-caption { display: block; color: #687880; font-size: var(--wa-font-size-s); }
 .incident-classifier-input { box-sizing: border-box; width: 100%; margin-block-start: var(--wa-space-2xs); padding: var(--wa-space-xs) 0; border: 0; border-block-end: 2px solid #aeb8bd; outline: 0; background: transparent; color: #26343b; font: inherit; font-size: var(--wa-font-size-2xl); text-transform: uppercase; }
-.incident-classifier-input::placeholder { color: #526169; opacity: 1; }
+.incident-classifier-input::placeholder { color: #526169; opacity: 1; text-transform: none; }
 .incident-classifier-input:focus { border-block-end-color: #008dca; }
 .incident-classifier-results { position: absolute; z-index: 20; inset-inline: var(--wa-space-m); inset-block-start: 5.4rem; max-height: min(26rem, 55vh); overflow-y: auto; border: var(--wa-border-width-s) solid #9ba8ae; background: #ffffff; box-shadow: var(--wa-shadow-l); }
 .incident-classifier-result { display: flex; width: 100%; flex-direction: column; gap: var(--wa-space-3xs); padding: var(--wa-space-s) var(--wa-space-m); border: 0; border-block-end: var(--wa-border-width-s) solid #d4dadd; background: #ffffff; color: #26343b; font: inherit; text-align: left; cursor: pointer; }
@@ -87,7 +87,7 @@ export default function IncidentTypeSearch({ classifierState, selectedCodes, onA
       {!choosing && <div class="incident-type-summary"><button class="incident-type-add" type="button" onClick={() => setChoosing(true)}>Добавить тип происшествия</button></div>}
       {choosing && <div class="incident-classifier">
         <label class="incident-classifier-label" for="incident-classifier-search">Введите тип происшествия</label>
-        <input id="incident-classifier-search" class="incident-classifier-input" type="search" placeholder="ЧТО СЛУЧИЛОСЬ?" value={query} disabled={classifierState.loading || !!classifierState.error} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={onKeyDown} />
+        <input id="incident-classifier-search" class="incident-classifier-input" type="search" placeholder="Что случилось?" value={query} disabled={classifierState.loading || !!classifierState.error} onInput={(event) => setQuery(event.currentTarget.value)} onKeyDown={onKeyDown} />
         {!!normalizedQuery && <div class="incident-classifier-results">{classifierState.loading ? <div class="incident-classifier-message">Загрузка классификатора…</div> : classifierState.error ? <div class="incident-classifier-message">{classifierState.error}</div> : searchResults.length ? searchResults.map((entry) => <button class="incident-classifier-result" type="button" key={entry.code} onClick={() => add(entry.code)}><strong>{entry.finalName}</strong><span>{entry.code} · {entry.categoryName}</span></button>) : <div class="incident-classifier-message">Подходящие типы не найдены</div>}</div>}
         {!category && <div>
           <span class="incident-classifier-caption">Типы происшествий</span>

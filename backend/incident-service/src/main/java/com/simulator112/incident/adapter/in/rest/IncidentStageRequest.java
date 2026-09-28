@@ -2,6 +2,7 @@ package com.simulator112.incident.adapter.in.rest;
 
 import com.simulator112.incident.domain.common.CallScenario;
 import com.simulator112.incident.domain.dds.DdsStageType;
+import com.simulator112.incident.domain.common.IncidentStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,5 +21,7 @@ public record IncidentStageRequest(
         String description,
         DdsStageType type,
         Integer timeLimitSeconds,
-        @NotNull List<@Valid CallScenario> calls) {
+        @NotNull List<@Valid CallScenario> calls,
+        String expectedComment,
+        IncidentStatus actualStatus) {
 }

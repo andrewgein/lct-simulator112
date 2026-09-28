@@ -1,10 +1,11 @@
 import { useRef } from "preact/hooks";
 import EditorDialog from "./EditorDialog.jsx";
+import { EditorCallCard } from "./EditorContainers.jsx";
 import PersonFields from "./PersonFields.jsx";
 import { splitLines } from "./editorHelpers";
 
 export default function DialupEditor({ dialup, number, index, count, incidentAddress, open, error, onChange, onOpen, onClose, onRemove, onMove }) {
-  const snapshot = useRef(null);
+  const snapshot = useRef(open ? structuredClone(dialup) : null);
   const setField = (field) => (event) => onChange({ ...dialup, [field]: event.currentTarget.value });
   const openEditor = () => {
     snapshot.current = structuredClone(dialup);
@@ -22,13 +23,8 @@ export default function DialupEditor({ dialup, number, index, count, incidentAdd
   const facts = splitLines(dialup.knownFacts).length;
   const meta = [dialup.gender === "MAN" ? "Мужчина" : dialup.gender === "WOMEN" ? "Женщина" : null, dialup.applicant.age ? `${dialup.applicant.age} лет` : null, `${facts} известных фактов`].filter(Boolean).join(" · ");
   return (
-    <div class="dialup wa-stack wa-gap-m">
-      <wa-card class="dialup-summary">
-        <wa-button class="move-up card-arrow card-arrow-left" type="button" size="small" appearance="plain" aria-label="Переместить звонок влево" disabled={index === 0} onClick={() => onMove(-1)}>
-          <wa-icon name="chevron-left" label="Переместить влево">
-          </wa-icon>
-        </wa-button>
-        <div class="dialup-content wa-stack wa-gap-s">
+    <div class="editor-call-item wa-stack wa-gap-m">
+      <EditorCallCard leftControl={<wa-button class="move-up" type="button" size="small" appearance="plain" aria-label="Переместить звонок влево" disabled={index === 0} onClick={() => onMove(-1)}><wa-icon name="chevron-left" label="Переместить влево"></wa-icon></wa-button>} rightControl={<wa-button class="move-down" type="button" size="small" appearance="plain" aria-label="Переместить звонок вправо" disabled={index === count - 1} onClick={() => onMove(1)}><wa-icon name="chevron-right" label="Переместить вправо"></wa-icon></wa-button>}>
           <div class="wa-cluster wa-justify-content-space-between wa-align-items-center">
             <strong class="dialup-title">Звонок {number}</strong>
             <div class="wa-cluster wa-gap-xs">
@@ -43,12 +39,7 @@ export default function DialupEditor({ dialup, number, index, count, incidentAdd
             </div>
           </div>
           <span class="dialup-meta">{meta}</span>
-        </div>
-        <wa-button class="move-down card-arrow card-arrow-right" type="button" size="small" appearance="plain" aria-label="Переместить звонок вправо" disabled={index === count - 1} onClick={() => onMove(1)}>
-          <wa-icon name="chevron-right" label="Переместить вправо">
-          </wa-icon>
-        </wa-button>
-      </wa-card>
+      </EditorCallCard>
       <EditorDialog className="dialup-dialog" label="Редактирование звонка" open={open} onCancel={cancelEditor} onSave={saveEditor}>
         <div class="wa-stack wa-gap-m">
           <p class="dialup-error" hidden={!error}>{error}</p>

@@ -4,13 +4,16 @@ const INCIDENTS_ENDPOINT = "/api/v1/incidents";
 const CLASSIFIER_ENDPOINT = "/api/v1/classifier";
 
 /**
- * @param {import("../contract/Incident").IncidentTargetType} targetType
- * @param {import("../contract/Incident").Difficulty} difficulty
+ * @param {import("../contract/Incident").IncidentTargetType | null} targetType
+ * @param {import("../contract/Incident").Difficulty | null} difficulty
  * @param {string} token
  */
 export function findAvailableIncidents(targetType, difficulty, token) {
-    const query = new URLSearchParams({ targetType, difficulty });
-    return apiCall(`${INCIDENTS_ENDPOINT}?${query}`, "GET", undefined, token);
+    const query = new URLSearchParams();
+    if (targetType) query.set("targetType", targetType);
+    if (difficulty) query.set("difficulty", difficulty);
+    const suffix = query.size ? `?${query}` : "";
+    return apiCall(`${INCIDENTS_ENDPOINT}${suffix}`, "GET", undefined, token);
 }
 
 /** @param {string} incidentId @param {string} token */

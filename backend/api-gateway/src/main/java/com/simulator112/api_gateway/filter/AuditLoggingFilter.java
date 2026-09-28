@@ -20,14 +20,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-/**
- * Logs every mutating request to an admin/write route to Kafka topic "audit.http.requests",
- * consumed by admin-service and stored as the audit trail. Parses the JWT itself rather than
- * relying on X-User-* headers injected by JwtAuthFilter: those headers live on a *new*
- * ServerWebExchange instance created by exchange.mutate() inside that filter, which does not
- * propagate back up to a GlobalFilter's own exchange reference - so re-parsing here is the
- * reliable option regardless of filter ordering.
- */
 @Slf4j
 @Component
 public class AuditLoggingFilter implements GlobalFilter, Ordered {
@@ -107,9 +99,7 @@ public class AuditLoggingFilter implements GlobalFilter, Ordered {
 
   @Override
   public int getOrder() {
-    // Between NettyRoutingFilter (MAX_VALUE - 1, does the actual proxy call) and
-    // NettyWriteResponseFilter (MAX_VALUE, writes the response back to the client) - by the time
-    // our post-chain.filter() continuation runs, the downstream response status is already set.
+
     return Ordered.LOWEST_PRECEDENCE - 1;
   }
 }

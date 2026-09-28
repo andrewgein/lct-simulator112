@@ -19,6 +19,9 @@ import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.StageStatus;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
+import com.simulator112.contextmanager.domain.dds.DdsStageDetails;
+import com.simulator112.contextmanager.domain.dds.DdsStageType;
+import com.simulator112.contextmanager.domain.system112.System112StageDetails;
 import com.simulator112.shared.dto.Difficulty;
 import java.time.Instant;
 import java.util.UUID;
@@ -57,6 +60,7 @@ class ContextPersistenceAdapterTests {
         stage.setSourceId(UUID.randomUUID());
         stage.setPosition(0);
         stage.setStatus(StageStatus.PENDING);
+        stage.setSystem112(new System112StageDetails(java.util.List.of("101"), 2));
         CallSnapshot call = new CallSnapshot();
         call.setSourceId(UUID.randomUUID());
         call.setPosition(0);
@@ -80,6 +84,9 @@ class ContextPersistenceAdapterTests {
         assertThat(restored.getIncidents()).hasSize(1);
         assertThat(restored.getIncidents().getFirst().getStages().getFirst().getCalls().getFirst().getSourceId())
                 .isEqualTo(call.getSourceId());
+        assertThat(restored.getIncidents().getFirst().getStages().getFirst().getSystem112().classifierCodes()).containsExactly("101");
+        assertThat(restored.getIncidents().getFirst().getStages().getFirst().getSystem112().victimCount()).isEqualTo(2);
+        assertThat(restored.getIncidents().getFirst().getStages().getFirst().getDds()).isNull();
         assertThat(restored.getIncidents().getFirst().getServiceReactions().getFirst().getServiceCode())
                 .isEqualTo("MCHS");
         assertThat(restored.getIncidents().getFirst().getServiceReactions().getFirst().currentStatus())
@@ -88,5 +95,53 @@ class ContextPersistenceAdapterTests {
         store.save(restored);
         assertThat(store.findById(saved.getId()).orElseThrow().getIncidents().getFirst().getServiceReactions())
                 .hasSize(1);
+    }
+
+    @Test
+    void roundTripsDdsStageDetailsAndComment() {
+        TrainingContext context = new TrainingContext();
+        context.setAssignmentId(UUID.randomUUID());
+        context.setUserId(UUID.randomUUID());
+        context.setTargetType(IncidentTargetType.DDS);
+        context.setExecutionMode(ExecutionMode.PARALLEL);
+        context.setStatus(ContextStatus.CREATED);
+        context.setDialogStatus(DialogProgressStatus.IDLE);
+        IncidentSnapshot incident = new IncidentSnapshot();
+        incident.setSourceId(UUID.randomUUID());
+        incident.setPosition(0);
+        incident.setStatus(IncidentProgressStatus.ACTIVE);
+        incident.setPreparedCardAssignedServices(java.util.List.of("MCHS", "POLICE"));
+        StageSnapshot stage = new StageSnapshot();
+        stage.setSourceId(UUID.randomUUID());
+        stage.setPosition(0);
+        stage.setStatus(StageStatus.ACTIVE);
+        stage.setDds(new DdsStageDetails(DdsStageType.CALL_BRIGADE_FOR_STATUS, 90,
+                "Бригада прибыла", "Бригада на месте"));
+        var serviceCall = new com.simulator112.contextmanager.domain.common.CallSnapshot();
+        serviceCall.setSourceId(UUID.randomUUID());
+        serviceCall.setPosition(0);
+        serviceCall.setDirection(com.simulator112.contextmanager.domain.common.CallDirection.INBOUND);
+        serviceCall.setCounterparty(com.simulator112.contextmanager.domain.common.CounterpartyType.SERVICE);
+        serviceCall.setServiceCode("MCHS");
+        serviceCall.setStatus(com.simulator112.contextmanager.domain.common.CallStatus.PENDING);
+        stage.getCalls().add(serviceCall);
+        incident.getStages().add(stage);
+        context.getIncidents().add(incident);
+
+        TrainingContext saved = store.save(context);
+        TrainingContext restored = store.findById(saved.getId()).orElseThrow();
+        StageSnapshot actual = restored.getIncidents().getFirst().getStages().getFirst();
+        assertThat(restored.getIncidents().getFirst().getPreparedCardAssignedServices()).containsExactly("MCHS", "POLICE");
+        assertThat(actual.getDds().getType()).isEqualTo(DdsStageType.CALL_BRIGADE_FOR_STATUS);
+        assertThat(actual.getDds().getTimeLimitSeconds()).isEqualTo(90);
+        assertThat(actual.getDds().getExpectedComment()).isEqualTo("Бригада прибыла");
+        assertThat(actual.getDds().getComment()).isEqualTo("Бригада на месте");
+        assertThat(actual.getCalls().getFirst().getServiceCode()).isEqualTo("MCHS");
+        assertThat(actual.getSystem112()).isNull();
+
+        actual.getDds().setComment("Требуется подкрепление");
+        store.save(restored);
+        assertThat(store.findById(saved.getId()).orElseThrow().getIncidents().getFirst().getStages().getFirst()
+                .getDds().getComment()).isEqualTo("Требуется подкрепление");
     }
 }

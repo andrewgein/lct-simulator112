@@ -1,0 +1,101 @@
+package com.simulator112.contextmanager.adapter.out.persistence.entity.system112;
+
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.Context;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OrderColumn;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@Entity
+@Table(name = "solution_contexts")
+@Getter
+@Setter
+public class SolutionContextEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "context_id", nullable = false)
+    private Context context;
+
+    @Column(name = "card_id", nullable = false, updatable = false)
+    private UUID cardId;
+
+    @Column(name = "previous_revision_id", updatable = false)
+    private UUID previousRevisionId;
+
+    @Column(nullable = false, updatable = false)
+    private long version;
+
+    @Column(name = "call_id", nullable = false, updatable = false)
+    private UUID callId;
+
+    @Column(name = "main_card_id", updatable = false)
+    private UUID mainCardId;
+
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "phone", column = @Column(name = "applicant_phone", updatable = false)),
+            @AttributeOverride(name = "contactPhone", column = @Column(name = "applicant_contact_phone", updatable = false)),
+            @AttributeOverride(name = "onScenePhone", column = @Column(name = "applicant_on_scene_phone", updatable = false)),
+            @AttributeOverride(name = "lastName", column = @Column(name = "applicant_last_name", updatable = false)),
+            @AttributeOverride(name = "firstName", column = @Column(name = "applicant_first_name", updatable = false)),
+            @AttributeOverride(name = "middleName", column = @Column(name = "applicant_middle_name", updatable = false)),
+            @AttributeOverride(name = "status", column = @Column(name = "applicant_status", updatable = false)),
+            @AttributeOverride(name = "address", column = @Column(name = "applicant_address", updatable = false)),
+            @AttributeOverride(name = "additionalInfo", column = @Column(name = "applicant_additional_info", columnDefinition = "text", updatable = false))
+    })
+    private PersonInfo applicant;
+
+    @Column(name = "victim_count", updatable = false)
+    private Integer victimCount;
+
+    @ElementCollection
+    @CollectionTable(name = "solution_context_additional_info", joinColumns = @JoinColumn(name = "solution_context_id"))
+    @MapKeyColumn(name = "info_key")
+    @Column(name = "info_value", columnDefinition = "text")
+    private Map<String, String> additionalInfo = new HashMap<>();
+
+    @Column(name = "additional_info_provided", nullable = false, updatable = false)
+    private boolean additionalInfoProvided;
+
+    @ElementCollection
+    @CollectionTable(name = "solution_context_incident_types", joinColumns = @JoinColumn(name = "solution_context_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "classifier_code", nullable = false, length = 50)
+    private List<String> incidentTypes = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "solution_context_services", joinColumns = @JoinColumn(name = "solution_context_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "service_code", nullable = false, length = 100)
+    private List<String> services = new ArrayList<>();
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+}

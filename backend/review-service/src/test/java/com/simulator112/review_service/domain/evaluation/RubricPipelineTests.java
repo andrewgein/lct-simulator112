@@ -26,7 +26,7 @@ class RubricPipelineTests {
 
         assertThat(rubric.stages()).hasSize(1);
         assertThat(rubric.stages().getFirst().criteria()).extracting(Criterion::name)
-                .containsExactly("Выполнение этапов ДДС", "Завершение инцидента ДДС");
+                .containsExactly("Своевременность статусов и звонки");
         assertThat(rubric.stages().getFirst().maxScore()).isEqualTo(100);
     }
 

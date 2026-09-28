@@ -11,6 +11,7 @@
  * @property {true} callAvailable
  * @property {string} callId
  * @property {string} phoneNumber
+ * @property {boolean} [interrupted]
  */
 
 /**

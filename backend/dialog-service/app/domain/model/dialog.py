@@ -23,6 +23,7 @@ class CallDirection(Enum):
 class CounterpartyType(Enum):
     CALLER = "CALLER"
     BRIGADE = "BRIGADE"
+    SERVICE = "SERVICE"
     UNSPECIFIED = "UNSPECIFIED"
 
 
@@ -56,6 +57,7 @@ class CallScenario:
     hidden_facts: tuple[str, ...]
     ai_context: str
     emotional_state: str
+    service_code: str = ""
 
 
 @dataclass(frozen=True)

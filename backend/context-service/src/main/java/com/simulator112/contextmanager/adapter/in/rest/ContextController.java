@@ -7,7 +7,7 @@ import com.simulator112.contextmanager.application.port.in.ContextUseCase;
 import com.simulator112.contextmanager.application.port.in.LevelProgressUseCase;
 import com.simulator112.contextmanager.application.port.in.ManageSystem112CardUseCase;
 import com.simulator112.contextmanager.adapter.in.rest.dto.request.ReactionStatusRequest;
-import com.simulator112.contextmanager.adapter.in.rest.dto.request.DdsStageSignalRequest;
+import com.simulator112.contextmanager.adapter.in.rest.dto.request.DdsCommentRequest;
 import com.simulator112.contextmanager.domain.common.LevelProgress;
 import jakarta.validation.Valid;
 import com.simulator112.contextmanager.application.model.system112.SolutionContextRequest;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,6 +46,15 @@ public class ContextController {
         UUID contextId = contextService.createContext(userId, body.assignmentId());
         log.info("Контекст {} для пользователя {} создан", contextId, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(contextId);
+    }
+
+    @GetMapping
+    public ResponseEntity<UUID> findActive(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestParam UUID assignmentId) {
+        return contextService.findActiveContext(userId, assignmentId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/{uuid}/calls/{callId}/cards")
@@ -75,12 +85,12 @@ public class ContextController {
         return levelProgressService.getProgress(uuid);
     }
 
-    @PostMapping("/{uuid}/dds/incidents/{incidentId}/signals")
-    public LevelProgress applyDdsSignal(
+    @PostMapping("/{uuid}/dds/incidents/{incidentId}/comments")
+    public LevelProgress saveDdsComment(
             @PathVariable UUID uuid,
             @PathVariable UUID incidentId,
-            @Valid @RequestBody DdsStageSignalRequest request) {
-        return levelProgressService.applyDdsSignal(uuid, incidentId, request.signal());
+            @Valid @RequestBody DdsCommentRequest request) {
+        return levelProgressService.saveDdsComment(uuid, incidentId, request.stageId(), request.comment());
     }
 
     @PostMapping("/{uuid}/dds/incidents/{incidentId}/reaction-status")

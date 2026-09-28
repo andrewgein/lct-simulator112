@@ -22,7 +22,6 @@
     "@tanstack/table-core": "^9.2.4",
     "astro": "^7.3.2",
     "astro-leaflet": "^1.12.0",
-    "d3-hierarchy": "^3.1.2",
     "docx-preview": "^0.4.1",
     "dompurify": "^3.4.15",
     "html2pdf.js": "^0.14.0",

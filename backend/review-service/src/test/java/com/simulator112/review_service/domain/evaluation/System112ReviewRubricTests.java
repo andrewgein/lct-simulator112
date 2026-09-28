@@ -15,7 +15,7 @@ class System112ReviewRubricTests {
         var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
         var first = new ReviewSubmission.CallScenario("call-1", 0, person);
         var second = new ReviewSubmission.CallScenario("call-2", 0, person);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage-1", 0, List.of("fire"), 0, null, List.of(first)),
                 new ReviewSubmission.StageScenario("stage-2", 1, List.of("fire"), 0, null, List.of(second))),
                 criteria());
@@ -39,6 +39,74 @@ class System112ReviewRubricTests {
     }
 
     @Test
+    void awardsFullScoreForChainOfThreeLinkedCards() {
+        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
+        var first = new ReviewSubmission.CallScenario("call-1", 0, person);
+        var second = new ReviewSubmission.CallScenario("call-2", 0, person);
+        var third = new ReviewSubmission.CallScenario("call-3", 0, person);
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
+                new ReviewSubmission.StageScenario("stage-1", 0, List.of("fire"), 0, null, List.of(first)),
+                new ReviewSubmission.StageScenario("stage-2", 1, List.of("fire"), 0, null, List.of(second)),
+                new ReviewSubmission.StageScenario("stage-3", 2, List.of("fire"), 0, null, List.of(third))),
+                criteria());
+        var card1 = card("card-1", "call-1", "", person);
+        var card2 = card("card-2", "call-2", "card-1", person);
+        var card3 = card("card-3", "call-3", "card-2", person);
+        var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), List.of(card1, card2, card3), List.of(),
+                List.of(), null, null);
+
+        var results = new System112ReviewRubric().evaluate(submission);
+
+        assertThat(results.stream().mapToInt(value -> value.score()).sum()).isEqualTo(100);
+        assertThat(results.stream().mapToInt(value -> value.maxScore()).sum()).isEqualTo(100);
+        assertThat(results.stream().filter(value -> value.criterionName().equals("Операции и связи")))
+                .allSatisfy(result -> assertThat(result.score()).isEqualTo(result.maxScore()));
+    }
+
+    @Test
+    void awardsFullScoreWhenSeveralCardsAreLinkedToOneMainCard() {
+        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
+        var incident = threeStageIncident(person);
+        var submission = submission(incident, List.of(card("card-1", "call-1", "", person),
+                card("card-2", "call-2", "card-1", person), card("card-3", "call-3", "card-1", person)));
+
+        assertThat(operationScores(submission)).allSatisfy(result -> assertThat(result.score()).isEqualTo(result.maxScore()));
+    }
+
+    @Test
+    void rejectsCardLinkedToUnrelatedCard() {
+        var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
+        var incident = threeStageIncident(person);
+        var submission = submission(incident, List.of(card("card-1", "call-1", "", person),
+                card("card-2", "call-2", "card-1", person), card("card-3", "call-3", "card-x", person),
+                card("card-x", "call-x", "", person)));
+
+        assertThat(operationScores(submission)).anySatisfy(result -> assertThat(result.score()).isLessThan(result.maxScore()));
+    }
+
+    private ReviewSubmission.IncidentScenario threeStageIncident(ReviewSubmission.Person person) {
+        return new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
+                new ReviewSubmission.StageScenario("stage-1", 0, List.of("fire"), 0, null,
+                        List.of(new ReviewSubmission.CallScenario("call-1", 0, person))),
+                new ReviewSubmission.StageScenario("stage-2", 1, List.of("fire"), 0, null,
+                        List.of(new ReviewSubmission.CallScenario("call-2", 0, person))),
+                new ReviewSubmission.StageScenario("stage-3", 2, List.of("fire"), 0, null,
+                        List.of(new ReviewSubmission.CallScenario("call-3", 0, person)))), criteria());
+    }
+
+    private ReviewSubmission submission(ReviewSubmission.IncidentScenario incident,
+                                        List<ReviewSubmission.CardRevision> cards) {
+        return new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.SYSTEM_112, List.of(incident), cards, List.of(), List.of(), null, null);
+    }
+
+    private List<com.simulator112.review_service.domain.model.CriterionResult> operationScores(ReviewSubmission submission) {
+        return new System112ReviewRubric().evaluate(submission).stream()
+                .filter(value -> value.criterionName().equals("Операции и связи")).toList();
+    }
+
+    @Test
     void reservesConfiguredWeightForDialogueCriteria() {
         var person = new ReviewSubmission.Person("Анна", "Иванова", null, "112", null, null, "Москва", null);
         var call = new ReviewSubmission.CallScenario("call", 0, person);
@@ -47,7 +115,7 @@ class System112ReviewRubricTests {
                         "Оператор уточнил адрес происшествия", 15),
                 new ReviewSubmission.DialogueCriterion("victims", "Уточнение пострадавших",
                         "Оператор уточнил наличие пострадавших", 10)));
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 0, null, List.of(call))),
                 criteria);
         var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
@@ -64,7 +132,7 @@ class System112ReviewRubricTests {
     @Test
     void missingCardLosesCoverageFieldAndOperationPoints() {
         var call = new ReviewSubmission.CallScenario("call", 0, null);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 0, null, List.of(call))),
                 criteria());
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
@@ -92,7 +160,7 @@ class System112ReviewRubricTests {
     @Test
     void explainsConcreteFieldMismatchInCriterionFeedback() {
         var call = new ReviewSubmission.CallScenario("call", 0, null);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 2, null, List.of(call))),
                 criteria());
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
@@ -112,7 +180,7 @@ class System112ReviewRubricTests {
         var expected = new ReviewSubmission.Person("Анна", "Иванова", null, null, null, null, null, null);
         var typo = new ReviewSubmission.Person("Ана", "Ивонова", null, null, null, null, null, null);
         var call = new ReviewSubmission.CallScenario("call", 0, expected);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 0, null, List.of(call))),
                 criteria());
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
@@ -142,7 +210,7 @@ class System112ReviewRubricTests {
         var criteria = new ReviewSubmission.EvaluationCriteria(List.of(
                 new ReviewSubmission.DialogueCriterion("secret", "Проверка вопроса",
                         "Назовите секретный код", 10)));
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage", 0, List.of("fire"), 0, null, List.of(call))),
                 criteria);
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
@@ -159,7 +227,7 @@ class System112ReviewRubricTests {
     @Test
     void checksExpectedRoutingAnswersForTheStage() {
         var call = new ReviewSubmission.CallScenario("call", 0, null);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage", 0, List.of("fire"),
                         Map.of("ACCESS_STATUS", "AVAILABLE"), 0, null, List.of(call))), criteria());
         var card = new ReviewSubmission.CardRevision(UUID.randomUUID().toString(), "card", 1, "call", "",
@@ -176,7 +244,7 @@ class System112ReviewRubricTests {
 
     private int fieldScore(List<String> expectedTypes, List<String> cardTypes) {
         var call = new ReviewSubmission.CallScenario("call", 0, null);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(
                 new ReviewSubmission.StageScenario("stage", 0, expectedTypes, 0, null, List.of(call))),
                 criteria());
         var card = card("card", "call", "", null, cardTypes);

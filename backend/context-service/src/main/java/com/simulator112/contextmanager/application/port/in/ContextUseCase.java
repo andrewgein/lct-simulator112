@@ -1,10 +1,13 @@
 package com.simulator112.contextmanager.application.port.in;
 
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ContextUseCase {
     UUID createContext(UUID userId, UUID assignmentId);
+
+    Optional<UUID> findActiveContext(UUID userId, UUID assignmentId);
 
     IncidentSnapshot getIncidentContext(String contextId);
 

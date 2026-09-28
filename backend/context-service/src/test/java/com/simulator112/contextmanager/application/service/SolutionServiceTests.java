@@ -77,6 +77,20 @@ class SolutionServiceTests {
     }
 
     @Test
+    void linksToAlreadyLinkedCardFormingAChain() {
+        allowSave();
+        SolutionCardRevision card = card(activeCallId);
+        SolutionCardRevision target = card(UUID.randomUUID());
+        target.setMainCardId(UUID.randomUUID());
+        stub(card); stub(target);
+
+        service.saveCardRevision(context.getId(), card.getCardId(),
+                request(SolutionContextOperation.LINK, card, target.getCardId()));
+
+        assertEquals(target.getCardId(), context.getSolutionCards().getFirst().getMainCardId());
+    }
+
+    @Test
     void unlinkPreservesCardData() {
         allowSave();
         SolutionCardRevision card = card(activeCallId);

@@ -15,6 +15,7 @@ public class CallSnapshot {
     private Integer queuePosition;
     private CallDirection direction;
     private CounterpartyType counterparty;
+    private String serviceCode;
     private CallStatus status;
     private List<String> knownFacts = new ArrayList<>();
     private List<String> hiddenFacts = new ArrayList<>();

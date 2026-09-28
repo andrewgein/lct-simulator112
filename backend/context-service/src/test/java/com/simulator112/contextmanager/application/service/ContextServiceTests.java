@@ -22,6 +22,7 @@ import com.simulator112.incident.grpc.contract.ExecutionMode;
 import com.simulator112.incident.grpc.contract.IncidentContext;
 import com.simulator112.incident.grpc.contract.IncidentStage;
 import com.simulator112.incident.grpc.contract.IncidentTargetType;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -56,10 +57,24 @@ class ContextServiceTests {
         assertThat(context.getThreshold3()).isEqualTo(40);
         assertThat(context.getThreshold4()).isEqualTo(60);
         assertThat(context.getThreshold5()).isEqualTo(80);
+        var call = new com.simulator112.contextmanager.domain.common.CallSnapshot();
+        call.setSourceId(UUID.randomUUID());
+        call.setStatus(com.simulator112.contextmanager.domain.common.CallStatus.COMPLETED);
+        call.setPosition(0);
+        call.setDirection(com.simulator112.contextmanager.domain.common.CallDirection.OUTBOUND);
+        call.setCounterparty(com.simulator112.contextmanager.domain.common.CounterpartyType.BRIGADE);
+        context.getIncidents().getFirst().getStages().getFirst().getCalls().add(call);
         var proto = com.simulator112.contextmanager.adapter.grpc.mapper.FullContextMapper.toProto(context);
         assertThat(proto.getAssignmentContext().getThreshold3()).isEqualTo(40);
         assertThat(proto.getAssignmentContext().getThreshold4()).isEqualTo(60);
         assertThat(proto.getAssignmentContext().getThreshold5()).isEqualTo(80);
+        assertThat(proto.getAssignmentContext().getIncidents(0).getStages(0).getDds().getActualStatus())
+                .isEqualTo(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_ARRIVED);
+        assertThat(proto.getLevelProgress().getIncidents(0).getReactionEventsList())
+                .extracting(com.simulator112.context.grpc.contract.ReactionEvent::getStatus)
+                .contains(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_RECEIVED_BY_SERVICE);
+        assertThat(proto.getLevelProgress().getIncidents(0).getDds().getStages(0).getCompletedCallIdsList())
+                .containsExactly(call.getSourceId().toString());
         assertThat(context.getIncidents())
                 .allMatch(incident -> incident.getStatus() == IncidentProgressStatus.ACTIVE);
         assertThat(context.getIncidents())
@@ -79,6 +94,9 @@ class ContextServiceTests {
         var incident = new com.simulator112.contextmanager.domain.common.IncidentSnapshot();
         incident.setStatus(IncidentProgressStatus.COMPLETED);
         context.getIncidents().add(incident);
+        context.setDialog(new com.simulator112.contextmanager.domain.common.DialogTranscript(
+                java.util.List.of(new com.simulator112.contextmanager.domain.common.Phrase(
+                        com.simulator112.contextmanager.domain.common.SpeakerType.USER, "привет", null))));
         when(repository.findById(contextId)).thenReturn(Optional.of(context));
         when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(review.send(any())).thenReturn(true);
@@ -86,7 +104,42 @@ class ContextServiceTests {
         service.closeContext(contextId);
 
         assertThat(context.getStatus()).isEqualTo(ContextStatus.DONE);
+        assertThat(context.getDialog()).isNull();
         verify(review).send(any());
+    }
+
+    @Test
+    void deletesAbandonedContexts() {
+        Instant threshold = Instant.now().minus(java.time.Duration.ofHours(24));
+        TrainingContext abandoned = new TrainingContext();
+        abandoned.setId(UUID.randomUUID());
+        when(repository.findAbandoned(threshold)).thenReturn(java.util.List.of(abandoned));
+
+        service.cleanupAbandoned(threshold);
+
+        verify(repository).delete(abandoned.getId());
+    }
+
+    @Test
+    void findsActiveContextForUserAndAssignment() {
+        UUID userId = UUID.randomUUID();
+        UUID assignmentId = UUID.randomUUID();
+        TrainingContext context = new TrainingContext();
+        context.setId(UUID.randomUUID());
+        when(repository.findActive(userId, assignmentId)).thenReturn(Optional.of(context));
+
+        Optional<UUID> result = service.findActiveContext(userId, assignmentId);
+
+        assertThat(result).contains(context.getId());
+    }
+
+    @Test
+    void returnsEmptyWhenNoActiveContextExists() {
+        UUID userId = UUID.randomUUID();
+        UUID assignmentId = UUID.randomUUID();
+        when(repository.findActive(userId, assignmentId)).thenReturn(Optional.empty());
+
+        assertThat(service.findActiveContext(userId, assignmentId)).isEmpty();
     }
 
     private IncidentContext ddsIncident() {
@@ -96,13 +149,13 @@ class ContextServiceTests {
                 .setTitle("Пожар")
                 .setTargetType(IncidentTargetType.INCIDENT_TARGET_TYPE_DDS)
                 .setDifficulty(Difficulty.DIFFICULTY_NORMAL)
-                .setDdsInitialStageId(stageId.toString())
                 .addStages(IncidentStage.newBuilder()
                         .setId(stageId.toString())
                         .setTitle("Назначение")
                         .setDds(DdsStageDetails.newBuilder()
                                 .setType(DdsStageType.DDS_STAGE_TYPE_ASSIGN_BRIGADE)
-                                .setTimeLimitSeconds(60)))
+                                .setTimeLimitSeconds(60)
+                                .setActualStatus(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_ARRIVED)))
                 .build();
     }
 }

@@ -1,5 +1,5 @@
 server:
-  port: 8087
+  port: ${SERVER_PORT:8090}
 spring:
   application:
     name: notification-service
@@ -44,8 +44,8 @@ spring:
       properties:
         "[spring.deserializer.key.delegate.class]": org.apache.kafka.common.serialization.StringDeserializer
         "[spring.deserializer.value.delegate.class]": org.springframework.kafka.support.serializer.JsonDeserializer
-        "[spring.json.trusted.packages]": "com.simulator112.notification.dto"
-        "[spring.json.type.mapping]": "com.simulator112.auth.dto.event.PasswordResetRequestedEvent:com.simulator112.notification.dto.PasswordResetEvent,com.simulator112.auth.dto.event.EmailVerificationRequestedEvent:com.simulator112.notification.dto.EmailVerificationRequestedEvent,com.simulator112.auth.dto.event.UserCreatedEvent:com.simulator112.notification.dto.UserCreatedEvent,com.simulator112.review_service.adapter.out.messaging.dto.ReviewCommentCreatedEvent:com.simulator112.notification.dto.ReviewCommentCreatedEvent,com.simulator112.course.adapter.out.messaging.dto.CertificateIssuedEvent:com.simulator112.notification.dto.CertificateIssuedEvent"
+        "[spring.json.trusted.packages]": "com.simulator112.notification.adapter.in.kafka.dto"
+        "[spring.json.type.mapping]": "com.simulator112.auth.adapter.out.kafka.dto.PasswordResetRequestedEvent:com.simulator112.notification.adapter.in.kafka.dto.PasswordResetEvent,com.simulator112.auth.adapter.out.kafka.dto.EmailVerificationRequestedEvent:com.simulator112.notification.adapter.in.kafka.dto.EmailVerificationRequestedEvent,com.simulator112.auth.adapter.out.kafka.dto.UserCreatedEvent:com.simulator112.notification.adapter.in.kafka.dto.UserCreatedEvent,com.simulator112.review_service.adapter.out.messaging.dto.ReviewCommentCreatedEvent:com.simulator112.notification.adapter.in.kafka.dto.ReviewCommentCreatedEvent,com.simulator112.course.adapter.out.messaging.dto.CertificateIssuedEvent:com.simulator112.notification.adapter.in.kafka.dto.CertificateIssuedEvent"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer

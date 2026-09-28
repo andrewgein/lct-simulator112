@@ -49,6 +49,16 @@ http {
             proxy_set_header Connection $connection_upgrade;
         }
 
+        location = /api/v1/incidents/generate/stream {
+            set $upstream sim112-stable-frontend;
+            proxy_pass http://$upstream;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_read_timeout 150s;
+            proxy_buffering off;
+        }
+
         location / {
             set $upstream sim112-stable-frontend;
             proxy_pass http://$upstream;

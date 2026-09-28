@@ -1,15 +1,18 @@
 package com.simulator112.contextmanager.application.service;
 
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.simulator112.contextmanager.application.port.in.CleanupAbandonedContextsUseCase;
 import com.simulator112.contextmanager.application.port.in.ContextUseCase;
 import com.simulator112.contextmanager.application.port.out.CourseAssignmentPort;
 import com.simulator112.contextmanager.application.port.out.ReviewPort;
@@ -27,13 +30,14 @@ import com.simulator112.contextmanager.domain.common.ReactionStatus;
 import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
 import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.common.StageStatus;
+import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ContextService implements ContextUseCase {
+public class ContextService implements ContextUseCase, CleanupAbandonedContextsUseCase {
     private final ContextStore contextStore;
     private final ReviewPort reviewService;
     private final CourseAssignmentPort courseAssignments;
@@ -78,6 +82,22 @@ public class ContextService implements ContextUseCase {
         return create(userId, assignmentId).getId();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UUID> findActiveContext(UUID userId, UUID assignmentId) {
+        return contextStore.findActive(userId, assignmentId).map(TrainingContext::getId);
+    }
+
+    @Override
+    @Transactional
+    public void cleanupAbandoned(Instant updatedBefore) {
+        List<TrainingContext> abandoned = contextStore.findAbandoned(updatedBefore);
+        abandoned.forEach(context -> contextStore.delete(context.getId()));
+        if (!abandoned.isEmpty()) {
+            log.info("Удалено {} брошенных контекстов без активности с {}", abandoned.size(), updatedBefore);
+        }
+    }
+
     @Transactional
     public TrainingContext create(UUID userId, UUID assignmentId) {
         var assignment = courseAssignments.getAssignmentForUser(assignmentId, userId);
@@ -118,11 +138,10 @@ public class ContextService implements ContextUseCase {
 
     private void activateDdsIncident(IncidentSnapshot incident) {
         incident.setStatus(IncidentProgressStatus.ACTIVE);
-        incident.setActiveStageId(incident.getInitialStageId());
         var stage = incident.getStages().stream()
-                .filter(value -> value.getSourceId().equals(incident.getInitialStageId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Начальный этап DDS не найден"));
+                .min(Comparator.comparingInt(StageSnapshot::getPosition))
+                .orElseThrow(() -> new IllegalStateException("Этапы DDS не найдены"));
+        incident.setActiveStageId(stage.getSourceId());
         var now = java.time.Instant.now();
         ServiceReaction reaction = new ServiceReaction(incident.getInitialAssignmentService());
         reaction.getHistory().add(new ReactionStatusEvent(ReactionStatus.ADDED, now, null));
@@ -130,7 +149,7 @@ public class ContextService implements ContextUseCase {
         incident.getServiceReactions().add(reaction);
         stage.setStatus(StageStatus.ACTIVE);
         stage.setStartedAt(now);
-        stage.setDeadlineAt(now.plusSeconds(stage.getTimeLimitSeconds()));
+        stage.setDeadlineAt(now.plusSeconds(stage.getDds().getTimeLimitSeconds()));
     }
 
     private void assignSequentialQueue(List<IncidentSnapshot> incidents) {
@@ -197,7 +216,8 @@ public class ContextService implements ContextUseCase {
             return false;
         }
         if (context.getTargetType() == IncidentTargetType.DDS) {
-            return context.getIncidents().stream().allMatch(incident ->
+            return context.getDialogStatus() != DialogProgressStatus.IN_CALL
+                    && context.getIncidents().stream().allMatch(incident ->
                     incident.getStatus() == IncidentProgressStatus.COMPLETED
                             || incident.getStatus() == IncidentProgressStatus.FAILED);
         }
@@ -214,6 +234,7 @@ public class ContextService implements ContextUseCase {
         try {
             if (reviewService.send(context)) {
                 context.setStatus(ContextStatus.DONE);
+                context.setDialog(null);
                 contextStore.save(context);
             }
             log.info("Контекст {} отправлен на ревью", context.getId());

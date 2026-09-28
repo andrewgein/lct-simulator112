@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "preact/hooks";
 
-export default function EditorDialog({ className, label, open, onCancel, onSave, children }) {
+export default function EditorDialog({ className, label, open, onCancel, onSave, children, width = "min(90vw, 80rem)" }) {
   const dialogRef = useRef(null);
   const formRef = useRef(null);
   const intentionalClose = useRef(false);
@@ -25,11 +25,12 @@ export default function EditorDialog({ className, label, open, onCancel, onSave,
   };
   const submit = (event) => {
     event.preventDefault();
+    event.stopPropagation();
     close(onSave);
   };
 
   return (
-    <wa-dialog ref={dialogRef} class={className} label={label} style="--width: min(90vw, 80rem);" with-footer>
+    <wa-dialog ref={dialogRef} class={className} label={label} style={`--width: ${width};`} with-footer>
       <form ref={formRef} onSubmit={submit}>
         {children}
       </form>

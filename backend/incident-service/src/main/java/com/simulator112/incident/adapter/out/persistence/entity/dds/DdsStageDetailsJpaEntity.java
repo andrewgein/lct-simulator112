@@ -2,6 +2,7 @@ package com.simulator112.incident.adapter.out.persistence.entity.dds;
 
 import com.simulator112.incident.adapter.out.persistence.entity.common.IncidentStageJpaEntity;
 import com.simulator112.incident.domain.dds.DdsStageType;
+import com.simulator112.incident.domain.common.IncidentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -30,4 +31,11 @@ public class DdsStageDetailsJpaEntity {
 
     @Column(name = "time_limit_seconds", nullable = false)
     private int timeLimitSeconds;
+
+    @Column(name = "expected_comment", columnDefinition = "text")
+    private String expectedComment;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "actual_status", length = 50)
+    private IncidentStatus actualStatus;
 }

@@ -14,7 +14,8 @@ spring:
     open-in-view: false
   grpc:
     server:
-      port: 9092
+      # 9092 занят Kafka, 9094 — gRPC profile-service при локальном запуске.
+      port: ${GRPC_SERVER_PORT:9096}
   # в спринг бут 4 нет автоконфигурации кафки и не биндит spring.kafka.* сам 
   # bootstrap-servers читает вручную KafkaProducerConfiguration, сериализаторы заданы там же
   kafka:

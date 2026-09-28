@@ -8,6 +8,11 @@ export function createContext(assignmentId, token) {
     return apiCall(API_PREFIX, "POST", { assignmentId }, token);
 }
 
+/** @param {string} assignmentId @param {string} token */
+export function findActiveContext(assignmentId, token) {
+    return apiCall(`${API_PREFIX}?assignmentId=${segment(assignmentId)}`, "GET", undefined, token);
+}
+
 /** @param {string} contextId @param {string} callId @param {import("../contract/Context").SolutionCardRequest} card @param {string} token */
 export function createCardForCall(contextId, callId, card, token) {
     return apiCall(`${API_PREFIX}/${segment(contextId)}/calls/${segment(callId)}/cards`, "POST", card, token);
@@ -28,9 +33,9 @@ export function getLevelProgress(contextId, token) {
     return apiCall(`${API_PREFIX}/${segment(contextId)}/progress`, "GET", undefined, token);
 }
 
-/** @param {string} contextId @param {string} incidentId @param {import("../contract/Context").DdsStageSignal} signal @param {string} token */
-export function applyDdsStageSignal(contextId, incidentId, signal, token) {
-    return apiCall(`${API_PREFIX}/${segment(contextId)}/dds/incidents/${segment(incidentId)}/signals`, "POST", { signal }, token);
+/** @param {string} contextId @param {string} incidentId @param {{stageId: string, comment: string}} body @param {string} token */
+export function saveDdsComment(contextId, incidentId, body, token) {
+    return apiCall(`${API_PREFIX}/${segment(contextId)}/dds/incidents/${segment(incidentId)}/comments`, "POST", body, token);
 }
 
 /** @param {string} contextId @param {string} incidentId @param {{ serviceCode: string, status: import("../contract/Context").ReactionStatus, comment?: string }} body @param {string} token */

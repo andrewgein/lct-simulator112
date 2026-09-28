@@ -2,7 +2,6 @@ package com.simulator112.incident.adapter.out.persistence;
 
 import com.simulator112.incident.adapter.out.persistence.entity.common.*;
 import com.simulator112.incident.adapter.out.persistence.entity.dds.DdsStageDetailsJpaEntity;
-import com.simulator112.incident.adapter.out.persistence.entity.dds.DdsStageTransitionEmbeddable;
 import com.simulator112.incident.adapter.out.persistence.entity.system112.System112StageDetailsJpaEntity;
 import com.simulator112.incident.domain.common.*;
 import com.simulator112.incident.domain.dds.*;
@@ -23,14 +22,8 @@ public class IncidentPersistenceMapper {
                     entity.getId(), entity.getTitle(), toDomain(entity.getAddress()), entity.getDifficulty(), stages,
                     new PreparedCardTemplate(entity.getPreparedCardClassifierCodes(),
                             toDomain(entity.getCardApplicant()), entity.getCardVictimCount(),
-                            entity.getPreparedCardAdditionalInfo()),
-                    new InitialAssignment(entity.getEmergencyService(), entity.getInitialAssignmentClassifierCode(),
-                            entity.getInitialAssignmentInstructions()),
-                    entity.getDdsInitialStageId(),
-                    entity.getDdsStageTransitions().stream()
-                            .map(value -> new DdsStageTransition(value.getStageId(), value.getSuccessStageId(),
-                                    value.getFailureStageId()))
-                            .toList());
+                            entity.getPreparedCardAdditionalInfo(), entity.getPreparedCardAssignedServices()),
+                    new InitialAssignment(entity.getEmergencyService()));
         }
         List<System112Stage> stages = entity.getStages().stream().map(this::toSystem112Stage).toList();
         return new System112Incident(
@@ -50,21 +43,19 @@ public class IncidentPersistenceMapper {
             system112.stages().stream().map(this::toEntity).forEach(entity::addStage);
             entity.setDialogueCriteria(toEntityCriteria(system112.criteria().dialogueCriteria()));
         } else if (incident instanceof DdsIncident dds) {
-            dds.stages().stream().map(this::toEntity).forEach(entity::addStage);
+            for (int position = 0; position < dds.stages().size(); position++) {
+                var stage = toEntity(dds.stages().get(position));
+                stage.setPosition(position);
+                entity.addStage(stage);
+            }
             PreparedCardTemplate card = dds.preparedCardTemplate();
             entity.setPreparedCardClassifierCodes(new java.util.ArrayList<>(card.classifierCodes()));
+            entity.setPreparedCardAssignedServices(new java.util.ArrayList<>(card.assignedServices()));
             entity.setCardApplicant(toEntity(card.applicant()));
             entity.setCardVictimCount(card.victimCount());
             entity.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(card.additionalInfo()));
             InitialAssignment assignment = dds.initialAssignment();
             entity.setEmergencyService(assignment.emergencyService());
-            entity.setInitialAssignmentClassifierCode(assignment.classifierCode());
-            entity.setInitialAssignmentInstructions(assignment.instructions());
-            entity.setDdsInitialStageId(dds.initialStageId());
-            entity.setDdsStageTransitions(dds.transitions().stream()
-                    .map(value -> new DdsStageTransitionEmbeddable(
-                            value.stageId(), value.successStageId(), value.failureStageId()))
-                    .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)));
         }
         return entity;
     }
@@ -81,7 +72,7 @@ public class IncidentPersistenceMapper {
         DdsStageDetailsJpaEntity details = entity.getDdsDetails();
         return new DdsStage(
                 entity.getId(), entity.getTitle(), entity.getDescription(), details.getType(),
-                details.getTimeLimitSeconds(), entity.getCalls().stream().map(this::toDomain).toList());
+                details.getTimeLimitSeconds(), entity.getCalls().stream().map(this::toDomain).toList(), details.getExpectedComment(), details.getActualStatus());
     }
 
     private IncidentStageJpaEntity toEntity(System112Stage stage) {
@@ -102,6 +93,8 @@ public class IncidentPersistenceMapper {
         details.setStageId(entity.getId());
         details.setType(stage.type());
         details.setTimeLimitSeconds(stage.timeLimitSeconds());
+        details.setExpectedComment(stage.expectedComment());
+        details.setActualStatus(stage.actualStatus());
         entity.setDdsDetails(details);
         return entity;
     }
@@ -119,7 +112,7 @@ public class IncidentPersistenceMapper {
         return new CallScenario(
                 entity.getId(), entity.getPosition(), entity.getDirection(), entity.getCounterparty(),
                 toDomain(entity.getPerson()), entity.getGender(), entity.getKnownFacts(), entity.getHiddenFacts(),
-                entity.getAiContext(), entity.getEmotionalState());
+                entity.getAiContext(), entity.getEmotionalState(), entity.getServiceCode());
     }
 
     private CallScenarioJpaEntity toEntity(CallScenario call) {
@@ -128,6 +121,7 @@ public class IncidentPersistenceMapper {
         entity.setPosition(call.position());
         entity.setDirection(call.direction());
         entity.setCounterparty(call.counterparty());
+        entity.setServiceCode(call.serviceCode());
         entity.setPerson(toEntity(call.person()));
         entity.setGender(call.gender());
         entity.setKnownFacts(new java.util.ArrayList<>(call.knownFacts()));

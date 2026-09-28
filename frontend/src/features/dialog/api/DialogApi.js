@@ -3,10 +3,11 @@ let controlSocket = null;
 
 export let isDialogStarted = false;
 
-function websocketUrl(apiEndpoint, path, contextId) {
+function websocketUrl(apiEndpoint, path, contextId, params = {}) {
     const endpoint = apiEndpoint || window.location.origin;
     const base = endpoint.replace(/^http:/i, "ws:").replace(/^https:/i, "wss:");
-    return `${base}${path}?contextId=${encodeURIComponent(contextId)}`;
+    const query = new URLSearchParams({ contextId, ...params });
+    return `${base}${path}?${query.toString()}`;
 }
 
 function emit(type, detail = {}) {
@@ -36,15 +37,30 @@ export function requestNextCall() {
     }
 }
 
+export function dismissCall() {
+    if (controlSocket?.readyState === WebSocket.OPEN) {
+        controlSocket.send(JSON.stringify({ type: "dismiss_call" }));
+    }
+}
+
+export function requestCall(callId) {
+    if (controlSocket?.readyState !== WebSocket.OPEN) return false;
+    controlSocket.send(JSON.stringify({ type: "request_call", callId }));
+    return true;
+}
+
 export function requestDialogStatus() {
     if (controlSocket?.readyState === WebSocket.OPEN) {
         controlSocket.send(JSON.stringify({ type: "request_status" }));
     }
 }
 
-export function startDialog(apiEndpoint, contextId) {
-    const websocketEndpoint = websocketUrl(apiEndpoint, "/api/v1/dialog/process-call", contextId);
-    audioContext = new AudioContext();
+export function startDialog(apiEndpoint, contextId, { restart = false } = {}) {
+    const websocketEndpoint = websocketUrl(apiEndpoint, "/api/v1/dialog/process-call", contextId,
+        restart ? { restart: "true" } : {});
+    // Fixed at 16kHz (Vosk's native rate) so capture, VAD and STT never drift
+    // apart depending on the device's default audio hardware rate.
+    audioContext = new AudioContext({ sampleRate: 16000 });
     audioContext.resume().catch((error) => console.error("Can't start audio playback", error));
 
     websocket = new WebSocket(websocketEndpoint);
@@ -77,7 +93,7 @@ export function startDialog(apiEndpoint, contextId) {
     };
 
     navigator.mediaDevices
-        .getUserMedia({ audio: true })
+        .getUserMedia({ audio: { sampleRate: 16000, channelCount: 1 } })
         .then((stream) => {
             audioStream = stream;
             const source = audioContext.createMediaStreamSource(audioStream);

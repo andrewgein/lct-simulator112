@@ -40,7 +40,7 @@ export default function DataGrid({ data = [], columns = [], label = "Табли�
   const table = constructTable({
     features: tableFeaturesConfig,
     data: filteredRows,
-    columns: columns.map((column) => ({ id: column.field, accessorKey: column.field, header: column.label, enableSorting: column.sortable !== false })),
+    columns: columns.map((column) => ({ id: column.field, ...(column.sortValue ? { accessorFn: column.sortValue } : { accessorKey: column.field }), header: column.label, enableSorting: column.sortable !== false })),
     state: { sorting: sort ? [{ id: sort.field, desc: sort.direction === "desc" }] : [] },
     onSortingChange: (updater) => {
       const current = sort ? [{ id: sort.field, desc: sort.direction === "desc" }] : [];
@@ -54,7 +54,7 @@ export default function DataGrid({ data = [], columns = [], label = "Табли�
   const currentPage = Math.min(page, pageCount - 1);
   const visibleRows = sortedRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
   const activateRow = (event, row) => {
-    if (!onRowClick || event.target.closest("button, a, input, wa-button, wa-checkbox")) return;
+    if (!onRowClick || event.target.closest("button, a, input, wa-button, wa-checkbox, [data-ignore-row-click]")) return;
     onRowClick(row);
   };
   return (

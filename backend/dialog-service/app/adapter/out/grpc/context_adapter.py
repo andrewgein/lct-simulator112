@@ -2,7 +2,12 @@ import os
 
 import grpc
 
-from app.adapter.out.grpc.context_mapper import call_from_proto, progress_from_proto, transcript_to_proto
+from app.adapter.out.grpc.context_mapper import (
+    call_from_proto,
+    progress_from_proto,
+    transcript_from_proto,
+    transcript_to_proto,
+)
 from app.application.port.outbound import ContextPort, NoMoreCallsError
 from app.domain.model import CallScenario, DialogProgress, DialogTranscript
 from app.grpc.com.simulator112.context import context_service_pb2 as context_pb
@@ -42,6 +47,15 @@ class GrpcContextAdapter(ContextPort):
     def disconnect_call(self, context_id: str, call_id: str) -> DialogProgress:
         return progress_from_proto(self._call("DisconnectCall", context_pb.DisconnectCallRequest(context_id=context_id, call_id=call_id)))
 
-    def append_transcript(self, context_id: str, transcript: DialogTranscript) -> None:
+    def append_transcript(self, context_id: str, call_id: str, transcript: DialogTranscript) -> None:
         self._call("AppendDialogContext", context_pb.AppendDialogContextRequest(
-            uuid=context_id, dialog_context=transcript_to_proto(transcript)))
+            uuid=context_id, call_id=call_id, dialog_context=transcript_to_proto(transcript)))
+
+    def get_call_transcript(self, context_id: str, call_id: str) -> DialogTranscript:
+        value = self._call("GetCallTranscript", context_pb.GetCallTranscriptRequest(
+            context_id=context_id, call_id=call_id))
+        return transcript_from_proto(value)
+
+    def clear_call_transcript(self, context_id: str, call_id: str) -> None:
+        self._call("ClearCallTranscript", context_pb.ClearCallTranscriptRequest(
+            context_id=context_id, call_id=call_id))

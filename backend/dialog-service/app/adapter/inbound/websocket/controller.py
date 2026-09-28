@@ -13,7 +13,7 @@ from app.application.port.outbound import (
 )
 from app.adapter.out.processing.latency_tracker import tracker
 from app.application.service.transcript_builder import DialogContextBuilder
-from app.domain.model import DialogProgress, DialogStatus
+from app.domain.model import DialogProgress, DialogStatus, DialogTranscript
 
 SERVICE_LOAD_PUSH_INTERVAL_SECONDS = 5
 
@@ -75,6 +75,7 @@ def handle_progress_request(context_id: str) -> dict:
             "callAvailable": True,
             "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
+            "interrupted": was_call_disconnected(progress),
         }
     if progress.status == DialogStatus.COMPLETED:
         return {
@@ -96,12 +97,23 @@ def handle_next_call(context_id: str) -> dict:
             "callAvailable": True,
             "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
+            "interrupted": was_call_disconnected(progress),
         }
 
     try:
         call = dialog_use_case().next_call(context_id)
     except NoMoreCallsError:
         return {"type": "no_more_calls"}
+    return {
+        "type": "call_ready",
+        "callAvailable": True,
+        "callId": call.id,
+        "phoneNumber": call.person.phone,
+    }
+
+
+def handle_selected_call(context_id: str, call_id: str) -> dict:
+    call = dialog_use_case().select_call(context_id, call_id)
     return {
         "type": "call_ready",
         "callAvailable": True,
@@ -143,6 +155,21 @@ async def dialog_session(ws: WebSocket):
                     response = handle_progress_request(context_id)
                 case "request_next_call":
                     response = handle_next_call(context_id)
+                case "dismiss_call":
+                    progress = dialog_use_case().session(context_id).progress
+                    if progress.active_call_id and progress.status == DialogStatus.IN_CALL:
+                        dialog_use_case().disconnect(context_id, progress.active_call_id, DialogTranscript(phrases=()))
+                    response = {"type": "call_finished", "callId": progress.active_call_id}
+                case "request_call":
+                    call_id = request.get("callId")
+                    if not isinstance(call_id, str) or not call_id:
+                        response = handle_error("Укажите звонок")
+                    else:
+                        try:
+                            response = handle_selected_call(context_id, call_id)
+                        except Exception as exc:
+                            logger.exception("Could not start selected call %s", call_id)
+                            response = handle_error(str(exc))
                 case _:
                     response = handle_error("Unknown session command")
             async with send_lock:
@@ -174,6 +201,7 @@ async def process_call(ws: WebSocket):
         return
 
     logger.info("Call contextId: %s", context_id)
+    restart = ws.query_params.get("restart", "").lower() == "true"
     processing_context = None
     dialog_context_builder = DialogContextBuilder()
     completed = False
@@ -183,8 +211,14 @@ async def process_call(ws: WebSocket):
         await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No active call")
         return
     call_id = progress.active_call_id
-    call = dialog_use_case().resume_call(context_id)
-    call_recorder = call_recorder_factory().create(context_id, call_id)
+    history = None
+    if restart:
+        call = dialog_use_case().restart_call(context_id)
+    else:
+        call = dialog_use_case().resume_call(context_id)
+        if was_call_disconnected(progress):
+            history = dialog_use_case().transcript_for_resume(context_id, call_id)
+    call_recorder = call_recorder_factory().create(context_id, call_id, restart)
 
     loop = asyncio.get_running_loop()
     client_disconnected = threading.Event()
@@ -210,6 +244,7 @@ async def process_call(ws: WebSocket):
         on_operator_phrase=dialog_context_builder.append_user_phrase,
         on_counterparty_phrase=dialog_context_builder.append_llm_phrase,
         on_audio=output_callback,
+        history=history,
     )
 
     try:

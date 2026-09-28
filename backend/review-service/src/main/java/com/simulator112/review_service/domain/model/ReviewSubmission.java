@@ -27,7 +27,7 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, T
 
     public enum TargetType {SYSTEM_112, DDS}
 
-    public record IncidentScenario(String id, int order, List<StageScenario> stages,
+    public record IncidentScenario(String id, int order, String title, List<StageScenario> stages,
                                    EvaluationCriteria criteria) {
         public IncidentScenario {
             stages = List.copyOf(stages);
@@ -58,10 +58,25 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, T
     }
 
     public record StageScenario(String id, Integer position, List<String> classifierCodes, Map<String, String> expectedRoutingFacts, int victimCount,
-                                String ddsStageType, List<CallScenario> calls) {
+                                String ddsStageType, List<CallScenario> calls, String expectedComment, IncidentStatus actualStatus) {
+        public StageScenario(String id, Integer position, List<String> classifierCodes, Map<String, String> expectedRoutingFacts, int victimCount,
+                             String ddsStageType, List<CallScenario> calls) {
+            this(id, position, classifierCodes, expectedRoutingFacts, victimCount, ddsStageType, calls, null, null);
+        }
+
+        public StageScenario(String id, Integer position, List<String> classifierCodes, int victimCount,
+                             String ddsStageType, List<CallScenario> calls, String expectedComment, IncidentStatus actualStatus) {
+            this(id, position, classifierCodes, Map.of(), victimCount, ddsStageType, calls, expectedComment, actualStatus);
+        }
+
+        public StageScenario(String id, Integer position, List<String> classifierCodes, int victimCount,
+                             String ddsStageType, List<CallScenario> calls, String expectedComment) {
+            this(id, position, classifierCodes, victimCount, ddsStageType, calls, expectedComment, null);
+        }
+
         public StageScenario(String id, Integer position, List<String> classifierCodes, int victimCount,
                              String ddsStageType, List<CallScenario> calls) {
-            this(id, position, classifierCodes, Map.of(), victimCount, ddsStageType, calls);
+            this(id, position, classifierCodes, victimCount, ddsStageType, calls, null, null);
         }
 
         public StageScenario {
@@ -89,14 +104,40 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, T
         }
     }
 
-    public record IncidentRuntime(String incidentId, String status, List<StageRuntime> stages) {
+    public record IncidentRuntime(String incidentId, String status, List<StageRuntime> stages,
+                                  List<ReactionEvent> reactionEvents) {
+        public IncidentRuntime(String incidentId, String status, List<StageRuntime> stages) {
+            this(incidentId, status, stages, List.of());
+        }
+
         public IncidentRuntime {
             stages = List.copyOf(stages);
+            reactionEvents = List.copyOf(reactionEvents);
         }
     }
 
+    public record ReactionEvent(IncidentStatus status, Instant changedAt, String comment) {
+    }
+
     public record StageRuntime(String stageId, String stageType, String status,
-                               Instant startedAt, Instant deadline) {
+                               Instant startedAt, Instant deadline, String comment, boolean completedCall,
+                               List<String> completedCallIds) {
+        public StageRuntime {
+            completedCallIds = List.copyOf(completedCallIds);
+        }
+
+        public StageRuntime(String stageId, String stageType, String status, Instant startedAt, Instant deadline,
+                            String comment, boolean completedCall) {
+            this(stageId, stageType, status, startedAt, deadline, comment, completedCall, List.of());
+        }
+
+        public StageRuntime(String stageId, String stageType, String status, Instant startedAt, Instant deadline, String comment) {
+            this(stageId, stageType, status, startedAt, deadline, comment, false, List.of());
+        }
+
+        public StageRuntime(String stageId, String stageType, String status, Instant startedAt, Instant deadline) {
+            this(stageId, stageType, status, startedAt, deadline, null, false, List.of());
+        }
     }
 
     public record TranscriptPhrase(String speaker, String text) {

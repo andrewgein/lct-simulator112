@@ -27,11 +27,10 @@ public class IncidentRestMapper {
             var stages = request.stages().stream()
                     .map(stage -> new DdsStage(stage.id(), stage.title(), stage.description(), stage.type(),
                             require(stage.timeLimitSeconds(), "Ограничение времени этапа ДДС обязательно"),
-                            stage.calls()))
+                            stage.calls(), stage.expectedComment(), stage.actualStatus()))
                     .toList();
             return new DdsIncident(id, request.title(), request.address(), request.difficulty(), stages,
-                    request.preparedCardTemplate(), request.initialAssignment(),
-                    request.initialStageId(), request.transitions());
+                    request.preparedCardTemplate(), request.initialAssignment());
         }
         var stages = request.stages().stream()
                 .map(stage -> new System112Stage(stage.id(), stage.title(),

@@ -25,6 +25,7 @@ def call_from_proto(value: incident_pb.CallScenario) -> CallScenario:
         counterparty={
             incident_pb.COUNTERPARTY_TYPE_CALLER: CounterpartyType.CALLER,
             incident_pb.COUNTERPARTY_TYPE_BRIGADE: CounterpartyType.BRIGADE,
+            incident_pb.COUNTERPARTY_TYPE_SERVICE: CounterpartyType.SERVICE,
         }.get(value.counterparty, CounterpartyType.UNSPECIFIED),
         person=Person(
             first_name=person.first_name,
@@ -44,6 +45,7 @@ def call_from_proto(value: incident_pb.CallScenario) -> CallScenario:
         hidden_facts=tuple(value.hidden_facts),
         ai_context=value.ai_context,
         emotional_state=value.emotional_state,
+        service_code=value.service_code,
     )
 
 
@@ -65,3 +67,11 @@ def transcript_to_proto(value: DialogTranscript) -> context_pb.DialogContext:
         context_pb.Phrase(speaker=speakers[phrase.speaker], text=phrase.text)
         for phrase in value.phrases
     ])
+
+
+def transcript_from_proto(value: context_pb.DialogContext) -> DialogTranscript:
+    speakers = {context_pb.USER: Speaker.OPERATOR, context_pb.LLM: Speaker.COUNTERPARTY}
+    return DialogTranscript(tuple(
+        Phrase(speaker=speakers[phrase.speaker], text=phrase.text)
+        for phrase in value.transcript
+    ))

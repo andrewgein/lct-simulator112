@@ -1,6 +1,5 @@
 package com.simulator112.incident.adapter.out.persistence.entity.common;
 
-import com.simulator112.incident.adapter.out.persistence.entity.dds.DdsStageTransitionEmbeddable;
 import com.simulator112.incident.domain.common.Difficulty;
 import com.simulator112.incident.domain.common.IncidentTargetType;
 import jakarta.persistence.*;
@@ -45,8 +44,6 @@ public class IncidentJpaEntity {
     @Column(name = "emergency_service")
     private String emergencyService;
 
-    @Column(name = "dds_initial_stage_id")
-    private UUID ddsInitialStageId;
 
     @ElementCollection
     @CollectionTable(name = "prepared_card_classifier_codes", joinColumns = @JoinColumn(name = "incident_id"))
@@ -54,11 +51,11 @@ public class IncidentJpaEntity {
     @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> preparedCardClassifierCodes = new ArrayList<>();
 
-    @Column(name = "initial_assignment_classifier_code")
-    private String initialAssignmentClassifierCode;
-
-    @Column(name = "initial_assignment_instructions", columnDefinition = "text")
-    private String initialAssignmentInstructions;
+    @ElementCollection
+    @CollectionTable(name = "prepared_card_assigned_services", joinColumns = @JoinColumn(name = "incident_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "service_code", nullable = false, length = 50)
+    private List<String> preparedCardAssignedServices = new ArrayList<>();
 
     @Embedded
     @AttributeOverrides({
@@ -82,10 +79,6 @@ public class IncidentJpaEntity {
     @MapKeyColumn(name = "info_key")
     @Column(name = "info_value")
     private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();
-
-    @ElementCollection
-    @CollectionTable(name = "dds_stage_transitions", joinColumns = @JoinColumn(name = "incident_id"))
-    private List<DdsStageTransitionEmbeddable> ddsStageTransitions = new ArrayList<>();
 
     @ElementCollection
     @CollectionTable(name = "incident_dialogue_criteria", joinColumns = @JoinColumn(name = "incident_id"))

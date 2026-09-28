@@ -26,6 +26,26 @@ class DialogServiceTests(unittest.TestCase):
         self.port.get_next_call.assert_called_once_with("context-1", "-1")
         self.port.start_call.assert_called_once_with("context-1", "call-1")
 
+    def test_selects_requested_call_instead_of_first_available(self):
+        self.port.get_progress.return_value = DialogProgress("context-1", "", DialogStatus.IDLE)
+        self.port.get_call.return_value = self.call
+
+        result = self.service.select_call("context-1", "call-1")
+
+        self.assertEqual(self.call, result)
+        self.port.get_call.assert_called_once_with("context-1", "call-1")
+        self.port.start_call.assert_called_once_with("context-1", "call-1")
+        self.port.get_next_call.assert_not_called()
+
+    def test_cannot_select_another_call_during_active_conversation(self):
+        self.port.get_progress.return_value = DialogProgress(
+            "context-1", "call-2", DialogStatus.IN_CALL)
+
+        with self.assertRaisesRegex(ValueError, "Другой звонок уже активен"):
+            self.service.select_call("context-1", "call-1")
+
+        self.port.start_call.assert_not_called()
+
     def test_resumes_disconnected_call(self):
         self.port.get_progress.return_value = DialogProgress(
             "context-1", "call-1", DialogStatus.DISCONNECTED)
@@ -42,10 +62,30 @@ class DialogServiceTests(unittest.TestCase):
         self.service.complete("context-1", "call-1", transcript)
 
         self.assertEqual(
-            [call.append_transcript("context-1", transcript),
+            [call.append_transcript("context-1", "call-1", transcript),
              call.complete_call("context-1", "call-1")],
             self.port.method_calls,
         )
+
+    def test_restart_clears_transcript_before_starting_call(self):
+        self.port.get_progress.return_value = DialogProgress(
+            "context-1", "call-1", DialogStatus.DISCONNECTED)
+        self.port.get_call.return_value = self.call
+
+        result = self.service.restart_call("context-1")
+
+        self.assertEqual(self.call, result)
+        self.port.clear_call_transcript.assert_called_once_with("context-1", "call-1")
+        self.port.start_call.assert_called_once_with("context-1", "call-1")
+
+    def test_transcript_for_resume_delegates_to_port(self):
+        transcript = DialogTranscript(())
+        self.port.get_call_transcript.return_value = transcript
+
+        result = self.service.transcript_for_resume("context-1", "call-1")
+
+        self.assertEqual(transcript, result)
+        self.port.get_call_transcript.assert_called_once_with("context-1", "call-1")
 
 
 if __name__ == "__main__":

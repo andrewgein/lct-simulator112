@@ -29,7 +29,11 @@ final class ReviewSubmissionGrpcMapper {
                                 value.hasDds() ? value.getDds().getStagesList().stream()
                                         .map(stage -> new ReviewSubmission.StageRuntime(stage.getStageId(),
                                                 stage.getStageType(), stage.getStatus(), instant(stage.getStartedAt()),
-                                                instant(stage.getDeadline()))).toList() : java.util.List.of()))
+                                                instant(stage.getDeadline()), stage.getComment(), stage.getCompletedCall(), stage.getCompletedCallIdsList())).toList() : java.util.List.of(),
+                                value.getReactionEventsList().stream().map(event -> new ReviewSubmission.ReactionEvent(
+                                        com.simulator112.review_service.domain.model.IncidentStatus.valueOf(
+                                                event.getStatus().name().replace("INCIDENT_STATUS_", "")),
+                                        instant(event.getChangedAt()), event.getComment())).toList()))
                 .toList();
         var transcript = source.getDialogContext().getTranscriptList().stream()
                 .map(value -> new ReviewSubmission.TranscriptPhrase(value.getSpeaker().name(), value.getText())).toList();
@@ -47,7 +51,7 @@ final class ReviewSubmissionGrpcMapper {
                 .map(value -> new ReviewSubmission.DialogueCriterion(value.getId(), value.getName(),
                         value.getHypothesis(), value.getWeight()))
                 .toList());
-        return new ReviewSubmission.IncidentScenario(source.getId(), order,
+        return new ReviewSubmission.IncidentScenario(source.getId(), order, source.getTitle(),
                 source.getStagesList().stream().map(ReviewSubmissionGrpcMapper::stage).toList(), criteria);
     }
 
@@ -58,7 +62,11 @@ final class ReviewSubmissionGrpcMapper {
                 source.hasSystem112() ? source.getSystem112().getVictimCount() : 0,
                 source.hasDds() ? source.getDds().getType().name().replace("DDS_STAGE_TYPE_", "") : null,
                 source.getCallsList().stream().map(call -> new ReviewSubmission.CallScenario(
-                        call.getId(), call.getPosition(), person(call.getPerson()))).toList());
+                        call.getId(), call.getPosition(), person(call.getPerson()))).toList(),
+                source.hasDds() ? source.getDds().getExpectedComment() : null,
+                source.hasDds() && source.getDds().getActualStatus() != com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_UNSPECIFIED
+                        ? com.simulator112.review_service.domain.model.IncidentStatus.valueOf(
+                                source.getDds().getActualStatus().name().replace("INCIDENT_STATUS_", "")) : null);
     }
 
     private static ReviewSubmission.CardRevision card(SolutionContext source) {

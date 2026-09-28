@@ -64,7 +64,6 @@ const certId = `SIM112-${issuedDate.getFullYear()}-${verifyId}`;
             {honors && <div class="badge">С отличием</div>}
           </div>
         </div>
-        <div class="thin-accent"></div>
 
         <div class="intro">Настоящий сертификат подтверждает, что</div>
         <div class="name">{studentName}</div>
@@ -193,7 +192,6 @@ const certId = `SIM112-${issuedDate.getFullYear()}-${verifyId}`;
   .date strong { display: block; color: #203c4e; font-size: 14px; }
 
   .corner { position: absolute; right: -80px; bottom: -80px; width: 210px; height: 210px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, rgba(74,197,248,.35), rgba(74,197,248,0) 68%); }
-  .thin-accent { position: absolute; right: 58px; top: 150px; width: 88px; height: 6px; border-radius: 10px; background: linear-gradient(90deg, #dff5ff, #42bdf5); }
 
   @media (max-width: 800px) {
     .certificate { width: 100%; grid-template-columns: 220px 1fr; }

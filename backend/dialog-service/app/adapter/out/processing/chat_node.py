@@ -6,29 +6,19 @@ from enum import Enum
 from openai import OpenAI
 import logging
 import asyncio
-from num2words import num2words
 
-from app.domain.model import CallScenario, CounterpartyType
-from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, build_call_scenario
+from app.domain.model import CallScenario, CounterpartyType, DialogTranscript, Speaker
+from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT, build_call_scenario
 from app.adapter.out.processing.llm_model import LLMModel
 from .processing_node import UserDialogProcessingNode
 
 logger = logging.getLogger()
 
-DELIMITERS_SEARCH_PATTERN = r'([.!?]+)'
+DELIMITERS_SEARCH_PATTERN = r'([!?]+|(?<!\d)\.+|\.(?!\d))'
 
 
 def _preprocess_text(text: str) -> str:
-    def replace_time(match) -> str:
-        hours = num2words(int(match.group(1)), lang="ru")
-        minutes = num2words(int(match.group(2)), lang="ru")
-        return f"{hours} {minutes}"
-    def replace_numbers(match) -> str:
-        number = num2words(int(match.group(0)), lang="ru")
-        return number
-
-    text = regex.sub(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", replace_time, text)
-    text = regex.sub(r"\d+", replace_numbers, text)
+    # Keep digits and context until TTSTextPreprocessor, immediately before stress.
     text = regex.sub(r'[\u2010-\u2015\u2212]', '-', text)
 
     return text
@@ -36,7 +26,8 @@ def _preprocess_text(text: str) -> str:
 
 class ChatNode(UserDialogProcessingNode):
     worker: asyncio.Task | None
-    def __init__(self, context: CallScenario, on_new_phrase=lambda text: None):
+    def __init__(self, context: CallScenario, on_new_phrase=lambda text: None,
+                 history: DialogTranscript | None = None):
         super().__init__()
         self.context = context
         self.on_new_phrase = on_new_phrase
@@ -50,13 +41,20 @@ class ChatNode(UserDialogProcessingNode):
         self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
         self.loop_thread.start()
 
-        default_prompt = (BRIGADE_SYSTEM_PROMPT
-                          if context.counterparty == CounterpartyType.BRIGADE
-                          else CALLER_SYSTEM_PROMPT)
+        default_prompt = {
+            CounterpartyType.BRIGADE: BRIGADE_SYSTEM_PROMPT,
+            CounterpartyType.SERVICE: SERVICE_SYSTEM_PROMPT,
+        }.get(context.counterparty, CALLER_SYSTEM_PROMPT)
         system_prompt = getenv("LLM_SYSTEM_PROMPT", default_prompt)
         incident_scenario = build_call_scenario(context)
         full_prompt = f"{system_prompt}\n\n{incident_scenario}"
         self.model = LLMModel(full_prompt)
+        if history is not None and history.phrases:
+            roles = {Speaker.OPERATOR: "user", Speaker.COUNTERPARTY: "assistant"}
+            self.model.dialog_history = [
+                {"role": roles[phrase.speaker], "content": phrase.text}
+                for phrase in history.phrases
+            ][-10:]
 
 
     def _run_event_loop(self):
@@ -106,7 +104,6 @@ class ChatNode(UserDialogProcessingNode):
                           previous_user_text: str | None = None,
                           previous_response: str | None = None):
         generator = None
-        full_response_buffer = []
         self._reset_buffers()
         try:
             if (previous_user_text is not None and previous_response is not None):
@@ -115,42 +112,56 @@ class ChatNode(UserDialogProcessingNode):
                 generator = self.model.generate_answer(user_text)
 
             async for chunk in generator:
-                clean_text = _preprocess_text(chunk)
-                if (clean_text != ""):
-                    logger.info("New LLM response chunk: " + str(clean_text))
-                    self._append_to_buffer(clean_text)
-                    full_response_buffer.append(clean_text)
-            full_response = " ".join(full_response_buffer)
-            self.on_new_phrase(full_response)
+                if chunk:
+                    logger.info("New LLM response chunk: " + str(chunk))
+                    self._append_to_buffer(chunk)
+            self._flush_pending()
+            self.on_new_phrase(self._processed_response())
         except asyncio.CancelledError:
             logger.info("LLM was interrupted by user")
             if generator is not None:
                 await generator.aclose()
-            return "".join(full_response_buffer)
+            return self._processed_response()
 
     def _reset_buffers(self):
         self.response_buffer = []
         self.pending_text = ""
+        self.completed_sentences = []
+
+    def _processed_response(self):
+        tail = "".join(self.response_buffer) + self.pending_text
+        return "".join(self.completed_sentences) + (_preprocess_text(tail) if tail else "")
 
     def _flush_buffer(self):
-        sentence = "".join(self.response_buffer)
+        sentence = _preprocess_text("".join(self.response_buffer))
         logger.info("Flushing LLM response buffer: " + sentence)
         self.output_queue.put(sentence)
+        self.completed_sentences.append(sentence)
         self.response_buffer = []
+
+    def _flush_pending(self):
+        if self.pending_text.strip():
+            self.response_buffer.append(self.pending_text)
+            self.pending_text = ""
+            self._flush_buffer()
 
     def _append_to_buffer(self, text):
         ext = self.pending_text + text
         self.pending_text = ""
 
-        parts = regex.split(DELIMITERS_SEARCH_PATTERN, ext)
-
-        for i in range(0, len(parts) - 1, 2):
-            full_sentence = parts[i] + parts[i+1]
+        start = 0
+        for delimiter in regex.finditer(DELIMITERS_SEARCH_PATTERN, ext):
+            # A trailing dot after a digit may belong to a decimal in the next chunk.
+            if (delimiter.group() == "." and delimiter.end() == len(ext)
+                    and delimiter.start() > 0 and ext[delimiter.start() - 1].isdigit()):
+                break
+            full_sentence = ext[start:delimiter.end()]
+            start = delimiter.end()
 
             if full_sentence.strip():
                 self.response_buffer.append(full_sentence)
                 self._flush_buffer()
 
-        leftover = parts[-1]
+        leftover = ext[start:]
         if leftover:
             self.pending_text = leftover

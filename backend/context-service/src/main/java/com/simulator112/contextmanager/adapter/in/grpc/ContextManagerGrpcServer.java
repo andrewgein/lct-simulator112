@@ -6,7 +6,6 @@ import com.simulator112.context.grpc.contract.*;
 import com.simulator112.contextmanager.application.port.in.ContextUseCase;
 import com.simulator112.contextmanager.application.port.in.CallUseCase;
 import com.simulator112.contextmanager.application.port.in.LevelProgressUseCase;
-import com.simulator112.contextmanager.domain.dds.DdsStageSignal;
 import org.springframework.grpc.server.service.GrpcService;
 import org.springframework.stereotype.Component;
 
@@ -56,10 +55,30 @@ public class ContextManagerGrpcServer extends ContextManagerServiceGrpc.ContextM
     @Override
     public void appendDialogContext(AppendDialogContextRequest request, StreamObserver<Empty> responseObserver) {
         try {
-            dialogService.appendDialog(request.getUuid(),
+            dialogService.appendDialog(request.getUuid(), request.getCallId(),
                     com.simulator112.contextmanager.adapter.grpc.mapper.DialogContextMapper.toDomain(request.getDialogContext()));
             onSuccess(Empty.getDefaultInstance(), responseObserver);
         } catch(Exception e) {
+            onError(e, responseObserver);
+        }
+    }
+
+    @Override
+    public void getCallTranscript(GetCallTranscriptRequest request, StreamObserver<DialogContext> responseObserver) {
+        try {
+            onSuccess(com.simulator112.contextmanager.adapter.grpc.mapper.DialogContextMapper.toProto(
+                    dialogService.getCallTranscript(request.getContextId(), request.getCallId())), responseObserver);
+        } catch (Exception e) {
+            onError(e, responseObserver);
+        }
+    }
+
+    @Override
+    public void clearCallTranscript(ClearCallTranscriptRequest request, StreamObserver<Empty> responseObserver) {
+        try {
+            dialogService.clearCallTranscript(request.getContextId(), request.getCallId());
+            onSuccess(Empty.getDefaultInstance(), responseObserver);
+        } catch (Exception e) {
             onError(e, responseObserver);
         }
     }
@@ -132,19 +151,6 @@ public class ContextManagerGrpcServer extends ContextManagerServiceGrpc.ContextM
     public void getLevelProgress(GetLevelProgressRequest request, StreamObserver<LevelProgress> observer) {
         try {
             onSuccess(toProto(levelProgressService.getProgress(UUID.fromString(request.getContextId()))), observer);
-        } catch (Exception e) {
-            onError(e, observer);
-        }
-    }
-
-    @Override
-    public void applyDdsStageSignal(ApplyDdsStageSignalRequest request,
-                                    StreamObserver<LevelProgress> observer) {
-        try {
-            DdsStageSignal signal = DdsStageSignal.valueOf(
-                    request.getSignal().name().replace("DDS_STAGE_SIGNAL_", ""));
-            onSuccess(toProto(levelProgressService.applyDdsSignal(UUID.fromString(request.getContextId()),
-                    UUID.fromString(request.getIncidentId()), signal)), observer);
         } catch (Exception e) {
             onError(e, observer);
         }
