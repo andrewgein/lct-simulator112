@@ -86,6 +86,16 @@ class ContextManagerServiceStub:
                 request_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.DisconnectCallRequest.SerializeToString,
                 response_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.DialogProgress.FromString,
                 _registered_method=True)
+        self.GetCallTranscript = channel.unary_unary(
+                '/context.ContextManagerService/GetCallTranscript',
+                request_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.GetCallTranscriptRequest.SerializeToString,
+                response_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.DialogContext.FromString,
+                _registered_method=True)
+        self.ClearCallTranscript = channel.unary_unary(
+                '/context.ContextManagerService/ClearCallTranscript',
+                request_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.ClearCallTranscriptRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                _registered_method=True)
         self.GetLevelProgress = channel.unary_unary(
                 '/context.ContextManagerService/GetLevelProgress',
                 request_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.GetLevelProgressRequest.SerializeToString,
@@ -156,6 +166,18 @@ class ContextManagerServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetCallTranscript(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ClearCallTranscript(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetLevelProgress(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -214,6 +236,16 @@ def add_ContextManagerServiceServicer_to_server(servicer, server):
                     servicer.DisconnectCall,
                     request_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.DisconnectCallRequest.FromString,
                     response_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.DialogProgress.SerializeToString,
+            ),
+            'GetCallTranscript': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCallTranscript,
+                    request_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.GetCallTranscriptRequest.FromString,
+                    response_serializer=com_dot_simulator112_dot_context_dot_context__service__pb2.DialogContext.SerializeToString,
+            ),
+            'ClearCallTranscript': grpc.unary_unary_rpc_method_handler(
+                    servicer.ClearCallTranscript,
+                    request_deserializer=com_dot_simulator112_dot_context_dot_context__service__pb2.ClearCallTranscriptRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'GetLevelProgress': grpc.unary_unary_rpc_method_handler(
                     servicer.GetLevelProgress,
@@ -491,6 +523,60 @@ class ContextManagerService:
             '/context.ContextManagerService/DisconnectCall',
             com_dot_simulator112_dot_context_dot_context__service__pb2.DisconnectCallRequest.SerializeToString,
             com_dot_simulator112_dot_context_dot_context__service__pb2.DialogProgress.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetCallTranscript(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/context.ContextManagerService/GetCallTranscript',
+            com_dot_simulator112_dot_context_dot_context__service__pb2.GetCallTranscriptRequest.SerializeToString,
+            com_dot_simulator112_dot_context_dot_context__service__pb2.DialogContext.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ClearCallTranscript(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/context.ContextManagerService/ClearCallTranscript',
+            com_dot_simulator112_dot_context_dot_context__service__pb2.ClearCallTranscriptRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,

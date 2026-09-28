@@ -9,6 +9,7 @@ import { findIncident, moveItem, normalizeDialup } from "./editorHelpers";
 
 export default function StageEditor({ stage, index, count, firstDialupNumber, classifier, incidentAddress, openStage, openDialup, dialupError, onChange, onOpenStage, onCloseStage, onOpenDialup, onCloseDialup, onRemove, onMove }) {
   const incidentType = findIncident(classifier, stage.typeId);
+  const incidentTypes = stage.classifierCodes.filter(Boolean).map((code) => findIncident(classifier, code)?.finalName || code);
   const snapshot = useRef(openStage ? structuredClone(stage) : null);
   const changeStageField = (field) => (event) => onChange({ ...stage, [field]: event.currentTarget.value });
   const openEditor = () => {
@@ -46,6 +47,10 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
             </wa-icon>
           </wa-button>
         </div>
+        <div class="stage-types wa-cluster wa-gap-xs">
+          <span class="stage-types-label">Тип происшествия:</span>
+          <span>{incidentTypes.length ? incidentTypes.join(", ") : "не выбран"}</span>
+        </div>
         <EditorCallRow>
           {stage.dialups.map((dialup, dialupIndex) => (
             <DialupEditor key={dialup.key} dialup={dialup} number={firstDialupNumber + dialupIndex} index={dialupIndex} count={stage.dialups.length} incidentAddress={incidentAddress} open={openDialup === dialup.key} error={dialupError.key === dialup.key ? dialupError.message : ""} onChange={(value) => changeDialup(dialupIndex, value)} onOpen={() => onOpenDialup(dialup.key)} onClose={onCloseDialup} onRemove={() => onChange({ ...stage, dialups: stage.dialups.filter((item) => item.key !== dialup.key) })} onMove={(direction) => onChange({ ...stage, dialups: moveItem(stage.dialups, dialupIndex, direction) })} />
@@ -68,7 +73,15 @@ export default function StageEditor({ stage, index, count, firstDialupNumber, cl
           </wa-divider>
           <div class="dialog-section wa-stack wa-gap-m">
             <h3 class="wa-heading-l">Информация о происшествии</h3>
-            <IncidentTypeSelect classifierState={{ classifier, loading: false, error: "" }} id={`stage-${stage.key}-incident-type`} name={null} value={stage.typeId} required onChange={(typeId) => onChange({ ...stage, typeId, additionalInfo: {} })} />
+            {stage.classifierCodes.map((code, codeIndex) => (
+              <div class="wa-cluster" key={codeIndex}>
+                <IncidentTypeSelect classifierState={{ classifier, loading: false, error: "" }} id={`stage-${stage.key}-incident-type-${codeIndex}`} name={null} value={code} required onChange={(value) => { const classifierCodes = stage.classifierCodes.map((item, index) => index === codeIndex ? value : item); onChange({ ...stage, classifierCodes, typeId: classifierCodes[0] }); }} />
+                {stage.classifierCodes.length > 1 && (
+                  <wa-button type="button" appearance="plain" variant="danger" onClick={() => { const classifierCodes = stage.classifierCodes.filter((_, index) => index !== codeIndex); onChange({ ...stage, classifierCodes, typeId: classifierCodes[0] }); }}>Удалить тип</wa-button>
+                )}
+              </div>
+            ))}
+            <wa-button type="button" appearance="plain" onClick={() => onChange({ ...stage, classifierCodes: [...stage.classifierCodes, ""] })}>Добавить тип происшествия</wa-button>
             <wa-textarea value={stage.description} label="Описание ситуации" rows="5" onInput={changeStageField("description")}>
             </wa-textarea>
             <div class="wa-stack wa-gap-m">

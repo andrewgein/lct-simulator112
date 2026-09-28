@@ -59,6 +59,7 @@
   };
   const applyIncident = (incident) => {
     if (!incident || typeof incident !== 'object' || Array.isArray(incident)) throw new Error('Модель вернула некорректное изменение сценария');
+    const applyStages = !isDds && Object.hasOwn(incident, 'stages') ? form.prepareGeneratedStages(incident.stages) : null;
     const fields = { ...Object.fromEntries(['title', 'difficulty'].filter((name) => Object.hasOwn(incident, name)).map((name) => [name, incident[name]])),
       ...Object.fromEntries(Object.entries(incident.address || {}).map(([part, value]) => [`address.${part}`, value])) };
     for (const [name, value] of Object.entries(fields)) {
@@ -69,17 +70,26 @@
       const address = collectDraft().address;
       const fullAddress = [address.city, address.street, address.house && `д. ${address.house}`, address.building && `корп. ${address.building}`, address.apartment && `кв. ${address.apartment}`].filter(Boolean).join(', ');
       const addressInput = form.querySelector('#incident-main-address input');
-      if (addressInput) addressInput.value = fullAddress;
-      window.dispatchEvent(new CustomEvent('incident-address-change', { detail: fullAddress }));
+      if (addressInput) {
+        addressInput.value = fullAddress;
+        addressInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     }
     if (isDds) {
       form.dispatchEvent(new CustomEvent('apply-generated-dds', { detail: incident }));
       if (Object.hasOwn(incident, 'stages')) form.dispatchEvent(new CustomEvent('apply-generated-dds-stages', { detail: incident.stages }));
     } else {
-      if (Object.hasOwn(incident, 'stages')) form.dispatchEvent(new CustomEvent('apply-generated-stages', { detail: incident.stages }));
+      applyStages?.();
       if (Object.hasOwn(incident, 'dialogueCriteria')) form.dispatchEvent(new CustomEvent('apply-generated-criteria', { detail: incident.dialogueCriteria }));
     }
   };
+
+  prompt?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      chat.requestSubmit();
+    }
+  });
 
   chat?.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -172,8 +182,9 @@
   .generator-message { max-width: 90%; margin: 0; padding: var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: 0; overflow-wrap: anywhere; white-space: pre-wrap; background: var(--wa-color-surface-lowered); }
   .generator-message--user { align-self: flex-end; border-color: var(--wa-color-brand-border-loud); background: var(--wa-color-brand-fill-loud); color: var(--wa-color-brand-on-loud); }
   .generator-message--error { border-color: var(--wa-color-danger-border-quiet); background: var(--wa-color-danger-fill-quiet); color: var(--wa-color-danger-60); }
-  .generator-compose { display: flex; align-items: flex-end; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .generator-compose { display: flex; align-items: center; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
   .generator-compose wa-textarea { flex: 1; min-width: 0; }
   .generator-compose wa-button { flex: none; }
   #generator-prompt::part(textarea-wrapper), #generator-send::part(button) { border-radius: 0; }
+  #generator-send wa-icon { transform: scaleX(-1) rotate(-90deg); }
 </style>

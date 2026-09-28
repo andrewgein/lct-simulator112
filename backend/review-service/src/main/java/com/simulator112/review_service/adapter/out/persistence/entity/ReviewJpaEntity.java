@@ -39,6 +39,10 @@ public class ReviewJpaEntity {
     @Column(columnDefinition = "text")
     private String expertComment;
     private Instant confirmedAt;
+    @Column(columnDefinition = "text")
+    private String incidentsSnapshot;
+    @Column(columnDefinition = "text")
+    private String cardsSnapshot;
 
     public void setResults(List<CriterionResultJpaEntity> results) {
         this.results.clear();

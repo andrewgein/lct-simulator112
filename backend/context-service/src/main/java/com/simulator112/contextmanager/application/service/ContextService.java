@@ -1,15 +1,18 @@
 package com.simulator112.contextmanager.application.service;
 
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.simulator112.contextmanager.application.port.in.CleanupAbandonedContextsUseCase;
 import com.simulator112.contextmanager.application.port.in.ContextUseCase;
 import com.simulator112.contextmanager.application.port.out.CourseAssignmentPort;
 import com.simulator112.contextmanager.application.port.out.ReviewPort;
@@ -34,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ContextService implements ContextUseCase {
+public class ContextService implements ContextUseCase, CleanupAbandonedContextsUseCase {
     private final ContextStore contextStore;
     private final ReviewPort reviewService;
     private final CourseAssignmentPort courseAssignments;
@@ -77,6 +80,22 @@ public class ContextService implements ContextUseCase {
     @Transactional
     public UUID createContext(UUID userId, UUID assignmentId) {
         return create(userId, assignmentId).getId();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<UUID> findActiveContext(UUID userId, UUID assignmentId) {
+        return contextStore.findActive(userId, assignmentId).map(TrainingContext::getId);
+    }
+
+    @Override
+    @Transactional
+    public void cleanupAbandoned(Instant updatedBefore) {
+        List<TrainingContext> abandoned = contextStore.findAbandoned(updatedBefore);
+        abandoned.forEach(context -> contextStore.delete(context.getId()));
+        if (!abandoned.isEmpty()) {
+            log.info("Удалено {} брошенных контекстов без активности с {}", abandoned.size(), updatedBefore);
+        }
     }
 
     @Transactional
@@ -215,6 +234,7 @@ public class ContextService implements ContextUseCase {
         try {
             if (reviewService.send(context)) {
                 context.setStatus(ContextStatus.DONE);
+                context.setDialog(null);
                 contextStore.save(context);
             }
             log.info("Контекст {} отправлен на ревью", context.getId());

@@ -48,35 +48,43 @@ try {
               <wa-badge variant="neutral" appearance="outlined">Участников: {students.length}</wa-badge>
             </div>
             <div class="group-content wa-stack wa-gap-l">
-              <div class="wa-split wa-gap-m">
-                <h3 class="group-section-title wa-heading-l">Состав группы</h3>
-                <div class="wa-cluster wa-gap-xs">
-                  <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
-                    <wa-icon name="pen" label="Редактировать">
-                    </wa-icon>
-                  </wa-button>
-                  <wa-button class="delete-group" type="button" appearance="outlined" variant="danger" data-id={group.id} data-title={group.title} aria-label={`Удалить группу ${group.title}`}>
-                    <wa-icon name="trash" label="Удалить">
-                    </wa-icon>
-                  </wa-button>
+              <div class="group-toolbar wa-cluster wa-gap-xs">
+                <wa-button href={`/teacher/groups/${group.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
+                <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
+                  <wa-icon name="pen" label="Редактировать">
+                  </wa-icon>
+                </wa-button>
+                <wa-button class="delete-group" type="button" appearance="outlined" variant="danger" data-id={group.id} data-title={group.title} aria-label={`Удалить группу ${group.title}`}>
+                  <wa-icon name="trash" label="Удалить">
+                  </wa-icon>
+                </wa-button>
+              </div>
+              <div class="group-columns">
+                <div class="group-column wa-stack wa-gap-s">
+                  <h3 class="group-section-title wa-heading-l">Состав группы</h3>
+                  {students.length ? (
+                    <ul class="student-list">
+                      {students.map((student) => {
+                        const hasProfile = Boolean(student.profile);
+                        const fullName = hasProfile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
+                        return (
+                          <li class="student-row" data-pending={!hasProfile}>
+                            <strong class="student-name">{fullName}</strong>
+                            <span class="student-email">{student.email}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <wa-callout variant="neutral">В группе пока нет обучающихся.</wa-callout>
+                  )}
+                </div>
+                <wa-divider class="group-columns-divider group-columns-divider--vertical" orientation="vertical"></wa-divider>
+                <wa-divider class="group-columns-divider group-columns-divider--horizontal"></wa-divider>
+                <div class="group-column">
+                  <GroupCourseList group={group} assignedCourses={assignedCoursesByGroupId.get(String(group.id)) || []} />
                 </div>
               </div>
-              {students.length ? (
-                <ul class="student-list wa-stack wa-gap-2xs">
-                  {students.map((student) => {
-                    const fullName = student.profile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
-                    return (
-                      <li class="student-row wa-split wa-gap-m">
-                        <strong>{fullName}</strong>
-                        <span>{student.email}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <wa-callout variant="neutral">В группе пока нет обучающихся.</wa-callout>
-              )}
-              <GroupCourseList group={group} assignedCourses={assignedCoursesByGroupId.get(String(group.id)) || []} />
             </div>
           </wa-accordion-item>
         );
@@ -107,13 +115,29 @@ try {
   .groups-accordion wa-accordion-item::part(content) { background-color: var(--wa-color-surface-raised); }
   .group-label { width: 100%; align-items: center; font-weight: var(--wa-font-weight-semibold); }
   .group-content { padding-block: var(--wa-space-xs); }
+  .group-toolbar { justify-content: flex-end; }
+  .group-columns { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--wa-space-l); align-items: stretch; }
+  .group-columns-divider { --spacing: 0; }
+  .group-columns-divider--horizontal { display: none; }
   .group-section-title, .student-list { margin: 0; }
+  .group-section-title { padding-inline-start: var(--wa-space-m); color: var(--wa-color-text-normal); }
   .student-list { padding: 0; list-style: none; }
-  .student-row { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); background: var(--wa-color-surface-raised); }
+  .student-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--wa-space-m);
+    padding: var(--wa-space-s) var(--wa-space-m);
+    border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    background: var(--wa-color-surface-raised);
+  }
   .student-row:first-child { border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
-  .student-row span { color: var(--wa-color-text-quiet); }
+  .student-name { overflow: hidden; color: var(--wa-color-text-normal); text-overflow: ellipsis; white-space: nowrap; }
+  .student-row[data-pending="true"] .student-name { color: var(--wa-color-text-quiet); font-style: italic; font-weight: var(--wa-font-weight-normal); }
+  .student-email { overflow: hidden; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 48rem) {
-    .group-content > .wa-split, .student-row { align-items: flex-start; flex-direction: column; }
+    .group-content > .wa-split { align-items: flex-start; flex-direction: column; }
+    .group-columns { grid-template-columns: 1fr; }
     .group-label wa-badge { display: none; }
   }
 </style>

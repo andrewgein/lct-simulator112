@@ -53,7 +53,7 @@ class DdsReviewRubricTests {
                 "CALL_BRIGADE_FOR_STATUS", List.of(
                 new ReviewSubmission.CallScenario("incoming", 0, null),
                 new ReviewSubmission.CallScenario("outgoing", 1, null)), null, null);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(stage),
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(stage),
                 new ReviewSubmission.EvaluationCriteria(List.of()));
         var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
                 new ReviewSubmission.StageRuntime("one", "CALL_BRIGADE_FOR_STATUS", "SUCCEEDED",
@@ -71,7 +71,7 @@ class DdsReviewRubricTests {
         var stage = new ReviewSubmission.StageScenario("one", null, List.of(), 0,
                 "WAIT_FOR_BRIGADE_STATUS_CHANGE", List.of(new ReviewSubmission.CallScenario("call", 0, null)),
                 null, IncidentStatus.ARRIVED);
-        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(stage),
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, "Инцидент", List.of(stage),
                 new ReviewSubmission.EvaluationCriteria(List.of()));
         var submission = new ReviewSubmission(UUID.randomUUID(), null, UUID.randomUUID(),
                 ReviewSubmission.TargetType.DDS, List.of(incident), List.of(), List.of(runtime),

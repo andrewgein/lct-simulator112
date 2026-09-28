@@ -27,7 +27,7 @@ public record ReviewSubmission(UUID contextId, UUID userId, UUID assignmentId, T
 
     public enum TargetType {SYSTEM_112, DDS}
 
-    public record IncidentScenario(String id, int order, List<StageScenario> stages,
+    public record IncidentScenario(String id, int order, String title, List<StageScenario> stages,
                                    EvaluationCriteria criteria) {
         public IncidentScenario {
             stages = List.copyOf(stages);

@@ -23,7 +23,7 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
         {isStudent && (
           <div class="wa-cluster">
             <wa-button class:list={{ 'header-nav-active': isActive('/') }} appearance="plain" variant="neutral" href="/" aria-current={isActive('/') ? 'page' : undefined}>Мои курсы</wa-button>
-            <wa-button class:list={{ 'header-nav-active': isActive('/map') }} appearance="plain" variant="neutral" href="/map" aria-current={isActive('/map') ? 'page' : undefined}>Карта</wa-button>
+            <wa-button class:list={{ 'header-nav-active': isActive('/knowledge-base') }} appearance="plain" variant="neutral" href="/knowledge-base" aria-current={isActive('/knowledge-base') ? 'page' : undefined}>База знаний</wa-button>
           </div>
         )}
         {canManageTraining && (
@@ -47,11 +47,13 @@ const initials = profile ? `${profile.name?.[0] || ""}${(profile.patronymic || p
         </wa-button>
         <wa-popover class="profile-menu-popover" for="profile-menu-trigger" placement="bottom-end" without-arrow>
           <nav class="profile-menu wa-stack wa-gap-3xs" aria-label="Меню пользователя">
-            <wa-button appearance="plain" variant="neutral" href="/profile" data-popover="close">
-              <wa-icon slot="start" name="chart-line">
-              </wa-icon>
-              Статистика
-            </wa-button>
+            {isStudent && (
+              <wa-button appearance="plain" variant="neutral" href="/profile" data-popover="close">
+                <wa-icon slot="start" name="chart-line">
+                </wa-icon>
+                Статистика
+              </wa-button>
+            )}
             {isStudent && (
               <wa-button appearance="plain" variant="neutral" href="/profile/certificates" data-popover="close">
                 <wa-icon slot="start" name="award">

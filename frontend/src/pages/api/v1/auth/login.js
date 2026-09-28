@@ -1,8 +1,8 @@
 import { login } from "../../../../features/auth/api/AuthApi"
+import { accessCookieOptions } from "../../../../features/auth/sessionCookie";
 import { clearProfileSnapshot } from "../../../../features/profile/profileSnapshot";
 
 export const prerender = false;
-const isDev = import.meta.env.DEV;
 
 export async function POST({ request, cookies, redirect }) {
     const loginForm = await request.formData();
@@ -23,13 +23,7 @@ export async function POST({ request, cookies, redirect }) {
     const accessToken = loginData.data.accessToken;
     const role = loginData.data.role;
     const setCookieHeader = loginResponse.headers.get("Set-Cookie");
-    const cookieOptions = {
-        httpOnly: true,
-        secure: !isDev,
-        sameSite: 'strict',
-        path: '/',
-        maxAge: 15 * 60 // 15 minutes
-    };
+    const cookieOptions = accessCookieOptions(accessToken);
 
     cookies.delete('profileCompleted', { path: '/' });
     clearProfileSnapshot(cookies);

@@ -5,11 +5,13 @@ import com.simulator112.contextmanager.domain.common.DialogProgress;
 import com.simulator112.contextmanager.domain.common.DialogTranscript;
 
 public interface CallUseCase {
-    void appendDialog(String contextId, DialogTranscript dialog);
+    void appendDialog(String contextId, String callId, DialogTranscript dialog);
     DialogProgress getDialogProgress(String contextId);
     DialogProgress startCall(String contextId, String callId);
     DialogProgress completeCall(String contextId, String callId);
     DialogProgress disconnectCall(String contextId, String callId);
     CallSnapshot getCall(String contextId, String callId);
     CallSnapshot getNextCall(String contextId, String currentCallId);
+    DialogTranscript getCallTranscript(String contextId, String callId);
+    void clearCallTranscript(String contextId, String callId);
 }

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -45,6 +46,15 @@ public class ContextController {
         UUID contextId = contextService.createContext(userId, body.assignmentId());
         log.info("Контекст {} для пользователя {} создан", contextId, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(contextId);
+    }
+
+    @GetMapping
+    public ResponseEntity<UUID> findActive(
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestParam UUID assignmentId) {
+        return contextService.findActiveContext(userId, assignmentId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @PostMapping("/{uuid}/calls/{callId}/cards")

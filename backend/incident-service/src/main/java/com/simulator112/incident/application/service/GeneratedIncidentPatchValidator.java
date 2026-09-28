@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import java.util.List;
@@ -151,7 +152,7 @@ public class GeneratedIncidentPatchValidator {
             if (incident.has("title") && !incident.path("title").isTextual()
                     || incident.has("difficulty") && !List.of("EASY", "NORMAL", "HARD").contains(incident.path("difficulty").asText())
                     || incident.has("address") && !incident.path("address").isObject()
-                    || incident.has("stages") && (!incident.path("stages").isArray() || incident.path("stages").size() > 15)
+                    || incident.has("stages") && (!incident.path("stages").isArray() || incident.path("stages").isEmpty() || incident.path("stages").size() > 15)
                     || !dds && incident.has("dialogueCriteria") && (!incident.path("dialogueCriteria").isArray() || incident.path("dialogueCriteria").size() > 20)) {
                 throw new IllegalStateException("Invalid incident fields");
             }
@@ -177,7 +178,7 @@ public class GeneratedIncidentPatchValidator {
                                     throw new IllegalStateException("Invalid address value: floor (expected nonnegative integer)", e);
                                 }
                             }
-                        } else if (!value.canConvertToInt() || value.asInt() < 0) {
+                        } else if (!value.isIntegralNumber() || !value.canConvertToInt() || value.asInt() < 0) {
                             throw new IllegalStateException("Invalid address value: floor (expected nonnegative integer)");
                         }
                     } else if (value.isNumber()) {
@@ -192,22 +193,41 @@ public class GeneratedIncidentPatchValidator {
                 return new GenerateIncidentDraftUseCase.Result(result.path("message").asText(), incident);
             }
             for (var stage : incident.path("stages")) {
+                validateOptionalText(stage, "title", "description");
                 if (!stage.path("calls").isArray() || !stage.path("classifierCodes").isArray()
                         || stage.path("classifierCodes").isEmpty() || stage.path("calls").isEmpty()
-                        || stage.path("calls").size() > 10 || !stage.path("victimCount").canConvertToInt()
+                        || stage.path("calls").size() > 10 || !stage.path("victimCount").isIntegralNumber() || !stage.path("victimCount").canConvertToInt()
                         || stage.path("victimCount").asInt() < 0) throw new IllegalStateException("Invalid stage");
                 for (var code : stage.path("classifierCodes")) {
                     if (!code.isTextual() || !allowedCodes.contains(code.asText())) throw new IllegalStateException("Unknown classifier code");
                 }
                 for (var call : stage.path("calls")) {
                     var person = call.path("person");
-                    if (person.path("firstName").asText().isBlank() || person.path("lastName").asText().isBlank()
-                            || person.path("phone").asText().isBlank() || !call.path("knownFacts").isArray()
-                            || call.path("knownFacts").isEmpty()) throw new IllegalStateException("Incomplete call");
+                    for (var field : List.of("firstName", "lastName", "phone")) {
+                        requireText(person.path(field));
+                    }
+                    validateOptionalText(person, "middleName", "contactPhone", "onScenePhone", "address", "additionalInfo");
+                    if (person.hasNonNull("age") && (!person.path("age").isIntegralNumber()
+                            || !person.path("age").canConvertToInt() || person.path("age").asInt() < 0)) {
+                        throw new IllegalStateException("Invalid age");
+                    }
+                    validateFacts(call.path("knownFacts"), true);
+                    if (call.hasNonNull("hiddenFacts")) validateFacts(call.path("hiddenFacts"), false);
+                    validateOptionalText(call, "aiContext", "emotionalState");
+                    if (call.hasNonNull("gender") && !List.of("MAN", "WOMEN").contains(call.path("gender").asText())
+                            || call.has("direction") && !"INBOUND".equals(call.path("direction").asText())
+                            || call.has("counterparty") && !"CALLER".equals(call.path("counterparty").asText())) {
+                        throw new IllegalStateException("Invalid call fields");
+                    }
                 }
             }
             int totalWeight = 0;
             for (var criterion : incident.path("dialogueCriteria")) {
+                requireText(criterion.path("name"));
+                requireText(criterion.path("hypothesis"));
+                if (!criterion.path("weight").isIntegralNumber() || !criterion.path("weight").canConvertToInt()) {
+                    throw new IllegalStateException("Invalid criterion weight");
+                }
                 int weight = criterion.path("weight").asInt(0);
                 if (weight < 1 || weight > 40) throw new IllegalStateException("Invalid criterion");
                 totalWeight += weight;
@@ -219,5 +239,22 @@ public class GeneratedIncidentPatchValidator {
         } catch (Exception e) {
             throw new IncidentGenerationException("Не удалось получить корректный ответ модели", e);
         }
+    }
+
+    private void requireText(JsonNode value) {
+        if (!value.isTextual() || value.asText().isBlank()) throw new IllegalStateException("Expected nonempty text");
+    }
+
+    private void validateOptionalText(JsonNode value, String... fields) {
+        for (var field : fields) {
+            if (value.hasNonNull(field) && !value.path(field).isTextual()) {
+                throw new IllegalStateException("Invalid text field: " + field);
+            }
+        }
+    }
+
+    private void validateFacts(JsonNode values, boolean required) {
+        if (!values.isArray() || required && values.isEmpty()) throw new IllegalStateException("Invalid facts");
+        for (var value : values) requireText(value);
     }
 }

@@ -41,3 +41,8 @@ export function getReviewRecording(contextId, callId, fileName, token) {
 export function addReviewComment(contextId, text, token) {
     return apiCall(`${API_PREFIX}/${encodeURIComponent(contextId)}/comments`, "POST", { text }, token);
 }
+
+/** @param {string} contextId @param {{criterionResultId: string, score: number}[]} corrections @param {string} token @returns {Promise<Response>} */
+export function updateReviewCriteria(contextId, corrections, token) {
+    return apiCall(`${API_PREFIX}/${encodeURIComponent(contextId)}/criteria`, "PATCH", { corrections }, token);
+}

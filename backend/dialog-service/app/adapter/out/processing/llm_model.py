@@ -1,8 +1,10 @@
 import logging
+import time
 from os import getenv
 from typing import Any, AsyncGenerator, Generator
 from openai import AsyncOpenAI, Stream
 from openai.types.chat import ChatCompletionChunk
+from app.adapter.out.processing.latency_tracker import tracker
 
 logger = logging.getLogger()
 
@@ -18,12 +20,16 @@ class LLMModel:
             "content": system_prompt
         }
 
-    async def _stream_and_save(self, stream, user_text: str, assistant_prefix: str = "") -> AsyncGenerator[str, Any]:
+    async def _stream_and_save(self, stream, user_text: str, request_started: float, assistant_prefix: str = "") -> AsyncGenerator[str, Any]:
         collected_chunks = []
+        first_chunk_seen = False
         try:
             async for chunk in stream:
                 content = chunk.choices[0].delta.content if chunk.choices else None
                 if content is not None:
+                    if not first_chunk_seen:
+                        first_chunk_seen = True
+                        tracker.record("llm", time.monotonic() - request_started)
                     collected_chunks.append(content)
                     yield content
         except (GeneratorExit, Exception):
@@ -39,6 +45,7 @@ class LLMModel:
     async def generate_answer(self, user_text) -> AsyncGenerator[str, Any]:
         user_message = {"role": "user", "content": user_text}
         request_messages = [self.system_message, *self.dialog_history, user_message]
+        request_started = time.monotonic()
         stream = await self.client.chat.completions.create(
                 model=self.model,
                 messages=request_messages,
@@ -48,20 +55,22 @@ class LLMModel:
                     "provider": {"sort": "price"}
                 }
             )
-        async for chunk in self._stream_and_save(stream, user_text):
+        async for chunk in self._stream_and_save(stream, user_text, request_started):
             yield chunk
 
 
     async def regenerate_answer(self, new_user_text: str, previous_user_text: str, partial_response: str) -> AsyncGenerator[str, Any]:
 
         logger.info(f"Regenerating new_user_text='{new_user_text}' previous_user_text='{previous_user_text}' partial_response='{partial_response}'")
-        request_messages = [self.system_message, *self.dialog_history]
+        self.dialog_history.append({"role": "user", "content": previous_user_text})
 
         if partial_response.strip():
-            request_messages.append({"role": "assistant", "content": partial_response})
+            self.dialog_history.append({"role": "assistant", "content": partial_response})
 
-        request_messages.append({"role": "user", "content": new_user_text})
+        self.dialog_history = self.dialog_history[-10:]
+        request_messages = [self.system_message, *self.dialog_history, {"role": "user", "content": new_user_text}]
 
+        request_started = time.monotonic()
         stream = await self.client.chat.completions.create(
             model=self.model,
             messages=request_messages,
@@ -72,5 +81,5 @@ class LLMModel:
             }
         )
 
-        async for chunk in self._stream_and_save(stream, new_user_text, assistant_prefix=partial_response):
+        async for chunk in self._stream_and_save(stream, new_user_text, request_started, assistant_prefix=partial_response):
             yield chunk

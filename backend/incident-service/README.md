@@ -38,7 +38,7 @@ PostgreSQL и classifier gRPC client реализуют выходные пор�
 | `POST` | `/api/v1/incidents`                               | Создать происшествие            |
 | `PUT`  | `/api/v1/incidents/{incidentId}`                  | Полностью заменить происшествие |
 | `GET`  | `/api/v1/incidents/{incidentId}`                  | Получить происшествие           |
-| `GET`  | `/api/v1/incidents?targetType=...&difficulty=...` | Найти доступные происшествия    |
+| `GET`  | `/api/v1/incidents?targetType=...&difficulty=...` | Найти доступные происшествия (фильтры необязательны) |
 
 `IncidentRequest.targetType` принимает `SYSTEM_112` или `DDS`. Уровни доступны через `/api/v1/levels`; каждый уровень содержит только один тип инцидентов и задаёт режим `SEQUENTIAL` или `PARALLEL`.
 

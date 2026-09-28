@@ -96,5 +96,53 @@ class WavCallRecorderTests(unittest.TestCase):
         self.assertEqual(f"s3://call-recordings/{request['Key']}", result)
 
 
+def _wav(samples):
+    output = io.BytesIO()
+    with wave.open(output, "wb") as recording:
+        recording.setnchannels(2)
+        recording.setsampwidth(2)
+        recording.setframerate(24000)
+        recording.writeframes(np.array(samples, dtype="<i2").tobytes())
+    return output.getvalue()
+
+
+class SingleRecordingPerCallTests(unittest.TestCase):
+    def _close_recorder(self, client, restart=False):
+        recorder = S3CallRecorderFactory(client, "call-recordings").create("ctx", "call", restart)
+        with patch(
+            "app.adapter.out.recording.wav_call_recorder.time.monotonic",
+            return_value=recorder._started_at,
+        ):
+            recorder.record_operator(np.array([7], dtype="<i2").tobytes())
+            recorder.close()
+
+    def test_reconnect_appends_to_existing_recording(self):
+        client = MagicMock()
+        old_key = "recordings/ctx/call/20260101T000000_000000Z.wav"
+        client.list_objects_v2.return_value = {"Contents": [{"Key": old_key}]}
+        client.get_object.return_value = {"Body": io.BytesIO(_wav([1, 2, 3, 4]))}
+
+        self._close_recorder(client)
+
+        request = client.put_object.call_args.kwargs
+        self.assertEqual(old_key, request["Key"])
+        client.delete_object.assert_not_called()
+        with wave.open(io.BytesIO(request["Body"]), "rb") as merged:
+            frames = np.frombuffer(merged.readframes(merged.getnframes()), dtype="<i2").reshape(-1, 2)
+        np.testing.assert_array_equal([[1, 2], [3, 4]], frames[:2])
+        self.assertGreater(len(frames), 2)
+
+    def test_restart_replaces_existing_recordings(self):
+        client = MagicMock()
+        old_key = "recordings/ctx/call/20260101T000000_000000Z.wav"
+        client.list_objects_v2.return_value = {"Contents": [{"Key": old_key}]}
+
+        self._close_recorder(client, restart=True)
+
+        client.delete_object.assert_called_once_with(Bucket="call-recordings", Key=old_key)
+        self.assertNotEqual(old_key, client.put_object.call_args.kwargs["Key"])
+        client.get_object.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

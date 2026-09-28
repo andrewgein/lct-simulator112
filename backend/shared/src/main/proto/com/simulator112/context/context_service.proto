@@ -166,6 +166,8 @@ service ContextManagerService {
   rpc StartCall(StartCallRequest) returns (DialogProgress);
   rpc CompleteCall(CompleteCallRequest) returns (DialogProgress);
   rpc DisconnectCall(DisconnectCallRequest) returns (DialogProgress);
+  rpc GetCallTranscript(GetCallTranscriptRequest) returns (DialogContext);
+  rpc ClearCallTranscript(ClearCallTranscriptRequest) returns (google.protobuf.Empty);
   rpc GetLevelProgress(GetLevelProgressRequest) returns (LevelProgress);
 }
 
@@ -176,6 +178,7 @@ message GetIncidentContextRequest {
 message AppendDialogContextRequest {
   string uuid = 1;
   DialogContext dialog_context = 2;
+  string call_id = 3;
 }
 
 message AppendSolutionContextRequest {
@@ -212,6 +215,16 @@ message CompleteCallRequest {
 }
 
 message DisconnectCallRequest {
+  string context_id = 1;
+  string call_id = 2;
+}
+
+message GetCallTranscriptRequest {
+  string context_id = 1;
+  string call_id = 2;
+}
+
+message ClearCallTranscriptRequest {
   string context_id = 1;
   string call_id = 2;
 }

@@ -275,12 +275,14 @@ class GetIncidentContextRequest(_message.Message):
     def __init__(self, uuid: _Optional[str] = ...) -> None: ...
 
 class AppendDialogContextRequest(_message.Message):
-    __slots__ = ("uuid", "dialog_context")
+    __slots__ = ("uuid", "dialog_context", "call_id")
     UUID_FIELD_NUMBER: _ClassVar[int]
     DIALOG_CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    CALL_ID_FIELD_NUMBER: _ClassVar[int]
     uuid: str
     dialog_context: DialogContext
-    def __init__(self, uuid: _Optional[str] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ...) -> None: ...
+    call_id: str
+    def __init__(self, uuid: _Optional[str] = ..., dialog_context: _Optional[_Union[DialogContext, _Mapping]] = ..., call_id: _Optional[str] = ...) -> None: ...
 
 class AppendSolutionContextRequest(_message.Message):
     __slots__ = ("uuid", "solution_context")
@@ -335,6 +337,22 @@ class CompleteCallRequest(_message.Message):
     def __init__(self, context_id: _Optional[str] = ..., call_id: _Optional[str] = ...) -> None: ...
 
 class DisconnectCallRequest(_message.Message):
+    __slots__ = ("context_id", "call_id")
+    CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
+    CALL_ID_FIELD_NUMBER: _ClassVar[int]
+    context_id: str
+    call_id: str
+    def __init__(self, context_id: _Optional[str] = ..., call_id: _Optional[str] = ...) -> None: ...
+
+class GetCallTranscriptRequest(_message.Message):
+    __slots__ = ("context_id", "call_id")
+    CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
+    CALL_ID_FIELD_NUMBER: _ClassVar[int]
+    context_id: str
+    call_id: str
+    def __init__(self, context_id: _Optional[str] = ..., call_id: _Optional[str] = ...) -> None: ...
+
+class ClearCallTranscriptRequest(_message.Message):
     __slots__ = ("context_id", "call_id")
     CONTEXT_ID_FIELD_NUMBER: _ClassVar[int]
     CALL_ID_FIELD_NUMBER: _ClassVar[int]

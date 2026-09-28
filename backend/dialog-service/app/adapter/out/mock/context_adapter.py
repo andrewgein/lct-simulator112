@@ -11,7 +11,7 @@ class MockContextAdapter(ContextPort):
     def __init__(self):
         self._lock = Lock()
         self._progress: dict[str, DialogProgress] = {}
-        self._transcripts: dict[str, list] = {}
+        self._transcripts: dict[tuple[str, str], list] = {}
         self._calls = (_mock_call(),)
 
     def get_progress(self, context_id: str) -> DialogProgress:
@@ -43,8 +43,15 @@ class MockContextAdapter(ContextPort):
     def disconnect_call(self, context_id: str, call_id: str) -> DialogProgress:
         return self._change(context_id, call_id, DialogStatus.DISCONNECTED)
 
-    def append_transcript(self, context_id: str, transcript: DialogTranscript) -> None:
-        self._transcripts.setdefault(context_id, []).extend(transcript.phrases)
+    def append_transcript(self, context_id: str, call_id: str, transcript: DialogTranscript) -> None:
+        key = (context_id, call_id)
+        self._transcripts.setdefault(key, []).extend(transcript.phrases)
+
+    def get_call_transcript(self, context_id: str, call_id: str) -> DialogTranscript:
+        return DialogTranscript(tuple(self._transcripts.get((context_id, call_id), [])))
+
+    def clear_call_transcript(self, context_id: str, call_id: str) -> None:
+        self._transcripts.pop((context_id, call_id), None)
 
     def _change(self, context_id: str, call_id: str, status: DialogStatus) -> DialogProgress:
         current = self.get_progress(context_id)

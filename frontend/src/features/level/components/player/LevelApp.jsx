@@ -9,7 +9,7 @@ import { useLevelClock } from "../../hooks/useLevelClock.js";
 import ActiveCards from "./ActiveCards.jsx";
 import LevelCommandBar from "./LevelCommandBar.jsx";
 
-const emptyCall = () => ({ phase: "idle", activeCallId: null, phone: "" });
+const emptyCall = () => ({ phase: "idle", activeCallId: null, phone: "", interrupted: false });
 const emptyEditor = (values = {}) => ({ open: false, operation: "CREATE", editingCardId: null, selectedCardId: "", applicant: emptyPerson(), victimCount: 0, incidentTypes: [""], additionalInfo: {}, services: [], cardSaved: false, saving: false, ...values });
 const editorFor = (card, phone) => emptyEditor({
   open: true,
@@ -36,7 +36,20 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
   const nextCallTimer = useRef();
   const firstCallRequested = useRef(false);
   const latest = useRef();
+  const ringtone = useRef();
   latest.current = { call, editor };
+
+  useEffect(() => {
+    const audio = ringtone.current;
+    if (!audio) return;
+    if (call.phase === "incoming") {
+      audio.currentTime = 0;
+      audio.play().catch((error) => console.error("Can't play ringtone", error));
+    } else {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+  }, [call.phase]);
 
   const cardsReady = !cardsLoading && !cardsError && !classifierState.loading && !classifierState.error && cards.length > 0;
   const allCardsComplete = cardsReady && cards.every((card) => cardIsComplete(card, classifierState.classifier));
@@ -75,10 +88,15 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
   }, [loadCards]);
 
   useEffect(() => {
+    const timer = window.setInterval(() => fetch("/api/v1/auth/session").catch(() => {}), 5 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     const setPhase = (phase) => () => setCall((value) => ({ ...value, phase }));
     const receiveCall = ({ detail }) => {
       const activeCallId = detail?.callId || null;
-      setCall({ phase: activeCallId ? "incoming" : "invalid", activeCallId, phone: detail?.phoneNumber || detail?.phone || "" });
+      setCall({ phase: activeCallId ? "incoming" : "invalid", activeCallId, phone: detail?.phoneNumber || detail?.phone || "", interrupted: !!detail?.interrupted });
     };
     const sessionIdle = () => {
       if (firstCallRequested.current) return;
@@ -112,6 +130,11 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
     startDialog(dialogEndpoint, contextId);
   };
 
+  const restartCall = () => {
+    openEditor(null, call.phone);
+    startDialog(dialogEndpoint, contextId, { restart: true });
+  };
+
   const finishLevel = async () => {
     if (!cardsReady) return;
     setFinishing(true);
@@ -128,7 +151,8 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
 
   return (
     <div class="level-app wa-stack wa-gap-0">
-      <LevelCommandBar call={call} now={now} onAccept={acceptCall} onDrop={stopDialog} exitHref={`/courses/${courseId}`}>
+      <audio ref={ringtone} src="/audio/incoming-call.mp3" loop preload="auto" />
+      <LevelCommandBar call={call} now={now} onAccept={acceptCall} onRestart={restartCall} onDrop={stopDialog} exitHref={`/courses/${courseId}`}>
         <LevelSearchInput value={cardSearch} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setCardSearch(event.currentTarget.value)} />
       </LevelCommandBar>
       <CardEditor contextId={contextId} cards={cards} call={call} editor={editor} isDev={isDev} dadataApiKey={dadataApiKey} onChange={setEditor} onClose={closeEditor} />

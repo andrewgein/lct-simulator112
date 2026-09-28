@@ -2,6 +2,8 @@ package com.simulator112.incident.adapter.in.rest;
 
 import com.simulator112.incident.application.port.in.GenerateIncidentDraftUseCase;
 import com.simulator112.incident.application.service.IncidentGenerationException;
+import com.simulator112.incident.application.service.ClassifierUnavailableException;
+import com.simulator112.incident.application.service.IncidentGenerationLimitException;
 import org.springframework.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
@@ -17,6 +19,20 @@ class IncidentGenerationControllerTest {
         var response = new IncidentExceptionHandler().generationFailed(new IncidentGenerationException("provider failed"));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
         assertThat(response.getBody().message()).isEqualTo("Не удалось получить корректный ответ модели");
+    }
+
+    @Test
+    void reportsClassifierFailureSeparately() {
+        var response = new IncidentExceptionHandler().generationFailed(new ClassifierUnavailableException(null));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+        assertThat(response.getBody().message()).isEqualTo("Не удалось получить коды классификатора. Попробуйте позже");
+    }
+
+    @Test
+    void reportsGenerationLimit() {
+        var response = new IncidentExceptionHandler().generationFailed(new IncidentGenerationLimitException());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+        assertThat(response.getBody().message()).contains("меньше этапов или звонков");
     }
 
     @Test

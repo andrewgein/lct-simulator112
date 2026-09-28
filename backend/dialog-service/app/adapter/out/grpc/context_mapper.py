@@ -67,3 +67,11 @@ def transcript_to_proto(value: DialogTranscript) -> context_pb.DialogContext:
         context_pb.Phrase(speaker=speakers[phrase.speaker], text=phrase.text)
         for phrase in value.phrases
     ])
+
+
+def transcript_from_proto(value: context_pb.DialogContext) -> DialogTranscript:
+    speakers = {context_pb.USER: Speaker.OPERATOR, context_pb.LLM: Speaker.COUNTERPARTY}
+    return DialogTranscript(tuple(
+        Phrase(speaker=speakers[phrase.speaker], text=phrase.text)
+        for phrase in value.transcript
+    ))

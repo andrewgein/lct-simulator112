@@ -4,6 +4,7 @@ import com.simulator112.contextmanager.adapter.out.persistence.repository.Contex
 import com.simulator112.contextmanager.adapter.out.persistence.repository.SolutionContextRepository;
 import com.simulator112.contextmanager.application.port.out.ContextStore;
 import com.simulator112.contextmanager.application.port.out.SolutionCardStore;
+import com.simulator112.contextmanager.domain.common.ContextStatus;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import com.simulator112.contextmanager.domain.common.IncidentTargetType;
 import com.simulator112.contextmanager.domain.common.StageStatus;
@@ -28,6 +29,13 @@ public class ContextPersistenceAdapter implements ContextStore, SolutionCardStor
     }
 
     @Override
+    public Optional<TrainingContext> findActive(UUID userId, UUID assignmentId) {
+        return contextRepository.findFirstByUserIdAndAssignmentIdAndStatusNotInOrderByCreatedAtDesc(
+                userId, assignmentId, List.of(ContextStatus.IN_REVIEW, ContextStatus.DONE))
+                .map(ContextPersistenceMapper::toDomain);
+    }
+
+    @Override
     public TrainingContext save(TrainingContext context) {
         return ContextPersistenceMapper.toDomain(contextRepository.save(ContextPersistenceMapper.toEntity(context)));
     }
@@ -39,6 +47,18 @@ public class ContextPersistenceAdapter implements ContextStore, SolutionCardStor
                                                        Instant now) {
         return contextRepository.findWithExpiredStages(targetType, incidentStatus, stageStatus, now).stream()
                 .map(ContextPersistenceMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<TrainingContext> findAbandoned(Instant updatedBefore) {
+        return contextRepository.findByStatusNotInAndUpdatedAtBefore(
+                List.of(ContextStatus.IN_REVIEW, ContextStatus.DONE), updatedBefore).stream()
+                .map(ContextPersistenceMapper::toDomain).toList();
+    }
+
+    @Override
+    public void delete(UUID id) {
+        contextRepository.deleteById(id);
     }
 
     @Override

@@ -4,12 +4,14 @@ import io
 import logging
 import math
 from os import getenv
+import time
 from threading import Lock
 import wave
 
 import httpx
 import numpy as np
 
+from app.adapter.out.processing.latency_tracker import tracker
 from app.adapter.out.processing.voice_profiles import VOICE_PROFILES, VoiceProfile
 
 
@@ -71,11 +73,7 @@ class TTSModel:
             )
 
     def register_all_voices(self) -> None:
-        """Preloads reference audio for every voice profile into the F5-TTS server.
-
-        Called once at service startup so the first dialog for each voice
-        doesn't pay the upload cost.
-        """
+        """Preloads reference audio for every voice profile into the F5-TTS"""
         if not self.base_url:
             return
 
@@ -85,13 +83,16 @@ class TTSModel:
                 voice = self._voice_name(profile, reference_audio)
                 self._register_voice(client, profile, reference_audio, voice)
 
-    def generate(self, text: str, profile: VoiceProfile):
+    def load_text_preprocessor(self):
         with self._lock:
             if self.text_preprocessor is None:
                 from app.adapter.out.processing.tts_text_preprocessor import TTSTextPreprocessor
 
                 self.text_preprocessor = TTSTextPreprocessor()
-            prepared_text = self.text_preprocessor.process(text)
+            return self.text_preprocessor
+
+    def generate(self, text: str, profile: VoiceProfile):
+        prepared_text = self.load_text_preprocessor().process(text)
 
         yield from self._generate_audio(prepared_text, profile)
 
@@ -105,9 +106,6 @@ class TTSModel:
     def _register_voice(
         self, client: httpx.Client, profile: VoiceProfile, audio: bytes, voice: str
     ) -> None:
-        # Registration is process-local because F5-TTS Server has no endpoint for
-        # listing uploaded voices. The lock also prevents simultaneous first-use
-        # requests from uploading the same reference more than once.
         with self._registration_lock:
             if voice in self._registered_voices:
                 return
@@ -147,11 +145,13 @@ class TTSModel:
                 base_url=self.base_url + "/", timeout=self.timeout
             ) as client:
                 self._register_voice(client, profile, reference_audio, voice)
+                request_started = time.monotonic()
                 response = client.get(
                     "synthesize_speech/",
                     params={"text": text, "voice": voice},
                 )
                 response.raise_for_status()
+                tracker.record("tts", time.monotonic() - request_started)
                 content_type = (
                     response.headers.get("content-type", "")
                     .split(";")[0]

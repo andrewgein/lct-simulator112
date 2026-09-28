@@ -51,7 +51,7 @@ final class ReviewSubmissionGrpcMapper {
                 .map(value -> new ReviewSubmission.DialogueCriterion(value.getId(), value.getName(),
                         value.getHypothesis(), value.getWeight()))
                 .toList());
-        return new ReviewSubmission.IncidentScenario(source.getId(), order,
+        return new ReviewSubmission.IncidentScenario(source.getId(), order, source.getTitle(),
                 source.getStagesList().stream().map(ReviewSubmissionGrpcMapper::stage).toList(), criteria);
     }
 

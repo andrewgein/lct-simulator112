@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 import logging
 import threading
 
@@ -10,8 +11,11 @@ from app.application.port.outbound import (
     NoMoreCallsError,
     VoicePipelineFactory,
 )
+from app.adapter.out.processing.latency_tracker import tracker
 from app.application.service.transcript_builder import DialogContextBuilder
 from app.domain.model import DialogProgress, DialogStatus, DialogTranscript
+
+SERVICE_LOAD_PUSH_INTERVAL_SECONDS = 5
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -71,6 +75,7 @@ def handle_progress_request(context_id: str) -> dict:
             "callAvailable": True,
             "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
+            "interrupted": was_call_disconnected(progress),
         }
     if progress.status == DialogStatus.COMPLETED:
         return {
@@ -92,6 +97,7 @@ def handle_next_call(context_id: str) -> dict:
             "callAvailable": True,
             "callId": progress.active_call_id,
             "phoneNumber": call.person.phone,
+            "interrupted": was_call_disconnected(progress),
         }
 
     try:
@@ -120,6 +126,13 @@ def handle_error(message: str) -> dict:
     return {"type": "error", "message": message}
 
 
+async def _push_service_load(ws: WebSocket, send_lock: asyncio.Lock) -> None:
+    while True:
+        await asyncio.sleep(SERVICE_LOAD_PUSH_INTERVAL_SECONDS)
+        async with send_lock:
+            await ws.send_json({"type": "service_load", **tracker.snapshot()})
+
+
 @router.websocket("/api/v1/dialog/session")
 async def dialog_session(ws: WebSocket):
     await ws.accept()
@@ -128,43 +141,53 @@ async def dialog_session(ws: WebSocket):
         await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No contextId provided")
         return
 
+    send_lock = asyncio.Lock()
+    push_task = asyncio.create_task(_push_service_load(ws, send_lock))
     try:
-        await ws.send_json(handle_progress_request(context_id))
+        async with send_lock:
+            await ws.send_json(handle_progress_request(context_id))
         while True:
             request = await ws.receive_json()
             request_type = request.get("type")
 
             match request_type:
                 case "request_status":
-                    await ws.send_json(handle_progress_request(context_id))
+                    response = handle_progress_request(context_id)
                 case "request_next_call":
-                    await ws.send_json(handle_next_call(context_id))
+                    response = handle_next_call(context_id)
                 case "dismiss_call":
                     progress = dialog_use_case().session(context_id).progress
                     if progress.active_call_id and progress.status == DialogStatus.IN_CALL:
                         dialog_use_case().disconnect(context_id, progress.active_call_id, DialogTranscript(phrases=()))
-                    await ws.send_json({"type": "call_finished", "callId": progress.active_call_id})
+                    response = {"type": "call_finished", "callId": progress.active_call_id}
                 case "request_call":
                     call_id = request.get("callId")
                     if not isinstance(call_id, str) or not call_id:
-                        await ws.send_json(handle_error("Укажите звонок"))
+                        response = handle_error("Укажите звонок")
                     else:
                         try:
-                            await ws.send_json(handle_selected_call(context_id, call_id))
+                            response = handle_selected_call(context_id, call_id)
                         except Exception as exc:
                             logger.exception("Could not start selected call %s", call_id)
-                            await ws.send_json(handle_error(str(exc)))
+                            response = handle_error(str(exc))
                 case _:
-                    await ws.send_json(handle_error("Unknown session command"))
+                    response = handle_error("Unknown session command")
+            async with send_lock:
+                await ws.send_json(response)
 
     except WebSocketDisconnect:
         logger.info("Control connection closed for %s", context_id)
     except Exception as exc:
         logger.exception("Dialog control session failed for %s", context_id)
         try:
-            await ws.send_json(handle_error(str(exc)))
+            async with send_lock:
+                await ws.send_json(handle_error(str(exc)))
         except WebSocketDisconnect:
             pass
+    finally:
+        push_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await push_task
 
 
 @router.websocket("/api/v1/dialog/process-call")
@@ -178,6 +201,7 @@ async def process_call(ws: WebSocket):
         return
 
     logger.info("Call contextId: %s", context_id)
+    restart = ws.query_params.get("restart", "").lower() == "true"
     processing_context = None
     dialog_context_builder = DialogContextBuilder()
     completed = False
@@ -187,8 +211,14 @@ async def process_call(ws: WebSocket):
         await ws.close(code=status.WS_1008_POLICY_VIOLATION, reason="No active call")
         return
     call_id = progress.active_call_id
-    call = dialog_use_case().resume_call(context_id)
-    call_recorder = call_recorder_factory().create(context_id, call_id)
+    history = None
+    if restart:
+        call = dialog_use_case().restart_call(context_id)
+    else:
+        call = dialog_use_case().resume_call(context_id)
+        if was_call_disconnected(progress):
+            history = dialog_use_case().transcript_for_resume(context_id, call_id)
+    call_recorder = call_recorder_factory().create(context_id, call_id, restart)
 
     loop = asyncio.get_running_loop()
     client_disconnected = threading.Event()
@@ -214,6 +244,7 @@ async def process_call(ws: WebSocket):
         on_operator_phrase=dialog_context_builder.append_user_phrase,
         on_counterparty_phrase=dialog_context_builder.append_llm_phrase,
         on_audio=output_callback,
+        history=history,
     )
 
     try:

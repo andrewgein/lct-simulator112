@@ -78,14 +78,15 @@ GPU (`uvicorn f5-tts_server.server:app --host 0.0.0.0 --port 7860`) и укаж�
 Модульные тесты HTTP-контракта и декодирования WAV не требуют запущенного сервера:
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 ```
 
 Для проверки реального F5-TTS Server:
 
 ```bash
 F5_TTS_INTEGRATION_TEST=1 F5_TTS_BASE_URL=http://127.0.0.1:7860 \
-  python -m unittest tests.test_tts_model.F5TTSIntegrationTests -v
+  python -m pytest tests/test_tts_model.py -q
 ```
 
 При необходимости сконвертируйте OGG/M4A-референсы в WAV. Скрипт сохраняет исходные файлы и
@@ -125,3 +126,17 @@ python scripts/generate_voice_emotion_samples.py \
 Для реальных сценариев укажите `CONTEXT_SOURCE=grpc` и адрес
 `CONTEXT_MANAGER_GRPC_URL` из `backend/context-service`; для автономного запуска
 можно использовать `CONTEXT_SOURCE=mock`. Dockerfile запускает сервис на порту 8005.
+
+## Нормализация чисел
+
+`TTSTextPreprocessor.process()` нормализует собранное предложение перед Silero Stress.
+Телефоны, включая скобки и ведущие нули, произносятся по отдельным цифрам.
+Диапазоны обрабатываются целиком, в том числе диапазоны дробей и времени.
+`normalize_numbers(text)` возвращает читаемую промежуточную запись структурных чисел;
+`normalize_numbers(text, spoken=True)` разворачивает её в слова для синтеза.
+
+Контекстное склонение использует pymorphy3 и num2words, предлоги и ограниченный
+набор управляющих слов. Это локальные грамматические правила, не полный синтаксический
+анализатор. Порядковые формы выбираются по форме существительного: «на 3 этаже» →
+«на третьем этаже», но «2 этажа» → «два этажа». Отрицательная температура:
+«минус 5 градусов» → «минус пять градусов». Уже написанные слова-числа не меняются.

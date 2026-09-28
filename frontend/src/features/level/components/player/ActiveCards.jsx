@@ -57,11 +57,13 @@ function arrangeCards(cards) {
     if (!childrenByMain.has(card.mainCardId)) childrenByMain.set(card.mainCardId, []);
     childrenByMain.get(card.mainCardId).push(card);
   });
-  const roots = cards.filter((card) => !card.mainCardId || !cards.some((item) => item.cardId === card.mainCardId));
-  return roots.map((card) => ({ card, children: childrenByMain.get(card.cardId) || [] }));
+  const cardIds = new Set(cards.map((card) => card.cardId));
+  const roots = cards.filter((card) => !card.mainCardId || !cardIds.has(card.mainCardId));
+  const buildNode = (card) => ({ card, children: (childrenByMain.get(card.cardId) || []).map(buildNode) });
+  return roots.map(buildNode);
 }
 
-function createRow(card, kind, relationCount, classifierState, getCardMeta) {
+function createRow(card, kind, depth, relationCount, expanded, classifierState, getCardMeta) {
   const meta = getCardMeta?.(card) || {};
   const complete = meta.complete ?? cardIsComplete(card, classifierState.classifier);
   const incidents = (card.incidentTypes || []).map((code) => findIncident(classifierState.classifier, code)).filter(Boolean);
@@ -83,6 +85,8 @@ function createRow(card, kind, relationCount, classifierState, getCardMeta) {
     date: date && !Number.isNaN(date.getTime()) ? dateFormatter.format(date) : "—",
     time: date && !Number.isNaN(date.getTime()) ? timeFormatter.format(date) : "—",
     kind,
+    depth,
+    expanded,
     relationCount,
     incident: incidents.map((item) => item.finalName).join(" · ") || (classifierState.loading ? "Загрузка типа…" : "Тип не указан"),
     applicant: applicantName(card),
@@ -102,18 +106,24 @@ function createRow(card, kind, relationCount, classifierState, getCardMeta) {
   };
 }
 
-function flattenBranches(branches, classifierState, getCardMeta) {
-  const rows = [];
-  branches.forEach((branch) => {
-    rows.push(createRow(branch.card, "primary", branch.children.length, classifierState, getCardMeta));
-    branch.children.forEach((card) => rows.push(createRow(card, "child", 0, classifierState, getCardMeta)));
+function flattenBranches(nodes, depth, collapsed, classifierState, getCardMeta, rows = []) {
+  nodes.forEach((node) => {
+    const expanded = !collapsed.has(node.card.cardId);
+    rows.push(createRow(node.card, depth === 0 ? "primary" : "child", depth, node.children.length, expanded, classifierState, getCardMeta));
+    if (expanded) flattenBranches(node.children, depth + 1, collapsed, classifierState, getCardMeta, rows);
   });
   return rows;
 }
 
 export default function ActiveCards({ cards, loading, error, classifierState, searchQuery = "", onOpen, getCardMeta, heading = "Список происшествий", emptyMessage = "Активных карточек пока нет", statusLabel = "Заполнение" }) {
   const [expandedDetails, setExpandedDetails] = useState(() => new Set());
-  const rows = flattenBranches(arrangeCards(cards), classifierState, getCardMeta);
+  const [collapsed, setCollapsed] = useState(() => new Set());
+  const rows = flattenBranches(arrangeCards(cards), 0, collapsed, classifierState, getCardMeta);
+  const toggle = (id) => setCollapsed((current) => {
+    const next = new Set(current);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
   const toggleDetails = (id) => setExpandedDetails((current) => {
     const next = new Set(current);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -130,12 +140,12 @@ export default function ActiveCards({ cards, loading, error, classifierState, se
       field: "relation",
       label: "Связи",
       sortable: false,
-      render: (row) => row.kind !== "primary" || row.relationCount > 0 ? <span class="card-relation-linked"><wa-icon name="link" label="Есть связанная карточка"></wa-icon></span> : null
+      render: (row) => row.relationCount > 0 ? <wa-button type="button" size="xs" appearance="plain" aria-expanded={row.expanded} aria-label={row.expanded ? "Свернуть связанные карточки" : "Показать связанные карточки"} onClick={() => toggle(row.id)}><wa-icon name={row.expanded ? "chevron-down" : "chevron-right"} label="Есть связанные карточки"></wa-icon></wa-button> : row.kind === "child" ? <wa-icon name="link" label="Связанная карточка"></wa-icon> : null
     },
     { field: "id", label: "Номер", searchValue: (row) => `${row.id} ${row.applicant} ${row.description}` },
     { field: "date", label: "Дата", sortValue: (row) => row.timestamp },
     { field: "time", label: "Время", sortValue: (row) => row.timestamp },
-    { field: "incident", label: "Тип происшествия", render: (row) => <strong title={row.incident}>{row.incident}</strong> },
+    { field: "incident", label: "Тип происшествия", render: (row) => <strong title={row.incident} style={{ paddingInlineStart: `${row.depth * 1.25}rem` }}>{row.incident}</strong> },
     { field: "victimSummary", label: "Постр.", sortValue: (row) => row.victimCount },
     { field: "address", label: "Адрес" },
     { field: "status", label: statusLabel },
