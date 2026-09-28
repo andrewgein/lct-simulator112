@@ -12,6 +12,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public final class System112BasicFieldsStep extends EditableJsonStep {
+  @Override protected String status() { return "Заполняю адрес и основные данные"; }
   public static final StepPaths PATHS = new StepPaths(Set.of("title", "difficulty", "address"),
       "Основные данные: /title, /difficulty, /address или /address/city (и другие поля адреса).",
       (draft, parts) -> {

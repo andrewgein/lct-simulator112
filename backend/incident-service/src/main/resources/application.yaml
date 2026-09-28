@@ -2,6 +2,9 @@ server:
   port: 8086
 
 spring:
+  mvc:
+    async:
+      request-timeout: 15m
   application:
     name: incident
   datasource:

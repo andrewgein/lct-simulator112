@@ -9,6 +9,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public final class DdsScenarioStep extends JsonResponseStep<String> {
+  @Override protected String status() { return "Генерирую сценарий"; }
   public DdsScenarioStep(
       ObjectMapper mapper,
       JsonNode modelDraft,

@@ -10,6 +10,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 public final class PatchSelectionStep extends JsonResponseStep<List<String>> {
+    @Override protected String status() { return "Определяю изменения"; }
     private final JsonNode draft;
     private final List<StepPaths> steps;
 

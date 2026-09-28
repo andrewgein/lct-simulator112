@@ -6,6 +6,7 @@ import com.simulator112.incident.application.service.OllamaUnavailableException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public abstract class GenerationStep<T> {
     private final String name;
@@ -23,6 +24,8 @@ public abstract class GenerationStep<T> {
     }
 
     protected abstract T validate(String modelResponse);
+
+    protected String status() { return "Заполняю этап: " + name; }
 
     private T execute(IncidentLanguageModelPort model) {
         var messages = new ArrayList<>(prompt);
@@ -46,12 +49,15 @@ public abstract class GenerationStep<T> {
 
     public static final class Chain {
         private final IncidentLanguageModelPort model;
+        private final Consumer<String> onStatus;
 
-        public Chain(IncidentLanguageModelPort model) {
+        public Chain(IncidentLanguageModelPort model, Consumer<String> onStatus) {
             this.model = model;
+            this.onStatus = onStatus;
         }
 
         public <T> T then(GenerationStep<T> step) {
+            onStatus.accept(step.status());
             return step.execute(model);
         }
     }

@@ -94,7 +94,7 @@ public final class System112IncidentGenerationService extends AbstractIncidentGe
     @Override
     protected Result generate(Command command, LinkedHashMap<String, String> codes,
             LinkedHashMap<String, String> services, JsonNode modelDraft) {
-        var chain = new GenerationStep.Chain(model);
+        var chain = new GenerationStep.Chain(model, command.onStatus());
         var validate = (java.util.function.Function<JsonNode, Result>)
                 response -> validateResponse(response, codes, services, command);
         String scenario = chain.then(new System112ScenarioStep(mapper, modelDraft, command.messages()));

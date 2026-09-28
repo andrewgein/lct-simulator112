@@ -12,6 +12,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public final class System112CriteriaStep extends EditableJsonStep {
+  @Override protected String status() { return "Заполняю критерии диалога"; }
   public static final StepPaths PATHS = new StepPaths(Set.of("dialogueCriteria"),
       "Критерии 112: /dialogueCriteria или /dialogueCriteria/0/hypothesis (также name, weight).",
       (draft, parts) -> {

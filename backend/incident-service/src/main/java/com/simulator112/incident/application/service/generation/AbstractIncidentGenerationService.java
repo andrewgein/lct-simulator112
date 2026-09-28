@@ -56,7 +56,7 @@ public abstract class AbstractIncidentGenerationService implements GenerateIncid
     protected boolean requiresClassifierForGeneration() { return false; }
 
     private Result update(Command command, GenerationContext context) {
-        var chain = new GenerationStep.Chain(model);
+        var chain = new GenerationStep.Chain(model, command.onStatus());
         var paths = chain.then(new PatchSelectionStep(mapper, context.modelDraft(), command.messages(), dds(), updateSteps()));
         var incident = updateSelectedFields(command, context, chain, paths);
         var envelope = mapper.createObjectNode().put("message", "Готово");

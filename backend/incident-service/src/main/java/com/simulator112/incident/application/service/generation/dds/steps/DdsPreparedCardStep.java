@@ -17,6 +17,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 public final class DdsPreparedCardStep extends EditableJsonStep {
+  @Override protected String status() { return "Заполняю заявителя и карточку"; }
   public static final StepPaths PATHS = new StepPaths(Set.of("preparedCardTemplate"),
       "Карточка ДДС: /preparedCardTemplate, /preparedCardTemplate/applicant/phone и другие поля карточки.",
       (draft, parts) -> {

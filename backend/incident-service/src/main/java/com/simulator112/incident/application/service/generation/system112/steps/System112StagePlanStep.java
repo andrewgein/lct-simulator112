@@ -7,6 +7,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 public final class System112StagePlanStep extends JsonResponseStep<JsonNode> {
+  @Override protected String status() { return "Генерирую план"; }
   public System112StagePlanStep(ObjectMapper mapper, String scenario, String requests) {
     super("План 112", messages(mapper, scenario, requests), "stagePlan с 1–15 целями", 3, mapper);
   }

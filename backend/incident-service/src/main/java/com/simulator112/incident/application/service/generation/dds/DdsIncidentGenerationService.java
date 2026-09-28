@@ -192,7 +192,7 @@ public final class DdsIncidentGenerationService extends AbstractIncidentGenerati
         if (userRequirements.length() > 4000)
             userRequirements = userRequirements.substring(userRequirements.length() - 4000);
 
-        var chain = new GenerationStep.Chain(model);
+        var chain = new GenerationStep.Chain(model, command.onStatus());
         var validate = (java.util.function.Function<JsonNode, Result>)
                 response -> validateResponse(response, codes, services, command);
         String scenario = chain.then(new DdsScenarioStep(mapper, modelDraft, command.messages()));
