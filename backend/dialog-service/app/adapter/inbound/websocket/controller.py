@@ -193,7 +193,7 @@ async def process_call(ws: WebSocket):
         call = dialog_use_case().resume_call(context_id)
         if was_call_disconnected(progress):
             history = dialog_use_case().transcript_for_resume(context_id, call_id)
-    call_recorder = call_recorder_factory().create(context_id, call_id)
+    call_recorder = call_recorder_factory().create(context_id, call_id, restart)
 
     loop = asyncio.get_running_loop()
     client_disconnected = threading.Event()

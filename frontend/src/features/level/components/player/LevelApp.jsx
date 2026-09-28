@@ -88,6 +88,11 @@ export default function LevelApp({ contextId, courseId, dialogEndpoint, dadataAp
   }, [loadCards]);
 
   useEffect(() => {
+    const timer = window.setInterval(() => fetch("/api/v1/auth/session").catch(() => {}), 5 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     const setPhase = (phase) => () => setCall((value) => ({ ...value, phase }));
     const receiveCall = ({ detail }) => {
       const activeCallId = detail?.callId || null;
