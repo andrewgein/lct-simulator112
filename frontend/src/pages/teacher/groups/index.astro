@@ -38,7 +38,7 @@ try {
   </MainHeader>
   {!error && !groups.length && <wa-callout>Учебных групп пока нет. Создайте группу, чтобы назначать курсы нескольким обучающимся.</wa-callout>}
   {!error && groups.length > 0 && (
-    <wa-accordion class="groups-accordion" appearance="outlined" heading-level="2" mode="single-collapsible">
+    <wa-accordion class="groups-accordion" appearance="outlined" heading-level="2" mode="multiple">
       {groups.map((group) => {
         const students = (group.studentIds || []).map((id) => studentsById.get(String(id))).filter(Boolean);
         return (
@@ -109,10 +109,11 @@ try {
 </script>
 
 <style>
-  .groups-accordion { width: 100%; }
+  .groups-accordion { display: flex; width: 100%; flex-direction: column; gap: var(--wa-space-s); }
   .groups-accordion wa-accordion-item::part(accordion-item),
   .groups-accordion wa-accordion-item::part(button),
   .groups-accordion wa-accordion-item::part(content) { background-color: var(--wa-color-surface-raised); }
+  .groups-accordion wa-accordion-item::part(accordion-item) { border-radius: var(--wa-border-radius-m); }
   .group-label { width: 100%; align-items: center; font-weight: var(--wa-font-weight-semibold); }
   .group-content { padding-block: var(--wa-space-xs); }
   .group-toolbar { justify-content: flex-end; }
