@@ -1,3 +1,6 @@
+ALTER TABLE stage_contexts ADD COLUMN IF NOT EXISTS expected_comment TEXT;
+ALTER TABLE stage_contexts ADD COLUMN IF NOT EXISTS comment TEXT;
+
 CREATE TABLE system112_stage_contexts (
     stage_context_id UUID PRIMARY KEY REFERENCES stage_contexts (id) ON DELETE CASCADE,
     victim_count INTEGER NOT NULL DEFAULT 0 CHECK (victim_count >= 0)

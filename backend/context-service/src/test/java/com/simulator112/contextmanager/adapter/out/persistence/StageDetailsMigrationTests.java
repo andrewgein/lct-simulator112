@@ -55,6 +55,8 @@ class StageDetailsMigrationTests {
         UUID systemStage = UUID.randomUUID();
         UUID ddsStage = UUID.randomUUID();
         try (var connection = DriverManager.getConnection(url, "sa", ""); var statement = connection.createStatement()) {
+            statement.executeUpdate("ALTER TABLE stage_contexts ADD COLUMN expected_comment TEXT");
+            statement.executeUpdate("ALTER TABLE stage_contexts ADD COLUMN comment TEXT");
             for (var entry : java.util.Map.of(systemContext, "SYSTEM_112", ddsContext, "DDS").entrySet()) {
                 statement.executeUpdate("INSERT INTO contexts (uuid, assignment_id, level_title, target_type, difficulty, execution_mode) VALUES ('"
                         + entry.getKey() + "', '" + UUID.randomUUID() + "', 'Тест', '" + entry.getValue() + "', 'NORMAL', 'PARALLEL')");
