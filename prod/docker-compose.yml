@@ -251,6 +251,7 @@ services:
     image: ${NOTIFICATION_SERVICE_IMAGE:-${IMAGE_REGISTRY:?IMAGE_REGISTRY is required}/notification-service:${IMAGE_TAG:?IMAGE_TAG is required}}
     container_name: ${COMPOSE_PROJECT_NAME}-notification
     environment:
+      SERVER_PORT: 8087
       DB_URL: jdbc:postgresql://postgres:5432/notification
       DB_USERNAME: postgres
       DB_PASSWORD: ${DB_PASSWORD}
