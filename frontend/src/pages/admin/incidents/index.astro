@@ -2,14 +2,13 @@
 import Page from "../../../layouts/Page.astro";
 import Header from "../../../layouts/Header.astro";
 import MainHeader from "../../../layouts/MainHeader.astro";
-import AdminIncidentCard from "../../../features/incident/components/admin/AdminIncidentCard.astro";
 import { getIncidentLibrary } from "../../../features/incident/api/AdminIncidentApi";
 
 export const prerender = false;
 const role = Astro.cookies.get("role")?.value;
 if (!["ADMIN", "SUPERVISOR"].includes(role || "")) return Astro.redirect("/");
 const canDelete = role === "ADMIN";
-let incidents = [];
+let incidents: import("../../../features/incident/contract/Incident").Incident[] = [];
 let error = null;
 try {
   incidents = await getIncidentLibrary(Astro.cookies.get("accessToken")?.value);
@@ -25,20 +24,68 @@ try {
       Создать сценарий
     </wa-button>
   </MainHeader>
-  {incidents.length ? (
-    <div class="wa-stack wa-gap-s">
-      {incidents.map((incident) => (
-        <AdminIncidentCard {incident} {canDelete} />
-      ))}
-    </div>
-  ) : (
+  {!error && incidents.length > 0 && (
+    <section class="incident-list-section" aria-label="Список сценариев">
+      <div class="incident-table-wrap">
+        <table class="incident-table">
+          <thead>
+            <tr>
+              <th scope="col">Сценарий
+              </th>
+              <th scope="col">Тип
+              </th>
+              <th scope="col">Этапов
+              </th>
+              <th scope="col" class="incident-actions-heading">
+                <span class="wa-visually-hidden">Действия
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {incidents.map((incident) => (
+              <tr>
+                <td class="incident-title">
+                  <a href={`/admin/incidents/${incident.id}`}>
+                    <strong>{incident.title}
+                    </strong>
+                  </a>
+                </td>
+                <td class="incident-type">
+                  <wa-badge variant={incident.targetType === "DDS" ? "warning" : "brand"}>{incident.targetType === "DDS" ? "ДДС" : "Система-112"}
+                  </wa-badge>
+                </td>
+                <td>{incident.stages?.length || 0}
+                </td>
+                <td class="incident-actions">
+                  <div class="incident-action-buttons">
+                    <wa-button href={`/admin/incidents/${incident.id}`} appearance="outlined" aria-label={`Редактировать сценарий ${incident.title}`}>
+                      <wa-icon name="pen" label="Редактировать">
+                      </wa-icon>
+                    </wa-button>
+                    {canDelete && (
+                      <wa-button class="delete-incident" type="button" data-id={incident.id} appearance="outlined" variant="danger" aria-label={`Удалить сценарий ${incident.title}`}>
+                        <wa-icon name="trash" label="Удалить">
+                        </wa-icon>
+                      </wa-button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )}
+  {!error && !incidents.length && (
     <wa-callout variant="neutral">
       Сценариев пока нет. Создайте первый сценарий.
     </wa-callout>
   )}
 </Page>
 <script>
-  document.querySelectorAll('.delete-incident').forEach((button) =>
+  document.querySelectorAll<HTMLElement>('.delete-incident').forEach((button) =>
     button.addEventListener('click', async () => {
       if (!confirm('Удалить сценарий без возможности восстановления?')) {
         return;
@@ -50,3 +97,19 @@ try {
       else alert('Не удалось удалить сценарий');
   }));
 </script>
+
+<style>
+  .incident-list-section { width: 100%; }
+  .incident-table-wrap { width: 100%; overflow-x: auto; border-block: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .incident-table { width: 100%; border-collapse: collapse; background: var(--wa-color-surface-raised); text-align: left; }
+  .incident-table th, .incident-table td { padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
+  .incident-table tbody tr:last-child td { border-block-end: 0; }
+  .incident-table th { color: var(--wa-color-text-quiet); font-weight: var(--wa-font-weight-semibold); }
+  .incident-table .incident-actions-heading, .incident-table .incident-actions { width: 1%; text-align: right; white-space: nowrap; }
+  .incident-table tbody tr:hover { background: var(--wa-color-brand-fill-quiet); }
+  .incident-table a { color: var(--wa-color-text-link); text-decoration: none; }
+  .incident-table a:hover { text-decoration: underline; }
+  .incident-title { min-width: 12rem; overflow-wrap: anywhere; }
+  .incident-type { white-space: nowrap; }
+  .incident-action-buttons { display: flex; justify-content: flex-end; gap: var(--wa-space-xs); }
+</style>
