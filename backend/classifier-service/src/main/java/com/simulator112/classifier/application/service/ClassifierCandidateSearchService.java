@@ -48,7 +48,7 @@ public class ClassifierCandidateSearchService implements SearchClassifierEntries
 
     private int score(List<String> queryWords, ClassifierCandidate entry) {
         var words = Arrays.stream(normalize(entry.categoryName() + " " + entry.finalName()).split("[^а-яa-z0-9]+"))
-                .filter(word -> !word.isEmpty()).toList();
+                .filter(word -> word.length() >= 4).toList();
         return queryWords.stream().mapToInt(queryWord -> words.stream().mapToInt(word ->
                 word.equals(queryWord) ? 6 : word.startsWith(queryWord.substring(0, Math.min(5, queryWord.length())))
                         || queryWord.startsWith(word.substring(0, Math.min(5, word.length()))) ? 2 : 0)
