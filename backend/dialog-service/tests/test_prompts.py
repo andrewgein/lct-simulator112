@@ -24,6 +24,17 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("называй фамилию, имя и отчество (если указано)", prompt)
         self.assertNotIn("Полное имя для ответа оператору", prompt)
 
+    def test_builds_other_service_scenario(self):
+        call = _call(counterparty=CounterpartyType.SERVICE,
+                     direction=CallDirection.OUTBOUND,
+                     ai_context="Ты дежурный скорой помощи")
+
+        prompt = build_call_scenario(call)
+
+        self.assertIn("Собеседник: дежурный другой службы", prompt)
+        self.assertIn("Направление: исходящий", prompt)
+        self.assertIn("Ты дежурный скорой помощи", prompt)
+
     def test_builds_dds_brigade_scenario(self):
         call = _call(counterparty=CounterpartyType.BRIGADE,
                      direction=CallDirection.OUTBOUND,

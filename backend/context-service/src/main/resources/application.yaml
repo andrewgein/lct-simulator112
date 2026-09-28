@@ -23,7 +23,7 @@ spring:
         incident-service:
           target: ${INCIDENT_SERVICE_GRPC_TARGET:static://localhost:9091}
         review-service:
-          target: ${REVIEW_SERVICE_GRPC_TARGET:static://localhost:9092}
+          target: ${REVIEW_SERVICE_GRPC_TARGET:static://localhost:9094}
         course-service:
           target: ${COURSE_SERVICE_GRPC_TARGET:static://localhost:9095}
 context:

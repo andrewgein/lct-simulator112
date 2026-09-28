@@ -21,27 +21,23 @@ class IncidentApplicationServiceTest {
     private final IncidentApplicationService service = new IncidentApplicationService(repository, classifier);
 
     @Test
-    void acceptsDdsBinaryTree() {
+    void acceptsOrderedStages() {
         UUID root = UUID.randomUUID();
         UUID success = UUID.randomUUID();
         UUID failure = UUID.randomUUID();
         DdsIncident incident = incident(
-                List.of(acceptanceStage(root), stage(success), stage(failure)),
-                root,
-                List.of(new DdsStageTransition(root, success, failure)));
+                List.of(acceptanceStage(root), stage(success), stage(failure)));
         when(repository.save(incident)).thenReturn(incident);
 
         service.createIncident(incident);
     }
 
     @Test
-    void acceptsTransitionWithSameSuccessAndFailureStage() {
+    void acceptsTwoOrderedStages() {
         UUID root = UUID.randomUUID();
         UUID next = UUID.randomUUID();
         DdsIncident incident = incident(
-                List.of(acceptanceStage(root), stage(next)),
-                root,
-                List.of(new DdsStageTransition(root, next, next)));
+                List.of(acceptanceStage(root), stage(next)));
         when(repository.save(incident)).thenReturn(incident);
 
         service.createIncident(incident);
@@ -52,7 +48,7 @@ class IncidentApplicationServiceTest {
         UUID root = UUID.randomUUID();
         var stage = new DdsStage(root, "Завершение", null,
                 DdsStageType.COMPLETE_INCIDENT, 30, List.of());
-        DdsIncident incident = incident(List.of(stage), root, List.of());
+        DdsIncident incident = incident(List.of(stage));
 
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -64,7 +60,7 @@ class IncidentApplicationServiceTest {
         UUID root = UUID.randomUUID();
         var stage = new DdsStage(root, "Подтверждение получения", null,
                 DdsStageType.ASSIGN_BRIGADE, 60, List.of());
-        DdsIncident incident = incident(List.of(stage), root, List.of());
+        DdsIncident incident = incident(List.of(stage));
 
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -72,13 +68,11 @@ class IncidentApplicationServiceTest {
     }
 
     @Test
-    void rejectsAcceptanceStageOutsideGraphRoot() {
+    void rejectsAcceptanceStageOutsideFirstPosition() {
         UUID root = UUID.randomUUID();
         UUID duplicate = UUID.randomUUID();
         DdsIncident incident = incident(
-                List.of(acceptanceStage(root), acceptanceStage(duplicate)),
-                root,
-                List.of(new DdsStageTransition(root, duplicate, null)));
+                List.of(acceptanceStage(root), acceptanceStage(duplicate)));
 
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -86,46 +80,59 @@ class IncidentApplicationServiceTest {
     }
 
     @Test
-    void rejectsCallsOutsideStatusClarificationStage() {
+    void acceptsCallOnAnyDdsStage() {
         UUID root = UUID.randomUUID();
         var call = new CallScenario(null, 0, CallDirection.OUTBOUND, CounterpartyType.BRIGADE,
                 null, null, List.of(), List.of(), null, null);
         var stage = new DdsStage(root, "Назначение бригады", null,
-                DdsStageType.ASSIGN_BRIGADE, 60, List.of(call));
-        DdsIncident incident = incident(List.of(stage), root, List.of());
+                DdsStageType.ASSIGN_BRIGADE, 30, List.of(call));
+        DdsIncident incident = incident(List.of(stage));
+        when(repository.save(incident)).thenReturn(incident);
 
-        assertThatThrownBy(() -> service.createIncident(incident))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Звонки разрешены только");
+        service.createIncident(incident);
     }
 
     @Test
-    void requiresOutgoingBrigadeCallOnStatusClarificationStage() {
+    void permitsIncomingBrigadeAndOutgoingOtherServiceCalls() {
         UUID root = UUID.randomUUID();
-        var stage = new DdsStage(root, "Уточнение статуса", null,
-                DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of());
-        DdsIncident incident = incident(List.of(stage), root, List.of());
+        var incoming = new CallScenario(null, 0, CallDirection.INBOUND, CounterpartyType.BRIGADE,
+                null, null, List.of(), List.of(), null, null);
+        var outgoing = new CallScenario(null, 1, CallDirection.OUTBOUND, CounterpartyType.SERVICE,
+                null, null, List.of(), List.of(), null, null);
+        var contactStage = new DdsStage(UUID.randomUUID(), "Связь со службами", null,
+                DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 60, List.of(incoming, outgoing));
+        var incident = incident(List.of(acceptanceStage(root), contactStage));
+        when(repository.save(incident)).thenReturn(incident);
 
-        assertThatThrownBy(() -> service.createIncident(incident))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("исходящие звонки бригаде");
+        service.createIncident(incident);
     }
 
     @Test
-    void rejectsUnreachableDdsStage() {
+    void permitsStatusStageWithoutCall() {
+        UUID root = UUID.randomUUID();
+        UUID next = UUID.randomUUID();
+        var stage = new DdsStage(next, "Уточнение статуса", null,
+                DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of(), null);
+        DdsIncident incident = incident(List.of(acceptanceStage(root), stage));
+        when(repository.save(incident)).thenReturn(incident);
+
+        service.createIncident(incident);
+    }
+
+    @Test
+    void acceptsOrderedStagesWithoutBranches() {
         UUID root = UUID.randomUUID();
         UUID unreachable = UUID.randomUUID();
-        DdsIncident incident = incident(List.of(acceptanceStage(root), stage(unreachable)), root, List.of());
+        DdsIncident incident = incident(List.of(acceptanceStage(root), stage(unreachable)));
 
-        assertThatThrownBy(() -> service.createIncident(incident))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("достижимы");
+        when(repository.save(incident)).thenReturn(incident);
+        service.createIncident(incident);
     }
 
     @Test
     void requiresPreparedCardClassifierCodes() {
         UUID root = UUID.randomUUID();
-        DdsIncident incident = incident(List.of(stage(root)), root, List.of(), List.of());
+        DdsIncident incident = incident(List.of(stage(root)), List.of());
 
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -135,7 +142,7 @@ class IncidentApplicationServiceTest {
     @Test
     void rejectsDuplicatePreparedCardClassifierCodes() {
         UUID root = UUID.randomUUID();
-        DdsIncident incident = incident(List.of(stage(root)), root, List.of(), List.of("101", "101"));
+        DdsIncident incident = incident(List.of(stage(root)), List.of("101", "101"));
 
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -145,7 +152,7 @@ class IncidentApplicationServiceTest {
     @Test
     void validatesPreparedAndInitialAssignmentClassifierCodes() {
         UUID root = UUID.randomUUID();
-        DdsIncident incident = incident(List.of(acceptanceStage(root)), root, List.of());
+        DdsIncident incident = incident(List.of(acceptanceStage(root)));
         when(repository.save(incident)).thenReturn(incident);
 
         service.createIncident(incident);
@@ -157,28 +164,24 @@ class IncidentApplicationServiceTest {
     @Test
     void rejectsEmptyInitialAssignmentClassifierCode() {
         UUID root = UUID.randomUUID();
-        DdsIncident source = incident(List.of(stage(root)), root, List.of());
+        DdsIncident source = incident(List.of(stage(root)));
         DdsIncident incident = new DdsIncident(
                 source.id(), source.title(), source.address(), source.difficulty(), source.stages(),
-                source.preparedCardTemplate(), new InitialAssignment("MCHS", " ", null),
-                source.initialStageId(), source.transitions());
+                source.preparedCardTemplate(), new InitialAssignment("MCHS", " ", null));
 
         assertThatThrownBy(() -> service.createIncident(incident))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Тип происшествия не может быть пустым");
     }
 
-    private DdsIncident incident(List<DdsStage> stages, UUID initialStageId,
-                                 List<DdsStageTransition> transitions) {
-        return incident(stages, initialStageId, transitions, List.of("101"));
+    private DdsIncident incident(List<DdsStage> stages) {
+        return incident(stages, List.of("101"));
     }
 
-    private DdsIncident incident(List<DdsStage> stages, UUID initialStageId,
-                                 List<DdsStageTransition> transitions, List<String> classifierCodes) {
+    private DdsIncident incident(List<DdsStage> stages, List<String> classifierCodes) {
         return new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, stages, new PreparedCardTemplate(classifierCodes, null, 0, Map.of()),
-                new InitialAssignment("MCHS", "101", null),
-                initialStageId, transitions);
+                new InitialAssignment("MCHS", "101", null));
     }
 
     private DdsStage acceptanceStage(UUID id) {

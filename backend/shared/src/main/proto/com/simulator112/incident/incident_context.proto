@@ -16,13 +16,9 @@ message IncidentContext {
   Criteria criteria = 7;
   optional PreparedCardTemplate prepared_card_template = 8;
   optional InitialAssignment initial_assignment = 9;
-  string dds_initial_stage_id = 10;
-  repeated DdsStageTransition dds_stage_transitions = 11;
 }
 
 message IncidentStage {
-  reserved 3;
-
   string id = 1;
   string title = 2;
   string description = 5;
@@ -43,6 +39,8 @@ message System112StageDetails {
 message DdsStageDetails {
   DdsStageType type = 1;
   int32 time_limit_seconds = 2;
+  string expected_comment = 3;
+  string actual_status = 4;
 }
 
 message CallScenario {
@@ -69,12 +67,6 @@ message InitialAssignment {
   string classifier_code = 2;
   string instructions = 3;
   string emergency_service_code = 4;
-}
-
-message DdsStageTransition {
-  string stage_id = 1;
-  string success_stage_id = 2;
-  string failure_stage_id = 3;
 }
 
 message Criteria {
@@ -153,4 +145,5 @@ enum CounterpartyType {
   COUNTERPARTY_TYPE_UNSPECIFIED = 0;
   COUNTERPARTY_TYPE_CALLER = 1;
   COUNTERPARTY_TYPE_BRIGADE = 2;
+  COUNTERPARTY_TYPE_SERVICE = 3;
 }

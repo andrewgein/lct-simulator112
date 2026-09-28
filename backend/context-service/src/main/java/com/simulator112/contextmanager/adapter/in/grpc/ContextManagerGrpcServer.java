@@ -6,7 +6,6 @@ import com.simulator112.context.grpc.contract.*;
 import com.simulator112.contextmanager.application.port.in.ContextUseCase;
 import com.simulator112.contextmanager.application.port.in.CallUseCase;
 import com.simulator112.contextmanager.application.port.in.LevelProgressUseCase;
-import com.simulator112.contextmanager.domain.dds.DdsStageSignal;
 import org.springframework.grpc.server.service.GrpcService;
 import org.springframework.stereotype.Component;
 
@@ -132,19 +131,6 @@ public class ContextManagerGrpcServer extends ContextManagerServiceGrpc.ContextM
     public void getLevelProgress(GetLevelProgressRequest request, StreamObserver<LevelProgress> observer) {
         try {
             onSuccess(toProto(levelProgressService.getProgress(UUID.fromString(request.getContextId()))), observer);
-        } catch (Exception e) {
-            onError(e, observer);
-        }
-    }
-
-    @Override
-    public void applyDdsStageSignal(ApplyDdsStageSignalRequest request,
-                                    StreamObserver<LevelProgress> observer) {
-        try {
-            DdsStageSignal signal = DdsStageSignal.valueOf(
-                    request.getSignal().name().replace("DDS_STAGE_SIGNAL_", ""));
-            onSuccess(toProto(levelProgressService.applyDdsSignal(UUID.fromString(request.getContextId()),
-                    UUID.fromString(request.getIncidentId()), signal)), observer);
         } catch (Exception e) {
             onError(e, observer);
         }

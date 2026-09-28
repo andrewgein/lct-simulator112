@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import { dismissCall, initializeDialogSession, requestCall, startDialog, stopDialog } from "../../../dialog/api/DialogApi.js";
 import CardEditor from "../../../incident/components/editor/CardEditor.jsx";
 import LevelCompletionNotice from "../common/LevelCompletionNotice.jsx";
 import LevelSearchInput from "../common/LevelSearchInput.jsx";
 import { useLevelClock } from "../../hooks/useLevelClock.js";
 import ActiveCards from "./ActiveCards.jsx";
+import DdsCallResult from "./DdsCallResult.jsx";
 import DdsProgressDetails from "./DdsProgressDetails.jsx";
 import DdsStageActions from "./DdsStageActions.jsx";
 import LevelCommandBar from "./LevelCommandBar.jsx";
 import RemainingTime from "./RemainingTime.jsx";
-import { editorFor, incidentCard, notificationStatus, reactionForService, READONLY_CALL, REACTION_STATUS_OPTIONS, serviceStatusHistory } from "./ddsLevelHelpers.js";
+import { activeStageFor, editorFor, incidentCard, notificationStatus, reactionForService, READONLY_CALL, REACTION_STATUS_OPTIONS, serviceStatusHistory } from "./ddsLevelHelpers.js";
 
 const styles = `
 .dds-level-message { margin: var(--wa-space-l) var(--wa-space-l) 0; }
@@ -33,7 +35,7 @@ const styles = `
 @media (max-width: 48rem) { .dds-level-message { margin: var(--wa-space-s) var(--wa-space-s) 0; } }
 `;
 
-export default function DdsLevelApp({ contextId, courseId, incidents, classifier, routingFacts, userService }) {
+export default function DdsLevelApp({ contextId, courseId, incidents, classifier, routingFacts, dialogEndpoint, userService }) {
   const [progress, setProgress] = useState(null);
   const [services, setServices] = useState([]);
   const [incidentDefinitions, setIncidentDefinitions] = useState(incidents);
@@ -41,7 +43,10 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [finishing, setFinishing] = useState(false);
-  const comments = {};
+  const [call, setCall] = useState(READONLY_CALL);
+  const requestedCallId = useRef(null);
+  const incomingCallId = useRef(null);
+  const offeredCalls = useRef(new Set());
   const now = useLevelClock();
 
   const loadProgress = useCallback(async () => {
@@ -66,6 +71,38 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
     return () => window.clearInterval(timer);
   }, [loadProgress]);
 
+  useEffect(() => {
+    const ready = ({ detail }) => {
+      if (detail?.callId !== requestedCallId.current) return;
+      requestedCallId.current = null;
+      if (detail.callId === incomingCallId.current) {
+        setCall({ phase: "incoming", activeCallId: detail.callId, phone: detail.phoneNumber || "" });
+      } else {
+        setCall({ phase: "active", activeCallId: detail.callId, phone: detail.phoneNumber || "" });
+        startDialog(dialogEndpoint, contextId);
+      }
+    };
+    const restored = ({ detail }) => {
+      if (!detail?.callId) return;
+      setCall({ phase: "incoming", activeCallId: detail.callId, phone: detail.phoneNumber || "" });
+    };
+    const finished = () => {
+      requestedCallId.current = null;
+      incomingCallId.current = null;
+      setCall(READONLY_CALL);
+      loadProgress();
+    };
+    const failed = ({ detail }) => {
+      requestedCallId.current = null;
+      setCall(READONLY_CALL);
+      setError(detail?.message || "Не удалось начать звонок");
+    };
+    const listeners = { "dialog:call_ready": ready, "dialog:session_restored": restored, "dialog:call_finished": finished, "dialog:error": failed };
+    Object.entries(listeners).forEach(([name, listener]) => window.addEventListener(name, listener));
+    initializeDialogSession(dialogEndpoint, contextId);
+    return () => Object.entries(listeners).forEach(([name, listener]) => window.removeEventListener(name, listener));
+  }, [contextId, dialogEndpoint, loadProgress]);
+
   const progressIncidentIds = progress?.incidents?.map((item) => item.incidentId).join(",") || "";
   useEffect(() => {
     if (!progressIncidentIds) return;
@@ -84,10 +121,35 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
   }, [progressIncidentIds]);
 
   const cards = useMemo(() => incidentDefinitions.map(incidentCard), [incidentDefinitions]);
+  useEffect(() => {
+    if (call.phase !== "idle" || requestedCallId.current) return;
+    const target = progress?.incidents?.filter((item) => item.status === "ACTIVE").map((item) => {
+      const card = cards.find((entry) => entry.cardId === String(item.incidentId));
+      const stage = activeStageFor(card?.incident, item);
+      const incoming = stage?.calls?.find((entry) => entry.direction === "INBOUND" && !offeredCalls.current.has(entry.id));
+      return incoming ? { card, stage, incoming } : null;
+    }).find(Boolean);
+    if (!target || !requestCall(target.incoming.id)) return;
+    offeredCalls.current.add(target.incoming.id);
+    requestedCallId.current = target.incoming.id;
+    incomingCallId.current = target.incoming.id;
+    setEditor(editorFor(target.card));
+    setCall({ phase: "dialing", activeCallId: target.incoming.id, phone: "" });
+  }, [progress, cards, call.phase]);
+  useEffect(() => {
+    if (call.phase !== "incoming" || !progress || !cards.length) return;
+    const active = progress.incidents.some((item) => {
+      if (item.status !== "ACTIVE") return false;
+      const card = cards.find((entry) => entry.cardId === String(item.incidentId));
+      const stage = activeStageFor(card?.incident, item);
+      return stage?.calls?.some((entry) => entry.id === call.activeCallId);
+    });
+    if (!active) dismissCall();
+  }, [progress, cards, call.phase, call.activeCallId]);
   const selectedCard = cards.find((card) => card.cardId === editor.editingCardId);
   const selectedProgress = progress?.incidents?.find((item) => String(item.incidentId) === selectedCard?.cardId);
   const classifierState = { classifier, routingFacts, loading: false, error: null };
-  const finished = !!progress?.incidents?.length && progress.incidents.every((item) => ["COMPLETED", "FAILED"].includes(item.status));
+  const finished = call.phase === "idle" && !!progress?.incidents?.length && progress.incidents.every((item) => ["COMPLETED", "FAILED"].includes(item.status));
   const getCardMeta = useCallback((card) => {
     const item = progress?.incidents?.find((entry) => String(entry.incidentId) === card.cardId);
     const receivedAt = item?.serviceReactions?.flatMap((reaction) => reaction.history || []).find((event) => event.status === "RECEIVED_BY_SERVICE")?.changedAt;
@@ -123,16 +185,44 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
 
   const selectedServiceCode = selectedCard?.services?.[0];
   const reactionStatus = reactionForService(selectedProgress, selectedServiceCode)?.currentStatus;
-  const canEditStatus = selectedProgress?.status === "ACTIVE" && !!REACTION_STATUS_OPTIONS[reactionStatus]?.length;
+  const canEditStatus = ["ACTIVE", "COMPLETED"].includes(selectedProgress?.status) && !["IN_REVIEW", "DONE"].includes(progress?.status) && !!REACTION_STATUS_OPTIONS[reactionStatus]?.length;
+  const activeStage = activeStageFor(selectedCard?.incident, selectedProgress);
+  const serviceCalls = selectedProgress?.status === "ACTIVE" ? (activeStage?.calls || []).filter((item) => item.direction === "OUTBOUND") : [];
+  const commentStages = (selectedCard?.incident?.stages || []).filter((stage) => stage.expectedComment);
+  const confirmCallResult = async (stageId, comment) => {
+    try {
+      const response = await fetch(`/api/v1/context/${encodeURIComponent(contextId)}/dds/incidents/${encodeURIComponent(selectedCard.cardId)}/comments`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ comment, stageId })
+      });
+      if (!response.ok) throw new Error(await response.text());
+      setProgress(await response.json());
+      setError("");
+      return true;
+    } catch (problem) {
+      setError(problem.message || "Не удалось сохранить комментарий");
+      return false;
+    }
+  };
+  const callService = (callId) => {
+    if (requestedCallId.current || call.phase !== "idle") return;
+    requestedCallId.current = callId;
+    if (!requestCall(callId)) {
+      requestedCallId.current = null;
+      setError("Нет соединения с сервисом диалога. Обновите страницу и попробуйте снова.");
+    } else {
+      setCall({ phase: "dialing", activeCallId: callId, phone: "" });
+      setError("");
+    }
+  };
   return (
     <div class="level-app wa-stack wa-gap-0">
       <style>{styles}</style>
-      <LevelCommandBar call={READONLY_CALL} now={now} exitHref={`/courses/${courseId}`} modeLabel={`Учебный режим · АРМ ДДС · ${services.find((service) => service.code === userService)?.name || userService || "Служба не указана"}`} showIdleStatus={false}>
+      <LevelCommandBar call={call} now={now} onAccept={() => { setCall((current) => ({ ...current, phase: "active" })); startDialog(dialogEndpoint, contextId); }} onDrop={() => call.phase === "incoming" ? dismissCall() : stopDialog()} exitHref={`/courses/${courseId}`} modeLabel={`Учебный режим · АРМ ДДС · ${services.find((service) => service.code === userService)?.name || userService || "Служба не указана"}`} showIdleStatus={false}>
         <LevelSearchInput value={query} hint="Поиск по номеру, типу, заявителю и адресу" iconSlot="end" onInput={(event) => setQuery(event.currentTarget.value)} />
       </LevelCommandBar>
       {error && <wa-callout class="dds-level-message" variant="danger"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{error}</wa-callout>}
       {finished && <LevelCompletionNotice className="dds-level-message" complete ready finishing={finishing} completeMessage="Все происшествия обработаны. Завершите уровень, чтобы перейти к разбору." onFinish={finishLevel} />}
-      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={READONLY_CALL} editor={editor} classifier={classifier} routingFacts={routingFacts} dispatchServices={services} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} comments={comments} />} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} onApply={applyReactionStatus} /> : null} onChange={setEditor} onClose={() => {}} />}
+      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={call} editor={editor} classifier={classifier} routingFacts={routingFacts} dispatchServices={services} readOnly readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />} readonlyDetails={<><DdsProgressDetails incident={selectedCard.incident} progress={selectedProgress} />{finished && commentStages.map((stage) => <DdsCallResult key={stage.id} stageId={stage.id} savedComment={selectedProgress?.dds?.stages?.find((item) => String(item.stageId) === String(stage.id))?.comment} busy={call.phase !== "idle"} onConfirm={(comment) => confirmCallResult(stage.id, comment)} />)}</>} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} onApply={applyReactionStatus} /> : null} readonlyServiceCalls={serviceCalls} readonlyCallEnabled={call.phase === "idle"} onServiceCall={callService} onAcceptCall={() => { setCall((current) => ({ ...current, phase: "active" })); startDialog(dialogEndpoint, contextId); }} onDropCall={() => call.phase === "incoming" ? dismissCall() : stopDialog()} onChange={setEditor} onClose={() => {}} />}
       <ActiveCards cards={cards} loading={!progress} error={false} classifierState={classifierState} searchQuery={query} onOpen={(card) => setEditor(editorFor(card))} getCardMeta={getCardMeta} heading="Список происшествий" emptyMessage="Карточки ДДС пока не поступили" statusLabel="Статус" />
     </div>
   );

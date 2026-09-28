@@ -72,6 +72,8 @@
  * @property {DdsStageType} type
  * @property {number} timeLimitSeconds
  * @property {CallScenario[]} calls
+ * @property {string | null} expectedComment
+ * @property {string | null} actualStatus
  */
 
 /**
@@ -90,13 +92,6 @@
  */
 
 /**
- * @typedef {Object} DdsStageTransition
- * @property {string} stageId
- * @property {string | null} successStageId
- * @property {string | null} failureStageId
- */
-
-/**
  * @typedef {Object} IncidentBase
  * @property {string | null} id
  * @property {string} title
@@ -107,7 +102,7 @@
  */
 
 /** @typedef {IncidentBase & { targetType: "SYSTEM_112", stages: System112Stage[] }} System112Incident */
-/** @typedef {IncidentBase & { targetType: "DDS", stages: DdsStage[], preparedCardTemplate: PreparedCardTemplate | null, initialAssignment: InitialAssignment | null, initialStageId: string, transitions: DdsStageTransition[] }} DdsIncident */
+/** @typedef {IncidentBase & { targetType: "DDS", stages: DdsStage[], preparedCardTemplate: PreparedCardTemplate | null, initialAssignment: InitialAssignment | null }} DdsIncident */
 /** @typedef {System112Incident | DdsIncident} Incident */
 
 /**
@@ -120,8 +115,6 @@
  * @property {DialogueCriterion[]} dialogueCriteria
  * @property {PreparedCardTemplate | null} preparedCardTemplate
  * @property {InitialAssignment | null} initialAssignment
- * @property {string | null} initialStageId
- * @property {DdsStageTransition[]} transitions
  */
 
 /**

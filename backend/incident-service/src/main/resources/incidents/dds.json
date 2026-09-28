@@ -18,7 +18,8 @@
         "description": "Назначить ближайший пожарный расчёт.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "3da368c9-6265-553b-8ad1-4e6055bc1b46",
@@ -26,7 +27,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "642e86df-48ea-5faa-bc04-584066105915",
@@ -51,7 +53,8 @@
             "aiContext": "Ты командир пожарного расчёта. Сообщай только наблюдаемые факты. Про необходимость усиления скажи, если диспетчер спросит об обстановке или дополнительных силах.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "be972ba3-cd30-5679-9097-06e74590b228",
@@ -59,7 +62,8 @@
         "description": "При подтверждении сильного задымления запросить дополнительный пожарный расчёт.",
         "type": "REQUEST_ADDITIONAL_SERVICE",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -85,25 +89,7 @@
       "emergencyService": "MCHS",
       "classifierCode": "1050101",
       "instructions": "Направить ближайший пожарный расчёт к жилому дому."
-    },
-    "initialStageId": "f41f4c2a-d163-5614-9ddf-420756d3351e",
-    "transitions": [
-      {
-        "stageId": "f41f4c2a-d163-5614-9ddf-420756d3351e",
-        "successStageId": "3da368c9-6265-553b-8ad1-4e6055bc1b46",
-        "failureStageId": null
-      },
-      {
-        "stageId": "3da368c9-6265-553b-8ad1-4e6055bc1b46",
-        "successStageId": "642e86df-48ea-5faa-bc04-584066105915",
-        "failureStageId": "642e86df-48ea-5faa-bc04-584066105915"
-      },
-      {
-        "stageId": "642e86df-48ea-5faa-bc04-584066105915",
-        "successStageId": "be972ba3-cd30-5679-9097-06e74590b228",
-        "failureStageId": "be972ba3-cd30-5679-9097-06e74590b228"
-      }
-    ]
+    }
   },
   {
     "title": "Запах газа в подъезде",
@@ -124,7 +110,8 @@
         "description": "Назначить аварийную газовую бригаду.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "bbe0d90f-8b54-5202-9a36-bba73ab66112",
@@ -132,7 +119,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "b7f77b51-b9a0-5930-a98b-fadaea5f872b",
@@ -143,7 +131,7 @@
         "calls": [
           {
             "position": 1,
-            "direction": "OUTBOUND",
+            "direction": "INBOUND",
             "counterparty": "BRIGADE",
             "person": null,
             "gender": null,
@@ -157,7 +145,8 @@
             "aiContext": "Ты мастер аварийной газовой службы. Если спросят результат обследования, сообщи точное место утечки. Не добавляй неподтверждённых причин.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "c21ccfd8-88c8-5523-ac5e-bfe5f0c9fc19",
@@ -165,7 +154,8 @@
         "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
         "type": "COMPLETE_INCIDENT",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -191,25 +181,7 @@
       "emergencyService": "MOSGAZ",
       "classifierCode": "13020500",
       "instructions": "Срочный выезд; не допускать источников огня и искры."
-    },
-    "initialStageId": "d47d7b58-112f-5e0d-a259-bcd3df9de315",
-    "transitions": [
-      {
-        "stageId": "d47d7b58-112f-5e0d-a259-bcd3df9de315",
-        "successStageId": "bbe0d90f-8b54-5202-9a36-bba73ab66112",
-        "failureStageId": null
-      },
-      {
-        "stageId": "bbe0d90f-8b54-5202-9a36-bba73ab66112",
-        "successStageId": "b7f77b51-b9a0-5930-a98b-fadaea5f872b",
-        "failureStageId": "b7f77b51-b9a0-5930-a98b-fadaea5f872b"
-      },
-      {
-        "stageId": "b7f77b51-b9a0-5930-a98b-fadaea5f872b",
-        "successStageId": "c21ccfd8-88c8-5523-ac5e-bfe5f0c9fc19",
-        "failureStageId": "c21ccfd8-88c8-5523-ac5e-bfe5f0c9fc19"
-      }
-    ]
+    }
   },
   {
     "title": "Мужчина без сознания на остановке",
@@ -230,7 +202,8 @@
         "description": "Назначить ближайшую бригаду СМП.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "65493f85-09c4-5dfd-80d2-7aa9f960661d",
@@ -238,7 +211,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8",
@@ -263,7 +237,8 @@
             "aiContext": "Ты фельдшер СМП. Сообщай состояние и действия. Диагностическое предположение называй предварительным.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "255de9dd-36c6-5709-be83-3b7271f2fca3",
@@ -271,7 +246,8 @@
         "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
         "type": "COMPLETE_INCIDENT",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -297,25 +273,7 @@
       "emergencyService": "AMBULANCE",
       "classifierCode": "22020000",
       "instructions": "Срочно направить бригаду скорой помощи."
-    },
-    "initialStageId": "b8bc4032-f037-56e3-8c42-31cb9015b02e",
-    "transitions": [
-      {
-        "stageId": "b8bc4032-f037-56e3-8c42-31cb9015b02e",
-        "successStageId": "65493f85-09c4-5dfd-80d2-7aa9f960661d",
-        "failureStageId": null
-      },
-      {
-        "stageId": "65493f85-09c4-5dfd-80d2-7aa9f960661d",
-        "successStageId": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8",
-        "failureStageId": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8"
-      },
-      {
-        "stageId": "c9c34f23-59ff-561e-ae56-bb269dc3c0b8",
-        "successStageId": "255de9dd-36c6-5709-be83-3b7271f2fca3",
-        "failureStageId": "255de9dd-36c6-5709-be83-3b7271f2fca3"
-      }
-    ]
+    }
   },
   {
     "title": "Драка во дворе жилого дома",
@@ -336,7 +294,8 @@
         "description": "Назначить ближайший наряд полиции.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "9912b9cd-0327-56b1-90c2-369e7ae58b3e",
@@ -344,7 +303,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "74821132-7cd2-580a-92db-c893554e86c4",
@@ -369,7 +329,8 @@
             "aiContext": "Ты сотрудник полиции. Информацию об изъятом ноже сообщи при вопросе об оружии или угрозах.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "f5b48ab9-fce0-501a-86c5-6f0ed9a55115",
@@ -377,7 +338,8 @@
         "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
         "type": "COMPLETE_INCIDENT",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -403,25 +365,7 @@
       "emergencyService": "POLICE",
       "classifierCode": "15060201",
       "instructions": "Направить наряд, соблюдать меры предосторожности."
-    },
-    "initialStageId": "489b45f2-455c-5f19-be77-914c2b7c0eea",
-    "transitions": [
-      {
-        "stageId": "489b45f2-455c-5f19-be77-914c2b7c0eea",
-        "successStageId": "9912b9cd-0327-56b1-90c2-369e7ae58b3e",
-        "failureStageId": null
-      },
-      {
-        "stageId": "9912b9cd-0327-56b1-90c2-369e7ae58b3e",
-        "successStageId": "74821132-7cd2-580a-92db-c893554e86c4",
-        "failureStageId": "74821132-7cd2-580a-92db-c893554e86c4"
-      },
-      {
-        "stageId": "74821132-7cd2-580a-92db-c893554e86c4",
-        "successStageId": "f5b48ab9-fce0-501a-86c5-6f0ed9a55115",
-        "failureStageId": "f5b48ab9-fce0-501a-86c5-6f0ed9a55115"
-      }
-    ]
+    }
   },
   {
     "title": "Подозрительный предмет у торгового центра",
@@ -442,7 +386,8 @@
         "description": "Направить наряд полиции для ограничения доступа.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "6661ee2f-f5af-54b1-91d8-d818d344119e",
@@ -450,7 +395,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "0de14882-34b3-5cdb-b36a-6280adf62947",
@@ -475,7 +421,8 @@
             "aiContext": "Ты старший наряда. Не делай выводов о содержимом предмета и подчёркивай, что его не вскрывали.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "3b495fbb-f2fd-53ce-a006-ebb0e64dd747",
@@ -483,7 +430,8 @@
         "description": "Передать сведения профильной антитеррористической службе.",
         "type": "REQUEST_ADDITIONAL_SERVICE",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -509,25 +457,7 @@
       "emergencyService": "POLICE",
       "classifierCode": "15130600",
       "instructions": "Обеспечить удаление людей; не допускать манипуляций с предметом."
-    },
-    "initialStageId": "c5f438e4-0ab3-5f6d-a032-c55ee2a4c2b0",
-    "transitions": [
-      {
-        "stageId": "c5f438e4-0ab3-5f6d-a032-c55ee2a4c2b0",
-        "successStageId": "6661ee2f-f5af-54b1-91d8-d818d344119e",
-        "failureStageId": null
-      },
-      {
-        "stageId": "6661ee2f-f5af-54b1-91d8-d818d344119e",
-        "successStageId": "0de14882-34b3-5cdb-b36a-6280adf62947",
-        "failureStageId": "0de14882-34b3-5cdb-b36a-6280adf62947"
-      },
-      {
-        "stageId": "0de14882-34b3-5cdb-b36a-6280adf62947",
-        "successStageId": "3b495fbb-f2fd-53ce-a006-ebb0e64dd747",
-        "failureStageId": "3b495fbb-f2fd-53ce-a006-ebb0e64dd747"
-      }
-    ]
+    }
   },
   {
     "title": "Пожар в гаражном кооперативе",
@@ -548,7 +478,8 @@
         "description": "Направить пожарный расчёт.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "c1d369df-75e2-5803-97ae-92a54efdb7dc",
@@ -556,7 +487,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "1937ad2b-aff1-5766-b7fd-055527bd866c",
@@ -581,7 +513,8 @@
             "aiContext": "Ты пожарный. Про баллоны сообщи, если диспетчер спросит о рисках распространения или опасных материалах.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "afc041bb-3e89-56f8-a08b-fc10b4a5079d",
@@ -589,7 +522,8 @@
         "description": "При наличии газовых баллонов запросить усиление и передать опасный фактор.",
         "type": "REQUEST_ADDITIONAL_SERVICE",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -615,25 +549,7 @@
       "emergencyService": "MCHS",
       "classifierCode": "1990043",
       "instructions": "Направить расчёт и оценить опасные материалы."
-    },
-    "initialStageId": "1bbb63ae-bc95-542b-94d3-73a76bafb578",
-    "transitions": [
-      {
-        "stageId": "1bbb63ae-bc95-542b-94d3-73a76bafb578",
-        "successStageId": "c1d369df-75e2-5803-97ae-92a54efdb7dc",
-        "failureStageId": null
-      },
-      {
-        "stageId": "c1d369df-75e2-5803-97ae-92a54efdb7dc",
-        "successStageId": "1937ad2b-aff1-5766-b7fd-055527bd866c",
-        "failureStageId": "1937ad2b-aff1-5766-b7fd-055527bd866c"
-      },
-      {
-        "stageId": "1937ad2b-aff1-5766-b7fd-055527bd866c",
-        "successStageId": "afc041bb-3e89-56f8-a08b-fc10b4a5079d",
-        "failureStageId": "afc041bb-3e89-56f8-a08b-fc10b4a5079d"
-      }
-    ]
+    }
   },
   {
     "title": "Подозрение на отравление продуктами сгорания",
@@ -654,7 +570,8 @@
         "description": "Направить аварийную газовую бригаду.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "e6becdca-d645-5d8b-a783-ae59599dcb0c",
@@ -662,7 +579,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "bb17dfae-471f-5e54-9dab-aa6f89af223b",
@@ -687,7 +605,8 @@
             "aiContext": "Ты специалист газовой службы. Сообщи об отключении газа; причину называй только после обследования.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "7865293b-6852-5684-b23f-844ce1e1c842",
@@ -695,7 +614,8 @@
         "description": "Запросить скорую помощь из-за ухудшения самочувствия жильца.",
         "type": "REQUEST_ADDITIONAL_SERVICE",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -721,25 +641,7 @@
       "emergencyService": "MOSGAZ",
       "classifierCode": "22340200",
       "instructions": "Срочный выезд; при симптомах организовать СМП."
-    },
-    "initialStageId": "020bf809-dcca-5155-ab37-45c306f7ebdf",
-    "transitions": [
-      {
-        "stageId": "020bf809-dcca-5155-ab37-45c306f7ebdf",
-        "successStageId": "e6becdca-d645-5d8b-a783-ae59599dcb0c",
-        "failureStageId": null
-      },
-      {
-        "stageId": "e6becdca-d645-5d8b-a783-ae59599dcb0c",
-        "successStageId": "bb17dfae-471f-5e54-9dab-aa6f89af223b",
-        "failureStageId": "bb17dfae-471f-5e54-9dab-aa6f89af223b"
-      },
-      {
-        "stageId": "bb17dfae-471f-5e54-9dab-aa6f89af223b",
-        "successStageId": "7865293b-6852-5684-b23f-844ce1e1c842",
-        "failureStageId": "7865293b-6852-5684-b23f-844ce1e1c842"
-      }
-    ]
+    }
   },
   {
     "title": "ДТП с травмированным велосипедистом",
@@ -760,7 +662,8 @@
         "description": "Назначить бригаду СМП.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "d8c04172-c2c2-5905-8131-d269ba083f96",
@@ -768,7 +671,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd",
@@ -793,7 +697,8 @@
             "aiContext": "Ты фельдшер СМП. Сообщи стабильность состояния; решение о транспортировке — при вопросе о дальнейших действиях.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "b704c855-00aa-548b-94a9-bdda393f1f00",
@@ -801,7 +706,8 @@
         "description": "Запросить полицию для оформления ДТП и безопасности на проезжей части.",
         "type": "REQUEST_ADDITIONAL_SERVICE",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -827,25 +733,7 @@
       "emergencyService": "AMBULANCE",
       "classifierCode": "2020000",
       "instructions": "Срочно направить СМП к месту ДТП."
-    },
-    "initialStageId": "701049f2-98b6-5812-9d45-9d154bb1b5aa",
-    "transitions": [
-      {
-        "stageId": "701049f2-98b6-5812-9d45-9d154bb1b5aa",
-        "successStageId": "d8c04172-c2c2-5905-8131-d269ba083f96",
-        "failureStageId": null
-      },
-      {
-        "stageId": "d8c04172-c2c2-5905-8131-d269ba083f96",
-        "successStageId": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd",
-        "failureStageId": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd"
-      },
-      {
-        "stageId": "0ca8f3f3-cc1e-5095-b10a-9cdcbcf251dd",
-        "successStageId": "b704c855-00aa-548b-94a9-bdda393f1f00",
-        "failureStageId": "b704c855-00aa-548b-94a9-bdda393f1f00"
-      }
-    ]
+    }
   },
   {
     "title": "Пожар сухой травы рядом с дачами",
@@ -866,7 +754,8 @@
         "description": "Назначить пожарный расчёт.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "ebd70e83-30e3-52bd-9985-14b72fed9fb2",
@@ -874,7 +763,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "504ec61f-623a-5b06-880b-075bbdd83c14",
@@ -899,7 +789,8 @@
             "aiContext": "Ты командир расчёта. Сообщи об усилении ветра, если спросят о риске распространения.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "4cb8b5af-ba90-5859-88ce-09bd2ab265f8",
@@ -907,7 +798,8 @@
         "description": "При усилении ветра и угрозе постройкам запросить дополнительный расчёт.",
         "type": "REQUEST_ADDITIONAL_SERVICE",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -933,25 +825,7 @@
       "emergencyService": "MCHS",
       "classifierCode": "1010201",
       "instructions": "Оценить угрозу перехода огня на постройки."
-    },
-    "initialStageId": "5a9c4509-172d-5c5d-bd23-6cf30724df22",
-    "transitions": [
-      {
-        "stageId": "5a9c4509-172d-5c5d-bd23-6cf30724df22",
-        "successStageId": "ebd70e83-30e3-52bd-9985-14b72fed9fb2",
-        "failureStageId": null
-      },
-      {
-        "stageId": "ebd70e83-30e3-52bd-9985-14b72fed9fb2",
-        "successStageId": "504ec61f-623a-5b06-880b-075bbdd83c14",
-        "failureStageId": "504ec61f-623a-5b06-880b-075bbdd83c14"
-      },
-      {
-        "stageId": "504ec61f-623a-5b06-880b-075bbdd83c14",
-        "successStageId": "4cb8b5af-ba90-5859-88ce-09bd2ab265f8",
-        "failureStageId": "4cb8b5af-ba90-5859-88ce-09bd2ab265f8"
-      }
-    ]
+    }
   },
   {
     "title": "Агрессивный мужчина в подъезде",
@@ -972,7 +846,8 @@
         "description": "Назначить наряд полиции.",
         "type": "ASSIGN_BRIGADE",
         "timeLimitSeconds": 30,
-        "calls": []
+        "calls": [],
+        "actualStatus": "ACCEPTED"
       },
       {
         "id": "7e45615f-e8e7-555b-a952-413cc33f75b5",
@@ -980,7 +855,8 @@
         "description": "Проконтролировать выезд и прибытие назначенной бригады.",
         "type": "WAIT_FOR_BRIGADE_STATUS_CHANGE",
         "timeLimitSeconds": 120,
-        "calls": []
+        "calls": [],
+        "actualStatus": "RESPONSE_STARTED"
       },
       {
         "id": "02892b20-07d6-542c-b988-ece69a87505c",
@@ -1005,7 +881,8 @@
             "aiContext": "Ты сотрудник полиции. Сообщи, что угроза прекращена. Сведения об оружии и опьянении дай при уточняющих вопросах.",
             "emotionalState": "Спокоен"
           }
-        ]
+        ],
+        "actualStatus": "ARRIVED"
       },
       {
         "id": "36931224-9f88-5d6c-b871-011fdc3c54e5",
@@ -1013,7 +890,8 @@
         "description": "Завершить инцидент после подтверждения устранения непосредственной угрозы.",
         "type": "COMPLETE_INCIDENT",
         "timeLimitSeconds": 60,
-        "calls": []
+        "calls": [],
+        "actualStatus": "WORK_COMPLETED"
       }
     ],
     "preparedCardTemplate": {
@@ -1039,24 +917,6 @@
       "emergencyService": "POLICE",
       "classifierCode": "17011100",
       "instructions": "Направить ближайший наряд к подъезду."
-    },
-    "initialStageId": "e1d08634-ccf9-5aac-bbf8-49a26fc16d26",
-    "transitions": [
-      {
-        "stageId": "e1d08634-ccf9-5aac-bbf8-49a26fc16d26",
-        "successStageId": "7e45615f-e8e7-555b-a952-413cc33f75b5",
-        "failureStageId": null
-      },
-      {
-        "stageId": "7e45615f-e8e7-555b-a952-413cc33f75b5",
-        "successStageId": "02892b20-07d6-542c-b988-ece69a87505c",
-        "failureStageId": "02892b20-07d6-542c-b988-ece69a87505c"
-      },
-      {
-        "stageId": "02892b20-07d6-542c-b988-ece69a87505c",
-        "successStageId": "36931224-9f88-5d6c-b871-011fdc3c54e5",
-        "failureStageId": "36931224-9f88-5d6c-b871-011fdc3c54e5"
-      }
-    ]
+    }
   }
 ]

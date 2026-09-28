@@ -11,8 +11,7 @@ import java.util.List;
 public final class DdsReviewRubric implements ReviewRubric {
     private final Rubric rubric = new RubricBuilder(ReviewSubmission.TargetType.DDS)
             .addStage(new Stage("Обработка инцидента ДДС", List.of(
-                    criterion("Выполнение этапов ДДС", 80),
-                    criterion("Завершение инцидента ДДС", 20))))
+                    criterion("Своевременность статусов и звонки", 100))))
             .build();
 
     @Override
@@ -34,29 +33,54 @@ public final class DdsReviewRubric implements ReviewRubric {
             @Override
             public List<CriterionResult> evaluate(ReviewSubmission submission) {
                 return submission.incidents().stream().flatMap(incident -> {
+                    int stageBudget = incident.stages().stream()
+                            .anyMatch(stage -> stage.expectedComment() != null && !stage.expectedComment().isBlank())
+                            ? maxScore() - 20 : maxScore();
                     var runtime = submission.runtime().stream()
                             .filter(value -> value.incidentId().equals(incident.id())).findFirst().orElse(null);
                     if (runtime == null) {
-                        return List.of(result(incident, 0, category.equals("Выполнение этапов ДДС")
-                                ? "Runtime-прогресс инцидента отсутствует"
-                                : "Результат инцидента отсутствует")).stream();
+                        return List.of(new CriterionResult(incident.id(), incident.order(), category, 0, stageBudget,
+                                "Runtime-прогресс инцидента отсутствует")).stream();
                     }
-                    if (category.equals("Завершение инцидента ДДС")) {
-                        boolean completed = "COMPLETED".equals(runtime.status());
-                        String feedback = completed ? "Инцидент успешно завершён."
-                                : "Инцидент завершён с ошибкой: " + runtime.status() + ".";
-                        return List.of(result(incident, completed ? maxScore() : 0, feedback)).stream();
-                    }
-                    var executed = runtime.stages().stream().filter(stage -> !"PENDING".equals(stage.status())).toList();
+                    var milestones = incident.stages().stream().filter(stage -> stage.actualStatus() != null
+                            && !stage.actualStatus().isBlank()).toList();
+                    var calls = incident.stages().stream().filter(stage -> !stage.calls().isEmpty()).toList();
                     List<WeightedCheck> checks = new ArrayList<>();
-                    if (executed.isEmpty()) {
-                        checks.add(new WeightedCheck(false, 1, "Выполненные этапы ДДС отсутствуют."));
+                    if (!milestones.isEmpty() || !calls.isEmpty()) {
+                        double weight = 1.0 / (milestones.size() + calls.stream().mapToInt(stage -> stage.calls().size()).sum());
+                        for (var milestone : milestones) {
+                            var stage = runtime.stages().stream().filter(value -> value.stageId().equals(milestone.id()))
+                                    .findFirst().orElse(null);
+                            var changedAt = stage == null ? null : stage.deadline();
+                            var nextStage = runtime.stages().stream()
+                                    .filter(value -> changedAt != null && !value.stageId().equals(milestone.id())
+                                            && value.startedAt() != null && !value.startedAt().isBefore(changedAt))
+                                    .min(Comparator.comparing(ReviewSubmission.StageRuntime::startedAt)).orElse(null);
+                            var dueAt = nextStage != null && nextStage.deadline() != null
+                                    ? nextStage.deadline() : submission.submittedAt();
+                            var reported = runtime.reactionEvents().stream()
+                                    .filter(event -> changedAt != null && dueAt != null && event.changedAt() != null
+                                            && !event.changedAt().isBefore(changedAt)
+                                            && !event.changedAt().isAfter(dueAt))
+                                    .max(Comparator.comparing(ReviewSubmission.ReactionEvent::changedAt)).orElse(null);
+                            boolean correct = reported != null && milestone.actualStatus().equals(reported.status());
+                            checks.add(new WeightedCheck(correct, weight,
+                                    "Статус " + milestone.actualStatus() + " возник " + changedAt
+                                            + ", до " + dueAt + " диспетчер указал "
+                                            + (reported == null ? "не указан" : reported.status()) + "."));
+                        }
+                        for (var callStage : calls) {
+                            var runtimeStage = runtime.stages().stream().filter(value -> value.stageId().equals(callStage.id()))
+                                    .findFirst().orElse(null);
+                            for (var call : callStage.calls()) {
+                                boolean completed = runtimeStage != null && runtimeStage.completedCallIds().contains(call.id());
+                                checks.add(new WeightedCheck(completed, weight, completed
+                                        ? "Звонок " + call.id() + " состоялся."
+                                        : "Звонок " + call.id() + " пропущен."));
+                            }
+                        }
                     } else {
-                        double weight = 1.0 / executed.size();
-                        executed.forEach(stage -> checks.add(new WeightedCheck("SUCCEEDED".equals(stage.status()), weight,
-                                "SUCCEEDED".equals(stage.status())
-                                        ? "Этап " + stage.stageType() + " выполнен успешно."
-                                        : "Этап " + stage.stageType() + " завершён со статусом " + stage.status() + ".")));
+                        checks.add(new WeightedCheck(false, 1, "Фактические статусы и звонки в сценарии ДДС не заданы."));
                     }
                     if (submission.startedAt() != null && submission.submittedAt() != null
                             && !submission.submittedAt().isBefore(submission.startedAt())) {
@@ -65,7 +89,7 @@ public final class DdsReviewRubric implements ReviewRubric {
                         if (duration > limit) checks.add(new WeightedCheck(false, 0,
                                 "Норматив превышен: " + duration + " сек. при нормативе " + limit + " сек."));
                     }
-                    return allocate(incident, category, maxScore(), checks).stream();
+                    return allocate(incident, category, stageBudget, checks).stream();
                 }).toList();
             }
         };

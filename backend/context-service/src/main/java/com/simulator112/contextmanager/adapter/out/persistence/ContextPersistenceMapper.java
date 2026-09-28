@@ -1,17 +1,18 @@
 package com.simulator112.contextmanager.adapter.out.persistence;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.CallContextEntity;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.Context;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.DialogContextEntity;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.IncidentContextEntity;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.ServiceReactionEntity;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.SolutionContextEntity;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.StageContextEntity;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Applicant;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.ReactionStatusEventSnapshot;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DdsStageTransitionSnapshot;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DispatcherCriteria;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DialogueCriterionEmbeddable;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.Applicant;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.CallContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.Context;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.DialogContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.IncidentContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.StageContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.dds.DdsStageContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.dds.ReactionStatusEventSnapshot;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.dds.ServiceReactionEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.system112.DialogueCriterionEmbeddable;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.system112.DispatcherCriteria;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.system112.SolutionContextEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.system112.System112StageContextEntity;
 import com.simulator112.contextmanager.domain.common.CallSnapshot;
 import com.simulator112.contextmanager.domain.common.DialogueCriterion;
 import com.simulator112.contextmanager.domain.common.DialogTranscript;
@@ -21,7 +22,8 @@ import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
 import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
-import com.simulator112.contextmanager.domain.dds.DdsStageTransition;
+import com.simulator112.contextmanager.domain.dds.DdsStageDetails;
+import com.simulator112.contextmanager.domain.system112.System112StageDetails;
 import com.simulator112.contextmanager.domain.system112.SolutionCardRevision;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,7 +63,7 @@ final class ContextPersistenceMapper {
             DialogContextEntity dialog = new DialogContextEntity();
             dialog.setContextId(source.getId());
             dialog.setTranscript(source.getDialog().phrases().stream()
-                    .map(value -> new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Phrase(value.speaker(), value.text()))
+                    .map(value -> new com.simulator112.contextmanager.adapter.out.persistence.entity.common.Phrase(value.speaker(), value.text()))
                     .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
             target.attachDialogContext(dialog);
         }
@@ -73,15 +75,13 @@ final class ContextPersistenceMapper {
         target.setPersistenceId(source.getId()); target.setSourceId(source.getSourceIncidentId()); target.setPosition(source.getPosition());
         target.setTitle(source.getTitle()); target.setTargetType(source.getContext().getTargetType());
         target.setDifficulty(source.getContext().getDifficulty()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
-        target.setInitialStageId(source.getInitialStageId()); target.setAddress(toDomain(source.getAddress()));
+        target.setAddress(toDomain(source.getAddress()));
         target.setCriteria(toDomain(source.getDispatcherCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
         target.setCardApplicant(toDomain(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
         target.setInitialAssignmentClassifierCode(source.getInitialAssignmentClassifierCode());
         target.setInitialAssignmentInstructions(source.getInitialAssignmentInstructions());
-        target.setTransitions(source.getTransitions().stream().map(value -> new DdsStageTransition(
-                value.getStageId(), value.getSuccessStageId(), value.getFailureStageId())).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         target.setServiceReactions(source.getServiceReactions().stream().map(ContextPersistenceMapper::toDomain)
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         target.setStages(source.getStages().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
@@ -92,15 +92,13 @@ final class ContextPersistenceMapper {
         IncidentContextEntity target = new IncidentContextEntity();
         target.setId(source.getPersistenceId()); target.setSourceIncidentId(source.getSourceId()); target.setPosition(source.getPosition());
         target.setTitle(source.getTitle()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
-        target.setInitialStageId(source.getInitialStageId()); target.setAddress(toEntity(source.getAddress()));
+        target.setAddress(toEntity(source.getAddress()));
         target.setDispatcherCriteria(toEntity(source.getCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
         target.setCardApplicant(toEntity(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
         target.setInitialAssignmentClassifierCode(source.getInitialAssignmentClassifierCode());
         target.setInitialAssignmentInstructions(source.getInitialAssignmentInstructions());
-        target.setTransitions(source.getTransitions().stream().map(value -> new DdsStageTransitionSnapshot(
-                value.stageId(), value.successStageId(), value.failureStageId())).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         source.getServiceReactions().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addServiceReaction);
         source.getStages().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addStage);
         return target;
@@ -121,21 +119,49 @@ final class ContextPersistenceMapper {
     }
 
     private static StageSnapshot toDomain(StageContextEntity source) {
+        if ((source.getSystem112() == null) == (source.getDds() == null)) {
+            throw new IllegalStateException("У этапа должна быть ровно одна специализация: " + source.getSourceStageId());
+        }
         StageSnapshot target = new StageSnapshot();
         target.setPersistenceId(source.getId()); target.setSourceId(source.getSourceStageId()); target.setPosition(source.getPosition());
-        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
-        target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
-        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictimCount(source.getVictimCount());
+        target.setTitle(source.getTitle()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
+        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription());
+        if (source.getSystem112() != null) {
+            target.setSystem112(new System112StageDetails(source.getSystem112().getClassifierCodes(),
+                    source.getSystem112().getVictimCount()));
+        }
+        if (source.getDds() != null) {
+            var details = source.getDds();
+            target.setDds(new DdsStageDetails(details.getType(), details.getTimeLimitSeconds(),
+                    details.getExpectedComment(), details.getComment(), details.getActualStatus()));
+        }
         target.setCalls(source.getCalls().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return target;
     }
 
     private static StageContextEntity toEntity(StageSnapshot source) {
+        if ((source.getSystem112() == null) == (source.getDds() == null)) {
+            throw new IllegalStateException("У этапа должна быть ровно одна специализация: " + source.getSourceId());
+        }
         StageContextEntity target = new StageContextEntity();
         target.setId(source.getPersistenceId()); target.setSourceStageId(source.getSourceId()); target.setPosition(source.getPosition());
-        target.setTitle(source.getTitle()); target.setClassifierCodes(new ArrayList<>(source.getClassifierCodes())); target.setDdsStageType(source.getDdsStageType());
-        target.setTimeLimitSeconds(source.getTimeLimitSeconds()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
-        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription()); target.setVictimCount(source.getVictimCount());
+        target.setTitle(source.getTitle()); target.setStatus(source.getStatus()); target.setStartedAt(source.getStartedAt());
+        target.setDeadlineAt(source.getDeadlineAt()); target.setDescription(source.getDescription());
+        if (source.getSystem112() != null) {
+            var details = new System112StageContextEntity();
+            details.setStageContextId(source.getPersistenceId());
+            details.setClassifierCodes(new ArrayList<>(source.getSystem112().classifierCodes()));
+            details.setVictimCount(source.getSystem112().victimCount());
+            target.setSystem112(details);
+        }
+        if (source.getDds() != null) {
+            var details = new DdsStageContextEntity();
+            details.setStageContextId(source.getPersistenceId());
+            details.setType(source.getDds().getType()); details.setTimeLimitSeconds(source.getDds().getTimeLimitSeconds());
+            details.setExpectedComment(source.getDds().getExpectedComment()); details.setComment(source.getDds().getComment());
+            details.setActualStatus(source.getDds().getActualStatus());
+            target.setDds(details);
+        }
         source.getCalls().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addCall);
         return target;
     }
@@ -183,12 +209,12 @@ final class ContextPersistenceMapper {
         return target;
     }
 
-    private static com.simulator112.contextmanager.domain.common.Address toDomain(com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Address value) {
+    private static com.simulator112.contextmanager.domain.common.Address toDomain(com.simulator112.contextmanager.adapter.out.persistence.entity.common.Address value) {
         return value == null ? null : new com.simulator112.contextmanager.domain.common.Address(
                 value.getCity(), value.getStreet(), value.getHouse(), value.getBuilding(), value.getApartment(), value.getFloor());
     }
-    private static com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Address toEntity(com.simulator112.contextmanager.domain.common.Address value) {
-        return value == null ? null : new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Address(
+    private static com.simulator112.contextmanager.adapter.out.persistence.entity.common.Address toEntity(com.simulator112.contextmanager.domain.common.Address value) {
+        return value == null ? null : new com.simulator112.contextmanager.adapter.out.persistence.entity.common.Address(
                 value.city(), value.street(), value.house(), value.building(), value.apartment(), value.floor());
     }
     private static com.simulator112.contextmanager.domain.common.Person toDomain(Applicant value) {
@@ -211,13 +237,13 @@ final class ContextPersistenceMapper {
                         criterion.id(), criterion.name(), criterion.hypothesis(), criterion.weight()))
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
     }
-    private static com.simulator112.contextmanager.domain.system112.PersonInfo toDomain(com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo value) {
+    private static com.simulator112.contextmanager.domain.system112.PersonInfo toDomain(com.simulator112.contextmanager.adapter.out.persistence.entity.system112.PersonInfo value) {
         return value == null ? null : new com.simulator112.contextmanager.domain.system112.PersonInfo(value.getPhone(), value.getContactPhone(),
                 value.getOnScenePhone(), value.getLastName(), value.getFirstName(), value.getMiddleName(), value.getStatus(),
                 value.getAddress(), value.getAdditionalInfo());
     }
-    private static com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo toEntity(com.simulator112.contextmanager.domain.system112.PersonInfo value) {
-        return value == null ? null : new com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo(value.phone(), value.contactPhone(),
+    private static com.simulator112.contextmanager.adapter.out.persistence.entity.system112.PersonInfo toEntity(com.simulator112.contextmanager.domain.system112.PersonInfo value) {
+        return value == null ? null : new com.simulator112.contextmanager.adapter.out.persistence.entity.system112.PersonInfo(value.phone(), value.contactPhone(),
                 value.onScenePhone(), value.lastName(), value.firstName(), value.middleName(), value.status(), value.address(),
                 value.additionalInfo());
     }

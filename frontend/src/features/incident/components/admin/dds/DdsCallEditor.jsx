@@ -6,6 +6,8 @@ export function normalizeDdsCall(call = {}, key = crypto.randomUUID()) {
     key,
     id: call.id || null,
     person: emptyPerson(call.person),
+    direction: call.direction || "OUTBOUND",
+    counterparty: call.counterparty || "BRIGADE",
     gender: call.gender || "",
     knownFacts: (call.knownFacts || []).join("\n"),
     hiddenFacts: (call.hiddenFacts || []).join("\n"),
@@ -18,8 +20,8 @@ export function ddsCallValue(call, position) {
   return {
     id: call.id || null,
     position,
-    direction: "OUTBOUND",
-    counterparty: "BRIGADE",
+    direction: call.direction,
+    counterparty: call.counterparty,
     person: personValue(call.person),
     gender: call.gender || null,
     knownFacts: splitLines(call.knownFacts),
@@ -29,18 +31,28 @@ export function ddsCallValue(call, position) {
   };
 }
 
-export default function DdsCallEditor({ call, index, incidentAddress, onChange, onRemove }) {
+export default function DdsCallEditor({ call, index, onChange, onRemove }) {
   const change = (field) => (event) => onChange({ ...call, [field]: event.currentTarget.value });
   return (
     <wa-card class="dds-call" appearance="filled-outlined">
       <div class="wa-stack wa-gap-m">
         <div class="wa-split wa-align-items-center">
-          <h4 class="wa-heading-m">Исходящий звонок бригаде {index + 1}</h4>
+          <h4 class="wa-heading-m">Звонок {index + 1}</h4>
           <wa-button type="button" size="small" appearance="plain" variant="danger" aria-label={`Удалить звонок ${index + 1}`} onClick={onRemove}>
             <wa-icon name="trash" label="Удалить звонок"></wa-icon>
           </wa-button>
         </div>
-        <PersonFields title="Контакт бригады" person={call.person} gender={call.gender} incidentAddress={incidentAddress} onChange={(person) => onChange({ ...call, person })} />
+        <div class="wa-grid">
+          <wa-select value={call.counterparty} label="Собеседник" onChange={(event) => onChange({ ...call, counterparty: event.currentTarget.value, direction: event.currentTarget.value === "SERVICE" ? "OUTBOUND" : call.direction })}>
+            <wa-option value="BRIGADE">Бригада</wa-option>
+            <wa-option value="SERVICE">Другая служба</wa-option>
+          </wa-select>
+          {call.counterparty === "BRIGADE" && <wa-select value={call.direction} label="Направление" onChange={change("direction")}>
+            <wa-option value="OUTBOUND">ДДС звонит бригаде</wa-option>
+            <wa-option value="INBOUND">Бригада звонит в ДДС</wa-option>
+          </wa-select>}
+        </div>
+        <PersonFields title={call.counterparty === "SERVICE" ? "Контакт другой службы" : "Контакт бригады"} person={call.person} gender={call.gender} showContactFields={false} onChange={(person) => onChange({ ...call, person })} />
         <div class="wa-grid">
           <wa-select value={call.gender} label="Пол собеседника" onChange={change("gender")}>
             <wa-option value="">Не указан</wa-option>

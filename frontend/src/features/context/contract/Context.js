@@ -2,7 +2,6 @@
 /** @typedef {"CREATED" | "FILLED" | "IN_REVIEW" | "DIALOG" | "DONE"} ContextStatus */
 /** @typedef {"PENDING" | "ACTIVE" | "COMPLETED" | "FAILED"} IncidentProgressStatus */
 /** @typedef {"PENDING" | "ACTIVE" | "SUCCEEDED" | "FAILED" | "TIMED_OUT" | "SKIPPED"} StageStatus */
-/** @typedef {"BRIGADE_ASSIGNED" | "BRIGADE_STATUS_CHANGED" | "STATUS_CALL_COMPLETED" | "ADDITIONAL_SERVICE_REQUESTED" | "INCIDENT_COMPLETED"} DdsStageSignal */
 /** @typedef {"ADDED" | "RECEIVED_BY_SERVICE" | "ACCEPTED" | "NOT_ACCEPTED" | "RESPONSE_STARTED" | "ARRIVED" | "WORK_IN_PROGRESS" | "WORK_COMPLETED" | "WORK_REFUSED"} ReactionStatus */
 
 /**
@@ -68,6 +67,8 @@
  * @property {StageStatus} status
  * @property {string | null} startedAt
  * @property {string | null} deadline
+ * @property {string | null} comment
+ * @property {boolean} completedCall
  */
 
 /**

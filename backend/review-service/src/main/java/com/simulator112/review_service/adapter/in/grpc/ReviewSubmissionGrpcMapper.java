@@ -29,7 +29,9 @@ final class ReviewSubmissionGrpcMapper {
                                 value.hasDds() ? value.getDds().getStagesList().stream()
                                         .map(stage -> new ReviewSubmission.StageRuntime(stage.getStageId(),
                                                 stage.getStageType(), stage.getStatus(), instant(stage.getStartedAt()),
-                                                instant(stage.getDeadline()))).toList() : java.util.List.of()))
+                                                instant(stage.getDeadline()), stage.getComment(), stage.getCompletedCall(), stage.getCompletedCallIdsList())).toList() : java.util.List.of(),
+                                value.getReactionEventsList().stream().map(event -> new ReviewSubmission.ReactionEvent(
+                                        event.getStatus(), instant(event.getChangedAt()), event.getComment())).toList()))
                 .toList();
         var transcript = source.getDialogContext().getTranscriptList().stream()
                 .map(value -> new ReviewSubmission.TranscriptPhrase(value.getSpeaker().name(), value.getText())).toList();
@@ -57,7 +59,9 @@ final class ReviewSubmissionGrpcMapper {
                 source.hasSystem112() ? source.getSystem112().getVictimCount() : 0,
                 source.hasDds() ? source.getDds().getType().name().replace("DDS_STAGE_TYPE_", "") : null,
                 source.getCallsList().stream().map(call -> new ReviewSubmission.CallScenario(
-                        call.getId(), call.getPosition(), person(call.getPerson()))).toList());
+                        call.getId(), call.getPosition(), person(call.getPerson()))).toList(),
+                source.hasDds() ? source.getDds().getExpectedComment() : null,
+                source.hasDds() ? source.getDds().getActualStatus() : null);
     }
 
     private static ReviewSubmission.CardRevision card(SolutionContext source) {

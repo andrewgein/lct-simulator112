@@ -35,6 +35,7 @@ class IncidentApplicationTests {
         assertThat(tableCount("LEVEL_INCIDENTS")).isZero();
         assertThat(tableCount("DIALUPS")).isZero();
         assertThat(tableCount("CLASSIFIER_ENTRIES")).isZero();
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'INCIDENTS' AND COLUMN_NAME = 'DDS_INITIAL_STAGE_ID'", Integer.class)).isZero();
     }
 
     @Test
@@ -98,21 +99,19 @@ class IncidentApplicationTests {
         var brigade = new Person("Бригада 12", null, null, null, null, null, null, null, null);
         var outgoing = new CallScenario(null, 0, CallDirection.OUTBOUND, CounterpartyType.BRIGADE,
                 brigade, null, List.of("Передана карточка"), List.of(), "dispatch", "CALM");
-        UUID initialStageId = UUID.randomUUID();
-        UUID successStageId = UUID.randomUUID();
-        UUID failureStageId = UUID.randomUUID();
-        var initialStage = new DdsStage(initialStageId, "Уточнение статуса",
-                "Позвонить бригаде", DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of(outgoing));
-        var successStage = new DdsStage(successStageId, "Ожидание статуса",
+        UUID firstStageId = UUID.randomUUID();
+        UUID secondStageId = UUID.randomUUID();
+        UUID lastStageId = UUID.randomUUID();
+        var initialStage = new DdsStage(firstStageId, "Уточнение статуса",
+                "Позвонить бригаде", DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of(outgoing), "Бригада на месте", "ARRIVED");
+        var successStage = new DdsStage(secondStageId, "Ожидание статуса",
                 "Ожидать обновления", DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 180, List.of());
-        var failureStage = new DdsStage(failureStageId, "Завершение",
+        var failureStage = new DdsStage(lastStageId, "Завершение",
                 "Завершить реагирование", DdsStageType.COMPLETE_INCIDENT, 30, List.of());
         var incident = new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
                 new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of()),
-                new InitialAssignment("CUSTOM_DISPATCH", "101", "Направить ближайшую бригаду"),
-                initialStageId,
-                List.of(new DdsStageTransition(initialStageId, successStageId, failureStageId)));
+                new InitialAssignment("CUSTOM_DISPATCH", "101", "Направить ближайшую бригаду"));
 
         var saved = incidentRepository.save(incident);
         var loaded = (DdsIncident) incidentRepository.findById(saved.id()).orElseThrow();
@@ -122,11 +121,15 @@ class IncidentApplicationTests {
                 .isEqualTo("CUSTOM_DISPATCH");
         assertThat(loaded.stages()).hasOnlyElementsOfType(DdsStage.class);
         assertThat(loaded.stages().getFirst().calls().getFirst().direction()).isEqualTo(CallDirection.OUTBOUND);
+        assertThat(loaded.stages().getFirst().expectedComment()).isEqualTo("Бригада на месте");
+        assertThat(loaded.stages().getFirst().actualStatus()).isEqualTo("ARRIVED");
+        assertThat(grpcMapper.toProto(loaded).getStages(0).getDds().getExpectedComment()).isEqualTo("Бригада на месте");
+        assertThat(grpcMapper.toProto(loaded).getStages(0).getDds().getActualStatus()).isEqualTo("ARRIVED");
         assertThat(loaded.stages().getFirst().type()).isEqualTo(DdsStageType.CALL_BRIGADE_FOR_STATUS);
         assertThat(loaded.stages().getFirst().timeLimitSeconds()).isEqualTo(60);
         assertThat(detailCount("DDS_STAGE_DETAILS", saved.id())).isEqualTo(3);
-        assertThat(loaded.transitions()).containsExactly(
-                new DdsStageTransition(initialStageId, successStageId, failureStageId));
+        assertThat(loaded.stages()).extracting(DdsStage::id)
+                .containsExactly(firstStageId, secondStageId, lastStageId);
     }
 
     private Integer tableCount(String tableName) {

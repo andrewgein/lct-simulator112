@@ -1,6 +1,5 @@
 package com.simulator112.contextmanager.domain.common;
 
-import com.simulator112.contextmanager.domain.dds.DdsStageTransition;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,7 +20,6 @@ public class IncidentSnapshot {
     private Difficulty difficulty;
     private IncidentProgressStatus status;
     private UUID activeStageId;
-    private UUID initialStageId;
     private Address address;
     private Criteria criteria;
     private List<String> preparedCardClassifierCodes = new ArrayList<>();
@@ -31,7 +29,6 @@ public class IncidentSnapshot {
     private String initialAssignmentService;
     private String initialAssignmentClassifierCode;
     private String initialAssignmentInstructions;
-    private List<DdsStageTransition> transitions = new ArrayList<>();
     private List<ServiceReaction> serviceReactions = new ArrayList<>();
     private List<StageSnapshot> stages = new ArrayList<>();
 }

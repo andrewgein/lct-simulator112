@@ -14,7 +14,8 @@ import com.simulator112.contextmanager.domain.common.IncidentTargetType;
 import com.simulator112.contextmanager.domain.common.Person;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.StageStatus;
-import com.simulator112.contextmanager.domain.dds.DdsStageTransition;
+import com.simulator112.contextmanager.domain.dds.DdsStageDetails;
+import com.simulator112.contextmanager.domain.system112.System112StageDetails;
 import com.simulator112.contextmanager.domain.dds.DdsStageType;
 import com.simulator112.incident.grpc.contract.CallScenario;
 import com.simulator112.incident.grpc.contract.IncidentContext;
@@ -48,11 +49,10 @@ public final class IncidentContextMapper {
             value.setInitialAssignmentClassifierCode(proto.getInitialAssignment().getClassifierCode());
             value.setInitialAssignmentInstructions(proto.getInitialAssignment().getInstructions());
         }
-        if (!proto.getDdsInitialStageId().isBlank()) value.setInitialStageId(UUID.fromString(proto.getDdsInitialStageId()));
-        value.setTransitions(proto.getDdsStageTransitionsList().stream().map(item -> new DdsStageTransition(
-                UUID.fromString(item.getStageId()), uuid(item.getSuccessStageId()), uuid(item.getFailureStageId())))
-                .collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         value.setStages(proto.getStagesList().stream().map(IncidentContextMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
+        if (value.getTargetType() == IncidentTargetType.DDS) {
+            for (int index = 0; index < value.getStages().size(); index++) value.getStages().get(index).setPosition(index);
+        }
         return value;
     }
 
@@ -61,11 +61,12 @@ public final class IncidentContextMapper {
         value.setSourceId(UUID.fromString(proto.getId())); value.setTitle(proto.getTitle());
         value.setDescription(proto.getDescription()); value.setStatus(StageStatus.PENDING);
         if (proto.hasSystem112()) {
-            value.setPosition(proto.getSystem112().getPosition()); value.setClassifierCodes(new ArrayList<>(proto.getSystem112().getClassifierCodesList()));
-            value.setVictimCount(proto.getSystem112().getVictimCount());
+            value.setPosition(proto.getSystem112().getPosition());
+            value.setSystem112(new System112StageDetails(proto.getSystem112().getClassifierCodesList(),
+                    proto.getSystem112().getVictimCount()));
         } else if (proto.hasDds()) {
-            value.setDdsStageType(DdsStageType.valueOf(proto.getDds().getType().name().replace("DDS_STAGE_TYPE_", "")));
-            value.setTimeLimitSeconds(proto.getDds().getTimeLimitSeconds());
+            value.setDds(new DdsStageDetails(DdsStageType.valueOf(proto.getDds().getType().name().replace("DDS_STAGE_TYPE_", "")),
+                    proto.getDds().getTimeLimitSeconds(), proto.getDds().getExpectedComment(), null, proto.getDds().getActualStatus()));
         }
         value.setCalls(proto.getCallsList().stream().map(IncidentContextMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return value;
@@ -99,22 +100,21 @@ public final class IncidentContextMapper {
                 com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
                         .setEmergencyServiceCode(value.getInitialAssignmentService())
                         .setClassifierCode(orEmpty(value.getInitialAssignmentClassifierCode())).setInstructions(orEmpty(value.getInitialAssignmentInstructions())));
-        if (value.getInitialStageId() != null) builder.setDdsInitialStageId(value.getInitialStageId().toString());
-        value.getTransitions().forEach(item -> builder.addDdsStageTransitions(
-                com.simulator112.incident.grpc.contract.DdsStageTransition.newBuilder().setStageId(item.stageId().toString())
-                        .setSuccessStageId(orEmpty(item.successStageId())).setFailureStageId(orEmpty(item.failureStageId()))));
         return builder.build();
     }
 
     private static IncidentStage toProto(StageSnapshot value) {
         var builder = IncidentStage.newBuilder().setId(value.getSourceId().toString()).setTitle(orEmpty(value.getTitle()))
                 .setDescription(orEmpty(value.getDescription())).addAllCalls(value.getCalls().stream().map(IncidentContextMapper::toProto).toList());
-        if (value.getDdsStageType() == null) builder.setSystem112(
+        if (value.getSystem112() != null) builder.setSystem112(
                 com.simulator112.incident.grpc.contract.System112StageDetails.newBuilder().setPosition(value.getPosition())
-                        .addAllClassifierCodes(value.getClassifierCodes()).setVictimCount(value.getVictimCount()));
-        else builder.setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
-                .setType(com.simulator112.incident.grpc.contract.DdsStageType.valueOf("DDS_STAGE_TYPE_" + value.getDdsStageType().name()))
-                .setTimeLimitSeconds(value.getTimeLimitSeconds()));
+                        .addAllClassifierCodes(value.getSystem112().classifierCodes()).setVictimCount(value.getSystem112().victimCount()));
+        else if (value.getDds() != null) builder.setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
+                .setType(com.simulator112.incident.grpc.contract.DdsStageType.valueOf("DDS_STAGE_TYPE_" + value.getDds().getType().name()))
+                .setTimeLimitSeconds(value.getDds().getTimeLimitSeconds())
+                .setExpectedComment(orEmpty(value.getDds().getExpectedComment()))
+                .setActualStatus(orEmpty(value.getDds().getActualStatus())));
+        else throw new IllegalStateException("Не указан тип этапа: " + value.getSourceId());
         return builder.build();
     }
 

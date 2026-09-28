@@ -5,5 +5,5 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record DdsStageProgress(UUID stageId, DdsStageType type, StageStatus status,
-                               Instant startedAt, Instant deadline) {
+                               Instant startedAt, Instant deadline, String comment, boolean completedCall) {
 }

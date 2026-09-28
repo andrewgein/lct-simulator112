@@ -1,4 +1,6 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.common;
+
+import com.simulator112.contextmanager.adapter.out.persistence.entity.system112.SolutionContextEntity;
 
 import java.time.Instant;
 import java.util.UUID;

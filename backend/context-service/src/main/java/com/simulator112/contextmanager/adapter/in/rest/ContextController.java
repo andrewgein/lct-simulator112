@@ -7,7 +7,7 @@ import com.simulator112.contextmanager.application.port.in.ContextUseCase;
 import com.simulator112.contextmanager.application.port.in.LevelProgressUseCase;
 import com.simulator112.contextmanager.application.port.in.ManageSystem112CardUseCase;
 import com.simulator112.contextmanager.adapter.in.rest.dto.request.ReactionStatusRequest;
-import com.simulator112.contextmanager.adapter.in.rest.dto.request.DdsStageSignalRequest;
+import com.simulator112.contextmanager.adapter.in.rest.dto.request.DdsCommentRequest;
 import com.simulator112.contextmanager.domain.common.LevelProgress;
 import jakarta.validation.Valid;
 import com.simulator112.contextmanager.application.model.system112.SolutionContextRequest;
@@ -75,12 +75,12 @@ public class ContextController {
         return levelProgressService.getProgress(uuid);
     }
 
-    @PostMapping("/{uuid}/dds/incidents/{incidentId}/signals")
-    public LevelProgress applyDdsSignal(
+    @PostMapping("/{uuid}/dds/incidents/{incidentId}/comments")
+    public LevelProgress saveDdsComment(
             @PathVariable UUID uuid,
             @PathVariable UUID incidentId,
-            @Valid @RequestBody DdsStageSignalRequest request) {
-        return levelProgressService.applyDdsSignal(uuid, incidentId, request.signal());
+            @Valid @RequestBody DdsCommentRequest request) {
+        return levelProgressService.saveDdsComment(uuid, incidentId, request.stageId(), request.comment());
     }
 
     @PostMapping("/{uuid}/dds/incidents/{incidentId}/reaction-status")

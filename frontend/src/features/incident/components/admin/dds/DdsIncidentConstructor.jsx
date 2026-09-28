@@ -5,7 +5,7 @@ import AdditionalFields from "../AdditionalFields.jsx";
 import PersonFields from "../PersonFields.jsx";
 import VictimFields from "../../VictimFields.jsx";
 import { emptyPerson, findIncident, personValue } from "../editorHelpers.js";
-import DdsStageGraph, { ddsTreeValue, validateDdsTree } from "./DdsStageGraph.jsx";
+import DdsStageTimeline, { timelineValue, validateTimeline } from "./DdsStageTimeline.jsx";
 
 const normalizePrepared = (value = {}) => ({
   classifierCodes: value.classifierCodes?.length ? value.classifierCodes : [""],
@@ -20,10 +20,10 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   const [servicesError, setServicesError] = useState("");
   const [prepared, setPrepared] = useState(() => normalizePrepared(incident.preparedCardTemplate));
   const [assignment, setAssignment] = useState(() => ({ emergencyService: incident.initialAssignment?.emergencyService || "", classifierCode: incident.initialAssignment?.classifierCode || "", instructions: incident.initialAssignment?.instructions || "" }));
-  const [tree, setTree] = useState(null);
+  const [timeline, setTimeline] = useState(null);
   const [incidentAddress, setIncidentAddress] = useState("");
-  const stateRef = useRef({ prepared, assignment, tree, classifier: classifierState.classifier });
-  stateRef.current = { prepared, assignment, tree, classifier: classifierState.classifier };
+  const stateRef = useRef({ prepared, assignment, timeline, classifier: classifierState.classifier });
+  stateRef.current = { prepared, assignment, timeline, classifier: classifierState.classifier };
 
   useEffect(() => {
     const unsubscribe = classifierInfo.subscribe((state) => setClassifierState({ ...state, classifier: [...state.classifier] }));
@@ -45,8 +45,8 @@ export default function DdsIncidentConstructor({ incident = {} }) {
       if (!current.prepared.classifierCodes.length || current.prepared.classifierCodes.some((code) => !code)) throw new Error("Выберите хотя бы один тип происшествия для подготовленной карточки");
       if (!current.assignment.emergencyService) throw new Error("Выберите службу первичного назначения");
       if (!current.assignment.classifierCode) throw new Error("Выберите тип происшествия первичного назначения");
-      if (!current.tree) throw new Error("Граф этапов ещё не готов");
-      validateDdsTree(current.tree);
+      if (!current.timeline) throw new Error("Этапы ещё не готовы");
+      validateTimeline(current.timeline);
       const requiredField = current.prepared.classifierCodes.flatMap((code) => findIncident(current.classifier, code)?.fields || []).find((field) => field.required && !current.prepared.additionalInfo[field.id]);
       if (requiredField) throw new Error(`Заполните обязательное поле подготовленной карточки: ${requiredField.name}`);
       return {
@@ -61,7 +61,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           classifierCode: current.assignment.classifierCode,
           instructions: current.assignment.instructions.trim() || null
         },
-        ...ddsTreeValue(current.tree)
+        ...timelineValue(current.timeline)
       };
     };
     return () => { delete form.getDdsStructure; };
@@ -110,7 +110,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
         </div>
         <wa-textarea value={assignment.instructions} label="Инструкции диспетчеру" rows="4" onInput={(event) => setAssignment((current) => ({ ...current, instructions: event.currentTarget.value }))}></wa-textarea>
       </section>
-      <DdsStageGraph initialIncident={incident} incidentAddress={incidentAddress} onChange={setTree} />
+      <DdsStageTimeline initialIncident={incident} onChange={setTimeline} />
     </div>
   );
 }

@@ -80,7 +80,7 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             requireClassifierCodes(dds.preparedCardTemplate().classifierCodes());
             requireClassifierCode(dds.initialAssignment().classifierCode());
             validateDdsStageCalls(dds);
-            validateDdsTree(dds);
+            validateDdsTimeline(dds);
         }
     }
 
@@ -105,23 +105,26 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
     }
 
     private void validateDdsStageCalls(DdsIncident incident) {
+        var allowedStatuses = java.util.Set.of("ACCEPTED", "NOT_ACCEPTED", "RESPONSE_STARTED", "ARRIVED",
+                "WORK_IN_PROGRESS", "WORK_COMPLETED", "WORK_REFUSED");
         for (var stage : incident.stages()) {
-            if (stage.type() == com.simulator112.incident.domain.dds.DdsStageType.CALL_BRIGADE_FOR_STATUS) {
-                if (stage.calls().isEmpty() || stage.calls().stream().anyMatch(call ->
-                        call.direction() != com.simulator112.incident.domain.common.CallDirection.OUTBOUND
-                                || call.counterparty()
-                                != com.simulator112.incident.domain.common.CounterpartyType.BRIGADE)) {
-                    throw new IllegalArgumentException(
-                            "Этап уточнения статуса должен содержать только исходящие звонки бригаде");
-                }
-            } else if (!stage.calls().isEmpty()) {
-                throw new IllegalArgumentException(
-                        "Звонки разрешены только на этапе уточнения статуса бригады");
+            if (stage.actualStatus() != null && !stage.actualStatus().isBlank()
+                    && !allowedStatuses.contains(stage.actualStatus())) {
+                throw new IllegalArgumentException("Неизвестный фактический статус реагирования: " + stage.actualStatus());
+            }
+            if (stage.expectedComment() != null && !stage.expectedComment().isBlank() && stage.calls().isEmpty()) {
+                throw new IllegalArgumentException("Для ожидаемого комментария необходим звонок");
+            }
+            if (stage.calls().stream().anyMatch(call -> call.direction() == null
+                    || (call.counterparty() != com.simulator112.incident.domain.common.CounterpartyType.BRIGADE
+                    && (call.counterparty() != com.simulator112.incident.domain.common.CounterpartyType.SERVICE
+                    || call.direction() != com.simulator112.incident.domain.common.CallDirection.OUTBOUND)))) {
+                throw new IllegalArgumentException("На этапе ДДС можно звонить бригаде или другой службе");
             }
         }
     }
 
-    private void validateDdsTree(DdsIncident incident) {
+    private void validateDdsTimeline(DdsIncident incident) {
         var stageIds = incident.stages().stream().map(stage -> stage.id()).collect(java.util.stream.Collectors.toSet());
         if (stageIds.contains(null)) {
             throw new IllegalArgumentException("Этапы ДДС должны иметь идентификаторы");
@@ -129,13 +132,10 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
         if (stageIds.size() != incident.stages().size()) {
             throw new IllegalArgumentException("Идентификаторы этапов ДДС должны быть уникальны");
         }
-        if (incident.initialStageId() == null || !stageIds.contains(incident.initialStageId())) {
-            throw new IllegalArgumentException("Начальный этап ДДС не найден");
+        if (incident.stages().isEmpty()) {
+            throw new IllegalArgumentException("ДДС должен содержать этапы");
         }
-        var initialStage = incident.stages().stream()
-                .filter(stage -> stage.id().equals(incident.initialStageId()))
-                .findFirst()
-                .orElseThrow();
+        var initialStage = incident.stages().getFirst();
         if (initialStage.type() != com.simulator112.incident.domain.dds.DdsStageType.ASSIGN_BRIGADE) {
             throw new IllegalArgumentException("Первый этап ДДС должен подтверждать принятие карточки");
         }
@@ -150,52 +150,9 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             throw new IllegalArgumentException("Этап принятия карточки ДДС должен быть только первым");
         }
 
-        var routes = new java.util.HashMap<UUID, com.simulator112.incident.domain.dds.DdsStageTransition>();
-        var incoming = new java.util.HashMap<UUID, Integer>();
-        for (var transition : incident.transitions()) {
-            if (!stageIds.contains(transition.stageId()) || routes.put(transition.stageId(), transition) != null) {
-                throw new IllegalArgumentException("Некорректный или повторяющийся переход этапа ДДС");
-            }
-            for (UUID next : java.util.stream.Stream.of(
-                            transition.successStageId(), transition.failureStageId())
-                    .filter(java.util.Objects::nonNull).distinct().toList()) {
-                if (!stageIds.contains(next)) {
-                    throw new IllegalArgumentException("Переход ссылается на неизвестный этап " + next);
-                }
-                if (incoming.merge(next, 1, Integer::sum) > 1) {
-                    throw new IllegalArgumentException("Этап ДДС не может иметь более одного родителя");
-                }
-            }
-        }
-        if (incoming.containsKey(incident.initialStageId())) {
-            throw new IllegalArgumentException("Начальный этап ДДС не может иметь родителя");
-        }
-
-        var visited = new java.util.HashSet<UUID>();
-        walkDdsTree(incident.initialStageId(), routes, new java.util.HashSet<>(), visited);
-        if (!visited.equals(stageIds)) {
-            throw new IllegalArgumentException("Все этапы ДДС должны быть достижимы из начального этапа");
+        if (incident.stages().stream().anyMatch(stage -> stage.timeLimitSeconds() <= 0)) {
+            throw new IllegalArgumentException("Длительность этапа ДДС должна быть положительной");
         }
     }
 
-    private void walkDdsTree(
-            UUID stageId,
-            java.util.Map<UUID, com.simulator112.incident.domain.dds.DdsStageTransition> routes,
-            java.util.Set<UUID> path,
-            java.util.Set<UUID> visited) {
-        if (!path.add(stageId)) {
-            throw new IllegalArgumentException("Дерево этапов ДДС не должно содержать циклы");
-        }
-        visited.add(stageId);
-        var transition = routes.get(stageId);
-        if (transition != null) {
-            if (transition.successStageId() != null) {
-                walkDdsTree(transition.successStageId(), routes, path, visited);
-            }
-            if (transition.failureStageId() != null) {
-                walkDdsTree(transition.failureStageId(), routes, path, visited);
-            }
-        }
-        path.remove(stageId);
-    }
 }

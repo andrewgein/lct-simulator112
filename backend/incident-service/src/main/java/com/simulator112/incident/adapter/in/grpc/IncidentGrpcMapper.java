@@ -29,14 +29,6 @@ public class IncidentGrpcMapper {
             builder.addAllStages(dds.stages().stream().map(this::toProto).toList());
             builder.setPreparedCardTemplate(toProto(dds.preparedCardTemplate()));
             builder.setInitialAssignment(toProto(dds.initialAssignment()));
-            builder.setDdsInitialStageId(dds.initialStageId().toString());
-            builder.addAllDdsStageTransitions(dds.transitions().stream()
-                    .map(transition -> com.simulator112.incident.grpc.contract.DdsStageTransition.newBuilder()
-                            .setStageId(transition.stageId().toString())
-                            .setSuccessStageId(string(transition.successStageId()))
-                            .setFailureStageId(string(transition.failureStageId()))
-                            .build())
-                    .toList());
         }
         return builder.build();
     }
@@ -54,7 +46,9 @@ public class IncidentGrpcMapper {
         return toProtoBase(stage)
                 .setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
                         .setType(toProto(stage.type()))
-                        .setTimeLimitSeconds(stage.timeLimitSeconds()))
+                        .setTimeLimitSeconds(stage.timeLimitSeconds())
+                        .setExpectedComment(string(stage.expectedComment()))
+                        .setActualStatus(string(stage.actualStatus())))
                 .build();
     }
 
@@ -92,6 +86,7 @@ public class IncidentGrpcMapper {
                 .setCounterparty(switch (call.counterparty()) {
                     case CALLER -> com.simulator112.incident.grpc.contract.CounterpartyType.COUNTERPARTY_TYPE_CALLER;
                     case BRIGADE -> com.simulator112.incident.grpc.contract.CounterpartyType.COUNTERPARTY_TYPE_BRIGADE;
+                    case SERVICE -> com.simulator112.incident.grpc.contract.CounterpartyType.COUNTERPARTY_TYPE_SERVICE;
                 })
                 .setPerson(toProto(call.person()))
                 .setGender(toProto(call.gender()))

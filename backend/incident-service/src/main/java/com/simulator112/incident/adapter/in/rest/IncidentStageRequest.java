@@ -18,5 +18,7 @@ public record IncidentStageRequest(
         String description,
         DdsStageType type,
         Integer timeLimitSeconds,
-        @NotNull List<@Valid CallScenario> calls) {
+        @NotNull List<@Valid CallScenario> calls,
+        String expectedComment,
+        String actualStatus) {
 }

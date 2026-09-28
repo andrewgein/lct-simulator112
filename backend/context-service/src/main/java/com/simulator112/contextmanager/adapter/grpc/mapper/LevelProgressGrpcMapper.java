@@ -21,8 +21,10 @@ public final class LevelProgressGrpcMapper {
                         new com.simulator112.contextmanager.domain.dds.DdsProgress(incident.getActiveStageId(),
                                 active == null ? null : active.getDeadlineAt(), incident.getStages().stream()
                                 .map(stage -> new com.simulator112.contextmanager.domain.dds.DdsStageProgress(
-                                        stage.getSourceId(), stage.getDdsStageType(), stage.getStatus(),
-                                        stage.getStartedAt(), stage.getDeadlineAt())).toList()));
+                                        stage.getSourceId(), stage.getDds().getType(), stage.getStatus(),
+                                        stage.getStartedAt(), stage.getDeadlineAt(), stage.getDds().getComment(),
+                                        stage.getCalls().stream().anyMatch(call -> call.getStatus()
+                                                == com.simulator112.contextmanager.domain.common.CallStatus.COMPLETED))).toList()));
             }
             var calls = incident.getStages().stream().flatMap(stage -> stage.getCalls().stream()).toList();
             var activeCall = calls.stream().filter(call -> call.getStatus() == com.simulator112.contextmanager.domain.common.CallStatus.ACTIVE
@@ -34,8 +36,27 @@ public final class LevelProgressGrpcMapper {
                             .map(com.simulator112.contextmanager.domain.common.ServiceReactionProgress::from).toList(),
                     new com.simulator112.contextmanager.domain.system112.System112Progress(activeCall, completed, calls.size()), null);
         }).toList();
-        return toProto(new com.simulator112.contextmanager.domain.common.LevelProgress(context.getId(), context.getTargetType(),
-                context.getExecutionMode(), context.getStatus(), incidents));
+        var builder = toProto(new com.simulator112.contextmanager.domain.common.LevelProgress(context.getId(), context.getTargetType(),
+                context.getExecutionMode(), context.getStatus(), incidents)).toBuilder();
+        if (context.getTargetType() == com.simulator112.contextmanager.domain.common.IncidentTargetType.DDS) {
+            for (int index = 0; index < context.getIncidents().size(); index++) {
+                var progress = builder.getIncidentsBuilder(index);
+                var snapshot = context.getIncidents().get(index);
+                snapshot.getServiceReactions().forEach(reaction -> reaction.getHistory().forEach(event ->
+                        progress.addReactionEvents(com.simulator112.context.grpc.contract.ReactionEvent.newBuilder()
+                                .setStatus(event.status().name())
+                                .setChangedAt(event.changedAt().toString())
+                                .setComment(event.comment() == null ? "" : event.comment()))));
+                for (int stageIndex = 0; stageIndex < snapshot.getStages().size(); stageIndex++) {
+                    var stage = snapshot.getStages().get(stageIndex);
+                    var completed = stage.getCalls().stream().filter(call -> call.getStatus()
+                            == com.simulator112.contextmanager.domain.common.CallStatus.COMPLETED)
+                            .map(call -> call.getSourceId().toString()).toList();
+                    progress.getDdsBuilder().getStagesBuilder(stageIndex).addAllCompletedCallIds(completed);
+                }
+            }
+        }
+        return builder.build();
     }
 
     public static LevelProgress toProto(com.simulator112.contextmanager.domain.common.LevelProgress progress) {
@@ -60,7 +81,9 @@ public final class LevelProgressGrpcMapper {
                         .setStageId(stage.stageId().toString()).setStageType(stage.type().name())
                         .setStatus(stage.status().name())
                         .setStartedAt(stage.startedAt() == null ? "" : stage.startedAt().toString())
-                        .setDeadline(stage.deadline() == null ? "" : stage.deadline().toString())));
+                        .setDeadline(stage.deadline() == null ? "" : stage.deadline().toString())
+                        .setComment(stage.comment() == null ? "" : stage.comment())
+                        .setCompletedCall(stage.completedCall())));
                 value.setDds(dds);
             }
             builder.addIncidents(value);

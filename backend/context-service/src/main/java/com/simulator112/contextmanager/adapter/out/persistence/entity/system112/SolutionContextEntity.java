@@ -1,6 +1,6 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.system112;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.PersonInfo;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.Context;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CollectionTable;

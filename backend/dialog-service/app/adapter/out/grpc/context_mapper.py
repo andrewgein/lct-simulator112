@@ -25,6 +25,7 @@ def call_from_proto(value: incident_pb.CallScenario) -> CallScenario:
         counterparty={
             incident_pb.COUNTERPARTY_TYPE_CALLER: CounterpartyType.CALLER,
             incident_pb.COUNTERPARTY_TYPE_BRIGADE: CounterpartyType.BRIGADE,
+            incident_pb.COUNTERPARTY_TYPE_SERVICE: CounterpartyType.SERVICE,
         }.get(value.counterparty, CounterpartyType.UNSPECIFIED),
         person=Person(
             first_name=person.first_name,

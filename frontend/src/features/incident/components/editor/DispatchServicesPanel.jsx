@@ -9,6 +9,9 @@ const styles = `
 .dispatch-service--with-status { min-width: 14rem; padding-block-start: var(--wa-space-m); }
 .dispatch-service strong { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dispatch-service wa-icon { font-size: var(--wa-font-size-l); }
+.dispatch-service-call { position: absolute; inset-block-start: var(--wa-space-2xs); inset-inline-start: var(--wa-space-2xs); }
+.dispatch-service-call::part(button) { border-color: transparent; color: #ffffff; }
+.dispatch-service-call::part(button):hover { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .1); }
 .dispatch-service-status { display: flex; max-width: 12rem; gap: var(--wa-space-xs); overflow: hidden; color: #d4dadd; font-size: var(--wa-font-size-xs); text-overflow: ellipsis; white-space: nowrap; }
 .dispatch-service-status time { flex: 0 0 auto; color: #ffffff; font-variant-numeric: tabular-nums; }
 .dispatch-service-status span { overflow: hidden; text-overflow: ellipsis; }
@@ -42,6 +45,7 @@ const styles = `
 .dispatch-service-status-popover::part(body) { padding: var(--wa-space-m); border: var(--wa-border-width-s) solid #87969d; background: #f4f6f6; color: var(--wa-color-text-normal); box-shadow: 0 .5rem 1.5rem rgba(22, 31, 36, .3); }
 .dispatch-service-add { align-self: center; margin-inline: var(--wa-space-m); }
 .dispatch-services-dialog { --width: min(90vw, 38rem); }
+.dispatch-call-dialog { --width: min(90vw, 28rem); }
 .dispatch-services-dialog-search { margin-block-end: var(--wa-space-l); }
 .dispatch-services-dialog-list { max-height: 24rem; overflow-y: auto; border: var(--wa-border-width-s) solid var(--wa-color-neutral-border-normal); }
 .dispatch-services-dialog-option { display: flex; align-items: center; min-height: 3.75rem; padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-neutral-border-normal); cursor: pointer; }
@@ -60,10 +64,13 @@ export function automaticServices(classifier, incidentTypes) {
   return [...new Set(classifier.flatMap((category) => category.entries).filter((entry) => selectedTypes.has(entry.code)).flatMap((entry) => entry.primaryServices || []).map((service) => service.code))];
 }
 
-export default function DispatchServicesPanel({ classifier, dispatchServices = [], services = [], readonly = false, status, statusHistory = [], statusEditor, onChange }) {
+export default function DispatchServicesPanel({ classifier, dispatchServices = [], services = [], readonly = false, status, statusHistory = [], statusEditor, calls = [], onCall, callEnabled = true, onChange }) {
   const dialogRef = useRef(null);
+  const callDialogRef = useRef(null);
   const historyId = `dispatch-service-history-${useId().replace(/:/g, "")}`;
   const [adding, setAdding] = useState(false);
+  const [calling, setCalling] = useState(false);
+  const [selectedCallId, setSelectedCallId] = useState("");
   const [draft, setDraft] = useState([]);
   const [query, setQuery] = useState("");
   const catalog = [...new Map([...serviceCatalog(classifier), ...dispatchServices].map((service) => [service.code, service])).values()];
@@ -79,6 +86,26 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
     dialog.addEventListener("wa-after-hide", close);
     return () => dialog.removeEventListener("wa-after-hide", close);
   }, [adding]);
+
+  useEffect(() => {
+    const dialog = callDialogRef.current;
+    if (!dialog) return;
+    dialog.open = calling;
+    const close = () => setCalling(false);
+    dialog.addEventListener("wa-after-hide", close);
+    return () => dialog.removeEventListener("wa-after-hide", close);
+  }, [calling]);
+
+  const openCallDialog = () => {
+    if (!callEnabled || !calls.length) return;
+    setSelectedCallId(calls[0].id);
+    setCalling(true);
+  };
+  const confirmCall = () => {
+    if (!callEnabled || !calls.some((call) => call.id === selectedCallId)) return;
+    setCalling(false);
+    onCall(selectedCallId);
+  };
 
   const openDialog = () => {
     setDraft(services);
@@ -101,6 +128,11 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
           return (
             <div class={`dispatch-service ${status && index === 0 ? "dispatch-service--with-status" : ""}`} key={code}>
               <strong title={service?.name || code}>{service?.name || code}</strong>
+              {readonly && index === 0 && onCall && (
+                <wa-button class="dispatch-service-call" type="button" size="s" appearance="plain" variant="neutral" disabled={!callEnabled || !calls.length} aria-label={calls.length && callEnabled ? calls.some((item) => item.counterparty === "SERVICE") ? "Позвонить бригаде или другой службе" : `Позвонить: ${service?.name || code}` : "Звонок недоступен на этом этапе"} onClick={openCallDialog}>
+                  <wa-icon name="phone" aria-hidden="true"></wa-icon>
+                </wa-button>
+              )}
               {status && index === 0 && <span class="dispatch-service-status" title={latestStatus ? `${latestStatus.time} ${latestStatus.label}` : status}>{latestStatus && <time dateTime={latestStatus.dateTime || undefined}>{latestStatus.time}</time>}<span>{latestStatus?.label || status}</span></span>}
               {status && index === 0 && <wa-button id={historyId} class="dispatch-service-history-toggle" type="button" size="s" appearance="plain" variant="neutral" aria-label={`История статусов службы ${service?.name || code}`}><wa-icon name="chevron-up" aria-hidden="true"></wa-icon></wa-button>}
               {status && index === 0 && <wa-popover class="dispatch-service-history" for={historyId} placement="top-start" distance={0} skidding={-100} without-arrow><section class="dispatch-service-history-panel" aria-label={`История статусов службы ${service?.name || code}`}><div class="dispatch-service-history-header"><strong>{service?.name || code}</strong><wa-button class="dispatch-service-history-close" type="button" size="s" appearance="plain" variant="neutral" data-popover="close" aria-label="Закрыть историю статусов"><wa-icon name="xmark" aria-hidden="true"></wa-icon></wa-button></div>{statusHistory.length ? <ol class="dispatch-service-history-list">{statusHistory.map((item, historyIndex) => <li class="dispatch-service-history-item" key={`${item.time}-${historyIndex}`}><wa-icon name="chevron-right" aria-hidden="true"></wa-icon><time dateTime={item.dateTime || undefined}>{item.time}</time><div class="dispatch-service-history-copy"><span>{item.label}</span>{item.comment && <small>{item.comment}</small>}</div></li>)}</ol> : <p class="dispatch-service-history-empty">Изменений статуса пока нет</p>}</section></wa-popover>}
@@ -112,6 +144,25 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
         })}
         {!readonly && !!catalog.length && <wa-button class="dispatch-service-add" type="button" size="l" appearance="outlined" variant="neutral" aria-label="Добавить службу" onClick={openDialog}><wa-icon name="plus"></wa-icon></wa-button>}
       </div>
+      <wa-dialog ref={callDialogRef} class="dispatch-call-dialog" label="Подтвердить звонок" with-footer>
+        {calls.length > 1 ? (
+          <wa-select label="Кому позвонить" value={selectedCallId} onChange={(event) => setSelectedCallId(event.currentTarget.value)}>
+            {calls.map((call, index) => (
+              <wa-option key={call.id} value={call.id}>
+                {call.counterparty === "SERVICE" ? `Служба: ${call.person?.lastName || index + 1}` : call.person?.lastName ? `Бригада: ${call.person.lastName}` : `Бригада ${index + 1}`}
+              </wa-option>
+            ))}
+          </wa-select>
+        ) : <p>
+          Позвонить {calls[0]?.counterparty === "SERVICE" ? "другой службе" : "бригаде"}?
+        </p>}
+        <wa-button slot="footer" type="button" appearance="outlined" variant="neutral" onClick={() => setCalling(false)}>
+          Отмена
+        </wa-button>
+        <wa-button slot="footer" type="button" appearance="filled" variant="brand" disabled={!callEnabled || !selectedCallId} onClick={confirmCall}>
+          Позвонить
+        </wa-button>
+      </wa-dialog>
       <wa-dialog ref={dialogRef} class="dispatch-services-dialog" label="Добавьте службы" with-footer>
         <wa-input class="dispatch-services-dialog-search" placeholder="Поиск ..." aria-label="Поиск службы" value={query} onInput={(event) => setQuery(event.currentTarget.value)}><wa-icon slot="start" name="magnifying-glass" aria-hidden="true"></wa-icon></wa-input>
         <div class="dispatch-services-dialog-list">

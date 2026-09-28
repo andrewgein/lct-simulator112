@@ -9,7 +9,7 @@ import asyncio
 from num2words import num2words
 
 from app.domain.model import CallScenario, CounterpartyType
-from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, build_call_scenario
+from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT, build_call_scenario
 from app.adapter.out.processing.llm_model import LLMModel
 from .processing_node import UserDialogProcessingNode
 
@@ -50,9 +50,10 @@ class ChatNode(UserDialogProcessingNode):
         self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
         self.loop_thread.start()
 
-        default_prompt = (BRIGADE_SYSTEM_PROMPT
-                          if context.counterparty == CounterpartyType.BRIGADE
-                          else CALLER_SYSTEM_PROMPT)
+        default_prompt = {
+            CounterpartyType.BRIGADE: BRIGADE_SYSTEM_PROMPT,
+            CounterpartyType.SERVICE: SERVICE_SYSTEM_PROMPT,
+        }.get(context.counterparty, CALLER_SYSTEM_PROMPT)
         system_prompt = getenv("LLM_SYSTEM_PROMPT", default_prompt)
         incident_scenario = build_call_scenario(context)
         full_prompt = f"{system_prompt}\n\n{incident_scenario}"

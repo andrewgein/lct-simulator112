@@ -1,6 +1,5 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.common;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Applicant;
 import com.simulator112.contextmanager.domain.common.Gender;
 import com.simulator112.contextmanager.domain.common.CallDirection;
 import com.simulator112.contextmanager.domain.common.CounterpartyType;

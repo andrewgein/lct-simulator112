@@ -23,6 +23,7 @@ class CallDirection(Enum):
 class CounterpartyType(Enum):
     CALLER = "CALLER"
     BRIGADE = "BRIGADE"
+    SERVICE = "SERVICE"
     UNSPECIFIED = "UNSPECIFIED"
 
 

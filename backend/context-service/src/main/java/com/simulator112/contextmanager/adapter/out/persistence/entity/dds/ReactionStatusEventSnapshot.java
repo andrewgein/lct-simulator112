@@ -1,4 +1,4 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.dds;
 
 import com.simulator112.contextmanager.domain.common.ReactionStatus;
 import jakarta.persistence.Column;

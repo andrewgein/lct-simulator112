@@ -19,7 +19,9 @@ public class ReviewServiceGrpcClient implements ReviewPort {
 
     @Override
     public boolean send(TrainingContext context) {
-        var response = reviewServiceStub.withDeadlineAfter(5, TimeUnit.SECONDS)
+        var response = reviewServiceStub.withDeadlineAfter(
+                        context.getTargetType() == com.simulator112.contextmanager.domain.common.IncidentTargetType.DDS ? 30 : 5,
+                        TimeUnit.SECONDS)
                 .sendOnReview(SendOnReviewRequest.newBuilder().setContext(FullContextMapper.toProto(context)).build());
         return response.getStatus() == com.simulator112.review.grpc.contract.ReviewStatus.DONE;
     }

@@ -30,4 +30,10 @@ public class DdsStageDetailsJpaEntity {
 
     @Column(name = "time_limit_seconds", nullable = false)
     private int timeLimitSeconds;
+
+    @Column(name = "expected_comment", columnDefinition = "text")
+    private String expectedComment;
+
+    @Column(name = "actual_status", length = 50)
+    private String actualStatus;
 }

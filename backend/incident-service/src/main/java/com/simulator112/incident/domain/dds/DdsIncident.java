@@ -6,7 +6,6 @@ import com.simulator112.incident.domain.common.Incident;
 import com.simulator112.incident.domain.common.IncidentTargetType;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public record DdsIncident(
@@ -16,12 +15,9 @@ public record DdsIncident(
         Difficulty difficulty,
         List<DdsStage> stages,
         PreparedCardTemplate preparedCardTemplate,
-        InitialAssignment initialAssignment,
-        UUID initialStageId,
-        List<DdsStageTransition> transitions) implements Incident {
+        InitialAssignment initialAssignment) implements Incident {
     public DdsIncident {
         stages = stages == null ? List.of() : List.copyOf(stages);
-        transitions = transitions == null ? List.of() : List.copyOf(transitions);
     }
 
     @Override
@@ -29,10 +25,4 @@ public record DdsIncident(
         return IncidentTargetType.DDS;
     }
 
-    public Optional<UUID> nextStage(UUID currentStageId, boolean successful) {
-        return transitions.stream()
-                .filter(transition -> transition.stageId().equals(currentStageId))
-                .findFirst()
-                .map(transition -> successful ? transition.successStageId() : transition.failureStageId());
-    }
 }

@@ -12,7 +12,19 @@ public record DdsStage(
         String description,
         DdsStageType type,
         int timeLimitSeconds,
-        List<CallScenario> calls) implements IncidentStage {
+        List<CallScenario> calls,
+        String expectedComment,
+        String actualStatus) implements IncidentStage {
+    public DdsStage(UUID id, String title, String description, DdsStageType type,
+                    int timeLimitSeconds, List<CallScenario> calls, String expectedComment) {
+        this(id, title, description, type, timeLimitSeconds, calls, expectedComment, null);
+    }
+
+    public DdsStage(UUID id, String title, String description, DdsStageType type,
+                    int timeLimitSeconds, List<CallScenario> calls) {
+        this(id, title, description, type, timeLimitSeconds, calls, null, null);
+    }
+
     public DdsStage {
         calls = calls == null ? List.of() : List.copyOf(calls);
         if (type == null) {

@@ -32,6 +32,28 @@ class IncidentContextMapperTests {
     }
 
     @Test
+    void keepsDdsDetailsSeparateFromSystem112Details() {
+        var source = IncidentContext.newBuilder()
+                .setId(UUID.randomUUID().toString())
+                .setTargetType(com.simulator112.incident.grpc.contract.IncidentTargetType.INCIDENT_TARGET_TYPE_DDS)
+                .setDifficulty(com.simulator112.incident.grpc.contract.Difficulty.DIFFICULTY_EASY)
+                .addStages(IncidentStage.newBuilder()
+                        .setId(UUID.randomUUID().toString())
+                        .setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
+                                .setType(com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_CALL_BRIGADE_FOR_STATUS)
+                                .setTimeLimitSeconds(90)
+                                .setExpectedComment("Бригада прибыла")))
+                .build();
+
+        var stored = IncidentContextMapper.toDomain(source, 0);
+
+        assertThat(stored.getStages().getFirst().getSystem112()).isNull();
+        assertThat(stored.getStages().getFirst().getDds().getExpectedComment()).isEqualTo("Бригада прибыла");
+        assertThat(IncidentContextMapper.toProto(stored).getStages(0).getDds().getExpectedComment())
+                .isEqualTo("Бригада прибыла");
+    }
+
+    @Test
     void preservesCallParticipantWithoutUsingIncidentAddress() {
         Person caller = Person.newBuilder()
                 .setFirstName("Анна")
@@ -66,7 +88,7 @@ class IncidentContextMapperTests {
         CallScenario result = IncidentContextMapper.toProto(
                 stored.getStages().getFirst().getCalls().getFirst());
 
-        assertThat(stored.getStages().getFirst().getClassifierCodes()).containsExactly("101", "102");
+        assertThat(stored.getStages().getFirst().getSystem112().classifierCodes()).containsExactly("101", "102");
         assertThat(IncidentContextMapper.toProto(stored).getStages(0).getSystem112().getClassifierCodesList())
                 .containsExactly("101", "102");
         assertThat(IncidentContextMapper.toProto(stored).getCriteria().getDialogueCriteriaList()).singleElement()

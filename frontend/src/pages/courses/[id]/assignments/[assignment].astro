@@ -55,6 +55,6 @@ if (!error) {
 ---
 <Page {error}>
   {!error && targetType === "SYSTEM_112" && <LevelApp {contextId} {courseId} {dialogEndpoint} {dadataApiKey} {isDev} client:load />}
-  {!error && targetType === "DDS" && <DdsLevelApp {contextId} {courseId} {incidents} {classifier} {routingFacts} userService={profile?.ddsService} client:load />}
+  {!error && targetType === "DDS" && <DdsLevelApp {contextId} {courseId} {incidents} {classifier} {routingFacts} {dialogEndpoint} userService={profile?.ddsService} client:load />}
 </Page>
 

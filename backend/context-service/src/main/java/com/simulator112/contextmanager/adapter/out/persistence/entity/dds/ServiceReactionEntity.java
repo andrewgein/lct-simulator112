@@ -1,6 +1,6 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.dds;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.ReactionStatusEventSnapshot;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.common.IncidentContextEntity;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;

@@ -1,4 +1,4 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.common;
 
 import com.simulator112.contextmanager.domain.common.SpeakerType;
 import jakarta.persistence.Column;

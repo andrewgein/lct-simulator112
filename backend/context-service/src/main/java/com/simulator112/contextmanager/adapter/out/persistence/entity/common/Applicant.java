@@ -1,4 +1,4 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.common;
 
 import com.simulator112.shared.dto.EmotionalState;
 import jakarta.persistence.Embeddable;

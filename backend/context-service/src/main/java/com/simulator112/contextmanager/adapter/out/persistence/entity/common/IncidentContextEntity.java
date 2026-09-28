@@ -1,4 +1,4 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.common;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -7,10 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Address;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Applicant;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DispatcherCriteria;
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.DdsStageTransitionSnapshot;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.dds.ServiceReactionEntity;
+import com.simulator112.contextmanager.adapter.out.persistence.entity.system112.DispatcherCriteria;
 import com.simulator112.contextmanager.domain.common.IncidentProgressStatus;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
@@ -66,7 +64,6 @@ public class IncidentContextEntity {
 
     private UUID activeStageId;
 
-    private UUID initialStageId;
 
     @Embedded
     @AttributeOverrides({
@@ -125,12 +122,6 @@ public class IncidentContextEntity {
 
     @UpdateTimestamp
     private Instant updatedAt;
-
-    @ElementCollection
-    @CollectionTable(name = "context_dds_stage_transitions",
-            joinColumns = @JoinColumn(name = "incident_context_id"))
-    @OrderColumn(name = "position")
-    private List<DdsStageTransitionSnapshot> transitions = new ArrayList<>();
 
     @OneToMany(mappedBy = "incidentContext", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("serviceCode ASC")

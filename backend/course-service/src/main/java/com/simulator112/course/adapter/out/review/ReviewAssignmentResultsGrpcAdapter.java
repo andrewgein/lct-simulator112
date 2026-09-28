@@ -34,7 +34,7 @@ public class ReviewAssignmentResultsGrpcAdapter implements AssignmentResultsPort
     static class GrpcConfiguration {
         @Bean(destroyMethod = "shutdown")
         ManagedChannel reviewChannel(@Value("${review.grpc.host:localhost}") String host,
-                                     @Value("${review.grpc.port:9092}") int port) {
+                                     @Value("${review.grpc.port:9094}") int port) {
             return ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
         }
 

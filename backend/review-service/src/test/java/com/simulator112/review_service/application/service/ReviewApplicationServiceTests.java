@@ -3,6 +3,7 @@ package com.simulator112.review_service.application.service;
 import com.simulator112.review_service.application.port.out.DialogueAnalysisPort;
 import com.simulator112.review_service.application.port.out.ReviewStore;
 import com.simulator112.review_service.domain.evaluation.System112ReviewRubric;
+import com.simulator112.review_service.domain.evaluation.DdsReviewRubric;
 import com.simulator112.review_service.domain.model.Review;
 import com.simulator112.review_service.domain.model.ReviewStatus;
 import com.simulator112.review_service.domain.model.ReviewSubmission;
@@ -17,6 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import org.mockito.ArgumentCaptor;
 
 class ReviewApplicationServiceTests {
     private final ReviewStore store = mock(ReviewStore.class);
@@ -67,6 +70,62 @@ class ReviewApplicationServiceTests {
             assertThat(value.score()).isEqualTo(25);
             assertThat(value.feedback()).contains("0.910");
         });
+    }
+
+    @Test
+    void ddsReviewsCommentOnlyWithoutAnalyzingDialogue() {
+        when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var ddsService = new ReviewApplicationService(store, List.of(new DdsReviewRubric()),
+                dialogueAnalysisPort, events);
+        var stage = new ReviewSubmission.StageScenario("stage", null, List.of(), 0,
+                "CALL_BRIGADE_FOR_STATUS", List.of(), "Бригада прибыла на место");
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(stage),
+                new ReviewSubmission.EvaluationCriteria(List.of()));
+        var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
+                new ReviewSubmission.StageRuntime("stage", "CALL_BRIGADE_FOR_STATUS", "SUCCEEDED",
+                        null, null, "Бригада сообщила о прибытии")));
+        var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.DDS, List.of(incident), List.of(), List.of(runtime),
+                List.of(new ReviewSubmission.TranscriptPhrase("USER", "Не по теме")), null, null);
+        when(dialogueAnalysisPort.analyze(any(), any())).thenReturn(List.of(
+                new DialogueAnalysisPort.DialogueAnalysis("stage", true, 0.95)));
+
+        Review result = ddsService.submit(submission);
+
+        assertThat(result.maxScore()).isEqualTo(100);
+        assertThat(result.results()).filteredOn(value -> value.criterionName().equals("Комментарий по звонку"))
+                .singleElement().satisfies(value -> assertThat(value.score()).isEqualTo(20));
+        var phrases = ArgumentCaptor.forClass(List.class);
+        verify(dialogueAnalysisPort).analyze(phrases.capture(), any());
+        assertThat(phrases.getValue()).containsExactly(
+                new ReviewSubmission.TranscriptPhrase("USER", "Бригада сообщила о прибытии"));
+    }
+
+    @Test
+    void ddsIncorrectCommentLosesCommentPointsWithoutChangingStageResult() {
+        when(store.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        var ddsService = new ReviewApplicationService(store, List.of(new DdsReviewRubric()),
+                dialogueAnalysisPort, events);
+        var stage = new ReviewSubmission.StageScenario("stage", null, List.of(), 0,
+                "CALL_BRIGADE_FOR_STATUS", List.of(), "Бригада прибыла на место", "ARRIVED");
+        var incident = new ReviewSubmission.IncidentScenario("incident", 1, List.of(stage),
+                new ReviewSubmission.EvaluationCriteria(List.of()));
+        var deadline = java.time.Instant.parse("2026-01-01T12:01:00Z");
+        var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
+                new ReviewSubmission.StageRuntime("stage", "CALL_BRIGADE_FOR_STATUS", "SUCCEEDED",
+                        deadline.minusSeconds(60), deadline, "Нет сведений")), List.of(
+                new ReviewSubmission.ReactionEvent("ARRIVED", deadline.plusSeconds(1), null)));
+        var submission = new ReviewSubmission(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                ReviewSubmission.TargetType.DDS, List.of(incident), List.of(), List.of(runtime), List.of(), null, deadline.plusSeconds(60));
+        when(dialogueAnalysisPort.analyze(any(), any())).thenReturn(List.of(
+                new DialogueAnalysisPort.DialogueAnalysis("stage", false, 0.2)));
+
+        Review result = ddsService.submit(submission);
+
+        assertThat(result.maxScore()).isEqualTo(100);
+        assertThat(result.automaticScore()).isEqualTo(80);
+        assertThat(result.results()).filteredOn(value -> value.criterionName().equals("Комментарий по звонку"))
+                .singleElement().satisfies(value -> assertThat(value.score()).isZero());
     }
 
     @Test

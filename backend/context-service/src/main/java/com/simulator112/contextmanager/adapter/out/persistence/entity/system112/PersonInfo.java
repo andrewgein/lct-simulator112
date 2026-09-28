@@ -1,4 +1,4 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.system112;
 
 import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;

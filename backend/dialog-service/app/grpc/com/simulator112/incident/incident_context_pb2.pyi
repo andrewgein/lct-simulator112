@@ -52,6 +52,7 @@ class CounterpartyType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     COUNTERPARTY_TYPE_UNSPECIFIED: _ClassVar[CounterpartyType]
     COUNTERPARTY_TYPE_CALLER: _ClassVar[CounterpartyType]
     COUNTERPARTY_TYPE_BRIGADE: _ClassVar[CounterpartyType]
+    COUNTERPARTY_TYPE_SERVICE: _ClassVar[CounterpartyType]
 EXECUTION_MODE_UNSPECIFIED: ExecutionMode
 EXECUTION_MODE_SEQUENTIAL: ExecutionMode
 EXECUTION_MODE_PARALLEL: ExecutionMode
@@ -77,9 +78,10 @@ CALL_DIRECTION_OUTBOUND: CallDirection
 COUNTERPARTY_TYPE_UNSPECIFIED: CounterpartyType
 COUNTERPARTY_TYPE_CALLER: CounterpartyType
 COUNTERPARTY_TYPE_BRIGADE: CounterpartyType
+COUNTERPARTY_TYPE_SERVICE: CounterpartyType
 
 class IncidentContext(_message.Message):
-    __slots__ = ("id", "title", "address", "difficulty", "target_type", "stages", "criteria", "prepared_card_template", "initial_assignment", "dds_initial_stage_id", "dds_stage_transitions")
+    __slots__ = ("id", "title", "address", "difficulty", "target_type", "stages", "criteria", "prepared_card_template", "initial_assignment")
     ID_FIELD_NUMBER: _ClassVar[int]
     TITLE_FIELD_NUMBER: _ClassVar[int]
     ADDRESS_FIELD_NUMBER: _ClassVar[int]
@@ -89,8 +91,6 @@ class IncidentContext(_message.Message):
     CRITERIA_FIELD_NUMBER: _ClassVar[int]
     PREPARED_CARD_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     INITIAL_ASSIGNMENT_FIELD_NUMBER: _ClassVar[int]
-    DDS_INITIAL_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    DDS_STAGE_TRANSITIONS_FIELD_NUMBER: _ClassVar[int]
     id: str
     title: str
     address: Address
@@ -100,9 +100,7 @@ class IncidentContext(_message.Message):
     criteria: Criteria
     prepared_card_template: PreparedCardTemplate
     initial_assignment: InitialAssignment
-    dds_initial_stage_id: str
-    dds_stage_transitions: _containers.RepeatedCompositeFieldContainer[DdsStageTransition]
-    def __init__(self, id: _Optional[str] = ..., title: _Optional[str] = ..., address: _Optional[_Union[Address, _Mapping]] = ..., difficulty: _Optional[_Union[Difficulty, str]] = ..., target_type: _Optional[_Union[IncidentTargetType, str]] = ..., stages: _Optional[_Iterable[_Union[IncidentStage, _Mapping]]] = ..., criteria: _Optional[_Union[Criteria, _Mapping]] = ..., prepared_card_template: _Optional[_Union[PreparedCardTemplate, _Mapping]] = ..., initial_assignment: _Optional[_Union[InitialAssignment, _Mapping]] = ..., dds_initial_stage_id: _Optional[str] = ..., dds_stage_transitions: _Optional[_Iterable[_Union[DdsStageTransition, _Mapping]]] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., title: _Optional[str] = ..., address: _Optional[_Union[Address, _Mapping]] = ..., difficulty: _Optional[_Union[Difficulty, str]] = ..., target_type: _Optional[_Union[IncidentTargetType, str]] = ..., stages: _Optional[_Iterable[_Union[IncidentStage, _Mapping]]] = ..., criteria: _Optional[_Union[Criteria, _Mapping]] = ..., prepared_card_template: _Optional[_Union[PreparedCardTemplate, _Mapping]] = ..., initial_assignment: _Optional[_Union[InitialAssignment, _Mapping]] = ...) -> None: ...
 
 class IncidentStage(_message.Message):
     __slots__ = ("id", "title", "description", "calls", "system_112", "dds")
@@ -131,12 +129,16 @@ class System112StageDetails(_message.Message):
     def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., victim_count: _Optional[int] = ..., position: _Optional[int] = ...) -> None: ...
 
 class DdsStageDetails(_message.Message):
-    __slots__ = ("type", "time_limit_seconds")
+    __slots__ = ("type", "time_limit_seconds", "expected_comment", "actual_status")
     TYPE_FIELD_NUMBER: _ClassVar[int]
     TIME_LIMIT_SECONDS_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_COMMENT_FIELD_NUMBER: _ClassVar[int]
+    ACTUAL_STATUS_FIELD_NUMBER: _ClassVar[int]
     type: DdsStageType
     time_limit_seconds: int
-    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ...) -> None: ...
+    expected_comment: str
+    actual_status: str
+    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ..., expected_comment: _Optional[str] = ..., actual_status: _Optional[str] = ...) -> None: ...
 
 class CallScenario(_message.Message):
     __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state")
@@ -190,16 +192,6 @@ class InitialAssignment(_message.Message):
     instructions: str
     emergency_service_code: str
     def __init__(self, classifier_code: _Optional[str] = ..., instructions: _Optional[str] = ..., emergency_service_code: _Optional[str] = ...) -> None: ...
-
-class DdsStageTransition(_message.Message):
-    __slots__ = ("stage_id", "success_stage_id", "failure_stage_id")
-    STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    SUCCESS_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    FAILURE_STAGE_ID_FIELD_NUMBER: _ClassVar[int]
-    stage_id: str
-    success_stage_id: str
-    failure_stage_id: str
-    def __init__(self, stage_id: _Optional[str] = ..., success_stage_id: _Optional[str] = ..., failure_stage_id: _Optional[str] = ...) -> None: ...
 
 class Criteria(_message.Message):
     __slots__ = ("dialogue_criteria",)

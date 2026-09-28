@@ -1,11 +1,10 @@
-package com.simulator112.contextmanager.adapter.out.persistence.entity;
+package com.simulator112.contextmanager.adapter.out.persistence.entity.common;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.simulator112.contextmanager.adapter.out.persistence.entity.embeddable.Phrase;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;

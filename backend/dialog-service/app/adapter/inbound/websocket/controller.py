@@ -11,7 +11,7 @@ from app.application.port.outbound import (
     VoicePipelineFactory,
 )
 from app.application.service.transcript_builder import DialogContextBuilder
-from app.domain.model import DialogProgress, DialogStatus
+from app.domain.model import DialogProgress, DialogStatus, DialogTranscript
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -106,6 +106,16 @@ def handle_next_call(context_id: str) -> dict:
     }
 
 
+def handle_selected_call(context_id: str, call_id: str) -> dict:
+    call = dialog_use_case().select_call(context_id, call_id)
+    return {
+        "type": "call_ready",
+        "callAvailable": True,
+        "callId": call.id,
+        "phoneNumber": call.person.phone,
+    }
+
+
 def handle_error(message: str) -> dict:
     return {"type": "error", "message": message}
 
@@ -129,6 +139,21 @@ async def dialog_session(ws: WebSocket):
                     await ws.send_json(handle_progress_request(context_id))
                 case "request_next_call":
                     await ws.send_json(handle_next_call(context_id))
+                case "dismiss_call":
+                    progress = dialog_use_case().session(context_id).progress
+                    if progress.active_call_id and progress.status == DialogStatus.IN_CALL:
+                        dialog_use_case().disconnect(context_id, progress.active_call_id, DialogTranscript(phrases=()))
+                    await ws.send_json({"type": "call_finished", "callId": progress.active_call_id})
+                case "request_call":
+                    call_id = request.get("callId")
+                    if not isinstance(call_id, str) or not call_id:
+                        await ws.send_json(handle_error("Укажите звонок"))
+                    else:
+                        try:
+                            await ws.send_json(handle_selected_call(context_id, call_id))
+                        except Exception as exc:
+                            logger.exception("Could not start selected call %s", call_id)
+                            await ws.send_json(handle_error(str(exc)))
                 case _:
                     await ws.send_json(handle_error("Unknown session command"))
 
