@@ -9,7 +9,7 @@ import tools.jackson.databind.ObjectMapper;
 public final class System112StagePlanStep extends JsonResponseStep<JsonNode> {
   @Override protected String status() { return "Генерирую план"; }
   public System112StagePlanStep(ObjectMapper mapper, String scenario, String requests) {
-    super("План 112", messages(mapper, scenario, requests), "stagePlan с 1–15 целями", 3, mapper);
+    super("План 112", messages(mapper, scenario, requests), "stagePlan с кратким планом этапов", 3, mapper);
   }
 
   private static List<IncidentLanguageModelPort.Message> messages(
@@ -21,10 +21,10 @@ public final class System112StagePlanStep extends JsonResponseStep<JsonNode> {
                 """
 Запланируй промежуточные этапы учебного сценария Системы-112.
 Ответ только JSON: {"stagePlan":[{"goal":"Получить первое сообщение о происшествии"}]}.
-Верни от 1 до 15 этапов, по умолчанию ОДИН этап с одним входящим звонком.
-Явно запрошенное число этапов сохрани. У каждого этапа короткая непустая цель.
+По умолчанию планируй 1–2 этапа, включая первый входящий звонок, если для сценария не требуется больше.
+Если пользователь явно запросил число этапов, сохрани его. У каждого этапа короткая непустая цель.
 Не превращай вопросы оператору, проверку фактов и отдельные действия в новые этапы.
-Несколько звонков могут быть внутри ОДНОГО этапа.
+Связанные события и несколько звонков могут быть внутри ОДНОГО этапа.
 Не создавай поля, звонки и критерии на этом шаге.
 """
                     + "\nСитуация: "
