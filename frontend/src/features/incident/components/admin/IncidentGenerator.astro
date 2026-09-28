@@ -5,7 +5,6 @@
   </div>
   <div class="generator-body">
     <div id="generator-messages" role="log" aria-live="polite" aria-label="История чата"><p class="generator-message generator-message--assistant">Опишите происшествие или попросите изменить детали сценария.</p></div>
-    <p id="generator-status" role="status" aria-live="polite" hidden></p>
     <form id="generator-chat" class="generator-compose">
       <wa-textarea id="generator-prompt" aria-label="Ваш запрос" placeholder="Напишите запрос" rows="2" resize="none" maxlength="4000"></wa-textarea>
       <wa-button id="generator-send" type="submit" variant="brand" size="l" aria-label="Отправить запрос"><wa-icon name="paper-plane" aria-hidden="true"></wa-icon></wa-button>
@@ -21,8 +20,25 @@
   const send = document.querySelector('#generator-send');
   const log = document.querySelector('#generator-messages');
   const messages = [];
-  const status = document.querySelector('#generator-status');
-  const showStatus = (text) => { status.textContent = text; status.hidden = !text; };
+  const createStatusMessage = () => {
+    const item = document.createElement('p');
+    item.className = 'generator-message generator-message--assistant generator-message--pending';
+    item.setAttribute('role', 'status');
+    const label = document.createElement('span');
+    const dots = document.createElement('span');
+    dots.className = 'generator-status-dots';
+    dots.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 3; i++) {
+      const dot = document.createElement('span');
+      dot.textContent = '.';
+      dots.append(dot);
+    }
+    item.append(label, dots);
+    log.append(item);
+    const update = (text) => { label.textContent = text; log.scrollTop = log.scrollHeight; };
+    update('Подготавливаю генерацию');
+    return { item, update };
+  };
   const readEvents = async (response, onEvent) => {
     if (!response.body) throw new Error('Поток генерации недоступен');
     const reader = response.body.getReader();
@@ -115,12 +131,12 @@
     const text = prompt.value.trim();
     if (!text || send.loading) return;
     send.loading = true;
-    showStatus('Подготавливаю генерацию…');
     page.classList.add('generator-busy');
     generator.setAttribute('aria-busy', 'true');
     appendMessage('user', text);
     messages.push({ role: 'user', content: text });
     prompt.value = '';
+    const pending = createStatusMessage();
     try {
       const response = await fetch('/api/v1/incidents/generate/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: messages.slice(-5), draft: collectDraft() }) });
       if (!response.ok) {
@@ -129,7 +145,7 @@
       }
       let result;
       await readEvents(response, (event, data) => {
-        if (event === 'status') showStatus(data);
+        if (event === 'status') pending.update(data);
         if (event === 'result') result = data;
         if (event === 'error') throw new Error(data);
       });
@@ -137,11 +153,16 @@
       if (result.incident != null) applyIncident(result.incident);
       const reply = result.message || 'Черновик обновлён.';
       messages.push({ role: 'assistant', content: reply });
-      appendMessage('assistant', reply);
+      pending.item.classList.remove('generator-message--pending');
+      pending.item.removeAttribute('role');
+      pending.item.textContent = reply;
+      log.scrollTop = log.scrollHeight;
     } catch (caught) {
-      appendMessage('error', caught instanceof Error ? caught.message : 'Ошибка генерации');
+      pending.item.className = 'generator-message generator-message--error';
+      pending.item.setAttribute('role', 'alert');
+      pending.item.textContent = caught instanceof Error ? caught.message : 'Ошибка генерации';
+      log.scrollTop = log.scrollHeight;
     } finally {
-      showStatus('');
       send.loading = false;
       page.classList.remove('generator-busy');
       generator.removeAttribute('aria-busy');
@@ -209,7 +230,12 @@
   .generator-message { max-width: 90%; margin: 0; padding: var(--wa-space-s); border: var(--wa-border-width-s) solid var(--wa-color-surface-border); border-radius: 0; overflow-wrap: anywhere; white-space: pre-wrap; background: var(--wa-color-surface-lowered); }
   .generator-message--user { align-self: flex-end; border-color: var(--wa-color-brand-border-loud); background: var(--wa-color-brand-fill-loud); color: var(--wa-color-brand-on-loud); }
   .generator-message--error { border-color: var(--wa-color-danger-border-quiet); background: var(--wa-color-danger-fill-quiet); color: var(--wa-color-danger-60); }
-  #generator-status:not([hidden]) { margin: 0; padding: var(--wa-space-s); color: var(--wa-color-brand-text); background: var(--wa-color-brand-fill-quiet); overflow-wrap: anywhere; }
+  .generator-message--pending { display: flex; align-items: baseline; border-color: var(--wa-color-brand-border-quiet); background: var(--wa-color-brand-fill-quiet); color: var(--wa-color-brand-on-quiet); }
+  .generator-status-dots { display: inline-flex; gap: .08em; margin-inline-start: .15em; }
+  .generator-status-dots span { display: inline-block; animation: generator-dot-hop 1.5s ease-in-out infinite; }
+  .generator-status-dots span:nth-child(2) { animation-delay: .5s; }
+  .generator-status-dots span:nth-child(3) { animation-delay: 1s; }
+  @keyframes generator-dot-hop { 0%, 30%, 100% { transform: translateY(0); } 15% { transform: translateY(-.3em); } }
   .generator-compose { display: flex; align-items: center; gap: var(--wa-space-s); padding-block-start: var(--wa-space-m); border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
   .generator-compose wa-textarea { flex: 1; min-width: 0; }
   .generator-compose wa-button { flex: none; }
