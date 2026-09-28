@@ -15,6 +15,7 @@ public final class SelectedFields {
         for (var path : paths) {
             var value = generated.at(path);
             if (value.isMissingNode()) throw new IllegalStateException("Missing selected field: " + path);
+            if (!changes(value, draft.at(path))) throw new IllegalStateException("Selected field was not changed: " + path);
             var parts = path.substring(1).split("/");
             var root = parts[0];
             if (parts.length == 1) {
@@ -67,6 +68,15 @@ public final class SelectedFields {
         if (patch.path("stages") instanceof ArrayNode stages && !paths.contains("/stages"))
             restoreIds(stages, draft.path("stages"));
         return patch;
+    }
+
+    private static boolean changes(JsonNode generated, JsonNode previous) {
+        if (generated.isObject()) {
+            for (var field : generated.properties())
+                if (changes(field.getValue(), previous.path(field.getKey()))) return true;
+            return false;
+        }
+        return !generated.equals(previous);
     }
 
     private static int index(String value, JsonNode array) {

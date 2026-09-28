@@ -68,7 +68,8 @@ public final class DdsPreparedCardStep extends EditableJsonStep {
             "phone":"+79990000000"}}}}.
             Обязательно придумай отдельного заявителя с НЕПУСТЫМИ firstName, lastName и phone.
             Примерные имя и телефон замени. Можно добавить middleName, age (целое >=0),
-            contactPhone, onScenePhone, address, additionalInfo. Он сообщил о происшествии
+            contactPhone, onScenePhone, address, additionalInfo. Адрес заявителя — одна
+            строка, не объект с городом и улицей. Он сообщил о происшествии
             до передачи карточки в ДДС. Не путай его с сотрудником бригады в звонках.
             Выбери подходящие коды только из списка; victimCount — число пострадавших >=0.
             Не добавляй assignedServices, initialAssignment, stages и другие поля incident.
@@ -86,6 +87,7 @@ public final class DdsPreparedCardStep extends EditableJsonStep {
 
   @Override
   protected JsonNode generate(JsonNode response) {
+    normalizeApplicantAddress(response);
     var fields = response.path("incident");
     var prepared = fields.path("preparedCardTemplate");
     if (!fields.isObject()
@@ -100,10 +102,33 @@ public final class DdsPreparedCardStep extends EditableJsonStep {
 
   @Override
   protected JsonNode update(JsonNode response) {
+    normalizeApplicantAddress(response);
     var patch = SelectedFields.apply(mapper, edit.draft(), response.path("incident"), edit.paths());
     var envelope = mapper.createObjectNode().put("message", "Готово");
     envelope.set("incident", patch);
     return validation.apply(envelope).incident();
+  }
+
+  private static void normalizeApplicantAddress(JsonNode response) {
+    var applicant = response.path("incident").path("preparedCardTemplate").path("applicant");
+    if (!(applicant instanceof ObjectNode person) || !person.path("address").isObject()) return;
+    var address = person.path("address");
+    var parts = List.of("city", "street", "house", "building", "apartment", "floor");
+    if (address.properties().stream().anyMatch(entry -> !parts.contains(entry.getKey())
+        || !entry.getValue().isNull() && !entry.getValue().isTextual() && !entry.getValue().isNumber())) return;
+    var text = new ArrayList<String>();
+    for (var part : parts) {
+      var value = address.path(part);
+      if (!value.isMissingNode() && !value.isNull() && !value.asText().isBlank())
+        text.add(switch (part) {
+          case "house" -> "д. " + value.asText();
+          case "building" -> "корп. " + value.asText();
+          case "apartment" -> "кв. " + value.asText();
+          case "floor" -> "этаж " + value.asText();
+          default -> value.asText();
+        });
+    }
+    if (!text.isEmpty()) person.put("address", String.join(", ", text));
   }
 
   static void prepareForValidation(JsonNode response) {

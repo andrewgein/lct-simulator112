@@ -3,7 +3,6 @@ package com.simulator112.incident.application.service.generation.dds;
 import com.simulator112.incident.application.port.out.ClassifierCatalogPort;
 import com.simulator112.incident.application.port.out.IncidentLanguageModelPort;
 import com.simulator112.incident.application.service.GeneratedIncidentPatchValidator;
-import com.simulator112.incident.application.service.IncidentGenerationException;
 import com.simulator112.incident.application.service.generation.AbstractIncidentGenerationService;
 import com.simulator112.incident.application.service.generation.EditableJsonStep;
 import com.simulator112.incident.application.service.generation.GenerationStep;
@@ -33,6 +32,7 @@ public final class DdsIncidentGenerationService extends AbstractIncidentGenerati
     }
 
     @Override protected boolean dds() { return true; }
+    @Override protected boolean requiresClassifierForGeneration() { return true; }
 
     @Override
     protected List<String> includedCodes(JsonNode draft) {
@@ -43,15 +43,6 @@ public final class DdsIncidentGenerationService extends AbstractIncidentGenerati
         }
         for (var code : super.includedCodes(draft)) if (!codes.contains(code)) codes.add(code);
         return codes;
-    }
-
-    @Override
-    protected ClassifierLookup lookupClassifier(String query, List<String> includedCodes) {
-        var lookup = super.lookupClassifier(query, includedCodes);
-        if (lookup.failure() != null)
-            throw new IncidentGenerationException("Не удалось получить коды классификатора", lookup.failure());
-        if (lookup.candidates().isEmpty()) throw new IncidentGenerationException("No classifier candidates");
-        return lookup;
     }
 
     @Override
@@ -160,28 +151,6 @@ public final class DdsIncidentGenerationService extends AbstractIncidentGenerati
     protected Result validateResponse(JsonNode response, LinkedHashMap<String, String> classifierNames,
             LinkedHashMap<String, String> services, Command command) {
         return validation.validate(response, classifierNames, services, command);
-    }
-
-    @Override
-    protected boolean isNewDraft(JsonNode draft) {
-        if (!draft.path("title").asText("").isBlank()) return false;
-        for (var field : draft.path("address")) if (field.isTextual() && !field.asText().isBlank()
-                || field.isNumber() && field.asInt() != 0) return false;
-        var card = draft.path("preparedCardTemplate");
-        for (var code : card.path("classifierCodes")) if (code.isTextual() && !code.asText().isBlank()) return false;
-        if (card.path("victimCount").asInt(0) > 0 || !card.path("additionalInfo").isEmpty()) return false;
-        for (var field : card.path("applicant")) if (field.isTextual() && !field.asText().isBlank()
-                || field.isNumber() && field.asInt() != 0) return false;
-        var stages = draft.path("stages");
-        if (stages.size() == 0) return true;
-        if (stages.size() != 1) return false;
-        var first = stages.get(0);
-        return "ASSIGN_BRIGADE".equals(first.path("type").asText())
-                && first.path("calls").isEmpty()
-                && "Получение карточки".equals(first.path("title").asText())
-                && first.path("description").asText("").isBlank()
-                && first.path("expectedComment").asText("").isBlank()
-                && first.path("actualStatus").asText("").isBlank();
     }
 
     @Override

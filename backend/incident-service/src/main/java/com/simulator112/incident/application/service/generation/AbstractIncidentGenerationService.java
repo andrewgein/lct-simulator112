@@ -29,7 +29,6 @@ public abstract class AbstractIncidentGenerationService implements GenerateIncid
     }
 
     protected abstract boolean dds();
-    protected abstract boolean isNewDraft(JsonNode draft);
     protected abstract Result generate(Command command, LinkedHashMap<String, String> codes,
             LinkedHashMap<String, String> services, JsonNode modelDraft);
     protected abstract List<StepPaths> updateSteps();
@@ -41,13 +40,13 @@ public abstract class AbstractIncidentGenerationService implements GenerateIncid
         validateRequest(command);
         var chain = new GenerationStep.Chain(model, command.onStatus());
         var decision = chain.then(new IncidentIntentStep(mapper, command.draft(), command.messages()));
-        if (decision.answer()) {
+        if (decision == IncidentIntentStep.Decision.ANSWER) {
             var answer = chain.then(new IncidentAnswerStep(mapper, command.draft(), command.messages()));
             return new Result(answer, mapper.createObjectNode());
         }
         var context = prepare(command);
         try {
-            if (isNewDraft(command.draft())) {
+            if (decision == IncidentIntentStep.Decision.CREATE) {
                 if (requiresClassifierForGeneration() && context.codes().isEmpty())
                     throw new ClassifierUnavailableException(context.classifierFailure());
                 return generate(command, context.codes(), context.services(), context.modelDraft());
