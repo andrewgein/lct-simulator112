@@ -51,7 +51,7 @@ class UserDialogProcessingNode:
                 if self.worker_thread.ident is not None:
                     self.input_queue.put(_STOP)
         if self.worker_thread.ident is not None and threading.current_thread() is not self.worker_thread:
-            self.worker_thread.join()
+            self.worker_thread.join(timeout=5.0)
 
     def _event_handler(self, event):
         pass

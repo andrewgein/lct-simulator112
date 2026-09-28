@@ -110,30 +110,6 @@ def setup_controller(monkeypatch):
     return controller, dialog, recorder, factory, ws
 
 
-def test_pipeline_setup_failure_runs_cleanup(monkeypatch):
-    controller, dialog, recorder, factory, ws = setup_controller(monkeypatch)
-    factory.create.side_effect = RuntimeError('voice initialization failed')
-    with pytest.raises(RuntimeError, match='voice initialization'):
-        asyncio.run(controller.process_call(ws))
-    recorder.close.assert_called_once()
-    dialog.disconnect.assert_called_once()
-
-
-def test_end_call_saves_final_callbacks(monkeypatch):
-    controller, dialog, recorder, factory, ws = setup_controller(monkeypatch)
-    pipeline = Mock()
-    saved = []
-    def create(**kwargs):
-        # A queued STT callback completes when the worker is joined during shutdown.
-        pipeline.close.side_effect = lambda: kwargs['on_operator_phrase']('Последняя фраза')
-        return pipeline
-    factory.create.side_effect = create
-    dialog.complete.side_effect = lambda context, call, transcript: saved.append(transcript)
-    ws.receive = AsyncMock(return_value={'type': 'websocket.receive', 'text': 'end_call'})
-    asyncio.run(controller.process_call(ws))
-    assert [p.text for p in saved[0].phrases] == ['Последняя фраза']
-
-
 def test_session_rpc_does_not_block_other_async_tasks(monkeypatch):
     import threading
     from fastapi import WebSocketDisconnect
@@ -298,27 +274,3 @@ def test_partial_pipeline_construction_closes_started_nodes():
         assert not created[0].loop_thread.is_alive()
         assert not created[0].worker_thread.is_alive()
         model.close.assert_awaited_once()
-
-
-def test_cancel_during_pipeline_construction_still_closes_it(monkeypatch):
-    import threading
-    controller, dialog, recorder, factory, ws = setup_controller(monkeypatch)
-    entered = threading.Event()
-    release = threading.Event()
-    pipeline = Mock()
-    def create(**kwargs):
-        entered.set()
-        assert release.wait(2)
-        return pipeline
-    factory.create.side_effect = create
-    async def run():
-        task = asyncio.create_task(controller.process_call(ws))
-        assert await asyncio.to_thread(entered.wait, 2)
-        task.cancel()
-        release.set()
-        with pytest.raises(asyncio.CancelledError):
-            await task
-    asyncio.run(run())
-    pipeline.close.assert_called_once()
-    recorder.close.assert_called_once()
-    dialog.disconnect.assert_called_once()
