@@ -110,6 +110,7 @@ class ContextPersistenceAdapterTests {
         incident.setSourceId(UUID.randomUUID());
         incident.setPosition(0);
         incident.setStatus(IncidentProgressStatus.ACTIVE);
+        incident.setPreparedCardAssignedServices(java.util.List.of("MCHS", "POLICE"));
         StageSnapshot stage = new StageSnapshot();
         stage.setSourceId(UUID.randomUUID());
         stage.setPosition(0);
@@ -130,6 +131,7 @@ class ContextPersistenceAdapterTests {
         TrainingContext saved = store.save(context);
         TrainingContext restored = store.findById(saved.getId()).orElseThrow();
         StageSnapshot actual = restored.getIncidents().getFirst().getStages().getFirst();
+        assertThat(restored.getIncidents().getFirst().getPreparedCardAssignedServices()).containsExactly("MCHS", "POLICE");
         assertThat(actual.getDds().getType()).isEqualTo(DdsStageType.CALL_BRIGADE_FOR_STATUS);
         assertThat(actual.getDds().getTimeLimitSeconds()).isEqualTo(90);
         assertThat(actual.getDds().getExpectedComment()).isEqualTo("Бригада прибыла");

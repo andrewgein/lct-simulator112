@@ -77,6 +77,7 @@ final class ContextPersistenceMapper {
         target.setDifficulty(source.getContext().getDifficulty()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
         target.setAddress(toDomain(source.getAddress()));
         target.setCriteria(toDomain(source.getDispatcherCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
+        target.setPreparedCardAssignedServices(new ArrayList<>(source.getPreparedCardAssignedServices()));
         target.setCardApplicant(toDomain(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());
@@ -92,6 +93,7 @@ final class ContextPersistenceMapper {
         target.setTitle(source.getTitle()); target.setStatus(source.getStatus()); target.setActiveStageId(source.getActiveStageId());
         target.setAddress(toEntity(source.getAddress()));
         target.setDispatcherCriteria(toEntity(source.getCriteria())); target.setPreparedCardClassifierCodes(new ArrayList<>(source.getPreparedCardClassifierCodes()));
+        target.setPreparedCardAssignedServices(new ArrayList<>(source.getPreparedCardAssignedServices()));
         target.setCardApplicant(toEntity(source.getCardApplicant())); target.setCardVictimCount(source.getCardVictimCount());
         target.setPreparedCardAdditionalInfo(new java.util.LinkedHashMap<>(source.getPreparedCardAdditionalInfo()));
         target.setInitialAssignmentService(source.getInitialAssignmentService());

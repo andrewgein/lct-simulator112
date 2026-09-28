@@ -78,6 +78,11 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
             }
             classifierCatalog.requireService(dds.initialAssignment().emergencyService());
             requireClassifierCodes(dds.preparedCardTemplate().classifierCodes());
+            var assignedServices = dds.preparedCardTemplate().assignedServices();
+            if (assignedServices.stream().anyMatch(code -> code == null || code.isBlank()) || assignedServices.stream().distinct().count() != assignedServices.size()) {
+                throw new IllegalArgumentException("Назначенные службы не должны быть пустыми или повторяться");
+            }
+            assignedServices.forEach(classifierCatalog::requireService);
             validateDdsStageCalls(dds);
             validateDdsTimeline(dds);
         }

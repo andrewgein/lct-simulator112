@@ -84,6 +84,7 @@
  * @property {Person | null} applicant
  * @property {number} victimCount
  * @property {Object.<string, string>} additionalInfo
+ * @property {string[]} assignedServices
  */
 
 /**

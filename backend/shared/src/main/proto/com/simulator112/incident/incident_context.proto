@@ -62,6 +62,7 @@ message PreparedCardTemplate {
   Person applicant = 2;
   int32 victim_count = 3;
   map<string, string> additional_info = 4;
+  repeated string assigned_services = 5;
 }
 
 message InitialAssignment {

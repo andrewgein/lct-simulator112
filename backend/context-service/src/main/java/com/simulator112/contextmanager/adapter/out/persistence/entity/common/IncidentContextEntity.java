@@ -86,6 +86,12 @@ public class IncidentContextEntity {
     @Column(name = "classifier_code", nullable = false, length = 50)
     private List<String> preparedCardClassifierCodes = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "context_prepared_card_assigned_services", joinColumns = @JoinColumn(name = "incident_context_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "service_code", nullable = false, length = 50)
+    private List<String> preparedCardAssignedServices = new ArrayList<>();
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "firstName", column = @Column(name = "card_applicant_first_name")),

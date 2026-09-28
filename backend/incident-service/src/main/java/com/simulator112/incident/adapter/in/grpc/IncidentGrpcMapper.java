@@ -104,7 +104,8 @@ public class IncidentGrpcMapper {
             com.simulator112.incident.domain.dds.PreparedCardTemplate value) {
         return com.simulator112.incident.grpc.contract.PreparedCardTemplate.newBuilder()
                 .addAllClassifierCodes(value.classifierCodes()).setApplicant(toProto(value.applicant()))
-                .setVictimCount(value.victimCount()).putAllAdditionalInfo(value.additionalInfo()).build();
+                .setVictimCount(value.victimCount()).putAllAdditionalInfo(value.additionalInfo())
+                .addAllAssignedServices(value.assignedServices()).build();
     }
 
     private com.simulator112.incident.grpc.contract.InitialAssignment toProto(

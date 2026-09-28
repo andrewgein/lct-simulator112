@@ -23,6 +23,7 @@ public class IncidentSnapshot {
     private Address address;
     private Criteria criteria;
     private List<String> preparedCardClassifierCodes = new ArrayList<>();
+    private List<String> preparedCardAssignedServices = new ArrayList<>();
     private Person cardApplicant;
     private int cardVictimCount;
     private Map<String, String> preparedCardAdditionalInfo = new LinkedHashMap<>();

@@ -53,7 +53,7 @@ export function incidentCard(incident) {
     victimCount: template.victimCount ?? 0,
     incidentTypes: template.classifierCodes || [],
     additionalInfo: template.additionalInfo || {},
-    services: incident.initialAssignment?.emergencyService ? [incident.initialAssignment.emergencyService] : [],
+    services: template.assignedServices ?? (incident.initialAssignment?.emergencyService ? [incident.initialAssignment.emergencyService] : []),
     incident
   };
 }

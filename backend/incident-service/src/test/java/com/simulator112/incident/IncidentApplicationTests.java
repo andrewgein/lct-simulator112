@@ -113,13 +113,16 @@ class IncidentApplicationTests {
                 com.simulator112.incident.domain.common.IncidentStatus.VERIFIED);
         var incident = new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
-                new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of()),
+                new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of(), List.of("CUSTOM_DISPATCH", "MCHS")),
                 new InitialAssignment("CUSTOM_DISPATCH"));
 
         var saved = incidentRepository.save(incident);
         var loaded = (DdsIncident) incidentRepository.findById(saved.id()).orElseThrow();
 
         assertThat(loaded.initialAssignment().emergencyService()).isEqualTo("CUSTOM_DISPATCH");
+        assertThat(loaded.preparedCardTemplate().assignedServices()).containsExactly("CUSTOM_DISPATCH", "MCHS");
+        assertThat(grpcMapper.toProto(loaded).getPreparedCardTemplate().getAssignedServicesList())
+                .containsExactly("CUSTOM_DISPATCH", "MCHS");
         assertThat(grpcMapper.toProto(loaded).getInitialAssignment().getEmergencyServiceCode())
                 .isEqualTo("CUSTOM_DISPATCH");
         assertThat(loaded.stages()).hasOnlyElementsOfType(DdsStage.class);

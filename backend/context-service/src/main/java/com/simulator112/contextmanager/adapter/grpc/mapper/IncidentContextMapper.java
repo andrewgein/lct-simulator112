@@ -40,6 +40,7 @@ public final class IncidentContextMapper {
         value.setStatus(IncidentProgressStatus.PENDING);
         if (proto.hasPreparedCardTemplate()) {
             value.setPreparedCardClassifierCodes(new ArrayList<>(proto.getPreparedCardTemplate().getClassifierCodesList()));
+            value.setPreparedCardAssignedServices(new ArrayList<>(proto.getPreparedCardTemplate().getAssignedServicesList()));
             value.setCardApplicant(toDomain(proto.getPreparedCardTemplate().getApplicant()));
             value.setCardVictimCount(proto.getPreparedCardTemplate().getVictimCount());
             value.setPreparedCardAdditionalInfo(new LinkedHashMap<>(proto.getPreparedCardTemplate().getAdditionalInfoMap()));
@@ -97,7 +98,8 @@ public final class IncidentContextMapper {
         if (!value.getPreparedCardClassifierCodes().isEmpty()) builder.setPreparedCardTemplate(
                 com.simulator112.incident.grpc.contract.PreparedCardTemplate.newBuilder()
                         .addAllClassifierCodes(value.getPreparedCardClassifierCodes()).setApplicant(toProto(value.getCardApplicant()))
-                        .setVictimCount(value.getCardVictimCount()).putAllAdditionalInfo(value.getPreparedCardAdditionalInfo()));
+                        .setVictimCount(value.getCardVictimCount()).putAllAdditionalInfo(value.getPreparedCardAdditionalInfo())
+                        .addAllAssignedServices(value.getPreparedCardAssignedServices()));
         if (value.getInitialAssignmentService() != null) builder.setInitialAssignment(
                 com.simulator112.incident.grpc.contract.InitialAssignment.newBuilder()
                         .setEmergencyServiceCode(value.getInitialAssignmentService()));

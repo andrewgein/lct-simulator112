@@ -83,6 +83,15 @@ const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
   #incident-form .dds-section-hint { margin: var(--wa-space-2xs) 0 0; color: var(--wa-color-text-quiet); }
   #incident-form .dds-classifier-row > wa-select { min-width: 0; }
   #incident-form .dds-add-type { align-self: flex-start; }
+  #incident-form .dds-assigned-services { display: flex; min-width: 0; overflow-x: auto; padding-block-end: var(--wa-space-s); }
+  #incident-form .dds-assigned-service, #incident-form .dds-add-service-card { flex: 0 0 9rem; box-sizing: border-box; }
+  #incident-form .dds-assigned-service { position: relative; }
+  #incident-form .dds-assigned-service::part(body) { display: flex; height: 100%; box-sizing: border-box; align-items: center; justify-content: center; padding: var(--wa-space-l) var(--wa-space-xs); text-align: center; }
+  #incident-form .dds-assigned-service strong { font-size: var(--wa-font-size-s); overflow-wrap: anywhere; }
+  #incident-form .dds-service-remove { position: absolute; inset-block-start: 0; inset-inline-end: 0; }
+  #incident-form .dds-service-remove::part(button) { min-width: 1.5rem; min-height: 1.5rem; padding: 0; }
+  #incident-form .dds-services-dialog-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); max-height: 24rem; gap: var(--wa-space-s); overflow-y: auto; padding: var(--wa-space-xs); }
+  #incident-form .dds-services-dialog-list p { grid-column: 1 / -1; color: var(--wa-color-text-quiet); }
   #incident-form .dds-people { --min-column-size: 24rem; }
   #incident-form, #incident-form section { min-width: 0; }
   #incident-form .dds-timeline { margin: 0; padding: 0; list-style: none; }
