@@ -9,12 +9,16 @@ import org.springframework.http.HttpStatus;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 class IncidentGenerationControllerTest {
     @Test
@@ -47,21 +51,35 @@ class IncidentGenerationControllerTest {
     }
 
     @Test
-    void streamsStatusAndResult() throws Exception {
+    void streamsStatusBeforeGenerationCompletes() throws Exception {
         var mapper = new ObjectMapper();
+        var statusSent = new CountDownLatch(1);
+        var resume = new CountDownLatch(1);
         GenerateIncidentDraftUseCase useCase = command -> {
             command.onStatus().accept("Генерирую план");
+            statusSent.countDown();
+            try {
+                if (!resume.await(5, TimeUnit.SECONDS)) throw new IllegalStateException("Generation did not resume");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
             return new GenerateIncidentDraftUseCase.Result("Готово", mapper.readTree("{\"title\":\"Пожар\"}"));
         };
-        var controller = new IncidentGenerationController(useCase, mapper);
-        var response = controller.stream(new IncidentGenerationController.GenerateRequest(
-                List.of(new IncidentGenerationController.Message("user", "Пожар")), mapper.readTree("{}")));
-        var output = new ByteArrayOutputStream();
-        response.getBody().writeTo(output);
-        var events = output.toString(StandardCharsets.UTF_8);
-        assertThat(response.getHeaders().getContentType()).isEqualTo(org.springframework.http.MediaType.TEXT_EVENT_STREAM);
-        assertThat(events).contains("event: status\ndata: \"Генерирую план\"\n\n");
-        assertThat(events).contains("event: result\ndata: {\"message\":\"Готово\",\"incident\":{\"title\":\"Пожар\"}}\n\n");
+        var mvc = MockMvcBuilders.standaloneSetup(new IncidentGenerationController(useCase, mapper)).build();
+        var request = mvc.perform(post("/api/v1/incidents/generate/stream")
+                .contentType("application/json").content("{\"messages\":[{\"role\":\"user\",\"content\":\"Пожар\"}],\"draft\":{}}"))
+                .andReturn();
+        try {
+            assertThat(statusSent.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(request.getResponse().getContentAsString(StandardCharsets.UTF_8)).contains("event:status\ndata:\"Генерирую план\"\n\n")
+                    .doesNotContain("event: result");
+        } finally {
+            resume.countDown();
+        }
+        var response = mvc.perform(asyncDispatch(request)).andReturn().getResponse();
+        assertThat(response.getContentType()).startsWith("text/event-stream");
+        assertThat(response.getContentAsString(StandardCharsets.UTF_8)).contains("event:result\ndata:{\"message\":\"Готово\",\"incident\":{\"title\":\"Пожар\"}}\n\n");
     }
 
     @Test
@@ -71,11 +89,12 @@ class IncidentGenerationControllerTest {
             command.onStatus().accept("Генерирую план");
             throw new OllamaUnavailableException("Модель недоступна", new java.net.ConnectException());
         };
-        var output = new ByteArrayOutputStream();
-        new IncidentGenerationController(useCase, mapper).stream(new IncidentGenerationController.GenerateRequest(
-                List.of(new IncidentGenerationController.Message("user", "Пожар")), mapper.readTree("{}")))
-                .getBody().writeTo(output);
-        assertThat(output.toString(StandardCharsets.UTF_8)).contains("event: error\ndata: \"Модель недоступна\"\n\n");
+        var mvc = MockMvcBuilders.standaloneSetup(new IncidentGenerationController(useCase, mapper)).build();
+        var request = mvc.perform(post("/api/v1/incidents/generate/stream")
+                .contentType("application/json").content("{\"messages\":[{\"role\":\"user\",\"content\":\"Пожар\"}],\"draft\":{}}"))
+                .andReturn();
+        var response = mvc.perform(asyncDispatch(request)).andReturn().getResponse();
+        assertThat(response.getContentAsString(StandardCharsets.UTF_8)).contains("event:error\ndata:\"Модель недоступна\"\n\n");
     }
 
     @Test

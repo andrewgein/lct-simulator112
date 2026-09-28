@@ -29,8 +29,8 @@
     const decoder = new TextDecoder();
     let buffer = '';
     const dispatch = (block) => {
-      const event = block.match(/^event: (.+)$/m)?.[1];
-      const data = block.match(/^data: (.+)$/m)?.[1];
+      const event = block.match(/^event: ?(.+)$/m)?.[1];
+      const data = block.match(/^data: ?(.+)$/m)?.[1];
       if (event && data) onEvent(event, JSON.parse(data));
     };
     while (true) {

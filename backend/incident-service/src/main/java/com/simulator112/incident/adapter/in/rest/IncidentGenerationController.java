@@ -4,11 +4,10 @@ import com.simulator112.incident.application.port.in.GenerateIncidentDraftUseCas
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,31 +42,35 @@ public class IncidentGenerationController {
     }
 
     @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<StreamingResponseBody> stream(@RequestBody GenerateRequest request) {
-        StreamingResponseBody body = output -> {
+    public ResponseEntity<SseEmitter> stream(@RequestBody GenerateRequest request) {
+        var emitter = new SseEmitter(15 * 60 * 1000L);
+        Thread.ofVirtual().start(() -> {
             try {
-                var result = generateDraft.generate(command(request, status -> {
-                    try { send(output, "status", status); }
-                    catch (IOException e) { throw new UncheckedIOException(e); }
-                }));
-                send(output, "result", new GenerateResponse(result.message(), result.incident()));
-            } catch (UncheckedIOException e) {
-                // Client disconnected; do not send another event to the broken stream.
+                var result = generateDraft.generate(command(request, status -> send(emitter, "status", status)));
+                send(emitter, "result", new GenerateResponse(result.message(), result.incident()));
+                emitter.complete();
             } catch (Exception e) {
                 var message = e instanceof com.simulator112.incident.application.service.ClassifierUnavailableException
                         || e instanceof com.simulator112.incident.application.service.IncidentGenerationLimitException
                         || e instanceof com.simulator112.incident.application.service.OllamaUnavailableException
                         || e instanceof IllegalArgumentException ? e.getMessage() : "Не удалось получить корректный ответ модели";
-                send(output, "error", message);
+                try {
+                    send(emitter, "error", message);
+                    emitter.complete();
+                } catch (RuntimeException disconnected) {
+                    emitter.completeWithError(disconnected);
+                }
             }
-        };
+        });
         return ResponseEntity.ok().header("Cache-Control", "no-cache").header("X-Accel-Buffering", "no")
-                .contentType(MediaType.TEXT_EVENT_STREAM).body(body);
+                .contentType(new MediaType(MediaType.TEXT_EVENT_STREAM, StandardCharsets.UTF_8)).body(emitter);
     }
 
-    private void send(java.io.OutputStream output, String event, Object data) throws IOException {
-        output.write(("event: " + event + "\ndata: " + mapper.writeValueAsString(data) + "\n\n")
-                .getBytes(StandardCharsets.UTF_8));
-        output.flush();
+    private void send(SseEmitter emitter, String event, Object data) {
+        try {
+            emitter.send(SseEmitter.event().name(event).data(mapper.writeValueAsString(data), new MediaType("text", "plain", StandardCharsets.UTF_8)));
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 }
