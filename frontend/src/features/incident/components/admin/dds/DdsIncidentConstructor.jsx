@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { createPortal } from "preact/compat";
 import IncidentTypeSelect from "../../../../classifier/components/IncidentTypeSelect.jsx";
 import { classifierInfo, loadClassifier } from "../../../storage/classifierStorage.js";
 import AdditionalFields from "../AdditionalFields.jsx";
@@ -18,6 +19,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   const [classifierState, setClassifierState] = useState(classifierInfo.state);
   const [services, setServices] = useState([]);
   const [servicesError, setServicesError] = useState("");
+  const [serviceSelectHost, setServiceSelectHost] = useState(null);
   const [prepared, setPrepared] = useState(() => normalizePrepared(incident.preparedCardTemplate));
   const [assignment, setAssignment] = useState(() => ({ emergencyService: incident.initialAssignment?.emergencyService || "" }));
   const [timeline, setTimeline] = useState(null);
@@ -26,6 +28,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   stateRef.current = { prepared, assignment, timeline, classifier: classifierState.classifier };
 
   useEffect(() => {
+    setServiceSelectHost(document.getElementById("dds-service-select"));
     const unsubscribe = classifierInfo.subscribe((state) => setClassifierState({ ...state, classifier: [...state.classifier] }));
     loadClassifier().catch((error) => console.error("Failed to load incident classifier:", error));
     fetch("/api/v1/classifier/services").then((response) => {
@@ -70,6 +73,15 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   const changeCode = (index, classifierCode) => setPrepared((current) => ({ ...current, classifierCodes: codes.map((code, codeIndex) => codeIndex === index ? classifierCode : code), additionalInfo: {} }));
   return (
     <div class="wa-stack wa-gap-3xl">
+      {serviceSelectHost && createPortal(
+        <div class="wa-stack wa-gap-s">
+          {servicesError && <wa-callout variant="danger">
+            {servicesError}
+          </wa-callout>}
+          <wa-select value={assignment.emergencyService} label="Служба ДДС" required onChange={(event) => setAssignment({ emergencyService: event.currentTarget.value })}>
+            {services.map((service) => <wa-option key={service.code} value={service.code}>{service.name}</wa-option>)}
+          </wa-select>
+        </div>, serviceSelectHost)}
       <section class="wa-stack wa-gap-m">
         <div>
           <h2 class="wa-heading-xl">Подготовленная карточка</h2>
@@ -90,18 +102,6 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           <h3 class="wa-heading-l">Дополнительные сведения</h3>
           <AdditionalFields fields={codes.some(Boolean) ? fields : undefined} values={prepared.additionalInfo} onChange={(id, value) => setPrepared((current) => ({ ...current, additionalInfo: { ...current.additionalInfo, [id]: value } }))} />
         </div>
-      </section>
-      <section class="wa-stack wa-gap-m">
-        <div>
-          <h2 class="wa-heading-xl">Первичное назначение</h2>
-          <p class="dds-section-hint">Служба ДДС, диспетчеру которой поступит карточка.</p>
-        </div>
-        {servicesError && <wa-callout variant="danger">
-          {servicesError}
-        </wa-callout>}
-        <wa-select value={assignment.emergencyService} label="Служба ДДС" required onChange={(event) => setAssignment({ emergencyService: event.currentTarget.value })}>
-          {services.map((service) => <wa-option key={service.code} value={service.code}>{service.name}</wa-option>)}
-        </wa-select>
       </section>
       <DdsStageTimeline initialIncident={incident} onChange={setTimeline} services={services.filter((service) => service.code !== assignment.emergencyService)} />
     </div>

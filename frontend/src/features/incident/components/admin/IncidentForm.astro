@@ -14,6 +14,7 @@ const { incident = {}, type = incident.targetType === "DDS" ? "DDS" : "SYSTEM_11
       <wa-option value="DDS">ДДС</wa-option>
     </wa-select>
   )}
+  {type === "DDS" && <div id="dds-service-select"></div>}
   {type === "DDS" ? <DdsIncidentForm incident={incident} {mode} /> : <AdminIncidentForm incident={incident} {mode} />}
 </form>
 <style is:global>
