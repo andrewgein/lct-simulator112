@@ -4,6 +4,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
@@ -17,10 +20,13 @@ import reactor.core.publisher.Mono;
 public class JwtAuthFilter extends AbstractGatewayFilterFactory<Object> {
 
   private final RSAPublicKey publicKey;
+  private final WebClient authClient;
 
-  public JwtAuthFilter(RSAPublicKey publicKey) {
+  public JwtAuthFilter(RSAPublicKey publicKey, WebClient.Builder webClient,
+                       @Value("${AUTH_SERVICE_URL:http://localhost:8081}") String authServiceUrl) {
     super(Object.class);
     this.publicKey = publicKey;
+    this.authClient = webClient.baseUrl(authServiceUrl).build();
   }
 
   @Override
@@ -45,9 +51,21 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<Object> {
                 .header("X-User-Role", claims.get("role", String.class))
                 .build();
 
-        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+        return authClient.get().uri("/api/v1/auth/session")
+            .header(HttpHeaders.AUTHORIZATION, authHeader)
+            .exchangeToMono(response -> response.releaseBody().thenReturn(response.statusCode().value()))
+            .timeout(Duration.ofSeconds(3))
+            .onErrorReturn(HttpStatus.SERVICE_UNAVAILABLE.value())
+            .flatMap(status -> {
+              if (status == HttpStatus.NO_CONTENT.value()) {
+                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+              }
+              if (status == 401 || status == 403) return unauthorized(exchange);
+              exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
+              return exchange.getResponse().setComplete();
+            });
 
-      } catch (JwtException e) {
+      } catch (JwtException | IllegalArgumentException e) {
         return unauthorized(exchange);
       }
     };

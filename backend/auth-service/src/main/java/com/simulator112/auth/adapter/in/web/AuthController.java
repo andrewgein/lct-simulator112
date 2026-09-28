@@ -32,6 +32,11 @@ import com.simulator112.auth.application.port.in.AuthenticateUserUseCase;
 @RestController
 public class AuthController {
 
+  @GetMapping("/api/v1/auth/session")
+  public ResponseEntity<Void> validateSession() {
+    return ResponseEntity.noContent().build();
+  }
+
   private final AuthenticateUserUseCase authService;
 
   @Value("${jwt.refresh-token-expiration}")

@@ -45,10 +45,15 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/admin/users")
                     .hasAnyAuthority("ADMIN", "SUPERVISOR")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/users/*")
+                    .hasAuthority("ADMIN")
+                    .requestMatchers(HttpMethod.GET, "/api/v1/auth/session")
+                    .authenticated()
                     .requestMatchers("/api/v1/auth/change-role/**")
                     .hasAuthority("ADMIN")
                     .anyRequest()
                     .denyAll())
+        .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response, exception) -> response.setStatus(401)))
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
     return http.build();
   }

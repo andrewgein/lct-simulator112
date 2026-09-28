@@ -5,6 +5,7 @@ import com.simulator112.auth.domain.model.OneTimeToken;
 import com.simulator112.auth.adapter.out.persistence.entity.EmailVerificationToken;
 import com.simulator112.auth.adapter.out.persistence.repository.EmailVerificationTokenRepository;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -12,6 +13,10 @@ import org.springframework.stereotype.Repository;
 @RequiredArgsConstructor
 public class EmailVerificationPersistenceAdapter implements EmailVerificationStore {
     private final EmailVerificationTokenRepository repository;
+
+    public void deleteAllByUserId(UUID userId) {
+        repository.deleteAllByUserId(userId);
+    }
 
     public Optional<OneTimeToken> findByToken(String token) {
         return repository.findByToken(token).map(entity -> new OneTimeToken(

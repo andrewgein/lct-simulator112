@@ -10,6 +10,8 @@ import com.simulator112.auth.adapter.in.web.dto.ApiResponse;
 import com.simulator112.auth.domain.exception.EmailAlreadyExistsException;
 import com.simulator112.auth.domain.exception.InvalidCredentialsException;
 import com.simulator112.auth.domain.exception.InvalidTokenException;
+import com.simulator112.auth.domain.exception.UserDeletionConflictException;
+import com.simulator112.auth.domain.exception.UserNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -18,6 +20,13 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler({UserDeletionConflictException.class, UserNotFoundException.class})
+    public ResponseEntity<ApiResponse<Void>> handleUserDeletion(RuntimeException ex) {
+        HttpStatus status = ex instanceof UserNotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.CONFLICT;
+        return ResponseEntity.status(status).body(ApiResponse.<Void>builder()
+                .success(false).message(ex.getMessage()).status(status.value()).timestamp(LocalDateTime.now()).build());
+    }
 
     @ExceptionHandler({InvalidCredentialsException.class, InvalidTokenException.class})
     public ResponseEntity<ApiResponse<Void>> handleUnauthorized(RuntimeException ex) {
