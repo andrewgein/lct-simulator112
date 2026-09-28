@@ -1,8 +1,8 @@
 import { refreshToken } from "../../../../features/auth/api/AuthApi";
+import { accessCookieOptions } from "../../../../features/auth/sessionCookie";
 import { clearProfileSnapshot } from "../../../../features/profile/profileSnapshot";
 
 export const prerender = false;
-const isDev = import.meta.env.DEV;
 
 function clearSession(cookies) {
     cookies.delete("accessToken", { path: "/" });
@@ -12,43 +12,53 @@ function clearSession(cookies) {
     clearProfileSnapshot(cookies);
 }
 
-export async function GET({ request, cookies, redirect }) {
+function isNavigation(request) {
+    return request.method === "GET" || request.method === "HEAD";
+}
+
+function unauthorized(request, cookies, redirect) {
+    clearSession(cookies);
+    if (isNavigation(request)) {
+        return redirect("/login");
+    }
+    return new Response(JSON.stringify({ success: false, message: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+    });
+}
+
+async function refresh({ request, cookies, redirect }) {
     const requestedPath = new URL(request.url).searchParams.get("redirectTo");
     const redirectTo = requestedPath?.startsWith("/") && !requestedPath.startsWith("//") ? requestedPath : "/";
     const storedRefreshToken = cookies.get("refreshToken")?.value;
 
     if (!storedRefreshToken) {
-        clearSession(cookies);
-        return redirect("/login");
+        return unauthorized(request, cookies, redirect);
     }
 
     try {
         const refreshResponse = await refreshToken(storedRefreshToken);
-        const refreshData = await refreshResponse.json();
-
-        if (!refreshResponse.ok || !refreshData.success || !refreshData.data?.accessToken) {
-            clearSession(cookies);
-            return redirect("/login");
+        if (refreshResponse.status === 401) {
+            return unauthorized(request, cookies, redirect);
+        }
+        const refreshData = refreshResponse.ok ? await refreshResponse.json() : null;
+        if (!refreshData?.success || !refreshData.data?.accessToken) {
+            throw new Error(`Unexpected refresh response: ${refreshResponse.status}`);
         }
 
-        const cookieOptions = {
-            httpOnly: true,
-            secure: !isDev,
-            sameSite: "strict",
-            path: "/",
-            maxAge: 15 * 60
-        };
-
-        const cookieAttributes = `Path=${cookieOptions.path}; HttpOnly; SameSite=Strict; Max-Age=${cookieOptions.maxAge}${cookieOptions.secure ? "; Secure" : ""}`;
-        const headers = new Headers({ Location: redirectTo });
-        headers.append("Set-Cookie", `accessToken=${encodeURIComponent(refreshData.data.accessToken)}; ${cookieAttributes}`);
+        const options = accessCookieOptions(refreshData.data.accessToken);
+        cookies.set("accessToken", refreshData.data.accessToken, options);
         if (refreshData.data.role) {
-            headers.append("Set-Cookie", `role=${encodeURIComponent(refreshData.data.role)}; ${cookieAttributes}`);
+            cookies.set("role", refreshData.data.role, options);
         }
-        return new Response(null, { status: 302, headers });
+        return redirect(redirectTo, isNavigation(request) ? 302 : 307);
     } catch (error) {
         console.error("Failed to refresh access token", error);
-        clearSession(cookies);
-        return redirect("/login");
+        return new Response("Сервис авторизации временно недоступен. Обновите страницу через несколько секунд.", {
+            status: 503,
+            headers: { "Content-Type": "text/plain; charset=utf-8", "Retry-After": "3" }
+        });
     }
 }
+
+export const ALL = refresh;
