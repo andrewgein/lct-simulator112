@@ -120,6 +120,7 @@ try {
   .group-columns-divider { --spacing: 0; }
   .group-columns-divider--horizontal { display: none; }
   .group-section-title, .student-list { margin: 0; }
+  .group-section-title { color: var(--wa-color-text-normal); }
   .student-list { padding: 0; list-style: none; }
   .student-row {
     display: flex;
@@ -131,7 +132,7 @@ try {
     background: var(--wa-color-surface-raised);
   }
   .student-row:first-child { border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
-  .student-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .student-name { overflow: hidden; color: var(--wa-color-text-normal); text-overflow: ellipsis; white-space: nowrap; }
   .student-row[data-pending="true"] .student-name { color: var(--wa-color-text-quiet); font-style: italic; font-weight: var(--wa-font-weight-normal); }
   .student-email { overflow: hidden; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); text-overflow: ellipsis; white-space: nowrap; }
   @media (max-width: 48rem) {
