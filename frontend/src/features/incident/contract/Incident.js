@@ -3,7 +3,7 @@
 /** @typedef {"SEQUENTIAL" | "PARALLEL"} ExecutionMode */
 /** @typedef {"MAN" | "WOMEN"} Gender */
 /** @typedef {"INBOUND" | "OUTBOUND"} CallDirection */
-/** @typedef {"CALLER" | "BRIGADE"} CounterpartyType */
+/** @typedef {"CALLER" | "BRIGADE" | "SERVICE"} CounterpartyType */
 /** @typedef {"ASSIGN_BRIGADE" | "WAIT_FOR_BRIGADE_STATUS_CHANGE" | "CALL_BRIGADE_FOR_STATUS" | "REQUEST_ADDITIONAL_SERVICE" | "COMPLETE_INCIDENT"} DdsStageType */
 /** @typedef {"ADDED" | "RECEIVED_BY_SERVICE" | "ACCEPTED" | "NOT_ACCEPTED" | "RESPONSE_STARTED" | "ARRIVED" | "WORK_IN_PROGRESS" | "WORK_COMPLETED" | "WORK_REFUSED" | "REGISTERED" | "PROCESSED" | "VERIFIED" | "NOT_NOTIFIED" | "REFUSED" | "NOT_COMPLETED" | "COMPLETED"} IncidentStatus */
 
@@ -46,6 +46,7 @@
  * @property {number} position
  * @property {CallDirection} direction
  * @property {CounterpartyType} counterparty
+ * @property {string | null} [serviceCode]
  * @property {Person} person
  * @property {Gender} gender
  * @property {string[]} knownFacts

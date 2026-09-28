@@ -46,7 +46,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
       if (!current.assignment.emergencyService) throw new Error("Выберите службу первичного назначения");
       if (!current.assignment.classifierCode) throw new Error("Выберите тип происшествия первичного назначения");
       if (!current.timeline) throw new Error("Этапы ещё не готовы");
-      validateTimeline(current.timeline);
+      validateTimeline(current.timeline, current.assignment.emergencyService);
       const requiredField = current.prepared.classifierCodes.flatMap((code) => findIncident(current.classifier, code)?.fields || []).find((field) => field.required && !current.prepared.additionalInfo[field.id]);
       if (requiredField) throw new Error(`Заполните обязательное поле подготовленной карточки: ${requiredField.name}`);
       return {
@@ -108,7 +108,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           <IncidentTypeSelect classifierState={classifierState} id="dds-assignment-type" name={null} value={assignment.classifierCode} required onChange={(classifierCode) => setAssignment((current) => ({ ...current, classifierCode }))} />
         </div>
       </section>
-      <DdsStageTimeline initialIncident={incident} onChange={setTimeline} />
+      <DdsStageTimeline initialIncident={incident} onChange={setTimeline} services={services.filter((service) => service.code !== assignment.emergencyService)} />
     </div>
   );
 }

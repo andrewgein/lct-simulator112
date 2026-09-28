@@ -44,7 +44,7 @@ export function timelineBoundaryErrors(stages) {
   return errors;
 }
 
-export function validateTimeline(stages) {
+export function validateTimeline(stages, assignedService) {
   const [boundaryError] = timelineBoundaryErrors(stages);
   if (boundaryError) throw new Error(boundaryError);
   stages.forEach((stage, index) => {
@@ -52,6 +52,8 @@ export function validateTimeline(stages) {
     if (!Number.isInteger(Number(stage.timeLimitSeconds)) || Number(stage.timeLimitSeconds) <= 0) throw new Error(`Укажите положительную длительность этапа «${stage.title}»`);
     if (index && stage.type === "ASSIGN_BRIGADE") throw new Error("Получение карточки может быть только первым этапом");
     if (stage.expectedComment?.trim() && !stage.calls.length) throw new Error(`Для комментария на этапе «${stage.title}» добавьте звонок`);
+    if (stage.calls.some((call) => call.counterparty === "SERVICE" && !call.serviceCode)) throw new Error(`Выберите службу для звонка на этапе «${stage.title}»`);
+    if (stage.calls.some((call) => call.counterparty === "SERVICE" && call.serviceCode === assignedService)) throw new Error(`Для звонка на этапе «${stage.title}» выберите службу, отличную от службы ДДС`);
   });
 }
 
@@ -92,7 +94,7 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
   </>;
 }
 
-export default function DdsStageTimeline({ initialIncident, onChange }) {
+export default function DdsStageTimeline({ initialIncident, onChange, services = [] }) {
   const [stages, setStages] = useState(() => initialIncident.stages?.length ? initialIncident.stages.map((stage) => ({ ...stage, description: stage.description || "", expectedComment: stage.expectedComment || "", calls: (stage.calls || []).map((call) => normalizeDdsCall(call)) })) : [initialStage()]);
   const [editingStageId, setEditingStageId] = useState(null);
   const [editingCallKey, setEditingCallKey] = useState(null);
@@ -139,7 +141,7 @@ export default function DdsStageTimeline({ initialIncident, onChange }) {
                   <wa-button type="button" size="small" appearance="outlined" variant="danger" aria-label={`Удалить звонок ${callIndex + 1}`} onClick={() => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.filter((value) => value.key !== call.key) } : item))}><wa-icon name="trash" label="Удалить"></wa-icon></wa-button>
                 </div>
               </div>
-              <span class="dds-stage-meta">{call.direction === "INBOUND" ? "Входящий" : "Исходящий"} · {call.counterparty === "SERVICE" ? "Другая служба" : "Бригада"}</span>
+              <span class="dds-stage-meta">{call.direction === "INBOUND" ? "Входящий" : "Исходящий"} · {call.counterparty === "SERVICE" ? services.find((service) => service.code === call.serviceCode)?.name || "Другая служба" : "Бригада"}</span>
               {(call.person?.lastName || call.person?.firstName) && <span class="dds-stage-meta">{[call.person.lastName, call.person.firstName].filter(Boolean).join(" ")}</span>}
             </EditorCallCard>)}
             <EditorAddCard className="editor-add-call-card">
@@ -147,7 +149,7 @@ export default function DdsStageTimeline({ initialIncident, onChange }) {
             </EditorAddCard>
           </EditorCallRow>
           </EditorStageContainer>
-          {stage.calls.map((call, callIndex) => <DdsCallEditor key={call.key} call={call} index={callIndex} open={editingCallKey === call.key} onClose={() => setEditingCallKey(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.map((current) => current.key === call.key ? value : current) } : item))} />)}
+          {stage.calls.map((call, callIndex) => <DdsCallEditor key={call.key} call={call} index={callIndex} services={services} open={editingCallKey === call.key} onClose={() => setEditingCallKey(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.map((current) => current.key === call.key ? value : current) } : item))} />)}
         </li>)}
     </ol>
     <EditorAddCard className="editor-add-stage-card">

@@ -83,6 +83,14 @@ const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
   #incident-form .dds-stage-heading { min-width: 0; }
   #incident-form .dds-stage-meta { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
   #incident-form .dds-stage-meta > span + span::before { content: "·"; margin-inline-end: var(--wa-space-s); }
+  #incident-form .dds-call-section { flex: 1 1 0; min-inline-size: 0; }
+  #incident-form .dds-call-divider-desktop { align-self: stretch; height: auto; }
+  #incident-form .dds-call-divider-mobile { display: none; }
+  @media (max-width: 70rem) {
+    #incident-form .dds-call-section { flex-basis: 100%; }
+    #incident-form .dds-call-divider-desktop { display: none; }
+    #incident-form .dds-call-divider-mobile { display: block; flex-basis: 100%; }
+  }
   @media (max-width: 48rem) {
     #incident-form .dds-people { --min-column-size: 18rem; }
   }
