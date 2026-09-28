@@ -1,6 +1,9 @@
 from os import getenv
 import threading
+import time
 import regex
+from enum import Enum
+from openai import OpenAI
 import logging
 import asyncio
 
@@ -34,6 +37,9 @@ class ChatNode(UserDialogProcessingNode):
         self.partial_response = ""
 
         self.worker = None
+        self.loop = asyncio.new_event_loop()
+        self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
+        self.loop_thread.start()
 
         default_prompt = (BRIGADE_SYSTEM_PROMPT
                           if context.counterparty == CounterpartyType.BRIGADE
@@ -48,10 +54,6 @@ class ChatNode(UserDialogProcessingNode):
                 {"role": roles[phrase.speaker], "content": phrase.text}
                 for phrase in history.phrases
             ][-10:]
-        self.loop = asyncio.new_event_loop()
-        self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
-        self._shutdown_lock = threading.Lock()
-        self.loop_thread.start()
 
 
     def _run_event_loop(self):
@@ -81,29 +83,19 @@ class ChatNode(UserDialogProcessingNode):
         old_worker = self.worker
         if old_worker is not None and not old_worker.done():
             old_worker.cancel()
-            emitted_response = await old_worker
-            return asyncio.create_task(self._llm_worker(new_user_text, old_user_text, emitted_response))
+            already_generated_response_buffer = await old_worker
+            complted_sentences = self._get_complete_sentences(already_generated_response_buffer)
+            # TODO: if no sentence is generated -> Охлади свое траханье!
+            return asyncio.create_task(self._llm_worker(new_user_text, old_user_text, complted_sentences))
         return asyncio.create_task(self._llm_worker(new_user_text))
 
-    async def _shutdown(self):
-        if self.worker is not None:
-            if not self.worker.done():
-                self.worker.cancel()
-            await asyncio.gather(self.worker, return_exceptions=True)
-        await self.model.close()
-        await self.loop.shutdown_asyncgens()
+    def _get_complete_sentences(self, text: str) -> str:
+        delimiter_pos = [d.start() for d in regex.finditer(DELIMITERS_SEARCH_PATTERN, text)]
+        if not delimiter_pos:
+            return ""
 
-    def stop(self, *, drain=False):
-        with self._shutdown_lock:
-            super().stop(drain=drain)
-            if self.loop.is_closed():
-                return
-            try:
-                asyncio.run_coroutine_threadsafe(self._shutdown(), self.loop).result()
-            finally:
-                self.loop.call_soon_threadsafe(self.loop.stop)
-                self.loop_thread.join()
-                self.loop.close()
+        last_delimiter_pos = delimiter_pos[-1]
+        return text[:last_delimiter_pos + 1]
 
 
     async def _llm_worker(self,
@@ -123,22 +115,12 @@ class ChatNode(UserDialogProcessingNode):
                     logger.info("New LLM response chunk: " + str(chunk))
                     self._append_to_buffer(chunk)
             self._flush_pending()
+            self.on_new_phrase(self._processed_response())
         except asyncio.CancelledError:
             logger.info("LLM was interrupted by user")
-            # Only sentences actually submitted to TTS belong to the transcript
-            # and regeneration history. The pending tail may be half a decimal.
-            return "".join(self.completed_sentences)
-        except Exception:
-            logger.exception("LLM generation failed")
-            return "".join(self.completed_sentences)
-        finally:
-            try:
-                if generator is not None:
-                    await generator.aclose()
-            finally:
-                emitted = "".join(self.completed_sentences)
-                if emitted.strip():
-                    self.on_new_phrase(emitted)
+            if generator is not None:
+                await generator.aclose()
+            return self._processed_response()
 
     def _reset_buffers(self):
         self.response_buffer = []

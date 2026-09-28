@@ -135,16 +135,16 @@ async def dialog_session(ws: WebSocket):
     push_task = asyncio.create_task(_push_service_load(ws, send_lock))
     try:
         async with send_lock:
-            await ws.send_json(await asyncio.to_thread(handle_progress_request, context_id))
+            await ws.send_json(handle_progress_request(context_id))
         while True:
             request = await ws.receive_json()
             request_type = request.get("type")
 
             match request_type:
                 case "request_status":
-                    response = await asyncio.to_thread(handle_progress_request, context_id)
+                    response = handle_progress_request(context_id)
                 case "request_next_call":
-                    response = await asyncio.to_thread(handle_next_call, context_id)
+                    response = handle_next_call(context_id)
                 case _:
                     response = handle_error("Unknown session command")
             async with send_lock:
@@ -157,11 +157,11 @@ async def dialog_session(ws: WebSocket):
         try:
             async with send_lock:
                 await ws.send_json(handle_error(str(exc)))
-        except (WebSocketDisconnect, RuntimeError):
+        except WebSocketDisconnect:
             pass
     finally:
         push_task.cancel()
-        with suppress(asyncio.CancelledError, WebSocketDisconnect, RuntimeError):
+        with suppress(asyncio.CancelledError):
             await push_task
 
 

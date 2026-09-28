@@ -27,16 +27,18 @@ class ProcessingVoicePipeline(VoicePipeline):
             on_audio(audio.astype(np.int16).tobytes())
 
         processing_context = UserDialogProcessingContext()
+        sst = SSTNode(on_new_phrase=on_operator_phrase)
+        chat = ChatNode(context=call, on_new_phrase=on_counterparty_phrase, history=history)
+        tts = TTSNode(call)
+        output = OutputNode(output_callback)
+
+        (processing_context
+            .connect(sst)
+            .connect(chat)
+            .connect(tts)
+            .connect(output))
+
         self._context = processing_context
-        try:
-            processing_context.connect(SSTNode(on_new_phrase=on_operator_phrase))
-            processing_context.connect(ChatNode(
-                context=call, on_new_phrase=on_counterparty_phrase, history=history))
-            processing_context.connect(TTSNode(call))
-            processing_context.connect(OutputNode(output_callback))
-        except BaseException:
-            processing_context.close()
-            raise
 
     def process_text(self, text: str) -> None:
         self._context.process(text)

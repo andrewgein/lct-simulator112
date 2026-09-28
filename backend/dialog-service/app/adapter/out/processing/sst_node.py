@@ -30,13 +30,6 @@ class SSTNode(UserDialogProcessingNode):
 
         self.recognizer.AcceptWaveform(event.tobytes())
 
-    def stop(self, *, drain=True):
-        # Preserve speech still queued when the socket closes, even when the
-        # frontend did not send its final voice_stopped command.
-        if not self.stop_event.is_set():
-            self.input_queue.put("voice_stopped")
-        super().stop(drain=drain)
-
     def get_final_text(self) -> str:
         text = json.loads(self.recognizer.FinalResult())
         return text["text"]

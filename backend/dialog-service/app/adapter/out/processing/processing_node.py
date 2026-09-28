@@ -1,9 +1,6 @@
-import logging
 import queue
 import threading
-
-logger = logging.getLogger(__name__)
-_STOP = object()
+import traceback
 
 
 class UserDialogProcessingNode:
@@ -11,8 +8,11 @@ class UserDialogProcessingNode:
         self.input_queue = queue.Queue()
         self.output_queue = queue.Queue()
         self.stop_event = threading.Event()
-        self._stop_lock = threading.Lock()
-        self.worker_thread = threading.Thread(target=self.__process_new_event)
+        self.worker_thread = threading.Thread(target=self.__process_new_event, args=(self.stop_event,))
+
+    def __del__(self):
+        self.stop()
+
 
     def set_input_queue(self, input_queue: queue.Queue):
         self.input_queue = input_queue
@@ -26,44 +26,36 @@ class UserDialogProcessingNode:
     def get_output_queue(self):
         return self.output_queue
 
+
     def start(self):
-        with self._stop_lock:
-            if self.stop_event.is_set():
-                raise RuntimeError("Cannot start a closed pipeline node")
-            self.worker_thread.start()
+        self.worker_thread.start()
 
-    def stop(self, *, drain=False):
-        """Join the active handler; optionally finish already queued events first.
+    def stop(self):
+        self.stop_event.set()
 
-        A sentinel wakes an idle worker immediately. Returning means callbacks
-        have finished, which is required before taking the final transcript.
-        """
-        with self._stop_lock:
-            if not self.stop_event.is_set():
-                self.stop_event.set()
-                if not drain or self.worker_thread.ident is None:
-                    while True:
-                        try:
-                            self.input_queue.get_nowait()
-                            self.input_queue.task_done()
-                        except queue.Empty:
-                            break
-                if self.worker_thread.ident is not None:
-                    self.input_queue.put(_STOP)
-        if self.worker_thread.ident is not None and threading.current_thread() is not self.worker_thread:
-            self.worker_thread.join(timeout=5.0)
+        while not self.input_queue.empty():
+            try:
+                self.input_queue.get_nowait()
+                self.input_queue.task_done()
+            except queue.Empty:
+                break
+
+        self.worker_thread.join(timeout=5.0)
 
     def _event_handler(self, event):
         pass
 
-    def __process_new_event(self):
-        while True:
-            event = self.input_queue.get()
+    def __process_new_event(self, stop_event: threading.Event):
+        while not stop_event.is_set():
             try:
-                if event is _STOP:
-                    return
+                event = self.input_queue.get(timeout=3)
+            except queue.Empty:
+                continue
+
+            try:
                 self._event_handler(event)
-            except Exception:
-                logger.exception("Voice pipeline handler failed")
+            except Exception as ex:
+                print(f"_event_handler exception {ex}")
+                traceback.print_exception(ex)
             finally:
                 self.input_queue.task_done()
