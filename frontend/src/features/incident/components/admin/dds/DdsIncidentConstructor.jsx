@@ -19,7 +19,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
   const [services, setServices] = useState([]);
   const [servicesError, setServicesError] = useState("");
   const [prepared, setPrepared] = useState(() => normalizePrepared(incident.preparedCardTemplate));
-  const [assignment, setAssignment] = useState(() => ({ emergencyService: incident.initialAssignment?.emergencyService || "", classifierCode: incident.initialAssignment?.classifierCode || "", instructions: incident.initialAssignment?.instructions || "" }));
+  const [assignment, setAssignment] = useState(() => ({ emergencyService: incident.initialAssignment?.emergencyService || "", classifierCode: incident.initialAssignment?.classifierCode || "" }));
   const [timeline, setTimeline] = useState(null);
   const [incidentAddress, setIncidentAddress] = useState("");
   const stateRef = useRef({ prepared, assignment, timeline, classifier: classifierState.classifier });
@@ -58,8 +58,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
         },
         initialAssignment: {
           emergencyService: current.assignment.emergencyService,
-          classifierCode: current.assignment.classifierCode,
-          instructions: current.assignment.instructions.trim() || null
+          classifierCode: current.assignment.classifierCode
         },
         ...timelineValue(current.timeline)
       };
@@ -108,7 +107,6 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           </wa-select>
           <IncidentTypeSelect classifierState={classifierState} id="dds-assignment-type" name={null} value={assignment.classifierCode} required onChange={(classifierCode) => setAssignment((current) => ({ ...current, classifierCode }))} />
         </div>
-        <wa-textarea value={assignment.instructions} label="Инструкции диспетчеру" rows="4" onInput={(event) => setAssignment((current) => ({ ...current, instructions: event.currentTarget.value }))}></wa-textarea>
       </section>
       <DdsStageTimeline initialIncident={incident} onChange={setTimeline} />
     </div>

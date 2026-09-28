@@ -45,7 +45,7 @@ export function serviceStatusHistory(incident, progress, serviceCode) {
 export function incidentCard(incident) {
   const template = incident.preparedCardTemplate || {};
   const applicant = { ...normalizePerson(template.applicant || emptyPerson()), address: addressText(incident.address) };
-  applicant.additionalInfo ||= incident.initialAssignment?.instructions || incident.title;
+  applicant.additionalInfo ||= incident.title;
   return {
     cardId: String(incident.id),
     mainCardId: null,
