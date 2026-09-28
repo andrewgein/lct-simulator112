@@ -48,37 +48,29 @@ try {
               <wa-badge variant="neutral" appearance="outlined">Участников: {students.length}</wa-badge>
             </div>
             <div class="group-content wa-stack wa-gap-l">
-              <div class="wa-split wa-gap-m">
-                <h3 class="group-section-title wa-heading-l">Состав группы</h3>
-                <div class="wa-cluster wa-gap-xs">
-                  <wa-button href={`/teacher/groups/${group.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
-                  <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
-                    <wa-icon name="pen" label="Редактировать">
-                    </wa-icon>
-                  </wa-button>
-                  <wa-button class="delete-group" type="button" appearance="outlined" variant="danger" data-id={group.id} data-title={group.title} aria-label={`Удалить группу ${group.title}`}>
-                    <wa-icon name="trash" label="Удалить">
-                    </wa-icon>
-                  </wa-button>
-                </div>
+              <div class="group-toolbar wa-cluster wa-gap-xs">
+                <wa-button href={`/teacher/groups/${group.id}/statistics`} variant="brand" appearance="outlined"><wa-icon slot="start" name="chart-line"></wa-icon>Статистика</wa-button>
+                <wa-button href={`/teacher/groups/${group.id}`} appearance="outlined" aria-label={`Редактировать группу ${group.title}`}>
+                  <wa-icon name="pen" label="Редактировать">
+                  </wa-icon>
+                </wa-button>
+                <wa-button class="delete-group" type="button" appearance="outlined" variant="danger" data-id={group.id} data-title={group.title} aria-label={`Удалить группу ${group.title}`}>
+                  <wa-icon name="trash" label="Удалить">
+                  </wa-icon>
+                </wa-button>
               </div>
               <div class="group-columns">
-                <div class="group-column">
+                <div class="group-column wa-stack wa-gap-s">
+                  <h3 class="group-section-title wa-heading-l">Состав группы</h3>
                   {students.length ? (
                     <ul class="student-list">
                       {students.map((student) => {
                         const hasProfile = Boolean(student.profile);
                         const fullName = hasProfile ? [student.profile.surname, student.profile.name, student.profile.patronymic].filter(Boolean).join(" ") : "Профиль не создан";
-                        const initials = hasProfile
-                          ? [student.profile.surname, student.profile.name].filter(Boolean).map((part) => part[0]).join("").toUpperCase()
-                          : "?";
                         return (
                           <li class="student-row" data-pending={!hasProfile}>
-                            <span class="student-avatar">{initials}</span>
-                            <div class="student-info">
-                              <strong class="student-name">{fullName}</strong>
-                              <span class="student-email">{student.email}</span>
-                            </div>
+                            <strong class="student-name">{fullName}</strong>
+                            <span class="student-email">{student.email}</span>
                           </li>
                         );
                       })}
@@ -87,6 +79,8 @@ try {
                     <wa-callout variant="neutral">В группе пока нет обучающихся.</wa-callout>
                   )}
                 </div>
+                <wa-divider class="group-columns-divider group-columns-divider--vertical" orientation="vertical"></wa-divider>
+                <wa-divider class="group-columns-divider group-columns-divider--horizontal"></wa-divider>
                 <div class="group-column">
                   <GroupCourseList group={group} assignedCourses={assignedCoursesByGroupId.get(String(group.id)) || []} />
                 </div>
@@ -121,33 +115,22 @@ try {
   .groups-accordion wa-accordion-item::part(content) { background-color: var(--wa-color-surface-raised); }
   .group-label { width: 100%; align-items: center; font-weight: var(--wa-font-weight-semibold); }
   .group-content { padding-block: var(--wa-space-xs); }
-  .group-columns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--wa-space-l); align-items: start; }
+  .group-toolbar { justify-content: flex-end; }
+  .group-columns { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--wa-space-l); align-items: stretch; }
+  .group-columns-divider { --spacing: 0; }
+  .group-columns-divider--horizontal { display: none; }
   .group-section-title, .student-list { margin: 0; }
-  .student-list { display: flex; flex-direction: column; gap: var(--wa-space-xs); padding: 0; list-style: none; }
+  .student-list { padding: 0; list-style: none; }
   .student-row {
     display: flex;
     align-items: center;
-    gap: var(--wa-space-s);
+    justify-content: space-between;
+    gap: var(--wa-space-m);
     padding: var(--wa-space-s) var(--wa-space-m);
-    border: var(--wa-border-width-s) solid var(--wa-color-surface-border);
-    border-radius: var(--wa-border-radius-m);
-    background: var(--wa-color-surface-default);
-    transition: border-color var(--wa-transition-fast), background-color var(--wa-transition-fast);
+    border-block-end: var(--wa-border-width-s) solid var(--wa-color-surface-border);
+    background: var(--wa-color-surface-raised);
   }
-  .student-avatar {
-    display: flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: var(--wa-border-radius-circle);
-    background: var(--wa-color-neutral-fill-quiet);
-    color: var(--wa-color-text-normal);
-    font-size: var(--wa-font-size-s);
-    font-weight: var(--wa-font-weight-semibold);
-  }
-  .student-info { display: flex; min-width: 0; flex-direction: column; gap: var(--wa-space-3xs); }
+  .student-row:first-child { border-block-start: var(--wa-border-width-s) solid var(--wa-color-surface-border); }
   .student-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .student-row[data-pending="true"] .student-name { color: var(--wa-color-text-quiet); font-style: italic; font-weight: var(--wa-font-weight-normal); }
   .student-email { overflow: hidden; color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); text-overflow: ellipsis; white-space: nowrap; }
