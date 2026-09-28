@@ -26,6 +26,16 @@ class ClassifierCandidateSearchServiceTest {
     }
 
     @Test
+    void ignoresShortCatalogWordsWhenRankingVerboseScenarioRequest() {
+        when(repository.findCandidates()).thenReturn(List.of(
+                new ClassifierCandidate("14040300", "Аварии в городском хозяйстве", "Вода с запахом"),
+                new ClassifierCandidate("1050102", "Пожары и задымления", "задымление: квартира")));
+        assertThat(search.search("Создай сценарий ДДС о задымлении квартиры; заявитель соседка, "
+                        + "оператор связывается с бригадой", 1, List.of()))
+                .extracting(ClassifierCandidate::code).containsExactly("1050102");
+    }
+
+    @Test
     void handlesEmptyDraftAndNoMatchesDeterministically() {
         when(repository.findCandidates()).thenReturn(List.of(
                 new ClassifierCandidate("02", "Пожары", "Пожар"),
