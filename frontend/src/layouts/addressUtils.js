@@ -11,7 +11,7 @@ export function addressSuggestionFromGeocode(result) {
       country: address.country || "",
       region: address.state || address.region || "",
       city: address.city || address.town || address.village || address.hamlet || address.municipality || "",
-      city_district: address.borough || address.city_district || "",
+      city_district: address.borough || address.city_district || address.state_district || (address.state && address.region !== address.state ? address.region : "") || "",
       area: address.suburb || address.quarter || address.county || "",
       street: address.road || address.pedestrian || address.residential || address.footway || "",
       house: address.house_number || "",
