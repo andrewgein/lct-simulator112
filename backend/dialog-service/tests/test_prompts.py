@@ -1,7 +1,7 @@
 import unittest
 
 from app.domain.model import CallDirection, CallScenario, CounterpartyType, Gender, Person
-from app.application.model.prompts import BRIGADE_INBOUND_SYSTEM_PROMPT, BRIGADE_OUTBOUND_SYSTEM_PROMPT, BRIGADE_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT, build_call_scenario
+from app.application.model.prompts import BRIGADE_INBOUND_SYSTEM_PROMPT, BRIGADE_OUTBOUND_SYSTEM_PROMPT, BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT, build_call_scenario
 
 
 class CallScenarioPromptTests(unittest.TestCase):
@@ -25,6 +25,16 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertNotIn("Полное имя для ответа оператору", prompt)
         self.assertNotIn("- Служба:", prompt)
         self.assertIn("ты знаешь их к началу звонка", prompt)
+
+    def test_address_speech_rules_apply_to_all_roles(self):
+        for system_prompt in (CALLER_SYSTEM_PROMPT, BRIGADE_INBOUND_SYSTEM_PROMPT,
+                              BRIGADE_OUTBOUND_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT):
+            with self.subTest(role=system_prompt[:40]):
+                self.assertIn('«дом»', system_prompt)
+                self.assertIn('«квартира»', system_prompt)
+                self.assertIn('не ставь точки внутри адреса', system_prompt)
+                self.assertIn('не добавляй отсутствующие части' if system_prompt != CALLER_SYSTEM_PROMPT
+                              else 'не дополняй адрес догадками', system_prompt)
 
     def test_caller_hidden_fact_is_absent_from_opening_prompt(self):
         call = _call(hidden_facts=("Секрет о дыхании: после вопроса о дыхании",))
