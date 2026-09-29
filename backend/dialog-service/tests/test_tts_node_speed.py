@@ -5,11 +5,11 @@ from app.adapter.out.processing.tts_node import TTSNode
 from app.domain.model import CallDirection, CallScenario, CounterpartyType, Gender, Person
 
 
-def test_only_dds_calls_use_faster_tts():
-    for counterparty, expected_speed in (
-        (CounterpartyType.CALLER, 1.15),
-        (CounterpartyType.BRIGADE, 1.25),
-        (CounterpartyType.SERVICE, 1.25),
+def test_all_calls_use_normal_tts_speed():
+    for counterparty in (
+        CounterpartyType.CALLER,
+        CounterpartyType.BRIGADE,
+        CounterpartyType.SERVICE,
     ):
         call = CallScenario(
             id="call", position=0, direction=CallDirection.INBOUND,
@@ -24,6 +24,6 @@ def test_only_dds_calls_use_faster_tts():
             node.worker_thread.start()
             try:
                 node._event_handler("Проверка")
-                model.generate.assert_called_once_with(text="Проверка", profile=node.voice_profile, speed=expected_speed)
+                model.generate.assert_called_once_with(text="Проверка", profile=node.voice_profile, speed=1.0)
             finally:
                 node.stop()
