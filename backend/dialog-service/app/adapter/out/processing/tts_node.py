@@ -18,7 +18,7 @@ class TTSNode(UserDialogProcessingNode):
             emotional_state,
             gender=voice_gender,
         )
-        self.speed = 1.25 if call.counterparty in (CounterpartyType.BRIGADE, CounterpartyType.SERVICE) else 1.0
+        self.speed = 1.25 if call.counterparty in (CounterpartyType.BRIGADE, CounterpartyType.SERVICE) else 1.15
         logger.info("Selected TTS voice profile: %s", self.voice_profile.id)
 
     def _event_handler(self, event):

@@ -7,7 +7,7 @@ from app.domain.model import CallDirection, CallScenario, CounterpartyType, Gend
 
 def test_only_dds_calls_use_faster_tts():
     for counterparty, expected_speed in (
-        (CounterpartyType.CALLER, 1.0),
+        (CounterpartyType.CALLER, 1.15),
         (CounterpartyType.BRIGADE, 1.25),
         (CounterpartyType.SERVICE, 1.25),
     ):
