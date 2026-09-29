@@ -42,10 +42,10 @@ public class StudyGroupApplicationService implements CreateStudyGroupUseCase, Up
 
     @Override
     @Transactional
-    public void deleteStudyGroup(UUID groupId, UUID requesterId) {
+    public void deleteStudyGroup(UUID groupId, UUID requesterId, String requesterRole) {
         StudyGroup existing = getStudyGroup(groupId);
-        if (!existing.ownerId().equals(requesterId)) {
-            throw new CourseAccessDeniedException("Удалить группу может только её владелец");
+        if (!"ADMIN".equals(requesterRole) && !existing.ownerId().equals(requesterId)) {
+            throw new CourseAccessDeniedException("Удалить группу может только её владелец или администратор");
         }
         studyGroupRepository.deleteById(groupId);
     }

@@ -50,8 +50,9 @@ public class StudyGroupRestController {
 
     @DeleteMapping("/{groupId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@RequestHeader("X-User-Id") UUID userId, @PathVariable UUID groupId) {
-        deleteStudyGroup.deleteStudyGroup(groupId, userId);
+    public void delete(@RequestHeader("X-User-Id") UUID userId, @RequestHeader("X-User-Role") String role,
+                       @PathVariable UUID groupId) {
+        deleteStudyGroup.deleteStudyGroup(groupId, userId, role);
     }
 
     @GetMapping("/{groupId}")
