@@ -1,7 +1,7 @@
 from .processing_node import UserDialogProcessingNode
 from app.adapter.out.processing.tts_model import TTSError, TTSModel
 from app.adapter.out.processing.voice_profiles import get_voice_gender, select_voice_profile
-from app.domain.model import CallScenario, CounterpartyType
+from app.domain.model import CallScenario
 import numpy as np
 import logging
 
@@ -18,7 +18,7 @@ class TTSNode(UserDialogProcessingNode):
             emotional_state,
             gender=voice_gender,
         )
-        self.speed = 1.25 if call.counterparty in (CounterpartyType.BRIGADE, CounterpartyType.SERVICE) else 1.15
+        self.speed = 1.0
         logger.info("Selected TTS voice profile: %s", self.voice_profile.id)
 
     def _event_handler(self, event):
