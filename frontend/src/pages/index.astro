@@ -7,7 +7,9 @@ import { getCourse } from "../features/course/api/CourseApi";
 import { getUserReviews } from "../features/review/api/ReviewApi";
 
 export const prerender = false;
-if (["ADMIN", "SUPERVISOR"].includes(Astro.cookies.get("role")?.value || "")) return Astro.redirect("/teacher/courses");
+const role = Astro.cookies.get("role")?.value;
+if (role === "ADMIN") return Astro.redirect("/admin/users");
+if (role === "SUPERVISOR") return Astro.redirect("/teacher/courses");
 let courses = [];
 let error = null;
 try {

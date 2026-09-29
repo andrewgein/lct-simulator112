@@ -1,10 +1,5 @@
 name: service-control
 
-# Plain docker compose start/stop/restart of one already-deployed service - no build, no image
-# pull. Triggered either manually or via admin-service's GithubActionsClient (POST
-# /api/v1/admin/ops/services/{service}/{action} in the admin panel), using the GitHub REST API's
-# workflow dispatch endpoint. Kept separate from the per-service build-and-deploy workflows so
-# this one stays minimal - it never touches Docker Hub/GHCR credentials or builds anything.
 on:
   workflow_dispatch:
     inputs:

@@ -2,7 +2,7 @@ package com.simulator112.course.application.service;
 
 import com.simulator112.course.application.port.in.CreateStudyGroupUseCase;
 import com.simulator112.course.application.port.in.DeleteStudyGroupUseCase;
-import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
+import com.simulator112.course.application.port.in.FindAllStudyGroupsUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
 import com.simulator112.course.application.port.in.UpdateStudyGroupUseCase;
 import com.simulator112.course.application.port.out.StudyGroupRepository;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class StudyGroupApplicationService implements CreateStudyGroupUseCase, UpdateStudyGroupUseCase,
-        DeleteStudyGroupUseCase, GetStudyGroupUseCase, FindOwnedStudyGroupsUseCase {
+        DeleteStudyGroupUseCase, GetStudyGroupUseCase, FindAllStudyGroupsUseCase {
 
     private final StudyGroupRepository studyGroupRepository;
 
@@ -35,9 +35,6 @@ public class StudyGroupApplicationService implements CreateStudyGroupUseCase, Up
     @Transactional
     public StudyGroup updateStudyGroup(UUID groupId, StudyGroup studyGroup, UUID requesterId) {
         StudyGroup existing = getStudyGroup(groupId);
-        if (!existing.ownerId().equals(requesterId)) {
-            throw new CourseAccessDeniedException("Изменять группу может только её владелец");
-        }
         StudyGroup updated = new StudyGroup(groupId, studyGroup.title(), existing.ownerId(), studyGroup.studentIds());
         validate(updated);
         return studyGroupRepository.save(updated);
@@ -61,8 +58,8 @@ public class StudyGroupApplicationService implements CreateStudyGroupUseCase, Up
 
     @Override
     @Transactional(readOnly = true)
-    public List<StudyGroup> findOwnedStudyGroups(UUID ownerId) {
-        return studyGroupRepository.findAllByOwnerId(ownerId);
+    public List<StudyGroup> findAllStudyGroups() {
+        return studyGroupRepository.findAll();
     }
 
     private void validate(StudyGroup studyGroup) {
