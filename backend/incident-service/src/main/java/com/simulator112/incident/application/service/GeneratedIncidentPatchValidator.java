@@ -20,8 +20,7 @@ public class GeneratedIncidentPatchValidator {
             "CALL_BRIGADE_FOR_STATUS", "REQUEST_ADDITIONAL_SERVICE", "COMPLETE_INCIDENT");
     private static final Set<String> DDS_STATUSES = Set.of("ADDED", "RECEIVED_BY_SERVICE", "ACCEPTED",
             "NOT_ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS", "WORK_COMPLETED",
-            "WORK_REFUSED", "REGISTERED", "PROCESSED", "VERIFIED", "NOT_NOTIFIED", "REFUSED",
-            "NOT_COMPLETED", "COMPLETED");
+            "WORK_REFUSED");
 
     private static void onlyFields(JsonNode value, Set<String> fields) {
         if (!value.isObject()) throw new IllegalStateException("Invalid DDS object");

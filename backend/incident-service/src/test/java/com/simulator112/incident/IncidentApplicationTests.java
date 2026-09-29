@@ -116,7 +116,7 @@ class IncidentApplicationTests {
                 "Ожидать обновления", DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 180, List.of());
         var failureStage = new DdsStage(lastStageId, "Завершение",
                 "Завершить реагирование", DdsStageType.COMPLETE_INCIDENT, 30, List.of(), null,
-                com.simulator112.incident.domain.common.IncidentStatus.VERIFIED);
+                com.simulator112.incident.domain.common.IncidentStatus.WORK_COMPLETED);
         var incident = new DdsIncident(null, "Пожар", new Address("Москва", "Тверская", "1", null, null, 1),
                 Difficulty.NORMAL, List.of(initialStage, successStage, failureStage),
                 new PreparedCardTemplate(List.of("101", "102"), null, 0, java.util.Map.of(), List.of("CUSTOM_DISPATCH", "MCHS")),
@@ -150,9 +150,9 @@ class IncidentApplicationTests {
                 com.simulator112.incident.grpc.contract.DdsCompletionTrigger.DDS_COMPLETION_TRIGGER_CALLS);
         assertThat(grpcMapper.toProto(loaded).getStages(0).getDds().getExpectedComment()).isEqualTo("Бригада на месте");
         assertThat(grpcMapper.toProto(loaded).getStages(0).getDds().getActualStatus()).isEqualTo(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_ARRIVED);
-        assertThat(loaded.stages().getLast().actualStatus()).isEqualTo(com.simulator112.incident.domain.common.IncidentStatus.VERIFIED);
+        assertThat(loaded.stages().getLast().actualStatus()).isEqualTo(com.simulator112.incident.domain.common.IncidentStatus.WORK_COMPLETED);
         assertThat(grpcMapper.toProto(loaded).getStages(2).getDds().getActualStatus())
-                .isEqualTo(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_VERIFIED);
+                .isEqualTo(com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_WORK_COMPLETED);
         assertThat(loaded.stages().getFirst().type()).isEqualTo(DdsStageType.CALL_BRIGADE_FOR_STATUS);
         assertThat(loaded.stages().getFirst().timeLimitSeconds()).isEqualTo(60);
         assertThat(detailCount("DDS_STAGE_DETAILS", saved.id())).isEqualTo(3);

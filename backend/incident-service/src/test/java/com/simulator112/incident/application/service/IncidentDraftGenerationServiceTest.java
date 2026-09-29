@@ -588,7 +588,7 @@ class IncidentDraftGenerationServiceTest {
                 {"id":"middle-id","position":1,"title":"Старый контроль","type":"CALL_BRIGADE_FOR_STATUS",
                  "timeLimitSeconds":60,"calls":[]},
                 {"id":"last-id","position":2,"title":"Моё завершение","type":"COMPLETE_INCIDENT",
-                 "timeLimitSeconds":45,"actualStatus":"COMPLETED","calls":[]}]}
+                 "timeLimitSeconds":45,"actualStatus":"WORK_COMPLETED","calls":[]}]}
                 """);
         var result = DdsValidationHarness.validate("""
                 {"message":"Готово","incident":{"stages":[
@@ -602,7 +602,7 @@ class IncidentDraftGenerationServiceTest {
         assertThat(stages.get(1).path("timeLimitSeconds").asInt()).isEqualTo(90);
         assertThat(stages.get(2).path("id").asText()).isEqualTo("last-id");
         assertThat(stages.get(2).path("title").asText()).isEqualTo("Моё завершение");
-        assertThat(stages.get(2).path("actualStatus").asText()).isEqualTo("COMPLETED");
+        assertThat(stages.get(2).path("actualStatus").asText()).isEqualTo("WORK_COMPLETED");
         assertThat(stages.get(2).has("position")).isFalse();
     }
 

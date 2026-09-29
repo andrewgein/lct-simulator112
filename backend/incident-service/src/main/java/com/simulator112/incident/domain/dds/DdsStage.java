@@ -53,10 +53,15 @@ public record DdsStage(
         if (completionTriggers.contains(DdsCompletionTrigger.CALLS) && calls.isEmpty()) {
             throw new IllegalArgumentException("Для завершения этапа по звонкам добавьте звонок");
         }
+        if (actualStatus != null && !List.of(IncidentStatus.ADDED, IncidentStatus.RECEIVED_BY_SERVICE,
+                IncidentStatus.ACCEPTED, IncidentStatus.NOT_ACCEPTED, IncidentStatus.RESPONSE_STARTED,
+                IncidentStatus.ARRIVED, IncidentStatus.WORK_IN_PROGRESS, IncidentStatus.WORK_COMPLETED,
+                IncidentStatus.WORK_REFUSED).contains(actualStatus)) {
+            throw new IllegalArgumentException("Фактический статус этапа ДДС должен быть статусом реагирования");
+        }
         if (completionTriggers.contains(DdsCompletionTrigger.STATUS) && (type == DdsStageType.ASSIGN_BRIGADE
                 ? actualStatus != null && actualStatus != IncidentStatus.ACCEPTED
-                : actualStatus == null || !List.of("ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS", "WORK_COMPLETED")
-                        .contains(actualStatus.name()))) {
+                : actualStatus == null)) {
             throw new IllegalArgumentException("Для завершения этапа по статусу укажите следующий статус реагирования");
         }
         if (type == null) {
