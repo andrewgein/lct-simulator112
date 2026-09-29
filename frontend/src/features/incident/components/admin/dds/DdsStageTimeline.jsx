@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import EditorDialog from "../EditorDialog.jsx";
 import { EditorAddCard, EditorCallCard, EditorCallRow, EditorStageContainer } from "../EditorContainers.jsx";
 import DdsCallEditor, { ddsCallValue, normalizeDdsCall } from "./DdsCallEditor.jsx";
+import { availableCallContacts } from "./ddsCallContacts.js";
 
 const STAGE_TYPES = [
   { value: "ASSIGN_BRIGADE", label: "Получение карточки" },
@@ -205,7 +206,7 @@ export default function DdsStageTimeline({ initialIncident, onChange, services =
             </EditorAddCard>
           </EditorCallRow>
           </EditorStageContainer>
-          {stage.calls.map((call, callIndex) => <DdsCallEditor key={call.key} call={call} index={callIndex} services={services} open={editingCallKey === call.key} onClose={() => setEditingCallKey(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.map((current) => current.key === call.key ? value : current) } : item))} />)}
+          {stage.calls.map((call, callIndex) => <DdsCallEditor key={call.key} call={call} index={callIndex} services={services} contacts={availableCallContacts(stages, call.key).map((contact) => ({ ...contact, label: `${contact.call.counterparty === "SERVICE" ? services.find((service) => service.code === contact.call.serviceCode)?.name || contact.call.serviceCode || "Другая служба" : "Бригада"} · ${[contact.call.person?.lastName, contact.call.person?.firstName, contact.call.person?.middleName].filter(Boolean).join(" ") || "без имени"} (этап ${contact.stageIndex + 1}, звонок ${contact.callIndex + 1})` }))} open={editingCallKey === call.key} onClose={() => setEditingCallKey(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.map((current) => current.key === call.key ? value : current) } : item))} />)}
         </li>)}
     </ol>
     <EditorAddCard className="editor-add-stage-card">
