@@ -26,3 +26,7 @@ export function createIncident(incident, token) {
 export function updateIncident(id, incident, token) {
     return apiCall(`${API_PREFIX}/${encodeURIComponent(id)}`, "PUT", incident, token);
 }
+
+export function deleteIncident(id, token) {
+    return apiCall(`${API_PREFIX}/${encodeURIComponent(id)}`, "DELETE", undefined, token);
+}
