@@ -72,12 +72,12 @@ class EnrollmentApplicationServiceTest {
     }
 
     @Test
-    void rejectsReadingCoursesOfForeignGroup() {
+    void allowsReadingCoursesOfForeignGroup() {
         when(getGroup.getStudyGroup(groupId)).thenReturn(new StudyGroup(
                 groupId, "Группа", UUID.randomUUID(), List.of(studentId)));
+        when(repository.findAllByGroupId(groupId)).thenReturn(List.of());
 
-        assertThatThrownBy(() -> service.findGroupCourses(groupId, teacherId))
-                .isInstanceOf(CourseAccessDeniedException.class);
+        assertThat(service.findGroupCourses(groupId, teacherId)).isEmpty();
     }
 
     @Test
