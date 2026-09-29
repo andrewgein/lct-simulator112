@@ -7,7 +7,6 @@ import { getIncidentLibrary } from "../../../features/incident/api/AdminIncident
 export const prerender = false;
 const role = Astro.cookies.get("role")?.value;
 if (!["ADMIN", "SUPERVISOR"].includes(role || "")) return Astro.redirect("/");
-const canDelete = role === "ADMIN";
 let incidents: import("../../../features/incident/contract/Incident").Incident[] = [];
 let error = null;
 try {
@@ -63,12 +62,10 @@ try {
                       <wa-icon name="pen" label="Редактировать">
                       </wa-icon>
                     </wa-button>
-                    {canDelete && (
-                      <wa-button class="delete-incident" type="button" data-id={incident.id} appearance="outlined" variant="danger" aria-label={`Удалить сценарий ${incident.title}`}>
-                        <wa-icon name="trash" label="Удалить">
-                        </wa-icon>
-                      </wa-button>
-                    )}
+                    <wa-button class="delete-incident" type="button" data-id={incident.id} data-title={incident.title} appearance="outlined" variant="danger" aria-label={`Удалить сценарий ${incident.title}`}>
+                      <wa-icon name="trash" label="Удалить">
+                      </wa-icon>
+                    </wa-button>
                   </div>
                 </td>
               </tr>
@@ -87,7 +84,7 @@ try {
 <script>
   document.querySelectorAll<HTMLElement & { disabled: boolean; loading: boolean }>('.delete-incident').forEach((button) =>
     button.addEventListener('click', async () => {
-      if (button.disabled || !confirm('Удалить сценарий без возможности восстановления?')) {
+      if (button.disabled || !confirm(`Удалить сценарий «${button.dataset.title}» из списка?`)) {
         return;
       }
       button.disabled = true;
@@ -96,7 +93,7 @@ try {
         const response = await fetch(`/api/v1/incidents/${encodeURIComponent(button.dataset.id || '')}`, { method: 'DELETE' });
         if (!response.ok) {
           const error = await response.json().catch(() => null);
-          throw new Error(error?.message || 'Не удалось удалить сценарий');
+          throw new Error(error?.message || `Не удалось удалить сценарий (HTTP ${response.status})`);
         }
         window.location.reload();
       } catch (error) {

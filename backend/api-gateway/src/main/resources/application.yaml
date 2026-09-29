@@ -146,7 +146,7 @@ spring:
                 - name: JwtAuthFilter
                 - name: RoleAuthorization
                   args:
-                    roles: ADMIN
+                    roles: ADMIN,SUPERVISOR
 
             #Incident constructors — administrators and supervisors
             - id: incident-service-write

@@ -15,7 +15,7 @@ export async function PUT({ params, request, cookies }) {
 }
 
 export function DELETE({ params, cookies, locals }) {
-    if (cookies.get("role")?.value !== "ADMIN") return new Response(null, { status: 403 });
+    if (!["ADMIN", "SUPERVISOR"].includes(cookies.get("role")?.value)) return new Response(null, { status: 403 });
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id || "")) {
         return new Response(null, { status: 400 });
     }
