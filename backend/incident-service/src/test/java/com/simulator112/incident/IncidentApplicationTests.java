@@ -111,7 +111,7 @@ class IncidentApplicationTests {
                 "Позвонить бригаде", DdsStageType.CALL_BRIGADE_FOR_STATUS, 60, List.of(outgoing, incomingService), "Бригада на месте", com.simulator112.incident.domain.common.IncidentStatus.ARRIVED,
                 List.of(com.simulator112.incident.domain.dds.DdsCompletionTrigger.TIME,
                         com.simulator112.incident.domain.dds.DdsCompletionTrigger.STATUS,
-                        com.simulator112.incident.domain.dds.DdsCompletionTrigger.CALLS));
+                        com.simulator112.incident.domain.dds.DdsCompletionTrigger.CALLS), true);
         var successStage = new DdsStage(secondStageId, "Ожидание статуса",
                 "Ожидать обновления", DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 180, List.of());
         var failureStage = new DdsStage(lastStageId, "Завершение",
@@ -138,6 +138,8 @@ class IncidentApplicationTests {
         assertThat(grpcMapper.toProto(loaded).getStages(0).getCalls(1).getServiceCode()).isEqualTo("CUSTOM_DISPATCH");
         assertThat(loaded.stages().getFirst().expectedComment()).isEqualTo("Бригада на месте");
         assertThat(loaded.stages().getFirst().actualStatus()).isEqualTo(com.simulator112.incident.domain.common.IncidentStatus.ARRIVED);
+        assertThat(loaded.stages().getFirst().failOnTimeout()).isTrue();
+        assertThat(grpcMapper.toProto(loaded).getStages(0).getDds().getFailOnTimeout()).isTrue();
         assertThat(loaded.stages().getFirst().completionTriggers()).containsExactlyInAnyOrder(
                 com.simulator112.incident.domain.dds.DdsCompletionTrigger.TIME,
                 com.simulator112.incident.domain.dds.DdsCompletionTrigger.STATUS,

@@ -58,6 +58,24 @@ class LevelProgressServiceTests {
     }
 
     @Test
+    void firstStageMayFailOnTimeoutWithoutAcceptance() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot first = stage(UUID.randomUUID(), DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE);
+        first.getDds().setFailOnTimeout(true);
+        first.setDeadlineAt(Instant.now().minusSeconds(1));
+        IncidentSnapshot incident = incident(UUID.randomUUID(), first.getSourceId(), List.of(first));
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.getProgress(contextId);
+
+        assertThat(incident.getStatus()).isEqualTo(IncidentProgressStatus.FAILED);
+        assertThat(first.getStatus()).isEqualTo(StageStatus.FAILED);
+    }
+
+    @Test
     void acceptingAfterFirstDeadlineStartsNextStageWithFreshTimer() {
         UUID contextId = UUID.randomUUID();
         UUID firstId = UUID.randomUUID();
@@ -328,6 +346,71 @@ class LevelProgressServiceTests {
         b.setStatus(CallStatus.COMPLETED);
         service.getProgress(contextId);
         assertThat(incident.getActiveStageId()).isEqualTo(next.getSourceId());
+    }
+
+    @Test
+    void statusSubmittedAfterDeadlineCannotBypassConfiguredFailure() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot stage = stage(UUID.randomUUID(), DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.ACTIVE);
+        stage.getDds().setFailOnTimeout(true);
+        stage.setDeadlineAt(Instant.now().minusSeconds(1));
+        IncidentSnapshot incident = incident(UUID.randomUUID(), stage.getSourceId(), List.of(stage));
+        incident.setInitialAssignmentService("MCHS");
+        accept(incident);
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var progress = service.applyReactionStatus(contextId, incident.getSourceId(), "MCHS",
+                ReactionStatus.RESPONSE_STARTED, null);
+
+        assertThat(progress.incidents().getFirst().status()).isEqualTo(IncidentProgressStatus.FAILED);
+        assertThat(incident.getServiceReactions().getFirst().currentStatus()).isEqualTo(ReactionStatus.ACCEPTED);
+    }
+
+    @Test
+    void configuredTimeoutFailsOnlyItsIncident() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot first = stage(UUID.randomUUID(), DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.ACTIVE);
+        first.getDds().setFailOnTimeout(true);
+        first.setDeadlineAt(Instant.now().minusSeconds(1));
+        IncidentSnapshot failed = incident(UUID.randomUUID(), first.getSourceId(), List.of(first,
+                stage(UUID.randomUUID(), DdsStageType.COMPLETE_INCIDENT, StageStatus.PENDING)));
+        StageSnapshot otherStage = stage(UUID.randomUUID(), DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.ACTIVE);
+        IncidentSnapshot other = incident(UUID.randomUUID(), otherStage.getSourceId(), List.of(otherStage));
+        context.getIncidents().addAll(List.of(failed, other));
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.getProgress(contextId);
+
+        assertThat(failed.getStatus()).isEqualTo(IncidentProgressStatus.FAILED);
+        assertThat(first.getStatus()).isEqualTo(StageStatus.FAILED);
+        assertThat(failed.getActiveStageId()).isNull();
+        assertThat(other.getStatus()).isEqualTo(IncidentProgressStatus.ACTIVE);
+    }
+
+    @Test
+    void completedCallsStillAdvanceBeforeConfiguredTimeout() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot first = stage(UUID.randomUUID(), DdsStageType.CALL_BRIGADE_FOR_STATUS, StageStatus.ACTIVE);
+        first.getDds().setCompletionTriggers(List.of(DdsCompletionTrigger.TIME, DdsCompletionTrigger.CALLS));
+        first.getDds().setFailOnTimeout(true);
+        CallSnapshot call = new CallSnapshot(); call.setSourceId(UUID.randomUUID()); call.setStatus(CallStatus.COMPLETED);
+        first.getCalls().add(call);
+        StageSnapshot next = stage(UUID.randomUUID(), DdsStageType.COMPLETE_INCIDENT, StageStatus.PENDING);
+        IncidentSnapshot incident = incident(UUID.randomUUID(), first.getSourceId(), List.of(first, next));
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.getProgress(contextId);
+
+        assertThat(incident.getActiveStageId()).isEqualTo(next.getSourceId());
+        assertThat(incident.getStatus()).isEqualTo(IncidentProgressStatus.ACTIVE);
     }
 
     @Test

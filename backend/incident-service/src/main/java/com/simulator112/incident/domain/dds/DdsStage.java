@@ -16,7 +16,14 @@ public record DdsStage(
         List<CallScenario> calls,
         String expectedComment,
         IncidentStatus actualStatus,
-        List<DdsCompletionTrigger> completionTriggers) implements IncidentStage {
+        List<DdsCompletionTrigger> completionTriggers,
+        boolean failOnTimeout) implements IncidentStage {
+    public DdsStage(UUID id, String title, String description, DdsStageType type,
+                    int timeLimitSeconds, List<CallScenario> calls, String expectedComment, IncidentStatus actualStatus,
+                    List<DdsCompletionTrigger> completionTriggers) {
+        this(id, title, description, type, timeLimitSeconds, calls, expectedComment, actualStatus, completionTriggers, false);
+    }
+
     public DdsStage(UUID id, String title, String description, DdsStageType type,
                     int timeLimitSeconds, List<CallScenario> calls, String expectedComment, IncidentStatus actualStatus) {
         this(id, title, description, type, timeLimitSeconds, calls, expectedComment, actualStatus, type == DdsStageType.ASSIGN_BRIGADE
@@ -39,6 +46,9 @@ public record DdsStage(
                 : List.copyOf(completionTriggers);
         if (completionTriggers.isEmpty() || completionTriggers.stream().distinct().count() != completionTriggers.size()) {
             throw new IllegalArgumentException("Выберите неповторяющиеся условия завершения этапа ДДС");
+        }
+        if (failOnTimeout && !completionTriggers.contains(DdsCompletionTrigger.TIME)) {
+            throw new IllegalArgumentException("Завершение с ошибкой по времени доступно только при выбранном условии «Время»");
         }
         if (completionTriggers.contains(DdsCompletionTrigger.CALLS) && calls.isEmpty()) {
             throw new IllegalArgumentException("Для завершения этапа по звонкам добавьте звонок");
