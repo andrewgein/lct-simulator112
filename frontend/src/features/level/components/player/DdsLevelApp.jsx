@@ -126,7 +126,10 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
     return () => { active = false; };
   }, [progressIncidentIds]);
 
-  const cards = useMemo(() => incidentDefinitions.map(incidentCard), [incidentDefinitions]);
+  const cards = useMemo(() => {
+    const availableIds = new Set(progress?.incidents?.filter((item) => item.status !== "PENDING").map((item) => String(item.incidentId)) || []);
+    return incidentDefinitions.filter((incident) => availableIds.has(String(incident.id))).map(incidentCard);
+  }, [incidentDefinitions, progress]);
   useEffect(() => {
     if (call.phase !== "idle" || requestedCallId.current) return;
     const target = progress?.incidents?.filter((item) => item.status === "ACTIVE").map((item) => {
