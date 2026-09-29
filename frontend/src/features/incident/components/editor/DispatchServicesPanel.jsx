@@ -9,7 +9,8 @@ const styles = `
 .dispatch-service { position: relative; flex-direction: column; gap: var(--wa-space-3xs); }
 .dispatch-service--required { background: #ff5b2d; }
 .dispatch-service--no-response { background: #71858f; }
-.dispatch-service--with-status { min-width: 14rem; padding-block-start: var(--wa-space-m); }
+.dispatch-services--calls .dispatch-service { flex: 0 0 14rem; width: 14rem; }
+.dispatch-service--with-status { padding-block-start: var(--wa-space-m); }
 .dispatch-service strong { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dispatch-service wa-icon { font-size: var(--wa-font-size-l); }
 .dispatch-service-call { position: absolute; inset-block-start: var(--wa-space-2xs); inset-inline-start: var(--wa-space-2xs); }
@@ -48,7 +49,9 @@ const styles = `
 .dispatch-service-status-popover::part(body) { padding: var(--wa-space-m); border: var(--wa-border-width-s) solid #87969d; background: #f4f6f6; color: var(--wa-color-text-normal); box-shadow: 0 .5rem 1.5rem rgba(22, 31, 36, .3); }
 .dispatch-service-add { align-self: center; margin-inline: var(--wa-space-m); }
 .dispatch-services-dialog { --width: min(90vw, 38rem); }
+.dispatch-call-dialog, .dispatch-services-dialog { color: var(--wa-color-text-normal); }
 .dispatch-call-dialog { --width: min(90vw, 28rem); }
+.dispatch-call-dialog::part(body) { display: none; }
 .dispatch-services-dialog-search { margin-block-end: var(--wa-space-l); }
 .dispatch-services-dialog-list { max-height: 24rem; overflow-y: auto; border: var(--wa-border-width-s) solid var(--wa-color-neutral-border-normal); }
 .dispatch-services-dialog-option { display: flex; align-items: center; min-height: 3.75rem; padding: var(--wa-space-s) var(--wa-space-m); border-block-end: var(--wa-border-width-s) solid var(--wa-color-neutral-border-normal); cursor: pointer; }
@@ -74,6 +77,7 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
   const [adding, setAdding] = useState(false);
   const [calling, setCalling] = useState(false);
   const [selectedCallId, setSelectedCallId] = useState("");
+  const [selectedServiceCode, setSelectedServiceCode] = useState("");
   const [draft, setDraft] = useState([]);
   const [query, setQuery] = useState("");
   const catalog = [...new Map([...serviceCatalog(classifier), ...dispatchServices].map((service) => [service.code, service])).values()];
@@ -82,6 +86,8 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
   const noResponse = new Set(status || onCall ? [] : noResponseServices);
   const orderedServices = status || onCall ? services : orderedServiceCodes(services, noResponseServices);
   const filtered = catalog.filter((service) => `${service.name} ${service.code}`.toLocaleLowerCase("ru").includes(query.trim().toLocaleLowerCase("ru")));
+  const callsForService = (code) => calls.filter((call) => call.counterparty === "SERVICE" ? call.serviceCode === code : code === orderedServices[0]);
+  const selectedCalls = callsForService(selectedServiceCode);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -101,13 +107,15 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
     return () => dialog.removeEventListener("wa-after-hide", close);
   }, [calling]);
 
-  const openCallDialog = () => {
-    if (!callEnabled || !calls.length) return;
-    setSelectedCallId(calls[0].id);
+  const openCallDialog = (code) => {
+    const availableCalls = callsForService(code);
+    if (!callEnabled || !availableCalls.length) return;
+    setSelectedServiceCode(code);
+    setSelectedCallId(availableCalls[0].id);
     setCalling(true);
   };
   const confirmCall = () => {
-    if (!callEnabled || !calls.some((call) => call.id === selectedCallId)) return;
+    if (!callEnabled || !selectedCalls.some((call) => call.id === selectedCallId)) return;
     setCalling(false);
     onCall(selectedCallId);
   };
@@ -126,15 +134,15 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
   return (
     <>
       <style>{styles}</style>
-      <div class={`dispatch-services ${readonly ? "dispatch-services--readonly" : ""}`} aria-label="Назначенные службы">
+      <div class={`dispatch-services ${readonly ? "dispatch-services--readonly" : ""} ${onCall ? "dispatch-services--calls" : ""}`} aria-label="Назначенные службы">
         <div class="dispatch-services-label">Службы:</div>
         {orderedServices.map((code, index) => {
           const service = byCode.get(code);
           return (
             <div class={`dispatch-service ${noResponse.has(code) ? "dispatch-service--no-response" : !status && !onCall ? "dispatch-service--required" : ""} ${status && index === 0 ? "dispatch-service--with-status" : ""}`} key={code} title={noResponse.has(code) ? "Без реагирования" : undefined}>
               <strong title={service?.name || code}>{service?.name || code}</strong>
-              {readonly && index === 0 && onCall && (
-                <wa-button class="dispatch-service-call" type="button" size="s" appearance="plain" variant="neutral" disabled={!callEnabled || !calls.length} aria-label={calls.length && callEnabled ? calls.some((item) => item.counterparty === "SERVICE") ? "Позвонить бригаде или другой службе" : `Позвонить: ${service?.name || code}` : "Звонок недоступен на этом этапе"} onClick={openCallDialog}>
+              {readonly && onCall && (
+                <wa-button class="dispatch-service-call" type="button" size="s" appearance="plain" variant="neutral" disabled={!callEnabled || !callsForService(code).length} aria-label={`Позвонить: ${service?.name || code}`} title={!callsForService(code).length ? "Звонок недоступен на этом этапе" : undefined} onClick={() => openCallDialog(code)}>
                   <wa-icon name="phone" aria-hidden="true"></wa-icon>
                 </wa-button>
               )}
@@ -150,17 +158,6 @@ export default function DispatchServicesPanel({ classifier, dispatchServices = [
         {!readonly && !!catalog.length && <wa-button class="dispatch-service-add" type="button" size="l" appearance="outlined" variant="neutral" aria-label="Добавить службу" onClick={openDialog}><wa-icon name="plus"></wa-icon></wa-button>}
       </div>
       <wa-dialog ref={callDialogRef} class="dispatch-call-dialog" label="Подтвердить звонок" with-footer>
-        {calls.length > 1 ? (
-          <wa-select label="Кому позвонить" value={selectedCallId} onChange={(event) => setSelectedCallId(event.currentTarget.value)}>
-            {calls.map((call, index) => (
-              <wa-option key={call.id} value={call.id}>
-                {call.counterparty === "SERVICE" ? `Служба: ${call.person?.lastName || index + 1}` : call.person?.lastName ? `Бригада: ${call.person.lastName}` : `Бригада ${index + 1}`}
-              </wa-option>
-            ))}
-          </wa-select>
-        ) : <p>
-          Позвонить {calls[0]?.counterparty === "SERVICE" ? "другой службе" : "бригаде"}?
-        </p>}
         <wa-button slot="footer" type="button" appearance="outlined" variant="neutral" onClick={() => setCalling(false)}>
           Отмена
         </wa-button>
