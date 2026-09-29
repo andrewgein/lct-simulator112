@@ -40,6 +40,7 @@ class ChatNodePreprocessingTests(unittest.IsolatedAsyncioTestCase):
             (CallDirection.OUTBOUND, CounterpartyType.BRIGADE, []),
             (CallDirection.OUTBOUND, CounterpartyType.SERVICE, []),
             (CallDirection.INBOUND, CounterpartyType.CALLER, []),
+            (CallDirection.OUTBOUND, CounterpartyType.CALLER, []),
             (CallDirection.INBOUND, CounterpartyType.BRIGADE, [{"role": "assistant", "content": "Докладываю."}]),
             (CallDirection.INBOUND, CounterpartyType.SERVICE, [{"role": "user", "content": "Слушаю."}]),
         ):

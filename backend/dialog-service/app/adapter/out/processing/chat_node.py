@@ -8,7 +8,7 @@ import logging
 import asyncio
 
 from app.domain.model import CallDirection, CallScenario, CounterpartyType, DialogTranscript, Speaker
-from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT, build_call_scenario
+from app.application.model.prompts import BRIGADE_INBOUND_SYSTEM_PROMPT, BRIGADE_OUTBOUND_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT, build_call_scenario
 from app.adapter.out.processing.llm_model import LLMModel
 from .processing_node import UserDialogProcessingNode
 
@@ -43,13 +43,19 @@ class ChatNode(UserDialogProcessingNode):
         self.loop_thread.start()
 
         default_prompt = {
-            CounterpartyType.BRIGADE: BRIGADE_SYSTEM_PROMPT,
+            CounterpartyType.BRIGADE: (BRIGADE_INBOUND_SYSTEM_PROMPT if context.direction == CallDirection.INBOUND
+                                       else BRIGADE_OUTBOUND_SYSTEM_PROMPT),
             CounterpartyType.SERVICE: SERVICE_SYSTEM_PROMPT,
         }.get(context.counterparty, CALLER_SYSTEM_PROMPT)
         system_prompt = getenv("LLM_SYSTEM_PROMPT", default_prompt)
         incident_scenario = build_call_scenario(context)
         full_prompt = f"{system_prompt}\n\n{incident_scenario}"
         self.model = LLMModel(full_prompt)
+        if context.counterparty == CounterpartyType.CALLER:
+            self.model.opening_system_message = {
+                "role": "system",
+                "content": f"{system_prompt}\n\n{build_call_scenario(context, include_hidden=False)}",
+            }
         if history is not None and history.phrases:
             roles = {Speaker.OPERATOR: "user", Speaker.COUNTERPARTY: "assistant"}
             self.model.dialog_history = [

@@ -114,6 +114,20 @@ class TTSModelTests(unittest.TestCase):
             output_samples.astype(np.float32) / 32768,
         )
 
+    def test_dds_speed_is_forwarded_to_f5_server(self):
+        requests = []
+
+        def handler(request):
+            requests.append(request)
+            if request.url.path == "/upload_audio/":
+                return httpx.Response(200, json={"message": "uploaded"})
+            return httpx.Response(200, headers={"content-type": "audio/wav"}, content=_wav_bytes([0]))
+
+        with self._client_using(httpx.MockTransport(handler)):
+            list(self._model().generate("Прибыли на место", self.profile, speed=1.25))
+
+        self.assertEqual(dict(requests[-1].url.params)["speed"], "1.25")
+
     def test_registers_a_voice_only_once_for_multiple_responses(self):
         methods = []
 

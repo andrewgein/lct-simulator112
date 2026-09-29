@@ -91,10 +91,10 @@ class TTSModel:
                 self.text_preprocessor = TTSTextPreprocessor()
             return self.text_preprocessor
 
-    def generate(self, text: str, profile: VoiceProfile):
+    def generate(self, text: str, profile: VoiceProfile, speed: float = 1.0):
         prepared_text = self.load_text_preprocessor().process(text)
 
-        yield from self._generate_audio(prepared_text, profile)
+        yield from self._generate_audio(prepared_text, profile, speed=speed)
 
     @staticmethod
     def _voice_name(profile: VoiceProfile, audio: bytes) -> str:
@@ -133,7 +133,7 @@ class TTSModel:
                 raise TTSError(f"F5-TTS voice registration failed: {detail}")
             self._registered_voices.add(voice)
 
-    def _generate_audio(self, text: str, profile: VoiceProfile):
+    def _generate_audio(self, text: str, profile: VoiceProfile, speed: float = 1.0):
         if not self.base_url:
             raise TTSError("F5_TTS_BASE_URL is not configured")
 
@@ -146,10 +146,10 @@ class TTSModel:
             ) as client:
                 self._register_voice(client, profile, reference_audio, voice)
                 request_started = time.monotonic()
-                response = client.get(
-                    "synthesize_speech/",
-                    params={"text": text, "voice": voice},
-                )
+                params = {"text": text, "voice": voice}
+                if speed != 1.0:
+                    params["speed"] = speed
+                response = client.get("synthesize_speech/", params=params)
                 response.raise_for_status()
                 tracker.record("tts", time.monotonic() - request_started)
                 content_type = (
