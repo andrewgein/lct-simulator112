@@ -56,10 +56,7 @@ public class EnrollmentApplicationService implements AssignCourseToGroupUseCase,
     @Override
     @Transactional(readOnly = true)
     public List<Course> findGroupCourses(UUID groupId, UUID requesterId) {
-        StudyGroup group = getStudyGroup.getStudyGroup(groupId);
-        if (!group.ownerId().equals(requesterId)) {
-            throw new CourseAccessDeniedException("Просматривать назначенные курсы может только владелец группы");
-        }
+        getStudyGroup.getStudyGroup(groupId);
         return enrollmentRepository.findAllByGroupId(groupId).stream()
                 .map(Enrollment::courseId)
                 .distinct()
