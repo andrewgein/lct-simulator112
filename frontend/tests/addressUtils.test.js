@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { addressFromSuggestion, emptyAddressDetails, formatAddressDetails, formatIncidentAddress } from "../src/layouts/addressUtils.js";
+import { addressFromSuggestion, addressSuggestionFromGeocode, emptyAddressDetails, formatAddressDetails, formatIncidentAddress } from "../src/layouts/addressUtils.js";
 
 const suggestion = {
   value: "Московская обл, г Одинцово, д Лапино, ул Полевая, влд 5, стр 2",
@@ -11,6 +11,41 @@ const suggestion = {
     block: "2", block_type: "стр", flat: "3", flat_type: "офис", postal_code: "143081", floor: "4"
   }
 };
+
+test("map selection provides structured address for operator and constructor fields", () => {
+  const result = {
+    display_name: "8с1, улица Малая Дмитровка, Москва, Россия",
+    address: { country: "Россия", state: "Москва", city: "Москва", borough: "Центральный административный округ",
+      suburb: "Тверской район", road: "улица Малая Дмитровка", house_number: "8с1", postcode: "127006" }
+  };
+  const selected = addressSuggestionFromGeocode(result);
+  assert.equal(selected.value, result.display_name);
+  const { details, incident } = addressFromSuggestion(selected);
+  assert.equal(details.country, "Россия");
+  assert.equal(details.region, "Москва");
+  assert.equal(details.city, "Москва");
+  assert.equal(details.district, "Центральный административный округ");
+  assert.equal(details.area, "Тверской район");
+  assert.equal(details.street, "улица Малая Дмитровка");
+  assert.equal(details.house, "8с1");
+  assert.equal(details.postalCode, "127006");
+  assert.equal(details.apartment, "");
+  assert.equal(details.entrance, "");
+  assert.equal(details.floor, "");
+  assert.equal(incident.city, "Москва");
+  assert.equal(incident.house, "8с1");
+  assert.match(formatAddressDetails({ ...details, house: "9" }), /д 9/);
+});
+
+test("map address handles settlements and missing components without parsing the label", () => {
+  const { details } = addressFromSuggestion(addressSuggestionFromGeocode({
+    display_name: "Название объекта, Россия", address: { country: "Россия", village: "Лапино", pedestrian: "Пешеходная улица" }
+  }));
+  assert.equal(details.city, "Лапино");
+  assert.equal(details.street, "Пешеходная улица");
+  assert.equal(details.house, "");
+  assert.equal(details.region, "");
+});
 
 test("changing house preserves region, settlement and building types", () => {
   const { details, types } = addressFromSuggestion(suggestion);
