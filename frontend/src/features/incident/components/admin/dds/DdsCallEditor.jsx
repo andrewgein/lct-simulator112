@@ -3,6 +3,7 @@ import EditorDialog from "../EditorDialog.jsx";
 import PersonFields from "../PersonFields.jsx";
 import FactsField from "../FactsField.jsx";
 import { emptyPerson, personValue, splitLines } from "../editorHelpers.js";
+import { syncCallAddress } from "./ddsCallAddress.js";
 import { withCallContact } from "./ddsCallContacts.js";
 
 export function normalizeDdsCall(call = {}, key = crypto.randomUUID()) {
@@ -37,10 +38,13 @@ export function ddsCallValue(call, position) {
   };
 }
 
-export default function DdsCallEditor({ call, index, open, onClose, onSave, services, contacts = [] }) {
+export default function DdsCallEditor({ call, index, open, onClose, onSave, services, contacts = [], incidentAddress = "" }) {
   const [draft, setDraft] = useState(call);
   const [selectedContact, setSelectedContact] = useState("");
   useEffect(() => { if (open) { setDraft(structuredClone(call)); setSelectedContact(""); } }, [open]);
+  useEffect(() => {
+    if (open) setDraft((current) => syncCallAddress(current, incidentAddress));
+  }, [incidentAddress]);
   const update = (field) => (event) => setDraft((current) => ({ ...current, [field]: event.currentTarget.value }));
   return (
     <EditorDialog className="dds-call-dialog" label={`Редактирование звонка ${index + 1}`} open={open} onCancel={onClose} onSave={() => { onSave(draft); onClose(); }}>
@@ -60,11 +64,11 @@ export default function DdsCallEditor({ call, index, open, onClose, onSave, serv
             <wa-option value="">Выберите службу</wa-option>
             {services.map((service) => <wa-option key={service.code} value={service.code}>{service.name}</wa-option>)}
           </wa-select>}
-          <PersonFields title={draft.counterparty === "SERVICE" ? "Контакт другой службы" : "Контакт бригады"} person={draft.person} gender={draft.gender} showContactFields={false} disabled={!!selectedContact} afterTitle={!!contacts.length && <wa-select value={selectedContact} label="Использовать контакт из другого звонка" onChange={(event) => {
+          <PersonFields title={draft.counterparty === "SERVICE" ? "Контакт другой службы" : "Контакт бригады"} person={draft.person} gender={draft.gender} showContactFields={false} showAddressFields incidentAddress={incidentAddress} disabled={!!selectedContact} afterTitle={!!contacts.length && <wa-select value={selectedContact} label="Использовать контакт из другого звонка" onChange={(event) => {
             const key = event.currentTarget.value;
             setSelectedContact(key);
             const source = contacts.find((contact) => contact.key === key)?.call;
-            if (source) setDraft((current) => withCallContact(current, source));
+            if (source) setDraft((current) => syncCallAddress(withCallContact(current, source), incidentAddress));
           }}>
             <wa-option value="">Заполнить вручную</wa-option>
             {contacts.map(({ key, label }) => <wa-option key={key} value={key}>{label}</wa-option>)}

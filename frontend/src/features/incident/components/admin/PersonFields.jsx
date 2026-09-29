@@ -1,6 +1,6 @@
 import { generatePerson, personValue } from "./editorHelpers";
 
-export default function PersonFields({ title, person, gender, incidentAddress = "", showContactFields = true, disabled = false, afterTitle, onChange }) {
+export default function PersonFields({ title, person, gender, incidentAddress = "", showContactFields = true, showAddressFields = showContactFields, disabled = false, afterTitle, onChange }) {
   const change = (field) => (event) => onChange({ ...person, [field]: event.currentTarget.value });
   const generate = () => {
     const generated = generatePerson(gender);
@@ -44,6 +44,8 @@ export default function PersonFields({ title, person, gender, incidentAddress = 
         </wa-input>
         <wa-input value={person.onScenePhone} label="Телефон на место" disabled={disabled} onInput={change("onScenePhone")}>
         </wa-input>
+      </>}
+      {showAddressFields && <>
         <wa-input value={person.address} label="Адрес" disabled={disabled || person.useIncidentAddress} onInput={change("address")}>
         </wa-input>
         <wa-checkbox checked={person.useIncidentAddress} disabled={disabled || !incidentAddress} onChange={toggleIncidentAddress}>

@@ -1,8 +1,10 @@
 from queue import Queue
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from app.adapter.out.processing.chat_node import ChatNode, _preprocess_text
+from app.domain.model import CallDirection, CounterpartyType
 
 
 class _StreamingModel:
@@ -20,6 +22,38 @@ class _TestChatNode(ChatNode):
 
 
 class ChatNodePreprocessingTests(unittest.IsolatedAsyncioTestCase):
+    def test_incoming_dds_call_starts_once_without_operator_phrase(self):
+        for counterparty in (CounterpartyType.BRIGADE, CounterpartyType.SERVICE):
+            node = object.__new__(_TestChatNode)
+            node.context = SimpleNamespace(direction=CallDirection.INBOUND, counterparty=counterparty)
+            node.model = SimpleNamespace(dialog_history=[])
+            node.input_queue = Queue()
+            node._opening_started = False
+
+            node.begin_call()
+            node.begin_call()
+
+            self.assertEqual(list(node.input_queue.queue), [None])
+
+    def test_other_calls_and_restored_conversations_do_not_start_automatically(self):
+        for direction, counterparty, history in (
+            (CallDirection.OUTBOUND, CounterpartyType.BRIGADE, []),
+            (CallDirection.OUTBOUND, CounterpartyType.SERVICE, []),
+            (CallDirection.INBOUND, CounterpartyType.CALLER, []),
+            (CallDirection.OUTBOUND, CounterpartyType.CALLER, []),
+            (CallDirection.INBOUND, CounterpartyType.BRIGADE, [{"role": "assistant", "content": "Докладываю."}]),
+            (CallDirection.INBOUND, CounterpartyType.SERVICE, [{"role": "user", "content": "Слушаю."}]),
+        ):
+            node = object.__new__(_TestChatNode)
+            node.context = SimpleNamespace(direction=direction, counterparty=counterparty)
+            node.model = SimpleNamespace(dialog_history=history)
+            node.input_queue = Queue()
+            node._opening_started = False
+
+            node.begin_call()
+
+            self.assertTrue(node.input_queue.empty())
+
     async def _run_chunks(self, chunks):
         node = object.__new__(_TestChatNode)
         node.output_queue = Queue()

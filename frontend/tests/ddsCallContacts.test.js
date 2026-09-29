@@ -7,10 +7,10 @@ test("предлагает заполненные контакты из всех
   const service = { key: "s1", counterparty: "SERVICE", serviceCode: "03", person: {}, gender: "" };
   const stages = [
     { calls: [brigade, { ...brigade, key: "b2" }, { key: "empty", counterparty: "BRIGADE", person: {} }] },
-    { calls: [service, { key: "current", counterparty: "BRIGADE", person: {} }] }
+    { calls: [service, { key: "with-address", counterparty: "BRIGADE", person: { address: "Москва, Лесная, 14" } }, { key: "current", counterparty: "BRIGADE", person: {} }] }
   ];
-  assert.deepEqual(availableCallContacts(stages, "current").map(({ key, stageIndex, callIndex }) => [key, stageIndex, callIndex]), [["b1", 0, 0], ["s1", 1, 0]]);
-  assert.deepEqual(availableCallContacts(stages, "b1").map(({ key }) => key), ["b2", "s1"]);
+  assert.deepEqual(availableCallContacts(stages, "current").map(({ key, stageIndex, callIndex }) => [key, stageIndex, callIndex]), [["b1", 0, 0], ["s1", 1, 0], ["with-address", 1, 1]]);
+  assert.deepEqual(availableCallContacts(stages, "b1").map(({ key }) => key), ["b2", "s1", "with-address"]);
 });
 
 test("копирует только данные контакта, не затрагивая направление и содержание звонка", () => {

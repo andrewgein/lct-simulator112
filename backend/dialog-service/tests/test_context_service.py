@@ -21,7 +21,7 @@ class ContextGrpcAdapterTests(unittest.TestCase):
             position=2,
             direction=CALL_DIRECTION_OUTBOUND,
             counterparty=COUNTERPARTY_TYPE_BRIGADE,
-            person=Person(first_name="Иван", age=42, phone="112"),
+            person=Person(first_name="Иван", age=42, phone="112", address="Москва, Тверская, 8"),
             gender=GENDER_MAN,
             known_facts=["Бригада прибыла"],
             emotional_state="CALM",
@@ -33,6 +33,7 @@ class ContextGrpcAdapterTests(unittest.TestCase):
         self.assertEqual(CounterpartyType.BRIGADE, call.counterparty)
         self.assertEqual(Gender.MAN, call.gender)
         self.assertEqual(42, call.person.age)
+        self.assertEqual("Москва, Тверская, 8", call.person.address)
         method, request = call_mock.call_args.args
         self.assertEqual("GetCall", method)
         self.assertEqual(GetCallRequest(context_id="context-1", call_id="call-1"), request)

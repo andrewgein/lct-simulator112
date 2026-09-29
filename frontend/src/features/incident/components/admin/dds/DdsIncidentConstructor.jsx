@@ -44,6 +44,8 @@ export default function DdsIncidentConstructor({ incident = {} }) {
       if (!response.ok) throw new Error("Не удалось загрузить службы");
       return response.json();
     }).then((items) => { setServices(items); setServicesError(""); }).catch((error) => { console.error("Failed to load dispatch services:", error); setServicesError("Не удалось загрузить службы из классификатора"); });
+    const input = document.querySelector("#incident-main-address input");
+    if (input) setIncidentAddress(input.value || "");
     const addressChange = (event) => setIncidentAddress(event.detail || "");
     window.addEventListener("incident-address-change", addressChange);
     return () => { unsubscribe(); window.removeEventListener("incident-address-change", addressChange); };
@@ -197,7 +199,7 @@ export default function DdsIncidentConstructor({ incident = {} }) {
           <AdditionalFields fields={codes.some(Boolean) ? fields : undefined} values={prepared.additionalInfo} onChange={(id, value) => setPrepared((current) => ({ ...current, additionalInfo: { ...current.additionalInfo, [id]: value } }))} />
         </div>
       </section>
-      <DdsStageTimeline initialIncident={incident} onChange={setTimeline} services={services.filter((service) => service.code !== assignment.emergencyService)} />
+      <DdsStageTimeline initialIncident={incident} onChange={setTimeline} incidentAddress={incidentAddress} services={services.filter((service) => service.code !== assignment.emergencyService)} />
     </div>
   );
 }

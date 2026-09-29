@@ -1,4 +1,4 @@
-const contactFields = ["lastName", "firstName", "middleName", "age", "additionalInfo"];
+const contactFields = ["lastName", "firstName", "middleName", "age", "address", "additionalInfo"];
 
 export function availableCallContacts(stages, currentKey) {
   const seen = new Set();

@@ -2,6 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 import EditorDialog from "../EditorDialog.jsx";
 import { EditorAddCard, EditorCallCard, EditorCallRow, EditorStageContainer } from "../EditorContainers.jsx";
 import DdsCallEditor, { ddsCallValue, normalizeDdsCall } from "./DdsCallEditor.jsx";
+import { syncCallAddress } from "./ddsCallAddress.js";
 import { availableCallContacts } from "./ddsCallContacts.js";
 
 const STAGE_TYPES = [
@@ -127,11 +128,17 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
   </>;
 }
 
-export default function DdsStageTimeline({ initialIncident, onChange, services = [] }) {
+export default function DdsStageTimeline({ initialIncident, onChange, services = [], incidentAddress = "" }) {
   const [stages, setStages] = useState(() => (initialIncident.stages || []).map((stage) => ({ ...stage, completionTriggers: stage.actualStatus ? stage.completionTriggers ?? ["TIME"] : (stage.completionTriggers ?? ["TIME"]).filter((item) => item !== "STATUS"), failOnTimeout: Boolean(stage.failOnTimeout) && (stage.completionTriggers ?? ["TIME"]).includes("TIME"), description: stage.description || "", expectedComment: stage.actualStatus ? stage.expectedComment || "" : "", calls: (stage.calls || []).map((call) => normalizeDdsCall(call)) })));
   const [editingStageId, setEditingStageId] = useState(null);
   const [editingCallKey, setEditingCallKey] = useState(null);
   useEffect(() => onChange(stages), [stages]);
+  useEffect(() => {
+    setStages((items) => items.map((stage) => ({
+      ...stage,
+      calls: stage.calls.map((call) => syncCallAddress(call, incidentAddress))
+    })));
+  }, [incidentAddress]);
   useEffect(() => {
     const form = document.querySelector("#incident-form");
     const applyGenerated = (event) => {
@@ -206,7 +213,7 @@ export default function DdsStageTimeline({ initialIncident, onChange, services =
             </EditorAddCard>
           </EditorCallRow>
           </EditorStageContainer>
-          {stage.calls.map((call, callIndex) => <DdsCallEditor key={call.key} call={call} index={callIndex} services={services} contacts={availableCallContacts(stages, call.key).map((contact) => ({ ...contact, label: `${contact.call.counterparty === "SERVICE" ? services.find((service) => service.code === contact.call.serviceCode)?.name || contact.call.serviceCode || "Другая служба" : "Бригада"} · ${[contact.call.person?.lastName, contact.call.person?.firstName, contact.call.person?.middleName].filter(Boolean).join(" ") || "без имени"} (этап ${contact.stageIndex + 1}, звонок ${contact.callIndex + 1})` }))} open={editingCallKey === call.key} onClose={() => setEditingCallKey(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.map((current) => current.key === call.key ? value : current) } : item))} />)}
+          {stage.calls.map((call, callIndex) => <DdsCallEditor key={call.key} call={call} index={callIndex} services={services} incidentAddress={incidentAddress} contacts={availableCallContacts(stages, call.key).map((contact) => ({ ...contact, label: `${contact.call.counterparty === "SERVICE" ? services.find((service) => service.code === contact.call.serviceCode)?.name || contact.call.serviceCode || "Другая служба" : "Бригада"} · ${[contact.call.person?.lastName, contact.call.person?.firstName, contact.call.person?.middleName].filter(Boolean).join(" ") || "без имени"} (этап ${contact.stageIndex + 1}, звонок ${contact.callIndex + 1})` }))} open={editingCallKey === call.key} onClose={() => setEditingCallKey(null)} onSave={(value) => change(stages.map((item) => item.id === stage.id ? { ...item, calls: item.calls.map((current) => current.key === call.key ? value : current) } : item))} />)}
         </li>)}
     </ol>
     <EditorAddCard className="editor-add-stage-card">
