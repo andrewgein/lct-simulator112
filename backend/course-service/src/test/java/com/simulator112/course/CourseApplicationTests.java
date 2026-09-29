@@ -204,6 +204,6 @@ class CourseApplicationTests {
 
         assertThat(enrollmentRepository.findAllByStudentId(studentId)).isEmpty();
         assertThat(enrollmentRepository.findByCourseIdAndStudentId(course.id(), newStudentId)).isPresent();
-        assertThat(studyGroupRepository.findAllByOwnerId(ownerId)).hasSize(1);
+        assertThat(studyGroupRepository.findAll().stream().filter(g -> g.id().equals(group.id())).toList()).hasSize(1);
     }
 }

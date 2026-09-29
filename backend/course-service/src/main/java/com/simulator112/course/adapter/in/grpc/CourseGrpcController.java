@@ -1,7 +1,7 @@
 package com.simulator112.course.adapter.in.grpc;
 
 import com.simulator112.course.application.port.in.GetCourseUseCase;
-import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
+import com.simulator112.course.application.port.in.FindAllStudyGroupsUseCase;
 import com.simulator112.course.application.service.CertificateApplicationService;
 import com.simulator112.course.grpc.contract.ReviewResultNotification;
 import com.simulator112.course.grpc.contract.ReviewResultAcknowledgement;
@@ -26,7 +26,7 @@ import org.springframework.grpc.server.service.GrpcService;
 public class CourseGrpcController extends CourseServiceGrpc.CourseServiceImplBase {
     private final GetEnrollmentUseCase enrollments;
     private final GetCourseUseCase courses;
-    private final FindOwnedStudyGroupsUseCase groups;
+    private final FindAllStudyGroupsUseCase groups;
     private final CertificateApplicationService certificates;
 
     @Override
@@ -46,9 +46,8 @@ public class CourseGrpcController extends CourseServiceGrpc.CourseServiceImplBas
     @Override
     public void isStudentOfTeacher(TeacherStudentRequest request, StreamObserver<TeacherStudentResponse> observer) {
         try {
-            UUID teacherId = UUID.fromString(request.getTeacherId());
             UUID studentId = UUID.fromString(request.getStudentId());
-            boolean belongs = groups.findOwnedStudyGroups(teacherId).stream()
+            boolean belongs = groups.findAllStudyGroups().stream()
                     .anyMatch(group -> group.studentIds().contains(studentId));
             observer.onNext(TeacherStudentResponse.newBuilder().setBelongsToTeacher(belongs).build());
             observer.onCompleted();

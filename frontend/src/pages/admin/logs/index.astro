@@ -112,7 +112,6 @@ const timeFormatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "medium", ti
         viewer.dataset.lastTimestamp = entries.at(-1)?.timestamp || since || "";
         viewer.scrollTop = viewer.scrollHeight;
       } catch {
-        // тихо пропускаем один неудачный опрос - следующий поллинг попробует снова
       }
     }, 3000);
   }
