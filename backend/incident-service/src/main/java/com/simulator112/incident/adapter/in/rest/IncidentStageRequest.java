@@ -2,6 +2,7 @@ package com.simulator112.incident.adapter.in.rest;
 
 import com.simulator112.incident.domain.common.CallScenario;
 import com.simulator112.incident.domain.dds.DdsStageType;
+import com.simulator112.incident.domain.dds.DdsCompletionTrigger;
 import com.simulator112.incident.domain.common.IncidentStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -23,5 +24,6 @@ public record IncidentStageRequest(
         Integer timeLimitSeconds,
         @NotNull List<@Valid CallScenario> calls,
         String expectedComment,
-        IncidentStatus actualStatus) {
+        IncidentStatus actualStatus,
+        List<DdsCompletionTrigger> completionTriggers) {
 }

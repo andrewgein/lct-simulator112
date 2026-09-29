@@ -2,6 +2,7 @@ package com.simulator112.incident.adapter.out.persistence.entity.dds;
 
 import com.simulator112.incident.adapter.out.persistence.entity.common.IncidentStageJpaEntity;
 import com.simulator112.incident.domain.dds.DdsStageType;
+import com.simulator112.incident.domain.dds.DdsCompletionTrigger;
 import com.simulator112.incident.domain.common.IncidentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -38,4 +39,10 @@ public class DdsStageDetailsJpaEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "actual_status", length = 50)
     private IncidentStatus actualStatus;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "dds_stage_completion_triggers", joinColumns = @JoinColumn(name = "stage_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "completion_trigger", nullable = false, length = 20)
+    private java.util.List<DdsCompletionTrigger> completionTriggers = new java.util.ArrayList<>();
 }

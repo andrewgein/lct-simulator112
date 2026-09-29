@@ -50,11 +50,14 @@ public final class DdsReviewRubric implements ReviewRubric {
                         for (var milestone : milestones) {
                             var stage = runtime.stages().stream().filter(value -> value.stageId().equals(milestone.id()))
                                     .findFirst().orElse(null);
-                            var changedAt = stage == null ? null : stage.deadline();
                             var nextStage = runtime.stages().stream()
-                                    .filter(value -> changedAt != null && !value.stageId().equals(milestone.id())
-                                            && value.startedAt() != null && !value.startedAt().isBefore(changedAt))
+                                    .filter(value -> stage != null && !value.stageId().equals(milestone.id())
+                                            && value.startedAt() != null && stage.startedAt() != null
+                                            && value.startedAt().isAfter(stage.startedAt()))
                                     .min(Comparator.comparing(ReviewSubmission.StageRuntime::startedAt)).orElse(null);
+                            var changedAt = nextStage != null ? nextStage.startedAt()
+                                    : stage == null ? null : stage.deadline() != null && (submission.submittedAt() == null || !stage.deadline().isAfter(submission.submittedAt()))
+                                            ? stage.deadline() : stage.startedAt();
                             var dueAt = nextStage != null && nextStage.deadline() != null
                                     ? nextStage.deadline() : submission.submittedAt();
                             var reported = runtime.reactionEvents().stream()

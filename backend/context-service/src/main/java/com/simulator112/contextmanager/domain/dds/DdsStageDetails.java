@@ -14,6 +14,14 @@ public class DdsStageDetails {
     private String expectedComment;
     private String comment;
     private IncidentStatus actualStatus;
+    private java.util.List<DdsCompletionTrigger> completionTriggers;
+
+    public DdsStageDetails(DdsStageType type, Integer timeLimitSeconds, String expectedComment, String comment,
+                           IncidentStatus actualStatus) {
+        this(type, timeLimitSeconds, expectedComment, comment, actualStatus, type == DdsStageType.ASSIGN_BRIGADE
+                ? java.util.List.of(DdsCompletionTrigger.TIME, DdsCompletionTrigger.STATUS)
+                : java.util.List.of(DdsCompletionTrigger.TIME));
+    }
 
     public DdsStageDetails(DdsStageType type, Integer timeLimitSeconds, String expectedComment, String comment) {
         this(type, timeLimitSeconds, expectedComment, comment, null);

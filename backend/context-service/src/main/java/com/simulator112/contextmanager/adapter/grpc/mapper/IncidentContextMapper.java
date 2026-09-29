@@ -68,7 +68,15 @@ public final class IncidentContextMapper {
                     proto.getDds().getTimeLimitSeconds(), proto.getDds().getExpectedComment(), null,
                     proto.getDds().getActualStatus() == com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_UNSPECIFIED
                             ? null : com.simulator112.contextmanager.domain.common.IncidentStatus.valueOf(
-                                    proto.getDds().getActualStatus().name().replace("INCIDENT_STATUS_", ""))));
+                                    proto.getDds().getActualStatus().name().replace("INCIDENT_STATUS_", "")),
+                    proto.getDds().getCompletionTriggersList().isEmpty()
+                            ? proto.getDds().getType() == com.simulator112.incident.grpc.contract.DdsStageType.DDS_STAGE_TYPE_ASSIGN_BRIGADE
+                                    ? java.util.List.of(com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.TIME,
+                                            com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.STATUS)
+                                    : java.util.List.of(com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.TIME)
+                            : proto.getDds().getCompletionTriggersList().stream().map(trigger ->
+                                    com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.valueOf(
+                                            trigger.name().replace("DDS_COMPLETION_TRIGGER_", ""))).toList()));
         }
         value.setCalls(proto.getCallsList().stream().map(IncidentContextMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return value;
@@ -117,6 +125,8 @@ public final class IncidentContextMapper {
                 .setType(com.simulator112.incident.grpc.contract.DdsStageType.valueOf("DDS_STAGE_TYPE_" + value.getDds().getType().name()))
                 .setTimeLimitSeconds(value.getDds().getTimeLimitSeconds())
                 .setExpectedComment(orEmpty(value.getDds().getExpectedComment()))
+                .addAllCompletionTriggers(value.getDds().getCompletionTriggers().stream().map(trigger ->
+                        com.simulator112.incident.grpc.contract.DdsCompletionTrigger.valueOf("DDS_COMPLETION_TRIGGER_" + trigger.name())).toList())
                 .setActualStatus(value.getDds().getActualStatus() == null
                         ? com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_UNSPECIFIED
                         : com.simulator112.incident.grpc.contract.IncidentStatus.valueOf(

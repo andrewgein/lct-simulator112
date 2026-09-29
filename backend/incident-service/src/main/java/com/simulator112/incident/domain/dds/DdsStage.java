@@ -15,7 +15,13 @@ public record DdsStage(
         int timeLimitSeconds,
         List<CallScenario> calls,
         String expectedComment,
-        IncidentStatus actualStatus) implements IncidentStage {
+        IncidentStatus actualStatus,
+        List<DdsCompletionTrigger> completionTriggers) implements IncidentStage {
+    public DdsStage(UUID id, String title, String description, DdsStageType type,
+                    int timeLimitSeconds, List<CallScenario> calls, String expectedComment, IncidentStatus actualStatus) {
+        this(id, title, description, type, timeLimitSeconds, calls, expectedComment, actualStatus, type == DdsStageType.ASSIGN_BRIGADE
+                ? List.of(DdsCompletionTrigger.TIME, DdsCompletionTrigger.STATUS) : List.of(DdsCompletionTrigger.TIME));
+    }
     public DdsStage(UUID id, String title, String description, DdsStageType type,
                     int timeLimitSeconds, List<CallScenario> calls, String expectedComment) {
         this(id, title, description, type, timeLimitSeconds, calls, expectedComment, null);
@@ -28,6 +34,21 @@ public record DdsStage(
 
     public DdsStage {
         calls = calls == null ? List.of() : List.copyOf(calls);
+        completionTriggers = completionTriggers == null ? (type == DdsStageType.ASSIGN_BRIGADE
+                ? List.of(DdsCompletionTrigger.TIME, DdsCompletionTrigger.STATUS) : List.of(DdsCompletionTrigger.TIME))
+                : List.copyOf(completionTriggers);
+        if (completionTriggers.isEmpty() || completionTriggers.stream().distinct().count() != completionTriggers.size()) {
+            throw new IllegalArgumentException("Выберите неповторяющиеся условия завершения этапа ДДС");
+        }
+        if (completionTriggers.contains(DdsCompletionTrigger.CALLS) && calls.isEmpty()) {
+            throw new IllegalArgumentException("Для завершения этапа по звонкам добавьте звонок");
+        }
+        if (completionTriggers.contains(DdsCompletionTrigger.STATUS) && (type == DdsStageType.ASSIGN_BRIGADE
+                ? actualStatus != null && actualStatus != IncidentStatus.ACCEPTED
+                : actualStatus == null || !List.of("ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS", "WORK_COMPLETED")
+                        .contains(actualStatus.name()))) {
+            throw new IllegalArgumentException("Для завершения этапа по статусу укажите следующий статус реагирования");
+        }
         if (type == null) {
             throw new IllegalArgumentException("Тип этапа ДДС обязателен");
         }
