@@ -41,6 +41,8 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("СПЕЦИАЛЬНАЯ ЛОГИКА ПОВЕДЕНИЯ", prompt)
         self.assertIn("Она уточняет условия раскрытия фактов", prompt)
         self.assertIn("Это звонок от тебя в ДДС", prompt)
+        self.assertIn("начинай разговор первым, не жди приветствия", prompt)
+        self.assertNotIn("После первого понятного приветствия оператора", prompt)
         self.assertIn("Никогда не угадывай и не произноси имя оператора", prompt)
         self.assertNotIn("ПРАВИЛА ПОВЕДЕНИЯ СОБЕСЕДНИКА", prompt)
 
@@ -57,6 +59,13 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("Это звонок оператора ДДС тебе", prompt)
         self.assertIn("Это справочник, а не текст доклада", prompt)
         self.assertIn("Если реплика непонятна", prompt)
+
+    def test_incoming_brigade_starts_before_operator(self):
+        prompt = build_call_scenario(_call(counterparty=CounterpartyType.BRIGADE, direction=CallDirection.INBOUND))
+
+        self.assertIn("начинай разговор первым, не жди приветствия", prompt)
+        self.assertIn("Это вступление произнеси один раз", prompt)
+        self.assertIn("Не раскрывай скрытые факты", prompt)
 
 
 def _call(**changes) -> CallScenario:

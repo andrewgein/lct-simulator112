@@ -20,7 +20,7 @@ class LLMModel:
             "content": system_prompt
         }
 
-    async def _stream_and_save(self, stream, user_text: str, request_started: float, assistant_prefix: str = "") -> AsyncGenerator[str, Any]:
+    async def _stream_and_save(self, stream, user_text: str | None, request_started: float, assistant_prefix: str = "") -> AsyncGenerator[str, Any]:
         collected_chunks = []
         first_chunk_seen = False
         try:
@@ -37,13 +37,16 @@ class LLMModel:
         else:
             full_text = "".join(collected_chunks)
             if full_text.strip():
-                self.dialog_history.append({"role": "user", "content": user_text})
+                if user_text is not None:
+                    self.dialog_history.append({"role": "user", "content": user_text})
                 self.dialog_history.append({"role": "assistant", "content": full_text})
                 self.dialog_history = self.dialog_history[-10:]
 
 
     async def generate_answer(self, user_text) -> AsyncGenerator[str, Any]:
-        user_message = {"role": "user", "content": user_text}
+        user_message = {"role": "user", "content": user_text if user_text is not None else
+                        "Соединение установлено. Это служебный сигнал, не реплика оператора. "
+                        "Произнеси первую реплику входящего звонка по разделу «НАЧАЛО РАЗГОВОРА»."}
         request_messages = [self.system_message, *self.dialog_history, user_message]
         request_started = time.monotonic()
         stream = await self.client.chat.completions.create(
@@ -59,10 +62,11 @@ class LLMModel:
             yield chunk
 
 
-    async def regenerate_answer(self, new_user_text: str, previous_user_text: str, partial_response: str) -> AsyncGenerator[str, Any]:
+    async def regenerate_answer(self, new_user_text: str, previous_user_text: str | None, partial_response: str) -> AsyncGenerator[str, Any]:
 
         logger.info(f"Regenerating new_user_text='{new_user_text}' previous_user_text='{previous_user_text}' partial_response='{partial_response}'")
-        self.dialog_history.append({"role": "user", "content": previous_user_text})
+        if previous_user_text is not None:
+            self.dialog_history.append({"role": "user", "content": previous_user_text})
 
         if partial_response.strip():
             self.dialog_history.append({"role": "assistant", "content": partial_response})

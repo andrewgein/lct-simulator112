@@ -39,6 +39,7 @@ class ProcessingVoicePipeline(VoicePipeline):
             .connect(output))
 
         self._context = processing_context
+        chat.begin_call()
 
     def process_text(self, text: str) -> None:
         self._context.process(text)

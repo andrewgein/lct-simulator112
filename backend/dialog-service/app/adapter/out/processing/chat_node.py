@@ -7,7 +7,7 @@ from openai import OpenAI
 import logging
 import asyncio
 
-from app.domain.model import CallScenario, CounterpartyType, DialogTranscript, Speaker
+from app.domain.model import CallDirection, CallScenario, CounterpartyType, DialogTranscript, Speaker
 from app.application.model.prompts import BRIGADE_SYSTEM_PROMPT, CALLER_SYSTEM_PROMPT, SERVICE_SYSTEM_PROMPT, build_call_scenario
 from app.adapter.out.processing.llm_model import LLMModel
 from .processing_node import UserDialogProcessingNode
@@ -37,6 +37,7 @@ class ChatNode(UserDialogProcessingNode):
         self.partial_response = ""
 
         self.worker = None
+        self._opening_started = False
         self.loop = asyncio.new_event_loop()
         self.loop_thread = threading.Thread(target=self._run_event_loop, daemon=True)
         self.loop_thread.start()
@@ -56,6 +57,13 @@ class ChatNode(UserDialogProcessingNode):
                 for phrase in history.phrases
             ][-10:]
 
+
+    def begin_call(self) -> None:
+        if (not self._opening_started and self.context.direction == CallDirection.INBOUND
+                and self.context.counterparty in (CounterpartyType.BRIGADE, CounterpartyType.SERVICE)
+                and not self.model.dialog_history):
+            self._opening_started = True
+            self.input_queue.put(None)
 
     def _run_event_loop(self):
         asyncio.set_event_loop(self.loop)
@@ -77,10 +85,10 @@ class ChatNode(UserDialogProcessingNode):
             self.worker = future.result()
         self.previous_event = event
 
-    async def _start_worker(self, event: str) -> asyncio.Task:
+    async def _start_worker(self, event: str | None) -> asyncio.Task:
         return asyncio.create_task(self._llm_worker(event))
 
-    async def _restart_worker(self, old_user_text: str, new_user_text: str) -> asyncio.Task:
+    async def _restart_worker(self, old_user_text: str | None, new_user_text: str) -> asyncio.Task:
         old_worker = self.worker
         if old_worker is not None and not old_worker.done():
             old_worker.cancel()
@@ -100,13 +108,13 @@ class ChatNode(UserDialogProcessingNode):
 
 
     async def _llm_worker(self,
-                          user_text: str,
+                          user_text: str | None,
                           previous_user_text: str | None = None,
                           previous_response: str | None = None):
         generator = None
         self._reset_buffers()
         try:
-            if (previous_user_text is not None and previous_response is not None):
+            if previous_response is not None:
                 generator = self.model.regenerate_answer(user_text, previous_user_text, previous_response)
             else:
                 generator = self.model.generate_answer(user_text)
