@@ -47,6 +47,28 @@ test("map address handles settlements and missing components without parsing the
   assert.equal(details.region, "");
 });
 
+test("map address fills federal district without treating a numbered neighbourhood as a house", () => {
+  const { details } = addressFromSuggestion(addressSuggestionFromGeocode({
+    display_name: "улица Петровка, 62, Тверской район, Москва, Центральный федеральный округ, Россия",
+    address: { road: "улица Петровка", neighbourhood: "62", suburb: "Тверской район", city: "Москва",
+      state_district: "Центральный федеральный округ", country: "Россия" }
+  }));
+  assert.equal(details.district, "Центральный федеральный округ");
+  assert.equal(details.house, "");
+});
+
+test("map address reads federal district from region and keeps quarter out of house", () => {
+  const { details } = addressFromSuggestion(addressSuggestionFromGeocode({
+    display_name: "8 к1, Тверская улица, 50, Тверской район, Москва, Центральный федеральный округ, Россия",
+    address: { house_number: "8 к1", road: "Тверская улица", quarter: "50", suburb: "Тверской район",
+      city: "Москва", state: "Москва", region: "Центральный федеральный округ", country: "Россия" }
+  }));
+  assert.equal(details.region, "Москва");
+  assert.equal(details.district, "Центральный федеральный округ");
+  assert.equal(details.area, "Тверской район");
+  assert.equal(details.house, "8 к1");
+});
+
 test("changing house preserves region, settlement and building types", () => {
   const { details, types } = addressFromSuggestion(suggestion);
   const address = formatAddressDetails({ ...details, house: "7" }, types);
