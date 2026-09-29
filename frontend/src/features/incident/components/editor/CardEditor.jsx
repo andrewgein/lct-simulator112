@@ -11,13 +11,16 @@ import VictimStatusBar from "./VictimStatusBar.jsx";
 import { cardAddress, emptyPerson, findIncident, findLinkSuggestions } from "./editorHelpers";
 import { useClassifier } from "../../hooks/useClassifier";
 import IncidentWorkspace from "../../../level/components/common/IncidentWorkspace.jsx";
-import CallControls from "../../../level/components/player/CallControls.jsx";
+import DdsCallControls from "../../../level/components/player/DdsCallControls.jsx";
 import ServiceLoadIndicator, { useServiceLoad } from "../../../level/components/common/ServiceLoadIndicator.jsx";
 
 const styles = `
 .incident-workspace { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 48rem; background: #c8d1d5; color: var(--wa-color-text-normal); }
 .workspace-callbar { display: grid; grid-template-columns: minmax(13rem, 0.8fr) repeat(3, minmax(15rem, 1fr)) auto; box-sizing: border-box; width: auto; height: auto; min-height: 6rem; padding: 0; border-block-end: var(--wa-space-s) solid #c8d1d5; background: #f4f6f6; }
 .workspace-callbar > div { display: flex; box-sizing: border-box; min-width: 0; padding: var(--wa-space-m) var(--wa-space-l); border-inline-end: var(--wa-border-width-s) solid #b8c1c5; }
+.workspace-callbar:has(.dds-call-controls) { grid-template-columns: minmax(22rem, 1fr) repeat(3, minmax(12rem, 1fr)) auto; }
+.workspace-callbar--without-connection { grid-template-columns: repeat(3, minmax(12rem, 1fr)) auto; }
+.workspace-callbar > .dds-call-controls { display: grid; padding: var(--wa-space-s) var(--wa-space-m); }
 .workspace-applicant-summary { display: flex; box-sizing: border-box; min-height: 4.5rem; align-items: end; gap: var(--wa-space-m); padding: var(--wa-space-m); border-block-end: 0.5rem solid #c8d1d5; background: #f4f6f6; }
 .workspace-applicant-name { display: flex; flex: 1; min-width: 0; gap: var(--wa-space-xs); }
 .workspace-applicant-name-input, .workspace-applicant-status { min-width: 0; padding: var(--wa-space-2xs) 0; border: 0; border-block-end: 2px solid #b1bbc0; outline: 0; background: transparent; color: #35434a; font: inherit; }
@@ -348,8 +351,8 @@ export default function CardEditor({ contextId, cards, call, editor, isDev, dada
   if (editingCard && (!savedEditMode || readOnly)) return (
     <IncidentWorkspace label={`Просмотр карточки ${editingCard.cardId}`}>
       <style>{styles}</style>
-      <header class="workspace-callbar">
-        {readOnly && ["incoming", "active"].includes(call.phase) ? <CallControls call={call} onAccept={onAcceptCall} onDrop={onDropCall} /> : <div class="workspace-connection">
+      <header class={`workspace-callbar ${readOnly && !["incoming", "active"].includes(call.phase) ? "workspace-callbar--without-connection" : ""}`}>
+        {readOnly ? (["incoming", "active"].includes(call.phase) && <DdsCallControls call={call} load={serviceLoad} seconds={seconds} onAccept={onAcceptCall} onDrop={onDropCall} />) : <div class="workspace-connection">
           <wa-icon name="phone" aria-hidden="true"></wa-icon>
           <div class="workspace-connection-copy"><strong>{readonlyTitle}</strong><span class="workspace-call-label">{readonlyHint}</span></div>
         </div>}
