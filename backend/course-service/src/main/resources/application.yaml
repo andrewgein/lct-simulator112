@@ -1,5 +1,7 @@
 server:
   port: 8088
+  tomcat:
+    max-http-form-post-size: ${MATERIAL_MAX_FILE_SIZE:25MB}
 
 spring:
   application:
