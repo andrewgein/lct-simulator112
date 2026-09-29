@@ -22,6 +22,9 @@ public class IncidentJpaEntity {
     @Column(nullable = false)
     private String title;
 
+    @Column(nullable = false)
+    private boolean deleted;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "target_type", nullable = false)
     private IncidentTargetType targetType;

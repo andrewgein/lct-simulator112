@@ -9,10 +9,12 @@ import java.util.List;
 import java.util.UUID;
 
 public interface SpringDataIncidentRepository extends JpaRepository<IncidentJpaEntity, UUID> {
-    List<IncidentJpaEntity> findAllByTargetType(IncidentTargetType targetType);
+    List<IncidentJpaEntity> findAllByDeletedFalse();
 
-    List<IncidentJpaEntity> findAllByDifficulty(Difficulty difficulty);
+    List<IncidentJpaEntity> findAllByDeletedFalseAndTargetType(IncidentTargetType targetType);
 
-    List<IncidentJpaEntity> findAllByTargetTypeAndDifficulty(
+    List<IncidentJpaEntity> findAllByDeletedFalseAndDifficulty(Difficulty difficulty);
+
+    List<IncidentJpaEntity> findAllByDeletedFalseAndTargetTypeAndDifficulty(
             IncidentTargetType targetType, Difficulty difficulty);
 }

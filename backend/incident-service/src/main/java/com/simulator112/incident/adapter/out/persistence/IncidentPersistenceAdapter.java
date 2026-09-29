@@ -22,7 +22,11 @@ public class IncidentPersistenceAdapter implements IncidentRepository {
     @Override
     @Transactional
     public Incident save(Incident incident) {
-        return mapper.toDomain(repository.save(mapper.toEntity(incident)));
+        var entity = mapper.toEntity(incident);
+        if (incident.id() != null) {
+            repository.findById(incident.id()).ifPresent(existing -> entity.setDeleted(existing.isDeleted()));
+        }
+        return mapper.toDomain(repository.save(entity));
     }
 
     @Override
@@ -35,14 +39,16 @@ public class IncidentPersistenceAdapter implements IncidentRepository {
     @Transactional(readOnly = true)
     public List<Incident> findAvailable(IncidentTargetType targetType, Difficulty difficulty) {
         var incidents = targetType == null
-                ? difficulty == null ? repository.findAll() : repository.findAllByDifficulty(difficulty)
-                : difficulty == null ? repository.findAllByTargetType(targetType)
-                : repository.findAllByTargetTypeAndDifficulty(targetType, difficulty);
+                ? difficulty == null ? repository.findAllByDeletedFalse() : repository.findAllByDeletedFalseAndDifficulty(difficulty)
+                : difficulty == null ? repository.findAllByDeletedFalseAndTargetType(targetType)
+                : repository.findAllByDeletedFalseAndTargetTypeAndDifficulty(targetType, difficulty);
         return incidents.stream().map(mapper::toDomain).toList();
     }
 
     @Override
+    @Transactional
     public void deleteById(UUID incidentId) {
-        repository.deleteById(incidentId);
+        var incident = repository.findById(incidentId).orElseThrow();
+        incident.setDeleted(true);
     }
 }
