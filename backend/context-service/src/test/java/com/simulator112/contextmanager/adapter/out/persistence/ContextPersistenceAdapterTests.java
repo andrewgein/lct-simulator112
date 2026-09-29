@@ -3,6 +3,7 @@ package com.simulator112.contextmanager.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.simulator112.contextmanager.application.port.out.ContextStore;
+import com.simulator112.contextmanager.application.service.LevelProgressService;
 import com.simulator112.contextmanager.domain.common.CallDirection;
 import com.simulator112.contextmanager.domain.common.CallSnapshot;
 import com.simulator112.contextmanager.domain.common.CallStatus;
@@ -22,6 +23,7 @@ import com.simulator112.contextmanager.domain.common.SpeakerType;
 import com.simulator112.contextmanager.domain.common.StageSnapshot;
 import com.simulator112.contextmanager.domain.common.StageStatus;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
+import com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger;
 import com.simulator112.contextmanager.domain.dds.DdsStageDetails;
 import com.simulator112.contextmanager.domain.dds.DdsStageType;
 import com.simulator112.contextmanager.domain.system112.System112StageDetails;
@@ -42,6 +44,9 @@ class ContextPersistenceAdapterTests {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private LevelProgressService levelProgressService;
 
     @Test
     void roundTripsDomainAggregateWithoutLeakingJpaEntities() {
@@ -116,6 +121,51 @@ class ContextPersistenceAdapterTests {
         assertThat(savedAgain.getCreatedAt()).isEqualTo(contextCreatedAt);
         assertThat(savedAgain.getIncidents().getFirst().getCreatedAt()).isEqualTo(incidentCreatedAt);
         assertThat(savedAgain.getDialog().createdAt()).isEqualTo(dialogCreatedAt);
+    }
+
+    @Test
+    void expiresUnacceptedFirstDdsStageWithFailureEnabledFromDatabase() {
+        TrainingContext context = new TrainingContext();
+        context.setLevelTitle("Проверка таймаута");
+        context.setDifficulty(Difficulty.NORMAL);
+        context.setAssignmentId(UUID.randomUUID());
+        context.setUserId(UUID.randomUUID());
+        context.setTargetType(IncidentTargetType.DDS);
+        context.setExecutionMode(ExecutionMode.PARALLEL);
+        context.setStatus(ContextStatus.CREATED);
+        context.setDialogStatus(DialogProgressStatus.IDLE);
+
+        IncidentSnapshot incident = new IncidentSnapshot();
+        incident.setSourceId(UUID.randomUUID());
+        incident.setPosition(0);
+        incident.setStatus(IncidentProgressStatus.ACTIVE);
+        incident.setTitle("Пожар");
+        incident.setInitialAssignmentService("MCHS");
+        StageSnapshot stage = new StageSnapshot();
+        stage.setSourceId(UUID.randomUUID());
+        stage.setTitle("Принятие карточки пожарной службой");
+        stage.setPosition(0);
+        stage.setStatus(StageStatus.ACTIVE);
+        stage.setStartedAt(Instant.now().minusSeconds(35));
+        stage.setDeadlineAt(Instant.now().minusSeconds(5));
+        stage.setDds(new DdsStageDetails(DdsStageType.ASSIGN_BRIGADE, 30, null, null, null,
+                java.util.List.of(DdsCompletionTrigger.TIME), true));
+        incident.setActiveStageId(stage.getSourceId());
+        incident.getStages().add(stage);
+        context.getIncidents().add(incident);
+
+        UUID id = store.save(context).getId();
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(store.findWithExpiredStages(IncidentTargetType.DDS, IncidentProgressStatus.ACTIVE,
+                StageStatus.ACTIVE, Instant.now())).hasSize(1);
+
+        levelProgressService.processExpiredStages();
+        entityManager.flush();
+        entityManager.clear();
+        TrainingContext reloaded = store.findById(id).orElseThrow();
+        assertThat(reloaded.getIncidents().getFirst().getStatus()).isEqualTo(IncidentProgressStatus.FAILED);
+        assertThat(reloaded.getIncidents().getFirst().getStages().getFirst().getStatus()).isEqualTo(StageStatus.FAILED);
     }
 
     @Test
