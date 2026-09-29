@@ -5,6 +5,7 @@ import com.simulator112.notification.adapter.out.persistence.entity.User;
 import com.simulator112.notification.adapter.out.persistence.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,7 +13,9 @@ import org.springframework.stereotype.Service;
 public class UserPersistenceAdapter implements UserDirectory {
     private final UserRepository userRepository;
 
+    @Transactional
     public void upsert(UUID userId, String email) {
+        userRepository.deleteStaleByEmail(email, userId);
         User user = userRepository.findById(userId)
                 .orElseGet(() -> new User(userId, email));
         user.setEmail(email);
