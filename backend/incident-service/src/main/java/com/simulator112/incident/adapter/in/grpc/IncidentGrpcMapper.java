@@ -49,6 +49,8 @@ public class IncidentGrpcMapper {
                         .setType(toProto(stage.type()))
                         .setTimeLimitSeconds(stage.timeLimitSeconds())
                         .setExpectedComment(string(stage.expectedComment()))
+                        .addAllCompletionTriggers(stage.completionTriggers().stream().map(trigger ->
+                                com.simulator112.incident.grpc.contract.DdsCompletionTrigger.valueOf("DDS_COMPLETION_TRIGGER_" + trigger.name())).toList())
                         .setActualStatus(stage.actualStatus() == null
                                 ? com.simulator112.incident.grpc.contract.IncidentStatus.INCIDENT_STATUS_UNSPECIFIED
                                 : com.simulator112.incident.grpc.contract.IncidentStatus.valueOf("INCIDENT_STATUS_" + stage.actualStatus().name())))

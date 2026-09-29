@@ -96,6 +96,11 @@ const dadataApiKey = process.env.PUBLIC_DADATA_API_KEY || "";
   #incident-form, #incident-form section { min-width: 0; }
   #incident-form .dds-timeline { margin: 0; padding: 0; list-style: none; }
   #incident-form .dds-stage-heading { min-width: 0; }
+  .dds-stage-dialog .dds-trigger-options { border: 0; margin: 0; padding: 0; min-inline-size: 0; }
+  .dds-stage-dialog .dds-trigger-options legend { padding: 0; margin-block-end: var(--wa-space-s); }
+  .dds-stage-dialog .dds-trigger-card { display: block; }
+  .dds-stage-dialog .dds-trigger-card::part(body) { padding: var(--wa-space-s) var(--wa-space-m); }
+  .dds-stage-dialog .dds-trigger-duration { width: 8rem; }
   #incident-form .dds-stage-meta { color: var(--wa-color-text-quiet); font-size: var(--wa-font-size-s); }
   #incident-form .dds-stage-meta > span + span::before { content: "·"; margin-inline-end: var(--wa-space-s); }
   #incident-form .dds-call-section { flex: 1 1 0; min-inline-size: 0; }

@@ -3,8 +3,11 @@ package com.simulator112.contextmanager.adapter.out.persistence.entity.dds;
 import com.simulator112.contextmanager.adapter.out.persistence.entity.common.StageContextEntity;
 
 import com.simulator112.contextmanager.domain.dds.DdsStageType;
+import com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger;
 import com.simulator112.contextmanager.domain.common.IncidentStatus;
 import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -46,4 +49,10 @@ public class DdsStageContextEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "actual_status", length = 50)
     private IncidentStatus actualStatus;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "dds_stage_completion_triggers", joinColumns = @JoinColumn(name = "stage_context_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "completion_trigger", nullable = false, length = 20)
+    private java.util.List<DdsCompletionTrigger> completionTriggers = new java.util.ArrayList<>();
 }

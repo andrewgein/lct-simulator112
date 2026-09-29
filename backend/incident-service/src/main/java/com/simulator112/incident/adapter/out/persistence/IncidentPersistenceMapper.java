@@ -72,7 +72,8 @@ public class IncidentPersistenceMapper {
         DdsStageDetailsJpaEntity details = entity.getDdsDetails();
         return new DdsStage(
                 entity.getId(), entity.getTitle(), entity.getDescription(), details.getType(),
-                details.getTimeLimitSeconds(), entity.getCalls().stream().map(this::toDomain).toList(), details.getExpectedComment(), details.getActualStatus());
+                details.getTimeLimitSeconds(), entity.getCalls().stream().map(this::toDomain).toList(), details.getExpectedComment(), details.getActualStatus(),
+                details.getCompletionTriggers().isEmpty() ? null : details.getCompletionTriggers());
     }
 
     private IncidentStageJpaEntity toEntity(System112Stage stage) {
@@ -95,6 +96,7 @@ public class IncidentPersistenceMapper {
         details.setTimeLimitSeconds(stage.timeLimitSeconds());
         details.setExpectedComment(stage.expectedComment());
         details.setActualStatus(stage.actualStatus());
+        details.setCompletionTriggers(new java.util.ArrayList<>(stage.completionTriggers()));
         entity.setDdsDetails(details);
         return entity;
     }

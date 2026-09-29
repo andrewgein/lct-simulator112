@@ -138,6 +138,9 @@ class ContextPersistenceAdapterTests {
         stage.setStatus(StageStatus.ACTIVE);
         stage.setDds(new DdsStageDetails(DdsStageType.CALL_BRIGADE_FOR_STATUS, 90,
                 "Бригада прибыла", "Бригада на месте"));
+        stage.getDds().setCompletionTriggers(java.util.List.of(
+                com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.TIME,
+                com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.CALLS));
         var serviceCall = new com.simulator112.contextmanager.domain.common.CallSnapshot();
         serviceCall.setSourceId(UUID.randomUUID());
         serviceCall.setPosition(0);
@@ -157,6 +160,9 @@ class ContextPersistenceAdapterTests {
         assertThat(actual.getDds().getTimeLimitSeconds()).isEqualTo(90);
         assertThat(actual.getDds().getExpectedComment()).isEqualTo("Бригада прибыла");
         assertThat(actual.getDds().getComment()).isEqualTo("Бригада на месте");
+        assertThat(actual.getDds().getCompletionTriggers()).containsExactlyInAnyOrder(
+                com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.TIME,
+                com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.CALLS);
         assertThat(actual.getCalls().getFirst().getServiceCode()).isEqualTo("MCHS");
         assertThat(actual.getSystem112()).isNull();
 

@@ -1,8 +1,12 @@
 import { useEffect, useState } from "preact/hooks";
 import { REACTION_STATUS_LABELS, REACTION_STATUS_OPTIONS } from "./ddsLevelHelpers.js";
 
-export default function DdsStageActions({ incidentId, serviceCode, currentStatus, onApply }) {
-  const options = REACTION_STATUS_OPTIONS[currentStatus] || [];
+export default function DdsStageActions({ incidentId, serviceCode, currentStatus, plannedStatus, onApply }) {
+  const available = REACTION_STATUS_OPTIONS[currentStatus] || [];
+  const refusal = available.find((value) => value === "NOT_ACCEPTED" || value === "WORK_REFUSED");
+  const next = plannedStatus && plannedStatus !== currentStatus && plannedStatus in REACTION_STATUS_LABELS
+    ? plannedStatus : available.find((value) => value !== refusal);
+  const options = [next, refusal].filter(Boolean);
   const [status, setStatus] = useState(options[0] || "");
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -12,7 +16,7 @@ export default function DdsStageActions({ incidentId, serviceCode, currentStatus
     setStatus(options[0] || "");
     setComment("");
     setShowCommentError(false);
-  }, [currentStatus]);
+  }, [currentStatus, plannedStatus]);
 
   if (!options.length) return null;
   const commentRequired = status === "NOT_ACCEPTED" || status === "WORK_REFUSED";

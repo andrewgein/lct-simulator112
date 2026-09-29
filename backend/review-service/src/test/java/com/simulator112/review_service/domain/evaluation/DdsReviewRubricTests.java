@@ -48,6 +48,19 @@ class DdsReviewRubricTests {
     }
 
     @Test
+    void statusTriggerBeforeTimeLimitCountsAtNextStageStart() {
+        var transition = deadline.minusSeconds(20);
+        var runtime = new ReviewSubmission.IncidentRuntime("incident", "COMPLETED", List.of(
+                new ReviewSubmission.StageRuntime("one", "WAIT_FOR_BRIGADE_STATUS_CHANGE", "SUCCEEDED",
+                        deadline.minusSeconds(60), deadline, null, true, List.of("call")),
+                new ReviewSubmission.StageRuntime("two", "COMPLETE_INCIDENT", "ACTIVE",
+                        transition, null, null, false, List.of())), List.of(
+                new ReviewSubmission.ReactionEvent(IncidentStatus.ARRIVED, transition, "Доложили")));
+
+        assertThat(evaluate(runtime).stream().mapToInt(value -> value.score()).sum()).isEqualTo(100);
+    }
+
+    @Test
     void checksEachConfiguredCallSeparately() {
         var stage = new ReviewSubmission.StageScenario("one", null, List.of(), 0,
                 "CALL_BRIGADE_FOR_STATUS", List.of(

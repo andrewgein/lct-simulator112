@@ -9,6 +9,8 @@ import com.simulator112.contextmanager.domain.common.ReactionStatus;
 import com.simulator112.contextmanager.domain.common.ReactionStatusEvent;
 import com.simulator112.contextmanager.domain.common.ServiceReaction;
 import com.simulator112.contextmanager.domain.dds.DdsStageDetails;
+import com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger;
+import com.simulator112.contextmanager.domain.common.IncidentStatus;
 import com.simulator112.contextmanager.application.port.out.ContextStore;
 import com.simulator112.contextmanager.domain.common.TrainingContext;
 import com.simulator112.contextmanager.domain.common.IncidentSnapshot;
@@ -280,7 +282,92 @@ class LevelProgressServiceTests {
         assertThat(progress.incidents().getFirst().serviceReactions().getFirst().currentStatus())
                 .isEqualTo(ReactionStatus.WORK_REFUSED);
         assertThat(reaction.getHistory().getLast().comment()).isEqualTo("Нет доступа к месту работ");
-        assertThat(incident.getActiveStageId()).isEqualTo(stageId);
+        assertThat(incident.getActiveStageId()).isNull();
+        assertThat(incident.getStatus()).isEqualTo(IncidentProgressStatus.FAILED);
+    }
+
+    @Test
+    void statusTriggerAdvancesWithoutWaitingForTimer() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot first = stage(UUID.randomUUID(), DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.ACTIVE);
+        first.getDds().setCompletionTriggers(List.of(DdsCompletionTrigger.STATUS));
+        first.getDds().setActualStatus(IncidentStatus.RESPONSE_STARTED);
+        StageSnapshot next = stage(UUID.randomUUID(), DdsStageType.COMPLETE_INCIDENT, StageStatus.PENDING);
+        IncidentSnapshot incident = incident(UUID.randomUUID(), first.getSourceId(), List.of(first, next));
+        incident.setInitialAssignmentService("MCHS");
+        accept(incident);
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.applyReactionStatus(contextId, incident.getSourceId(), "MCHS", ReactionStatus.RESPONSE_STARTED, null);
+
+        assertThat(incident.getActiveStageId()).isEqualTo(next.getSourceId());
+        assertThat(first.getStatus()).isEqualTo(StageStatus.SUCCEEDED);
+    }
+
+    @Test
+    void callTriggerWaitsForAllCallsAndDoesNotExpireOnTime() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot first = stage(UUID.randomUUID(), DdsStageType.CALL_BRIGADE_FOR_STATUS, StageStatus.ACTIVE);
+        first.getDds().setCompletionTriggers(List.of(DdsCompletionTrigger.CALLS));
+        first.setDeadlineAt(null);
+        CallSnapshot a = new CallSnapshot(); a.setSourceId(UUID.randomUUID()); a.setStatus(CallStatus.COMPLETED);
+        CallSnapshot b = new CallSnapshot(); b.setSourceId(UUID.randomUUID()); b.setStatus(CallStatus.ACTIVE);
+        first.getCalls().addAll(List.of(a, b));
+        StageSnapshot next = stage(UUID.randomUUID(), DdsStageType.COMPLETE_INCIDENT, StageStatus.PENDING);
+        IncidentSnapshot incident = incident(UUID.randomUUID(), first.getSourceId(), List.of(first, next));
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.getProgress(contextId);
+        assertThat(incident.getActiveStageId()).isEqualTo(first.getSourceId());
+        b.setStatus(CallStatus.COMPLETED);
+        service.getProgress(contextId);
+        assertThat(incident.getActiveStageId()).isEqualTo(next.getSourceId());
+    }
+
+    @Test
+    void timeTriggerAdvancesEvenWithUnfinishedCalls() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot first = stage(UUID.randomUUID(), DdsStageType.CALL_BRIGADE_FOR_STATUS, StageStatus.ACTIVE);
+        first.getDds().setCompletionTriggers(List.of(DdsCompletionTrigger.TIME, DdsCompletionTrigger.CALLS));
+        first.setDeadlineAt(Instant.now().minusSeconds(1));
+        CallSnapshot call = new CallSnapshot(); call.setSourceId(UUID.randomUUID()); call.setStatus(CallStatus.PENDING);
+        first.getCalls().add(call);
+        StageSnapshot next = stage(UUID.randomUUID(), DdsStageType.COMPLETE_INCIDENT, StageStatus.PENDING);
+        IncidentSnapshot incident = incident(UUID.randomUUID(), first.getSourceId(), List.of(first, next));
+        context.getIncidents().add(incident);
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.getProgress(contextId);
+
+        assertThat(incident.getActiveStageId()).isEqualTo(next.getSourceId());
+        assertThat(call.getStatus()).isEqualTo(CallStatus.PENDING);
+    }
+
+    @Test
+    void refusalStopsOnlyCurrentIncident() {
+        UUID contextId = UUID.randomUUID();
+        TrainingContext context = context(contextId);
+        StageSnapshot stage = stage(UUID.randomUUID(), DdsStageType.ASSIGN_BRIGADE, StageStatus.ACTIVE);
+        IncidentSnapshot refused = incident(UUID.randomUUID(), stage.getSourceId(), List.of(stage));
+        refused.setInitialAssignmentService("MCHS");
+        StageSnapshot otherStage = stage(UUID.randomUUID(), DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, StageStatus.ACTIVE);
+        IncidentSnapshot other = incident(UUID.randomUUID(), otherStage.getSourceId(), List.of(otherStage));
+        context.getIncidents().addAll(List.of(refused, other));
+        when(repository.findById(contextId)).thenReturn(Optional.of(context));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.applyReactionStatus(contextId, refused.getSourceId(), "MCHS", ReactionStatus.NOT_ACCEPTED, "Отказ");
+
+        assertThat(refused.getStatus()).isEqualTo(IncidentProgressStatus.FAILED);
+        assertThat(other.getStatus()).isEqualTo(IncidentProgressStatus.ACTIVE);
     }
 
     @Test

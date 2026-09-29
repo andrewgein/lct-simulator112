@@ -149,7 +149,9 @@ public class ContextService implements ContextUseCase, CleanupAbandonedContextsU
         incident.getServiceReactions().add(reaction);
         stage.setStatus(StageStatus.ACTIVE);
         stage.setStartedAt(now);
-        stage.setDeadlineAt(now.plusSeconds(stage.getDds().getTimeLimitSeconds()));
+        stage.setDeadlineAt(stage.getDds().getCompletionTriggers() == null
+                || stage.getDds().getCompletionTriggers().contains(com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.TIME)
+                ? now.plusSeconds(stage.getDds().getTimeLimitSeconds()) : null);
     }
 
     private void assignSequentialQueue(List<IncidentSnapshot> incidents) {

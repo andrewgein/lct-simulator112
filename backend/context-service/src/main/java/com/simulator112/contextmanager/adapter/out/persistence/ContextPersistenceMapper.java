@@ -137,7 +137,8 @@ final class ContextPersistenceMapper {
         if (source.getDds() != null) {
             var details = source.getDds();
             target.setDds(new DdsStageDetails(details.getType(), details.getTimeLimitSeconds(),
-                    details.getExpectedComment(), details.getComment(), details.getActualStatus()));
+                    details.getExpectedComment(), details.getComment(), details.getActualStatus(),
+                    details.getCompletionTriggers().isEmpty() ? java.util.List.of(com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.TIME) : new java.util.ArrayList<>(details.getCompletionTriggers())));
         }
         target.setCalls(source.getCalls().stream().map(ContextPersistenceMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return target;
@@ -165,6 +166,7 @@ final class ContextPersistenceMapper {
             details.setType(source.getDds().getType()); details.setTimeLimitSeconds(source.getDds().getTimeLimitSeconds());
             details.setExpectedComment(source.getDds().getExpectedComment()); details.setComment(source.getDds().getComment());
             details.setActualStatus(source.getDds().getActualStatus());
+            details.setCompletionTriggers(new java.util.ArrayList<>(source.getDds().getCompletionTriggers()));
             target.setDds(details);
         }
         source.getCalls().stream().map(ContextPersistenceMapper::toEntity).forEach(target::addCall);

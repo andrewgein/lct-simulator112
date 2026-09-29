@@ -37,11 +37,19 @@ message System112StageDetails {
   map<string, string> expected_routing_facts = 4;
 }
 
+enum DdsCompletionTrigger {
+  DDS_COMPLETION_TRIGGER_UNSPECIFIED = 0;
+  DDS_COMPLETION_TRIGGER_TIME = 1;
+  DDS_COMPLETION_TRIGGER_STATUS = 2;
+  DDS_COMPLETION_TRIGGER_CALLS = 3;
+}
+
 message DdsStageDetails {
   DdsStageType type = 1;
   int32 time_limit_seconds = 2;
   string expected_comment = 3;
   IncidentStatus actual_status = 5;
+  repeated DdsCompletionTrigger completion_triggers = 6;
 }
 
 message CallScenario {
