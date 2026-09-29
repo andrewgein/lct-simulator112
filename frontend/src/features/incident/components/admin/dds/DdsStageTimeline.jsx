@@ -16,14 +16,10 @@ const REACTION_STATUSES = [
   ["ACCEPTED", "Принята"], ["NOT_ACCEPTED", "Не принята"],
   ["RESPONSE_STARTED", "Начало реагирования"], ["ARRIVED", "Прибытие"],
   ["WORK_IN_PROGRESS", "Проведение работ"], ["WORK_COMPLETED", "Работы завершены"],
-  ["WORK_REFUSED", "Отказ от выполнения работ"],
-  ["REGISTERED", "Зарегистрирована"], ["PROCESSED", "Отработана"],
-  ["VERIFIED", "Проверена"], ["NOT_NOTIFIED", "Не оповещено"],
-  ["REFUSED", "Отказ"], ["NOT_COMPLETED", "Не завершено"],
-  ["COMPLETED", "Завершена"]
+  ["WORK_REFUSED", "Отказ от выполнения работ"]
 ];
 const COMPLETION_TRIGGERS = [["TIME", "Время"], ["STATUS", "Статус"], ["CALLS", "Конец всех звонков"]];
-const REACTION_STATUS_VALUES = new Set(["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS", "WORK_COMPLETED"]);
+const REACTION_STATUS_VALUES = new Set(REACTION_STATUSES.map(([value]) => value).filter(Boolean));
 const newStage = () => ({ id: crypto.randomUUID(), title: "", description: "", type: "WAIT_FOR_BRIGADE_STATUS_CHANGE", timeLimitSeconds: 60, completionTriggers: ["TIME"], failOnTimeout: false, actualStatus: "", calls: [], expectedComment: "" });
 const initialStage = () => ({ ...newStage(), title: "Получение карточки", type: "ASSIGN_BRIGADE", timeLimitSeconds: 30, completionTriggers: ["STATUS"], actualStatus: "ACCEPTED" });
 
@@ -58,6 +54,7 @@ export function validateTimeline(stages, assignedService) {
     const triggers = stage.completionTriggers ?? ["TIME"];
     if (!triggers.length) throw new Error(`Выберите условие завершения этапа «${stage.title}»`);
     if (stage.failOnTimeout && !triggers.includes("TIME")) throw new Error(`Для завершения происшествия по таймауту включите «Время» на этапе «${stage.title}»`);
+    if (stage.actualStatus && !REACTION_STATUS_VALUES.has(stage.actualStatus)) throw new Error(`Выберите статус реагирования на этапе «${stage.title}»`);
     if (triggers.includes("STATUS") && (index === 0 ? stage.actualStatus !== "ACCEPTED" : !REACTION_STATUS_VALUES.has(stage.actualStatus))) throw new Error(`Для завершения этапа «${stage.title}» по статусу укажите следующий статус реагирования`);
     if (triggers.includes("CALLS") && !stage.calls.length) throw new Error(`Для завершения этапа «${stage.title}» по звонкам добавьте звонок`);
     if (stage.expectedComment?.trim() && !stage.calls.length) throw new Error(`Для комментария на этапе «${stage.title}» добавьте звонок`);
@@ -75,6 +72,10 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
     const triggers = draft.completionTriggers ?? ["TIME"];
     if (!triggers.length) {
       setError("Выберите хотя бы одно действие, завершающее этап");
+      return;
+    }
+    if (draft.actualStatus && !REACTION_STATUS_VALUES.has(draft.actualStatus)) {
+      setError("Выберите статус реагирования из списка");
       return;
     }
     if (triggers.includes("STATUS") && (index === 0 ? draft.actualStatus !== "ACCEPTED" : !REACTION_STATUS_VALUES.has(draft.actualStatus))) {
