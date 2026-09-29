@@ -40,6 +40,9 @@ public class DdsStageContextEntity {
 
     private Integer timeLimitSeconds;
 
+    @Column(name = "fail_on_timeout", nullable = false)
+    private boolean failOnTimeout;
+
     @Column(columnDefinition = "text")
     private String expectedComment;
 

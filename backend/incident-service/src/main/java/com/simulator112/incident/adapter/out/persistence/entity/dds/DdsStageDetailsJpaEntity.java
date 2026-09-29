@@ -33,6 +33,9 @@ public class DdsStageDetailsJpaEntity {
     @Column(name = "time_limit_seconds", nullable = false)
     private int timeLimitSeconds;
 
+    @Column(name = "fail_on_timeout", nullable = false)
+    private boolean failOnTimeout;
+
     @Column(name = "expected_comment", columnDefinition = "text")
     private String expectedComment;
 

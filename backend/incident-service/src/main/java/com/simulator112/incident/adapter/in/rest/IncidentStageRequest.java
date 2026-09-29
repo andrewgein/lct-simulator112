@@ -25,5 +25,6 @@ public record IncidentStageRequest(
         @NotNull List<@Valid CallScenario> calls,
         String expectedComment,
         IncidentStatus actualStatus,
-        List<DdsCompletionTrigger> completionTriggers) {
+        List<DdsCompletionTrigger> completionTriggers,
+        Boolean failOnTimeout) {
 }

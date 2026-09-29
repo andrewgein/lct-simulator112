@@ -45,6 +45,15 @@ class IncidentApplicationServiceTest {
     }
 
     @Test
+    void timeoutFailureRequiresTimeTrigger() {
+        assertThatThrownBy(() -> new DdsStage(UUID.randomUUID(), "Ожидание", null,
+                DdsStageType.WAIT_FOR_BRIGADE_STATUS_CHANGE, 60, List.of(), null, null,
+                List.of(DdsCompletionTrigger.STATUS), true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Время");
+    }
+
+    @Test
     void acceptsOrderedStages() {
         UUID root = UUID.randomUUID();
         UUID success = UUID.randomUUID();

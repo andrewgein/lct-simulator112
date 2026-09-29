@@ -48,6 +48,7 @@ public class IncidentGrpcMapper {
                 .setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
                         .setType(toProto(stage.type()))
                         .setTimeLimitSeconds(stage.timeLimitSeconds())
+                        .setFailOnTimeout(stage.failOnTimeout())
                         .setExpectedComment(string(stage.expectedComment()))
                         .addAllCompletionTriggers(stage.completionTriggers().stream().map(trigger ->
                                 com.simulator112.incident.grpc.contract.DdsCompletionTrigger.valueOf("DDS_COMPLETION_TRIGGER_" + trigger.name())).toList())

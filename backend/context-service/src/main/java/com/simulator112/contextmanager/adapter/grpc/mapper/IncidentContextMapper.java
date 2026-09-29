@@ -76,7 +76,8 @@ public final class IncidentContextMapper {
                                     : java.util.List.of(com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.TIME)
                             : proto.getDds().getCompletionTriggersList().stream().map(trigger ->
                                     com.simulator112.contextmanager.domain.dds.DdsCompletionTrigger.valueOf(
-                                            trigger.name().replace("DDS_COMPLETION_TRIGGER_", ""))).toList()));
+                                            trigger.name().replace("DDS_COMPLETION_TRIGGER_", ""))).toList(),
+                    proto.getDds().getFailOnTimeout()));
         }
         value.setCalls(proto.getCallsList().stream().map(IncidentContextMapper::toDomain).collect(java.util.stream.Collectors.toCollection(ArrayList::new)));
         return value;
@@ -124,6 +125,7 @@ public final class IncidentContextMapper {
         else if (value.getDds() != null) builder.setDds(com.simulator112.incident.grpc.contract.DdsStageDetails.newBuilder()
                 .setType(com.simulator112.incident.grpc.contract.DdsStageType.valueOf("DDS_STAGE_TYPE_" + value.getDds().getType().name()))
                 .setTimeLimitSeconds(value.getDds().getTimeLimitSeconds())
+                .setFailOnTimeout(value.getDds().isFailOnTimeout())
                 .setExpectedComment(orEmpty(value.getDds().getExpectedComment()))
                 .addAllCompletionTriggers(value.getDds().getCompletionTriggers().stream().map(trigger ->
                         com.simulator112.incident.grpc.contract.DdsCompletionTrigger.valueOf("DDS_COMPLETION_TRIGGER_" + trigger.name())).toList())

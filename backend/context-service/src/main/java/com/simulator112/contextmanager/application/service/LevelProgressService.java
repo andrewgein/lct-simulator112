@@ -75,6 +75,14 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
                 .filter(value -> value.getSourceId().equals(incidentId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Инцидент не относится к контексту: " + incidentId));
+        if (incident.getStatus() == IncidentProgressStatus.ACTIVE) {
+            StageSnapshot active = activeStage(incident);
+            if (active.getDds().isFailOnTimeout() && active.getDeadlineAt() != null
+                    && !active.getDeadlineAt().isAfter(now)) {
+                refreshExpired(context, now);
+                return toProgress(contextStore.save(context));
+            }
+        }
         if (incident.getStatus() != IncidentProgressStatus.ACTIVE
                 && incident.getStatus() != IncidentProgressStatus.COMPLETED) {
             throw new IllegalStateException("Инцидент ещё не начался: " + incidentId);
@@ -185,6 +193,11 @@ public class LevelProgressService implements LevelProgressUseCase, ProcessDdsTim
                                 && stage.getCalls().stream().allMatch(call -> call.getStatus() == CallStatus.COMPLETED);
                         boolean timedOut = triggers(stage, DdsCompletionTrigger.TIME) && stage.getDeadlineAt() != null
                                 && !stage.getDeadlineAt().isAfter(now);
+                        if (timedOut && stage.getDds().isFailOnTimeout()) {
+                            stage.setStatus(StageStatus.FAILED);
+                            finishIncident(context, incident, false, stage.getDeadlineAt());
+                            break;
+                        }
                         if (stage.getDds().getType() == DdsStageType.ASSIGN_BRIGADE
                                 && incident.getServiceReactions().stream().noneMatch(reaction ->
                                         reaction.getHistory().stream().anyMatch(event -> event.status() == ReactionStatus.ACCEPTED))) break;

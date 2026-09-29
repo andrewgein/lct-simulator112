@@ -50,6 +50,7 @@ message DdsStageDetails {
   string expected_comment = 3;
   IncidentStatus actual_status = 5;
   repeated DdsCompletionTrigger completion_triggers = 6;
+  bool fail_on_timeout = 7;
 }
 
 message CallScenario {

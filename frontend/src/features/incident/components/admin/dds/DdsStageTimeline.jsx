@@ -24,7 +24,7 @@ const REACTION_STATUSES = [
 ];
 const COMPLETION_TRIGGERS = [["TIME", "Время"], ["STATUS", "Статус"], ["CALLS", "Конец всех звонков"]];
 const REACTION_STATUS_VALUES = new Set(["ACCEPTED", "RESPONSE_STARTED", "ARRIVED", "WORK_IN_PROGRESS", "WORK_COMPLETED"]);
-const newStage = () => ({ id: crypto.randomUUID(), title: "", description: "", type: "WAIT_FOR_BRIGADE_STATUS_CHANGE", timeLimitSeconds: 60, completionTriggers: ["TIME"], actualStatus: "", calls: [], expectedComment: "" });
+const newStage = () => ({ id: crypto.randomUUID(), title: "", description: "", type: "WAIT_FOR_BRIGADE_STATUS_CHANGE", timeLimitSeconds: 60, completionTriggers: ["TIME"], failOnTimeout: false, actualStatus: "", calls: [], expectedComment: "" });
 const initialStage = () => ({ ...newStage(), title: "Получение карточки", type: "ASSIGN_BRIGADE", timeLimitSeconds: 30, completionTriggers: ["STATUS"], actualStatus: "ACCEPTED" });
 
 export function timelineValue(stages) {
@@ -33,6 +33,7 @@ export function timelineValue(stages) {
       id: stage.id, position, title: stage.title.trim(), description: stage.description.trim() || null,
       type: stage.type, timeLimitSeconds: Number(stage.timeLimitSeconds),
       completionTriggers: stage.completionTriggers ?? ["TIME"],
+      failOnTimeout: Boolean(stage.failOnTimeout) && (stage.completionTriggers ?? ["TIME"]).includes("TIME"),
       calls: stage.calls.map(ddsCallValue), expectedComment: stage.actualStatus ? stage.expectedComment?.trim() || null : null,
       actualStatus: stage.actualStatus || null
     }))
@@ -56,6 +57,7 @@ export function validateTimeline(stages, assignedService) {
     if (index && stage.type === "ASSIGN_BRIGADE") throw new Error("Получение карточки может быть только первым этапом");
     const triggers = stage.completionTriggers ?? ["TIME"];
     if (!triggers.length) throw new Error(`Выберите условие завершения этапа «${stage.title}»`);
+    if (stage.failOnTimeout && !triggers.includes("TIME")) throw new Error(`Для завершения происшествия по таймауту включите «Время» на этапе «${stage.title}»`);
     if (triggers.includes("STATUS") && (index === 0 ? stage.actualStatus !== "ACCEPTED" : !REACTION_STATUS_VALUES.has(stage.actualStatus))) throw new Error(`Для завершения этапа «${stage.title}» по статусу укажите следующий статус реагирования`);
     if (triggers.includes("CALLS") && !stage.calls.length) throw new Error(`Для завершения этапа «${stage.title}» по звонкам добавьте звонок`);
     if (stage.expectedComment?.trim() && !stage.calls.length) throw new Error(`Для комментария на этапе «${stage.title}» добавьте звонок`);
@@ -79,7 +81,7 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
       setError("Для завершения этапа по статусу выберите следующий статус реагирования");
       return;
     }
-    onSave({ ...draft, expectedComment: draft.actualStatus ? draft.expectedComment : "" });
+    onSave({ ...draft, failOnTimeout: triggers.includes("TIME") && !!draft.failOnTimeout, expectedComment: draft.actualStatus ? draft.expectedComment : "" });
     onClose();
   };
   return <>
@@ -108,9 +110,10 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
           <legend>Какое действие является завершением этапа (любое выбранное)</legend>
           {COMPLETION_TRIGGERS.map(([value, label]) => <wa-card key={value} class="dds-trigger-card" appearance="filled-outlined">
             <div class="wa-cluster wa-align-items-center wa-gap-m">
-              <wa-checkbox checked={(draft.completionTriggers ?? ["TIME"]).includes(value) && (value !== "STATUS" || !!draft.actualStatus)} disabled={value === "STATUS" && !draft.actualStatus} onChange={(event) => { setError(""); setDraft((current) => ({ ...current, completionTriggers: event.currentTarget.checked ? [...(current.completionTriggers ?? ["TIME"]), value] : (current.completionTriggers ?? ["TIME"]).filter((item) => item !== value) })); }}>{label}</wa-checkbox>
+              <wa-checkbox checked={(draft.completionTriggers ?? ["TIME"]).includes(value) && (value !== "STATUS" || !!draft.actualStatus)} disabled={value === "STATUS" && !draft.actualStatus} onChange={(event) => { setError(""); setDraft((current) => ({ ...current, completionTriggers: event.currentTarget.checked ? [...(current.completionTriggers ?? ["TIME"]), value] : (current.completionTriggers ?? ["TIME"]).filter((item) => item !== value), failOnTimeout: value === "TIME" && !event.currentTarget.checked ? false : current.failOnTimeout })); }}>{label}</wa-checkbox>
               {value === "TIME" && (draft.completionTriggers ?? ["TIME"]).includes("TIME") && <><wa-input class="dds-trigger-duration" type="number" value={String(index === 0 ? 30 : draft.timeLimitSeconds ?? 60)} aria-label="Длительность этапа в секундах" min="1" step="1" required disabled={!index} onInput={(event) => update("timeLimitSeconds", event.currentTarget.value)}></wa-input><span>сек.</span></>}
             </div>
+            {value === "TIME" && (draft.completionTriggers ?? ["TIME"]).includes("TIME") && <wa-checkbox class="dds-timeout-failure" checked={!!draft.failOnTimeout} onChange={(event) => update("failOnTimeout", event.currentTarget.checked)}>Если время вышло, то завершить происшествие с ошибкой</wa-checkbox>}
           </wa-card>)}
         </fieldset>
         {error && <wa-callout variant="danger" role="alert">{error}</wa-callout>}
@@ -123,7 +126,7 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
 }
 
 export default function DdsStageTimeline({ initialIncident, onChange, services = [] }) {
-  const [stages, setStages] = useState(() => (initialIncident.stages || []).map((stage) => ({ ...stage, completionTriggers: stage.actualStatus ? stage.completionTriggers ?? ["TIME"] : (stage.completionTriggers ?? ["TIME"]).filter((item) => item !== "STATUS"), description: stage.description || "", expectedComment: stage.actualStatus ? stage.expectedComment || "" : "", calls: (stage.calls || []).map((call) => normalizeDdsCall(call)) })));
+  const [stages, setStages] = useState(() => (initialIncident.stages || []).map((stage) => ({ ...stage, completionTriggers: stage.actualStatus ? stage.completionTriggers ?? ["TIME"] : (stage.completionTriggers ?? ["TIME"]).filter((item) => item !== "STATUS"), failOnTimeout: Boolean(stage.failOnTimeout) && (stage.completionTriggers ?? ["TIME"]).includes("TIME"), description: stage.description || "", expectedComment: stage.actualStatus ? stage.expectedComment || "" : "", calls: (stage.calls || []).map((call) => normalizeDdsCall(call)) })));
   const [editingStageId, setEditingStageId] = useState(null);
   const [editingCallKey, setEditingCallKey] = useState(null);
   useEffect(() => onChange(stages), [stages]);
@@ -140,6 +143,7 @@ export default function DdsStageTimeline({ initialIncident, onChange, services =
           expectedComment: stage.actualStatus ? stage.expectedComment || "" : "",
           actualStatus: stage.actualStatus || "",
           completionTriggers: stage.actualStatus ? stage.completionTriggers ?? ["TIME"] : (stage.completionTriggers ?? ["TIME"]).filter((item) => item !== "STATUS"),
+          failOnTimeout: Boolean(stage.failOnTimeout) && (stage.completionTriggers ?? ["TIME"]).includes("TIME"),
           calls: (stage.calls || []).map((call) => normalizeDdsCall(call,
             existing?.calls.find((item) => item.id && item.id === call.id)?.key || crypto.randomUUID()))
         };
@@ -180,7 +184,7 @@ export default function DdsStageTimeline({ initialIncident, onChange, services =
           </div>
           <div class="dds-stage-meta wa-cluster wa-gap-s">
             <span>{STAGE_TYPES.find((item) => item.value === stage.type)?.label}</span>
-            <span>{(stage.completionTriggers ?? ["TIME"]).map((value) => COMPLETION_TRIGGERS.find(([code]) => code === value)?.[1] || value).join(" / ")}{(stage.completionTriggers ?? ["TIME"]).includes("TIME") ? ` · ${stage.timeLimitSeconds} сек.` : ""}</span>
+            <span>{(stage.completionTriggers ?? ["TIME"]).map((value) => COMPLETION_TRIGGERS.find(([code]) => code === value)?.[1] || value).join(" / ")}{(stage.completionTriggers ?? ["TIME"]).includes("TIME") ? ` · ${stage.timeLimitSeconds} сек.` : ""}{stage.failOnTimeout && (stage.completionTriggers ?? ["TIME"]).includes("TIME") ? " · таймаут — ошибка" : ""}</span>
             <span>{REACTION_STATUSES.find(([value]) => value === (stage.actualStatus || ""))?.[1]}</span>
           </div>
           <EditorCallRow>

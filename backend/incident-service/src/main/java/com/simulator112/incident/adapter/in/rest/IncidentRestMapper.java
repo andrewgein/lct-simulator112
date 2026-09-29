@@ -27,7 +27,7 @@ public class IncidentRestMapper {
             var stages = request.stages().stream()
                     .map(stage -> new DdsStage(stage.id(), stage.title(), stage.description(), stage.type(),
                             require(stage.timeLimitSeconds(), "Ограничение времени этапа ДДС обязательно"),
-                            stage.calls(), stage.expectedComment(), stage.actualStatus(), stage.completionTriggers()))
+                            stage.calls(), stage.expectedComment(), stage.actualStatus(), stage.completionTriggers(), Boolean.TRUE.equals(stage.failOnTimeout())))
                     .toList();
             return new DdsIncident(id, request.title(), request.address(), request.difficulty(), stages,
                     request.preparedCardTemplate(), request.initialAssignment());
