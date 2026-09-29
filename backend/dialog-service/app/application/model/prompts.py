@@ -219,16 +219,6 @@ def build_call_scenario(call: CallScenario) -> str:
             CounterpartyType.SERVICE: "дежурный другой службы"}.get(call.counterparty, "собеседник")
     direction = "входящий" if call.direction == CallDirection.INBOUND else "исходящий"
     service = f"\n- Служба: {call.service_code}" if call.counterparty == CounterpartyType.SERVICE and call.service_code else ""
-    incident_address = ""
-    if call.counterparty in (CounterpartyType.BRIGADE, CounterpartyType.SERVICE):
-        incident_address = f"""
-АДРЕС ПРОИСШЕСТВИЯ ТЕКУЩЕГО ЭТАПА ДДС
-{call.incident_address or "Не указан"}
-Это место происшествия, к которому относится текущий звонок, а не личный адрес собеседника.
-Если адрес указан, он известен тебе: на вопрос оператора о месте происшествия сообщай его
-без дополнительной проверки. Не подменяй его адресом собеседника и не придумывай отсутствующие
-дом, корпус, квартиру или этаж. Если адрес не указан, не выдумывай его.
-"""
     if call.counterparty == CounterpartyType.CALLER:
         opening_instructions = "Следуй общим правилам разговора с заявителем."
     elif call.direction == CallDirection.INBOUND:
@@ -289,7 +279,6 @@ def build_call_scenario(call: CallScenario) -> str:
 
 НАЧАЛО РАЗГОВОРА
 {opening_instructions}
-{incident_address}
 
 СОБЕСЕДНИК
 - Фамилия: {person.last_name or "не указана"}

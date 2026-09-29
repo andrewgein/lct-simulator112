@@ -3,6 +3,7 @@ import EditorDialog from "../EditorDialog.jsx";
 import PersonFields from "../PersonFields.jsx";
 import FactsField from "../FactsField.jsx";
 import { emptyPerson, personValue, splitLines } from "../editorHelpers.js";
+import { syncCallAddress } from "./ddsCallAddress.js";
 
 export function normalizeDdsCall(call = {}, key = crypto.randomUUID()) {
   return {
@@ -36,9 +37,12 @@ export function ddsCallValue(call, position) {
   };
 }
 
-export default function DdsCallEditor({ call, index, open, onClose, onSave, services }) {
+export default function DdsCallEditor({ call, index, open, onClose, onSave, services, incidentAddress = "" }) {
   const [draft, setDraft] = useState(call);
   useEffect(() => { if (open) setDraft(structuredClone(call)); }, [open]);
+  useEffect(() => {
+    if (open) setDraft((current) => syncCallAddress(current, incidentAddress));
+  }, [incidentAddress]);
   const update = (field) => (event) => setDraft((current) => ({ ...current, [field]: event.currentTarget.value }));
   return (
     <EditorDialog className="dds-call-dialog" label={`Редактирование звонка ${index + 1}`} open={open} onCancel={onClose} onSave={() => { onSave(draft); onClose(); }}>
@@ -58,7 +62,7 @@ export default function DdsCallEditor({ call, index, open, onClose, onSave, serv
             <wa-option value="">Выберите службу</wa-option>
             {services.map((service) => <wa-option key={service.code} value={service.code}>{service.name}</wa-option>)}
           </wa-select>}
-          <PersonFields title={draft.counterparty === "SERVICE" ? "Контакт другой службы" : "Контакт бригады"} person={draft.person} gender={draft.gender} showContactFields={false} onChange={(person) => setDraft((current) => ({ ...current, person }))} />
+          <PersonFields title={draft.counterparty === "SERVICE" ? "Контакт другой службы" : "Контакт бригады"} person={draft.person} gender={draft.gender} showContactFields={false} showAddressFields incidentAddress={incidentAddress} onChange={(person) => setDraft((current) => ({ ...current, person }))} />
         </div>
         <wa-divider class="dds-call-divider-desktop" orientation="vertical"></wa-divider>
         <wa-divider class="dds-call-divider-mobile"></wa-divider>

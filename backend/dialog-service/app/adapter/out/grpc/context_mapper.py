@@ -13,15 +13,6 @@ from app.grpc.com.simulator112.context import context_service_pb2 as context_pb
 from app.grpc.com.simulator112.incident import incident_context_pb2 as incident_pb
 
 
-def _format_incident_address(value: incident_pb.Address) -> str:
-    parts = [value.city, value.street]
-    parts.extend(f"{label} {part}" for label, part in (
-        ("д.", value.house), ("корп.", value.building), ("кв.", value.apartment)) if part.strip())
-    if value.HasField("floor"):
-        parts.append(f"этаж {value.floor}")
-    return ", ".join(part.strip() for part in parts if part.strip())
-
-
 def call_from_proto(value: incident_pb.CallScenario) -> CallScenario:
     person = value.person
     return CallScenario(
@@ -55,7 +46,6 @@ def call_from_proto(value: incident_pb.CallScenario) -> CallScenario:
         ai_context=value.ai_context,
         emotional_state=value.emotional_state,
         service_code=value.service_code,
-        incident_address=_format_incident_address(value.incident_address) if value.HasField("incident_address") else "",
     )
 
 

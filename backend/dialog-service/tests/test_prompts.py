@@ -60,28 +60,21 @@ class CallScenarioPromptTests(unittest.TestCase):
         self.assertIn("Это справочник, а не текст доклада", prompt)
         self.assertIn("Если реплика непонятна", prompt)
 
+    def test_dds_address_is_only_from_call_person(self):
+        empty = build_call_scenario(_call(counterparty=CounterpartyType.BRIGADE))
+        filled = build_call_scenario(_call(counterparty=CounterpartyType.SERVICE,
+                                           person=Person(address="Москва, Тверская, 8")))
+
+        self.assertIn("- Адрес: не указан", empty)
+        self.assertNotIn("АДРЕС ПРОИСШЕСТВИЯ ТЕКУЩЕГО ЭТАПА ДДС", empty)
+        self.assertIn("- Адрес: Москва, Тверская, 8", filled)
+
     def test_incoming_brigade_starts_before_operator(self):
         prompt = build_call_scenario(_call(counterparty=CounterpartyType.BRIGADE, direction=CallDirection.INBOUND))
 
         self.assertIn("начинай разговор первым, не жди приветствия", prompt)
         self.assertIn("Это вступление произнеси один раз", prompt)
         self.assertIn("Не раскрывай скрытые факты", prompt)
-
-    def test_dds_prompt_contains_incident_address_separately_from_person_address(self):
-        for counterparty in (CounterpartyType.BRIGADE, CounterpartyType.SERVICE):
-            call = _call(counterparty=counterparty, person=Person(address="Адрес собеседника"),
-                         incident_address="Москва, Тверская, д. 8")
-
-            prompt = build_call_scenario(call)
-
-            self.assertIn("АДРЕС ПРОИСШЕСТВИЯ ТЕКУЩЕГО ЭТАПА ДДС\nМосква, Тверская, д. 8", prompt)
-            self.assertIn("- Адрес: Адрес собеседника", prompt)
-
-    def test_caller_prompt_does_not_receive_dds_incident_address(self):
-        prompt = build_call_scenario(_call(incident_address="Служебный адрес"))
-
-        self.assertNotIn("АДРЕС ПРОИСШЕСТВИЯ ТЕКУЩЕГО ЭТАПА ДДС", prompt)
-        self.assertNotIn("Служебный адрес", prompt)
 
 
 def _call(**changes) -> CallScenario:
