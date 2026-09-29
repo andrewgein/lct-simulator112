@@ -58,6 +58,7 @@ class CallScenario:
     ai_context: str
     emotional_state: str
     service_code: str = ""
+    incident_address: str = ""
 
 
 @dataclass(frozen=True)

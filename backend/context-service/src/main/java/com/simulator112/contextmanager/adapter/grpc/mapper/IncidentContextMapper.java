@@ -1,5 +1,7 @@
 package com.simulator112.contextmanager.adapter.grpc.mapper;
 
+import com.simulator112.contextmanager.application.model.DialogCall;
+
 import com.simulator112.contextmanager.domain.common.Address;
 import com.simulator112.contextmanager.domain.common.CallDirection;
 import com.simulator112.contextmanager.domain.common.CallSnapshot;
@@ -134,6 +136,12 @@ public final class IncidentContextMapper {
                         : com.simulator112.incident.grpc.contract.IncidentStatus.valueOf(
                                 "INCIDENT_STATUS_" + value.getDds().getActualStatus().name())));
         else throw new IllegalStateException("Не указан тип этапа: " + value.getSourceId());
+        return builder.build();
+    }
+
+    public static CallScenario toProto(DialogCall value) {
+        var builder = toProto(value.call()).toBuilder();
+        if (value.incidentAddress() != null) builder.setIncidentAddress(toProto(value.incidentAddress()));
         return builder.build();
     }
 

@@ -2,10 +2,16 @@ from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from collections.abc import Iterable as _Iterable, Mapping as _Mapping
-from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
+from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+class DdsCompletionTrigger(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    DDS_COMPLETION_TRIGGER_UNSPECIFIED: _ClassVar[DdsCompletionTrigger]
+    DDS_COMPLETION_TRIGGER_TIME: _ClassVar[DdsCompletionTrigger]
+    DDS_COMPLETION_TRIGGER_STATUS: _ClassVar[DdsCompletionTrigger]
+    DDS_COMPLETION_TRIGGER_CALLS: _ClassVar[DdsCompletionTrigger]
 
 class ExecutionMode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -73,6 +79,10 @@ class CounterpartyType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     COUNTERPARTY_TYPE_CALLER: _ClassVar[CounterpartyType]
     COUNTERPARTY_TYPE_BRIGADE: _ClassVar[CounterpartyType]
     COUNTERPARTY_TYPE_SERVICE: _ClassVar[CounterpartyType]
+DDS_COMPLETION_TRIGGER_UNSPECIFIED: DdsCompletionTrigger
+DDS_COMPLETION_TRIGGER_TIME: DdsCompletionTrigger
+DDS_COMPLETION_TRIGGER_STATUS: DdsCompletionTrigger
+DDS_COMPLETION_TRIGGER_CALLS: DdsCompletionTrigger
 EXECUTION_MODE_UNSPECIFIED: ExecutionMode
 EXECUTION_MODE_SEQUENTIAL: ExecutionMode
 EXECUTION_MODE_PARALLEL: ExecutionMode
@@ -156,29 +166,42 @@ class IncidentStage(_message.Message):
     def __init__(self, id: _Optional[str] = ..., title: _Optional[str] = ..., description: _Optional[str] = ..., calls: _Optional[_Iterable[_Union[CallScenario, _Mapping]]] = ..., system_112: _Optional[_Union[System112StageDetails, _Mapping]] = ..., dds: _Optional[_Union[DdsStageDetails, _Mapping]] = ...) -> None: ...
 
 class System112StageDetails(_message.Message):
-    __slots__ = ("classifier_codes", "victim_count", "position")
+    __slots__ = ("classifier_codes", "victim_count", "position", "expected_routing_facts")
+    class ExpectedRoutingFactsEntry(_message.Message):
+        __slots__ = ("key", "value")
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     CLASSIFIER_CODES_FIELD_NUMBER: _ClassVar[int]
     VICTIM_COUNT_FIELD_NUMBER: _ClassVar[int]
     POSITION_FIELD_NUMBER: _ClassVar[int]
+    EXPECTED_ROUTING_FACTS_FIELD_NUMBER: _ClassVar[int]
     classifier_codes: _containers.RepeatedScalarFieldContainer[str]
     victim_count: int
     position: int
-    def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., victim_count: _Optional[int] = ..., position: _Optional[int] = ...) -> None: ...
+    expected_routing_facts: _containers.ScalarMap[str, str]
+    def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., victim_count: _Optional[int] = ..., position: _Optional[int] = ..., expected_routing_facts: _Optional[_Mapping[str, str]] = ...) -> None: ...
 
 class DdsStageDetails(_message.Message):
-    __slots__ = ("type", "time_limit_seconds", "expected_comment", "actual_status")
+    __slots__ = ("type", "time_limit_seconds", "expected_comment", "actual_status", "completion_triggers", "fail_on_timeout")
     TYPE_FIELD_NUMBER: _ClassVar[int]
     TIME_LIMIT_SECONDS_FIELD_NUMBER: _ClassVar[int]
     EXPECTED_COMMENT_FIELD_NUMBER: _ClassVar[int]
     ACTUAL_STATUS_FIELD_NUMBER: _ClassVar[int]
+    COMPLETION_TRIGGERS_FIELD_NUMBER: _ClassVar[int]
+    FAIL_ON_TIMEOUT_FIELD_NUMBER: _ClassVar[int]
     type: DdsStageType
     time_limit_seconds: int
     expected_comment: str
     actual_status: IncidentStatus
-    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ..., expected_comment: _Optional[str] = ..., actual_status: _Optional[_Union[IncidentStatus, str]] = ...) -> None: ...
+    completion_triggers: _containers.RepeatedScalarFieldContainer[DdsCompletionTrigger]
+    fail_on_timeout: bool
+    def __init__(self, type: _Optional[_Union[DdsStageType, str]] = ..., time_limit_seconds: _Optional[int] = ..., expected_comment: _Optional[str] = ..., actual_status: _Optional[_Union[IncidentStatus, str]] = ..., completion_triggers: _Optional[_Iterable[_Union[DdsCompletionTrigger, str]]] = ..., fail_on_timeout: bool = ...) -> None: ...
 
 class CallScenario(_message.Message):
-    __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state", "service_code")
+    __slots__ = ("id", "position", "direction", "counterparty", "person", "gender", "known_facts", "hidden_facts", "ai_context", "emotional_state", "service_code", "incident_address")
     ID_FIELD_NUMBER: _ClassVar[int]
     POSITION_FIELD_NUMBER: _ClassVar[int]
     DIRECTION_FIELD_NUMBER: _ClassVar[int]
@@ -190,6 +213,7 @@ class CallScenario(_message.Message):
     AI_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     EMOTIONAL_STATE_FIELD_NUMBER: _ClassVar[int]
     SERVICE_CODE_FIELD_NUMBER: _ClassVar[int]
+    INCIDENT_ADDRESS_FIELD_NUMBER: _ClassVar[int]
     id: str
     position: int
     direction: CallDirection
@@ -201,10 +225,11 @@ class CallScenario(_message.Message):
     ai_context: str
     emotional_state: str
     service_code: str
-    def __init__(self, id: _Optional[str] = ..., position: _Optional[int] = ..., direction: _Optional[_Union[CallDirection, str]] = ..., counterparty: _Optional[_Union[CounterpartyType, str]] = ..., person: _Optional[_Union[Person, _Mapping]] = ..., gender: _Optional[_Union[Gender, str]] = ..., known_facts: _Optional[_Iterable[str]] = ..., hidden_facts: _Optional[_Iterable[str]] = ..., ai_context: _Optional[str] = ..., emotional_state: _Optional[str] = ..., service_code: _Optional[str] = ...) -> None: ...
+    incident_address: Address
+    def __init__(self, id: _Optional[str] = ..., position: _Optional[int] = ..., direction: _Optional[_Union[CallDirection, str]] = ..., counterparty: _Optional[_Union[CounterpartyType, str]] = ..., person: _Optional[_Union[Person, _Mapping]] = ..., gender: _Optional[_Union[Gender, str]] = ..., known_facts: _Optional[_Iterable[str]] = ..., hidden_facts: _Optional[_Iterable[str]] = ..., ai_context: _Optional[str] = ..., emotional_state: _Optional[str] = ..., service_code: _Optional[str] = ..., incident_address: _Optional[_Union[Address, _Mapping]] = ...) -> None: ...
 
 class PreparedCardTemplate(_message.Message):
-    __slots__ = ("classifier_codes", "applicant", "victim_count", "additional_info")
+    __slots__ = ("classifier_codes", "applicant", "victim_count", "additional_info", "assigned_services")
     class AdditionalInfoEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -216,11 +241,13 @@ class PreparedCardTemplate(_message.Message):
     APPLICANT_FIELD_NUMBER: _ClassVar[int]
     VICTIM_COUNT_FIELD_NUMBER: _ClassVar[int]
     ADDITIONAL_INFO_FIELD_NUMBER: _ClassVar[int]
+    ASSIGNED_SERVICES_FIELD_NUMBER: _ClassVar[int]
     classifier_codes: _containers.RepeatedScalarFieldContainer[str]
     applicant: Person
     victim_count: int
     additional_info: _containers.ScalarMap[str, str]
-    def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., applicant: _Optional[_Union[Person, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    assigned_services: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, classifier_codes: _Optional[_Iterable[str]] = ..., applicant: _Optional[_Union[Person, _Mapping]] = ..., victim_count: _Optional[int] = ..., additional_info: _Optional[_Mapping[str, str]] = ..., assigned_services: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class InitialAssignment(_message.Message):
     __slots__ = ("emergency_service_code",)

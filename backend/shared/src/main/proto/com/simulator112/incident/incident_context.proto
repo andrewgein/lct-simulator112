@@ -65,6 +65,7 @@ message CallScenario {
   string ai_context = 9;
   string emotional_state = 10;
   string service_code = 11;
+  Address incident_address = 12;
 }
 
 message PreparedCardTemplate {

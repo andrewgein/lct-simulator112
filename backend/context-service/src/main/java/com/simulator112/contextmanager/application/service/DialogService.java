@@ -1,5 +1,7 @@
 package com.simulator112.contextmanager.application.service;
 
+import com.simulator112.contextmanager.application.model.DialogCall;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -119,19 +121,19 @@ public class DialogService implements CallUseCase {
     }
 
     @Transactional(readOnly = true)
-    public CallSnapshot getCall(String id, String callId) {
+    public DialogCall getCall(String id, String callId) {
         TrainingContext context = find(id);
         UUID requestedCallId = parseUuid(callId);
         if (requestedCallId.equals(context.getActiveCallId())
                 && (context.getDialogStatus() == DialogProgressStatus.IN_CALL
                     || context.getDialogStatus() == DialogProgressStatus.DISCONNECTED)) {
-            return findCall(context, requestedCallId);
+            return dialogCall(context, findCall(context, requestedCallId));
         }
-        return requireCall(context, requestedCallId);
+        return dialogCall(context, requireCall(context, requestedCallId));
     }
 
     @Transactional(readOnly = true)
-    public CallSnapshot getNextCall(String id, String currentCallId) {
+    public DialogCall getNextCall(String id, String currentCallId) {
         TrainingContext context = find(id);
         List<CallSnapshot> sequence = context.getTargetType() == IncidentTargetType.DDS
                 ? availableCalls(context) : flattenCalls(context);
@@ -139,7 +141,7 @@ public class DialogService implements CallUseCase {
             throw new IllegalStateException("У уровня контекста " + id + " нет звонков");
         }
         if ("-1".equals(currentCallId)) {
-            return sequence.get(0);
+            return dialogCall(context, sequence.get(0));
         }
         UUID currentId = parseUuid(currentCallId);
         int currentIndex = -1;
@@ -154,7 +156,16 @@ public class DialogService implements CallUseCase {
         }
         return currentIndex + 1 >= sequence.size()
                 ? null
-                : sequence.get(currentIndex + 1);
+                : dialogCall(context, sequence.get(currentIndex + 1));
+    }
+
+    private DialogCall dialogCall(TrainingContext context, CallSnapshot call) {
+        if (context.getTargetType() != IncidentTargetType.DDS) return new DialogCall(call, null);
+        var incident = context.getIncidents().stream()
+                .filter(value -> value.getStages().stream().flatMap(stage -> stage.getCalls().stream())
+                        .anyMatch(valueCall -> valueCall.getSourceId().equals(call.getSourceId())))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Происшествие звонка не найдено: " + call.getSourceId()));
+        return new DialogCall(call, incident.getAddress());
     }
 
     private TrainingContext requireActiveCall(String id, String callId) {

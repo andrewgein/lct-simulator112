@@ -18,6 +18,31 @@ class DialogServiceDdsCallsTests {
     private final DialogService service = new DialogService(store);
 
     @Test
+    void ddsCallUsesAddressOfItsOwnIncident() {
+        var fixture = fixture(IncidentTargetType.DDS);
+        var address = new Address("Москва", "Тверская", "8", "1", "5", 4);
+        fixture.context.getIncidents().getFirst().setAddress(address);
+        var otherIncident = new IncidentSnapshot();
+        otherIncident.setSourceId(UUID.randomUUID());
+        otherIncident.setAddress(new Address("Москва", "Петровка", "1", null, null, null));
+        fixture.context.getIncidents().addFirst(otherIncident);
+        fixture.context.setActiveCallId(fixture.previous.getSourceId());
+        fixture.context.setDialogStatus(DialogProgressStatus.IN_CALL);
+
+        assertThat(service.getCall(fixture.context.getId().toString(), fixture.previous.getSourceId().toString()).incidentAddress())
+                .isEqualTo(address);
+        assertThat(service.getNextCall(fixture.context.getId().toString(), "-1").incidentAddress()).isEqualTo(address);
+    }
+
+    @Test
+    void system112CallDoesNotExposeIncidentAddress() {
+        var fixture = fixture(IncidentTargetType.SYSTEM_112);
+        fixture.context.getIncidents().getFirst().setAddress(new Address("Москва", "Тверская", "8", null, null, null));
+
+        assertThat(service.getNextCall(fixture.context.getId().toString(), "-1").incidentAddress()).isNull();
+    }
+
+    @Test
     void canStartNextDdsCallAfterPreviousWasMissed() {
         var fixture = fixture(IncidentTargetType.DDS);
         fixture.context.setActiveCallId(fixture.previous.getSourceId());
@@ -37,7 +62,7 @@ class DialogServiceDdsCallsTests {
         fixture.context.getIncidents().getFirst().setActiveStageId(UUID.randomUUID());
         fixture.context.getIncidents().getFirst().setStatus(IncidentProgressStatus.COMPLETED);
 
-        assertThat(service.getCall(fixture.context.getId().toString(), fixture.previous.getSourceId().toString()))
+        assertThat(service.getCall(fixture.context.getId().toString(), fixture.previous.getSourceId().toString()).call())
                 .isSameAs(fixture.previous);
         service.completeCall(fixture.context.getId().toString(), fixture.previous.getSourceId().toString());
         assertThat(fixture.previous.getStatus()).isEqualTo(CallStatus.COMPLETED);
