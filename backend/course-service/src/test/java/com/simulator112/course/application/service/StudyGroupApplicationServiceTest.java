@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,7 +25,7 @@ class StudyGroupApplicationServiceTest {
         UUID ownerId = UUID.randomUUID();
         when(repository.findById(groupId)).thenReturn(Optional.of(group(groupId, ownerId)));
 
-        service.deleteStudyGroup(groupId, ownerId);
+        service.deleteStudyGroup(groupId, ownerId, "SUPERVISOR");
 
         verify(repository).deleteById(groupId);
     }
@@ -34,8 +35,19 @@ class StudyGroupApplicationServiceTest {
         UUID groupId = UUID.randomUUID();
         when(repository.findById(groupId)).thenReturn(Optional.of(group(groupId, UUID.randomUUID())));
 
-        assertThatThrownBy(() -> service.deleteStudyGroup(groupId, UUID.randomUUID()))
+        assertThatThrownBy(() -> service.deleteStudyGroup(groupId, UUID.randomUUID(), "SUPERVISOR"))
                 .isInstanceOf(CourseAccessDeniedException.class);
+        verify(repository, never()).deleteById(groupId);
+    }
+
+    @Test
+    void deletesForeignGroupByAdmin() {
+        UUID groupId = UUID.randomUUID();
+        when(repository.findById(groupId)).thenReturn(Optional.of(group(groupId, UUID.randomUUID())));
+
+        service.deleteStudyGroup(groupId, UUID.randomUUID(), "ADMIN");
+
+        verify(repository).deleteById(groupId);
     }
 
     private StudyGroup group(UUID groupId, UUID ownerId) {
