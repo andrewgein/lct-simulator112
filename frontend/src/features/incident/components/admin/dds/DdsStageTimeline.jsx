@@ -109,7 +109,7 @@ function StageEditor({ stage, index, open, onOpen, onClose, onSave }) {
           {COMPLETION_TRIGGERS.map(([value, label]) => <wa-card key={value} class="dds-trigger-card" appearance="filled-outlined">
             <div class="wa-cluster wa-align-items-center wa-gap-m">
               <wa-checkbox checked={(draft.completionTriggers ?? ["TIME"]).includes(value) && (value !== "STATUS" || !!draft.actualStatus)} disabled={value === "STATUS" && !draft.actualStatus} onChange={(event) => { setError(""); setDraft((current) => ({ ...current, completionTriggers: event.currentTarget.checked ? [...(current.completionTriggers ?? ["TIME"]), value] : (current.completionTriggers ?? ["TIME"]).filter((item) => item !== value) })); }}>{label}</wa-checkbox>
-              {value === "TIME" && (draft.completionTriggers ?? ["TIME"]).includes("TIME") && <><wa-number-input class="dds-trigger-duration" value={draft.timeLimitSeconds} aria-label="Длительность этапа в секундах" min="1" step="1" required disabled={!index} onInput={(event) => update("timeLimitSeconds", event.currentTarget.value)}></wa-number-input><span>сек.</span></>}
+              {value === "TIME" && (draft.completionTriggers ?? ["TIME"]).includes("TIME") && <><wa-input class="dds-trigger-duration" type="number" value={String(index === 0 ? 30 : draft.timeLimitSeconds ?? 60)} aria-label="Длительность этапа в секундах" min="1" step="1" required disabled={!index} onInput={(event) => update("timeLimitSeconds", event.currentTarget.value)}></wa-input><span>сек.</span></>}
             </div>
           </wa-card>)}
         </fieldset>
