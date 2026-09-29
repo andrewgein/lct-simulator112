@@ -6,6 +6,7 @@ import LevelSearchInput from "../common/LevelSearchInput.jsx";
 import { useLevelClock } from "../../hooks/useLevelClock.js";
 import ActiveCards from "./ActiveCards.jsx";
 import DdsStageActions from "./DdsStageActions.jsx";
+import ElapsedTime from "./ElapsedTime.jsx";
 import LevelCommandBar from "./LevelCommandBar.jsx";
 import RemainingTime from "./RemainingTime.jsx";
 import { activeStageFor, editorFor, incidentCard, notificationStatus, reactionForService, READONLY_CALL, REACTION_STATUS_OPTIONS, serviceStatusHistory } from "./ddsLevelHelpers.js";
@@ -13,8 +14,7 @@ import { activeStageFor, editorFor, incidentCard, notificationStatus, reactionFo
 const styles = `
 .dds-level-message { margin: var(--wa-space-l) var(--wa-space-l) 0; }
 .dds-time--urgent { color: var(--wa-color-danger-on-quiet); }
-.dds-level-stage-timer { display: flex; flex-direction: column; align-items: center; gap: var(--wa-space-2xs); min-width: 11rem; text-align: center; }
-.dds-level-stage-timer small { font-size: var(--wa-font-size-xs); font-weight: normal; text-transform: none; overflow-wrap: anywhere; }
+.dds-level-stage-timer { min-width: 11rem; text-align: center; }
 .dds-progress { flex: 1; }
 .dds-progress > p { margin: 0; }
 .dds-progress ol { margin: var(--wa-space-xs) 0 0; padding: 0; list-style: none; }
@@ -195,8 +195,8 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
   const reactionStatus = reactionForService(selectedProgress, selectedServiceCode)?.currentStatus;
   const canEditStatus = ["ACTIVE", "COMPLETED"].includes(selectedProgress?.status) && !["IN_REVIEW", "DONE"].includes(progress?.status) && !!REACTION_STATUS_OPTIONS[reactionStatus]?.length;
   const activeStage = activeStageFor(selectedCard?.incident, selectedProgress);
-  const failedStageId = selectedProgress?.dds?.stages?.find((stage) => stage.status === "FAILED")?.stageId;
-  const displayedStage = activeStage || selectedCard?.incident?.stages?.find((stage) => String(stage.id) === String(failedStageId));
+  const isFirstStage = !!activeStage && String(activeStage.id) === String(selectedCard?.incident?.stages?.[0]?.id);
+  const receivedAt = reactionForService(selectedProgress, selectedServiceCode)?.history?.find((event) => event.status === "RECEIVED_BY_SERVICE")?.changedAt;
   const plannedStatus = selectedProgress?.status === "ACTIVE" && (activeStage?.completionTriggers ?? ["TIME"]).includes("STATUS") ? activeStage.actualStatus : null;
   const serviceCalls = selectedProgress?.status === "ACTIVE" ? (activeStage?.calls || []).filter((item) => item.direction === "OUTBOUND") : [];
   const callService = (callId) => {
@@ -218,7 +218,7 @@ export default function DdsLevelApp({ contextId, courseId, incidents, classifier
       </LevelCommandBar>
       {error && <wa-callout class="dds-level-message" variant="danger"><wa-icon slot="icon" name="triangle-exclamation"></wa-icon>{error}</wa-callout>}
       {finished && <LevelCompletionNotice className="dds-level-message" complete ready finishing={finishing} completeMessage="Все происшествия обработаны. Завершите уровень, чтобы перейти к разбору." onFinish={finishLevel} />}
-      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={call} editor={editor} classifier={classifier} routingFacts={routingFacts} dispatchServices={services} readOnly hideReadonlyExtras readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<span class="dds-level-stage-timer"><small>{displayedStage?.title || "Этап завершён"}</small>{selectedProgress?.status === "FAILED" ? "Ошибка" : selectedProgress?.status === "COMPLETED" ? "Завершено" : <RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} />}</span>} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} plannedStatus={plannedStatus} onApply={applyReactionStatus} /> : null} readonlyServiceCalls={serviceCalls} readonlyCallEnabled={call.phase === "idle"} onServiceCall={callService} onAcceptCall={() => { setCall((current) => ({ ...current, phase: "active" })); startDialog(dialogEndpoint, contextId); }} onDropCall={() => call.phase === "incoming" ? dismissCall() : stopDialog()} onChange={setEditor} onClose={() => {}} />}
+      {selectedCard && <CardEditor contextId={contextId} cards={cards} call={call} editor={editor} classifier={classifier} routingFacts={routingFacts} dispatchServices={services} readOnly hideReadonlyExtras readonlyTitle="Карточка ДДС" readonlyHint="режим просмотра" readonlyStatus={notificationStatus(selectedCard.incident, selectedProgress)} readonlyTimer={<span class="dds-level-stage-timer">{selectedProgress?.status === "FAILED" ? "Ошибка" : selectedProgress?.status === "COMPLETED" ? "Завершено" : isFirstStage ? <RemainingTime deadline={selectedProgress?.dds?.deadline} now={now} /> : <ElapsedTime since={receivedAt} now={now} />}</span>} readonlyServiceStatus={notificationStatus(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceHistory={serviceStatusHistory(selectedCard.incident, selectedProgress, selectedServiceCode)} readonlyServiceEditor={canEditStatus ? <DdsStageActions incidentId={selectedCard.cardId} serviceCode={selectedServiceCode} currentStatus={reactionStatus} plannedStatus={plannedStatus} onApply={applyReactionStatus} /> : null} readonlyServiceCalls={serviceCalls} readonlyCallEnabled={call.phase === "idle"} onServiceCall={callService} onAcceptCall={() => { setCall((current) => ({ ...current, phase: "active" })); startDialog(dialogEndpoint, contextId); }} onDropCall={() => call.phase === "incoming" ? dismissCall() : stopDialog()} onChange={setEditor} onClose={() => {}} />}
       <ActiveCards cards={cards} loading={!progress} error={false} classifierState={classifierState} searchQuery={query} onOpen={(card) => setEditor(editorFor(card))} getCardMeta={getCardMeta} heading="Список происшествий" emptyMessage="Карточки ДДС пока не поступили" statusLabel="Статус" />
     </div>
   );
