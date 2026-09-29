@@ -1,12 +1,3 @@
-# Always-on prod monitoring stack (sim112-stable scraped from here).
-# Grafana/Prometheus are intentionally NOT routed through the router VM/public domains - reach
-# them over Tailscale at http://<vm-tailscale-ip>:3001 and :9090 (the VM at 192.168.1.170 isn't
-# directly internet-facing anyway; the router only forwards :80/:443 for configured domains).
-#
-# Before first run, render prometheus.yml from the template:
-#   set -a && . ./.env && set +a && envsubst < prometheus.yml.template > prometheus.yml
-#
-# Requires the external network created once:  docker network create prod-monitoring
 
 services:
   node-exporter:
@@ -81,10 +72,7 @@ services:
     networks:
       - monitoring
 
-  # Discovers running containers via docker.sock (read-only, standard Grafana Labs pattern - it
-  # only ever calls the Docker API's read-only container/log-listing endpoints, never
-  # exec/create/start) and ships their stdout/stderr to Loki. admin-service itself never touches
-  # docker.sock - it only queries Loki's HTTP API for the /admin/logs page.
+
   promtail:
     image: grafana/promtail:3.3.2
     container_name: prod-promtail

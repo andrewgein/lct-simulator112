@@ -1,7 +1,7 @@
 package com.simulator112.course.adapter;
 
 import com.simulator112.course.adapter.in.grpc.CourseGrpcController;
-import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
+import com.simulator112.course.application.port.in.FindAllStudyGroupsUseCase;
 import com.simulator112.course.application.port.in.GetCourseUseCase;
 import com.simulator112.course.application.port.in.GetEnrollmentUseCase;
 import com.simulator112.course.application.service.CertificateApplicationService;
@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 
 class CourseCertificateGrpcTests {
     private final CertificateApplicationService certificates = mock(CertificateApplicationService.class);
-    private final FindOwnedStudyGroupsUseCase groups = mock(FindOwnedStudyGroupsUseCase.class);
+    private final FindAllStudyGroupsUseCase groups = mock(FindAllStudyGroupsUseCase.class);
     private final CourseGrpcController controller = new CourseGrpcController(
             mock(GetEnrollmentUseCase.class), mock(GetCourseUseCase.class), groups, certificates);
 
@@ -41,7 +41,7 @@ class CourseCertificateGrpcTests {
     void checksMembershipInTeachersOwnedGroups() {
         UUID teacher = UUID.randomUUID();
         UUID student = UUID.randomUUID();
-        when(groups.findOwnedStudyGroups(teacher)).thenReturn(List.of(new StudyGroup(UUID.randomUUID(), "Группа", teacher,
+        when(groups.findAllStudyGroups()).thenReturn(List.of(new StudyGroup(UUID.randomUUID(), "Группа", teacher,
                 List.of(student))));
         var observer = new Capture<TeacherStudentResponse>();
         controller.isStudentOfTeacher(TeacherStudentRequest.newBuilder()

@@ -8,7 +8,7 @@ import com.simulator112.course.application.port.in.AssignCourseToGroupUseCase;
 import com.simulator112.course.application.port.in.CreateStudyGroupUseCase;
 import com.simulator112.course.application.port.in.DeleteStudyGroupUseCase;
 import com.simulator112.course.application.port.in.FindGroupCoursesUseCase;
-import com.simulator112.course.application.port.in.FindOwnedStudyGroupsUseCase;
+import com.simulator112.course.application.port.in.FindAllStudyGroupsUseCase;
 import com.simulator112.course.application.port.in.GetStudyGroupUseCase;
 import com.simulator112.course.application.port.in.UnassignCourseFromGroupUseCase;
 import com.simulator112.course.application.port.in.UpdateStudyGroupUseCase;
@@ -28,7 +28,7 @@ public class StudyGroupRestController {
     private final UpdateStudyGroupUseCase updateStudyGroup;
     private final DeleteStudyGroupUseCase deleteStudyGroup;
     private final GetStudyGroupUseCase getStudyGroup;
-    private final FindOwnedStudyGroupsUseCase findOwnedStudyGroups;
+    private final FindAllStudyGroupsUseCase findAllStudyGroups;
     private final AssignCourseToGroupUseCase assignCourseToGroup;
     private final UnassignCourseFromGroupUseCase unassignCourseFromGroup;
     private final FindGroupCoursesUseCase findGroupCourses;
@@ -60,8 +60,8 @@ public class StudyGroupRestController {
     }
 
     @GetMapping
-    public List<StudyGroupView> findOwned(@RequestHeader("X-User-Id") UUID userId) {
-        return findOwnedStudyGroups.findOwnedStudyGroups(userId).stream().map(mapper::toView).toList();
+    public List<StudyGroupView> findAll() {
+        return findAllStudyGroups.findAllStudyGroups().stream().map(mapper::toView).toList();
     }
 
     @GetMapping("/{groupId}/courses")

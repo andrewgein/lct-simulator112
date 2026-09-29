@@ -42,7 +42,6 @@ export const errorLabel = (criterion) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
 
-/** Builds per-student attempt stats for one course's assignments. `groups` (array of group titles) is left for the caller to attach. */
 export function buildStudentStats({ student, reviews, assignmentIds, assignmentTitles }) {
   const attempts = (reviews || [])
     .filter((review) => assignmentIds.has(String(review.assignmentId)))
