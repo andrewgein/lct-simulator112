@@ -3,15 +3,18 @@ package com.simulator112.incident.application.service;
 import com.simulator112.incident.application.port.out.ClassifierCatalogPort;
 import com.simulator112.incident.application.port.out.IncidentRepository;
 import com.simulator112.incident.domain.common.*;
+import com.simulator112.incident.domain.common.exception.IncidentNotFoundException;
 import com.simulator112.incident.domain.dds.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +22,27 @@ class IncidentApplicationServiceTest {
     private final IncidentRepository repository = mock(IncidentRepository.class);
     private final ClassifierCatalogPort classifier = mock(ClassifierCatalogPort.class);
     private final IncidentApplicationService service = new IncidentApplicationService(repository, classifier);
+
+    @Test
+    void deletesExistingIncident() {
+        UUID incidentId = UUID.randomUUID();
+        var incident = incident(List.of(acceptanceStage(UUID.randomUUID())));
+        when(repository.findById(incidentId)).thenReturn(Optional.of(incident));
+
+        service.deleteIncident(incidentId);
+
+        verify(repository).deleteById(incidentId);
+    }
+
+    @Test
+    void rejectsDeletingMissingIncident() {
+        UUID incidentId = UUID.randomUUID();
+        when(repository.findById(incidentId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.deleteIncident(incidentId)).isInstanceOf(IncidentNotFoundException.class);
+
+        verify(repository, never()).deleteById(incidentId);
+    }
 
     @Test
     void acceptsOrderedStages() {

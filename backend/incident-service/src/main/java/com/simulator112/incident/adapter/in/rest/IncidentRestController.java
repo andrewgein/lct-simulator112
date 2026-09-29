@@ -1,6 +1,7 @@
 package com.simulator112.incident.adapter.in.rest;
 
 import com.simulator112.incident.application.port.in.CreateIncidentUseCase;
+import com.simulator112.incident.application.port.in.DeleteIncidentUseCase;
 import com.simulator112.incident.application.port.in.FindAvailableIncidentsUseCase;
 import com.simulator112.incident.application.port.in.GetIncidentUseCase;
 import com.simulator112.incident.application.port.in.UpdateIncidentUseCase;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class IncidentRestController {
     private final CreateIncidentUseCase createIncident;
     private final UpdateIncidentUseCase updateIncident;
+    private final DeleteIncidentUseCase deleteIncident;
     private final GetIncidentUseCase getIncident;
     private final FindAvailableIncidentsUseCase findAvailableIncidents;
     private final IncidentRestMapper mapper;
@@ -39,6 +41,12 @@ public class IncidentRestController {
     @GetMapping("/{incidentId}")
     public Incident get(@PathVariable UUID incidentId) {
         return getIncident.getIncident(incidentId);
+    }
+
+    @DeleteMapping("/{incidentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID incidentId) {
+        deleteIncident.deleteIncident(incidentId);
     }
 
     @GetMapping

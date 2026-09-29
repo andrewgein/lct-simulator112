@@ -137,6 +137,17 @@ spring:
                   args:
                     roles: ADMIN
 
+            - id: incident-service-delete
+              uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/v1/incidents/*
+                - Method=DELETE
+              filters:
+                - name: JwtAuthFilter
+                - name: RoleAuthorization
+                  args:
+                    roles: ADMIN
+
             #Incident constructors — administrators and supervisors
             - id: incident-service-write
               uri: ${INCIDENT_SERVICE_URL:http://localhost:8086}

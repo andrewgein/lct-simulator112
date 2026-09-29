@@ -1,6 +1,7 @@
 package com.simulator112.incident.application.service;
 
 import com.simulator112.incident.application.port.in.CreateIncidentUseCase;
+import com.simulator112.incident.application.port.in.DeleteIncidentUseCase;
 import com.simulator112.incident.application.port.in.FindAvailableIncidentsUseCase;
 import com.simulator112.incident.application.port.in.GetIncidentUseCase;
 import com.simulator112.incident.application.port.in.UpdateIncidentUseCase;
@@ -14,6 +15,7 @@ import com.simulator112.incident.domain.dds.DdsIncident;
 import com.simulator112.incident.domain.system112.System112Incident;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +23,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class IncidentApplicationService implements CreateIncidentUseCase, UpdateIncidentUseCase,
-        GetIncidentUseCase, FindAvailableIncidentsUseCase {
+        GetIncidentUseCase, FindAvailableIncidentsUseCase, DeleteIncidentUseCase {
 
     private final IncidentRepository incidentRepository;
     private final ClassifierCatalogPort classifierCatalog;
@@ -46,6 +48,13 @@ public class IncidentApplicationService implements CreateIncidentUseCase, Update
     public Incident getIncident(UUID incidentId) {
         return incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new IncidentNotFoundException(incidentId));
+    }
+
+    @Override
+    @Transactional
+    public void deleteIncident(UUID incidentId) {
+        getIncident(incidentId);
+        incidentRepository.deleteById(incidentId);
     }
 
     @Override

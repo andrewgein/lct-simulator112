@@ -85,16 +85,26 @@ try {
   )}
 </Page>
 <script>
-  document.querySelectorAll<HTMLElement>('.delete-incident').forEach((button) =>
+  document.querySelectorAll<HTMLElement & { disabled: boolean; loading: boolean }>('.delete-incident').forEach((button) =>
     button.addEventListener('click', async () => {
-      if (!confirm('Удалить сценарий без возможности восстановления?')) {
+      if (button.disabled || !confirm('Удалить сценарий без возможности восстановления?')) {
         return;
       }
-      const response = await fetch(`/api/v1/admin/incident/${button.dataset.id}`, { method: 'DELETE' });
-      if (response.ok) {
+      button.disabled = true;
+      button.loading = true;
+      try {
+        const response = await fetch(`/api/v1/incidents/${encodeURIComponent(button.dataset.id || '')}`, { method: 'DELETE' });
+        if (!response.ok) {
+          const error = await response.json().catch(() => null);
+          throw new Error(error?.message || 'Не удалось удалить сценарий');
+        }
         window.location.reload();
+      } catch (error) {
+        alert(error instanceof Error ? error.message : 'Не удалось удалить сценарий');
+      } finally {
+        button.disabled = false;
+        button.loading = false;
       }
-      else alert('Не удалось удалить сценарий');
   }));
 </script>
 
