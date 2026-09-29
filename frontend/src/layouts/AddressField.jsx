@@ -44,24 +44,31 @@ export default function AddressField({ id, value = "", label = "Адрес", req
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.origin === window.location.origin && event.source === mapWindow.current && event.data?.type === "LOCATION_PICKED" && event.data.targetInputId === id) {
-        setFocused(false);
-        updateValue(event.data.address, "map");
+        if (event.data.suggestion?.data) chooseSuggestion({ ...event.data.suggestion, value: event.data.address });
+        else {
+          setFocused(false);
+          updateValue(event.data.address, "map");
+        }
       }
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, [id, onChange]);
+  }, [id, onChange, onSelect]);
 
   useEffect(() => {
     const root = rootRef.current;
     const setAddress = (event) => {
+      if (event.detail?.suggestion?.data) {
+        chooseSuggestion(event.detail.suggestion);
+        return;
+      }
       setFocused(false);
       updateValue(event.detail?.value || "", "programmatic");
     };
     root.addEventListener("address-set", setAddress);
     emit("address-ready", { value: root.querySelector("input")?.value || "" });
     return () => root.removeEventListener("address-set", setAddress);
-  }, [onChange]);
+  }, [onChange, onSelect]);
 
   const emit = (name, detail) => rootRef.current?.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
   const updateValue = (nextValue, source = "input") => {

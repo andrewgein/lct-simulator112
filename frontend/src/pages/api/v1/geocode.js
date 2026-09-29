@@ -1,3 +1,5 @@
+import { addressSuggestionFromGeocode } from "../../../layouts/addressUtils.js";
+
 export const prerender = false;
 
 const REQUEST_TIMEOUT_MS = 5_000;
@@ -27,16 +29,16 @@ async function request(url, options = {}) {
 
 async function geocodeWithOsm({ address, lat, lng }) {
   if (!address) {
-    const params = new URLSearchParams({ format: "jsonv2", lat: String(lat), lon: String(lng), "accept-language": "ru" });
+    const params = new URLSearchParams({ format: "jsonv2", lat: String(lat), lon: String(lng), addressdetails: "1", "accept-language": "ru" });
     const result = await request(`https://nominatim.openstreetmap.org/reverse?${params}`, { headers: { Accept: "application/json", "User-Agent": "Simulator112-training/1.0" } });
     if (!result.display_name) throw new Error("Address not found in OpenStreetMap");
-    return { lat: Number(lat), lng: Number(lng), displayName: result.display_name, provider: "openstreetmap" };
+    return { lat: Number(lat), lng: Number(lng), displayName: result.display_name, suggestion: addressSuggestionFromGeocode(result), provider: "openstreetmap" };
   }
 
   for (const query of addressQueries(address)) {
-    const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "1", countrycodes: "ru", "accept-language": "ru" });
+    const params = new URLSearchParams({ q: query, format: "jsonv2", limit: "1", addressdetails: "1", countrycodes: "ru", "accept-language": "ru" });
     const result = (await request(`https://nominatim.openstreetmap.org/search?${params}`, { headers: { Accept: "application/json", "User-Agent": "Simulator112-training/1.0" } }))[0];
-    if (result) return { lat: Number(result.lat), lng: Number(result.lon), displayName: result.display_name, provider: "openstreetmap" };
+    if (result) return { lat: Number(result.lat), lng: Number(result.lon), displayName: result.display_name, suggestion: addressSuggestionFromGeocode(result), provider: "openstreetmap" };
   }
   throw new Error("Address not found in OpenStreetMap");
 }

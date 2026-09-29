@@ -52,9 +52,9 @@ const mapglKey = process.env.DGIS_MAPGL_KEY?.trim() || "";
     return response.json();
   }
 
-  function notifyLocation(targetInputId, address, lat, lng) {
+  function notifyLocation(targetInputId, address, lat, lng, suggestion) {
     if (!window.opener || window.opener.closed) return;
-    window.opener.postMessage({ type: "LOCATION_PICKED", address, lat, lng, targetInputId }, window.location.origin);
+    window.opener.postMessage({ type: "LOCATION_PICKED", address, lat, lng, suggestion, targetInputId }, window.location.origin);
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
@@ -74,11 +74,13 @@ const mapglKey = process.env.DGIS_MAPGL_KEY?.trim() || "";
     let fallbackStarted = false;
     let mapglMap = null;
     let mapglMarker = null;
+    let selectionVersion = 0;
 
     const selectLocation = async (lat, lng) => {
+      const version = ++selectionVersion;
       try {
         const result = await geocode({ lat: String(lat), lng: String(lng) });
-        if (result.displayName) notifyLocation(targetInputId, result.displayName, lat, lng);
+        if (version === selectionVersion && result.displayName) notifyLocation(targetInputId, result.displayName, lat, lng, result.suggestion);
       } catch (error) {
         console.error("Reverse geocoding failed:", error);
       }

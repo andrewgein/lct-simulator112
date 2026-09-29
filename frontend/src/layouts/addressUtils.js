@@ -3,6 +3,23 @@ const uniqueParts = (parts) => [...new Map(parts.map(text).filter(Boolean).map((
 
 export const emptyAddressDetails = () => ({ country: "", region: "", city: "", district: "", area: "", street: "", house: "", block: "", apartment: "", entrance: "", floor: "", postalCode: "" });
 
+export function addressSuggestionFromGeocode(result) {
+  const address = result.address || {};
+  return {
+    value: result.display_name || "",
+    data: {
+      country: address.country || "",
+      region: address.state || address.region || "",
+      city: address.city || address.town || address.village || address.hamlet || address.municipality || "",
+      city_district: address.borough || address.city_district || "",
+      area: address.suburb || address.quarter || address.county || "",
+      street: address.road || address.pedestrian || address.residential || address.footway || "",
+      house: address.house_number || "",
+      postal_code: address.postcode || ""
+    }
+  };
+}
+
 export function addressFromSuggestion(suggestion) {
   const data = suggestion.data || {};
   return {
